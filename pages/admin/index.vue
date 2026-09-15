@@ -731,7 +731,7 @@
                   <span v-html="icons.plus"></span>
                   Add Row
                 </button>
-                <button v-if="!activeSalesTable.readOnly && !isReferenceExRate && !isReferenceWarehouses && currentPage.kind !== 'internal-directory'" class="sm-btn" type="button" :disabled="state.selected.size === 0 || saving" @click="bulkCopy">
+                <button v-if="!activeSalesTable.readOnly && !isReferenceExRate && !isReferenceWarehouses && !isReferenceCountries && currentPage.kind !== 'internal-directory'" class="sm-btn" type="button" :disabled="state.selected.size === 0 || saving" @click="bulkCopy">
                   <span v-html="icons.copy"></span>
                   Copy
                 </button>
@@ -754,11 +754,11 @@
                     <button type="button" @click="exportSalesRows('all')">Export all rows ({{ records.length }})</button>
                   </div>
                 </div>
-                <button v-if="!activeSalesTable.readOnly && !isReferenceExRate && !isReferenceWarehouses && currentPage.kind !== 'internal-directory'" class="sm-btn" type="button" @click="downloadTemplate">
+                <button v-if="!activeSalesTable.readOnly && !isReferenceExRate && !isReferenceWarehouses && !isReferenceCountries && currentPage.kind !== 'internal-directory'" class="sm-btn" type="button" @click="downloadTemplate">
                   <span v-html="icons.file"></span>
                   Download Template
                 </button>
-                <button v-if="!activeSalesTable.readOnly && !isReferenceExRate && !isReferenceWarehouses && currentPage.kind !== 'internal-directory'" class="sm-btn" type="button" @click="triggerImport">
+                <button v-if="!activeSalesTable.readOnly && !isReferenceExRate && !isReferenceWarehouses && !isReferenceCountries && currentPage.kind !== 'internal-directory'" class="sm-btn" type="button" @click="triggerImport">
                   <span v-html="icons.upload"></span>
                   Import Excel
                 </button>
@@ -832,6 +832,16 @@
                 @scroll.passive="smLedgeTick++"
                 @contextmenu.prevent.stop
               >
+                <Transition name="sm-loading-fade">
+                  <div v-if="loading" class="sm-modern-loading" role="status" aria-live="polite">
+                    <div class="sm-loading-card">
+                      <div class="sm-loading-mark"><span>S</span><i></i></div>
+                      <strong>SHOPTRANS</strong>
+                      <small>Loading data</small>
+                      <div class="sm-loading-dots"><i></i><i></i><i></i></div>
+                    </div>
+                  </div>
+                </Transition>
                 <table class="sm-grid-table" :style="salesTableStyle" @contextmenu.prevent.stop>
                   <colgroup>
                     <col style="width:36px" />
@@ -868,7 +878,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-if="loading">
+                    <tr v-if="false && loading">
                       <td :colspan="tableColumns.length + 2" class="empty">Loading...</td>
                     </tr>
                     <tr v-else-if="!smAdding && filteredRows.length === 0">
@@ -892,7 +902,7 @@
                                 <span v-if="mgnView(smEditDraft, column.key).pctText" class="mgnpct">{{ mgnView(smEditDraft, column.key).pctText }}</span>
                               </template>
                             </div>
-                            <div v-else-if="column.kind === 'postal-tree'" class="idcell">{{ postalCountForIso(smEditDraft.iso2) }} postal codes</div>
+                            <button v-else-if="column.kind === 'postal-tree'" class="postal-open-btn" :class="{ has: postalCountForIso(smEditDraft.iso2) > 0 }" type="button" :disabled="!String(smEditDraft.iso2 || '').trim()" :title="postalCountForIso(smEditDraft.iso2) ? `${postalCountForIso(smEditDraft.iso2)} postal codes — click to manage` : 'No postal codes yet — click to add'" @click.stop="togglePostalCountry(record)">Manage</button>
                             <div v-else-if="column.kind === 'id' || column.kind === 'computed'" class="idcell">{{ smEditDraft[column.key] || 'auto' }}</div>
                             <button v-else-if="column.kind === 'roles'" type="button" class="sm-rolepick" @click.stop="openRolesModal('edit')">
                               <span v-if="smEditDraft[column.key]">{{ smEditDraft[column.key] }}</span>
@@ -951,10 +961,7 @@
                           </template>
                           <div v-else class="viewcell">
                             <input v-if="column.kind === 'checkbox'" type="checkbox" class="sm-check" :checked="!!dataOf(record)[column.key]" disabled />
-                            <button v-else-if="column.kind === 'postal-tree'" class="postal-open-btn" type="button" @click.stop="togglePostalCountry(record)">
-                              <span>{{ postalCountForCountry(record) }}</span>
-                              <svg viewBox="0 0 24 24" aria-hidden="true" :class="{ open: postalCountryIsOpen(record) }"><path d="m8 10 4 4 4-4" /></svg>
-                            </button>
+                            <button v-else-if="column.kind === 'postal-tree'" class="postal-open-btn" :class="{ has: postalCountForCountry(record) > 0 }" type="button" :disabled="!postalIsoOf(record)" :title="postalCountForCountry(record) ? `${postalCountForCountry(record)} postal codes — click to manage` : 'No postal codes yet — click to add'" @click.stop="togglePostalCountry(record)">Manage</button>
                             <button v-else-if="column.kind === 'driverlist'" class="sm-mini-action ghost" type="button" @click.stop="openTraderDrivers(record)">{{ traderDriverLabel(dataOf(record)[column.key]) }}</button>
                             <button v-else-if="column.kind === 'coverage'" class="sm-mini-action ghost" type="button" @click.stop="openCoverageRecord(record)">{{ coverageLabel(dataOf(record)[column.key]) }}</button>
                             <div v-else-if="column.kind === 'computed' && column.key.endsWith('_mgn')" class="viewcell mgncell" :class="{ neg: mgnView(dataOf(record), column.key).neg }">
@@ -971,7 +978,7 @@
                           </div>
                         </td>
                       </tr>
-                      <tr v-if="isReferenceCountries && postalCountryIsOpen(record)" class="postal-tree-host">
+                      <tr v-if="false && isReferenceCountries && postalCountryIsOpen(record)" class="postal-tree-host">
                         <td :colspan="tableColumns.length + 2">
                           <section class="postal-tree-panel">
                             <div class="postal-tree-toolbar">
@@ -1875,6 +1882,116 @@
       </section>
     </div>
 
+    <div v-if="postalDirectory.countryRecordId" class="overlay show postal-manager-overlay">
+      <section class="postal-manager-modal" role="dialog" aria-modal="true" aria-label="Postal codes">
+        <button class="postal-manager-close" type="button" title="Close" @click="closePostalManager">×</button>
+        <header class="postal-manager-head">
+          <strong>{{ postalManagerCountryName }}</strong>
+          <span v-if="false">{{ postalCountForIso(postalDirectory.countryIso) }} postal codes</span>
+        </header>
+        <div class="postal-manager-tools">
+          <input v-if="postalCountForIso(postalDirectory.countryIso) >= 15 || postalDirectory.search" v-model.trim="postalDirectory.search" class="postal-manager-search" type="search" placeholder="Search code or name…" autocomplete="off" />
+          <button class="sm-btn" type="button" @click="focusPostalGroup">+ Group</button>
+          <button class="sm-btn" type="button" @click="openPostalImportForActiveCountry">⇅ Import</button>
+          <button class="sm-btn" type="button" :disabled="!postalCountForIso(postalDirectory.countryIso)" @click="exportPostalCountry">⇩ Export</button>
+        </div>
+        <div v-if="postalDirectory.loading" class="postal-tree-empty">Loading postal directory...</div>
+        <div v-else class="postal-card-list">
+          <div v-if="!postalCardGroups.length" class="postal-manager-empty">Nothing here yet.<br />Type a province below, or use <b>Import</b> to paste from Excel or a postal-code page.</div>
+          <section v-for="group in postalCardGroups" :key="group.name" class="postal-group-card">
+            <header :class="{ open: postalGroupIsOpen(group.name) }" @click="togglePostalGroup(group.name)">
+              <span class="postal-group-arrow">▶</span>
+              <input v-if="postalRenamingGroup === group.name" :value="group.name" class="postal-group-rename" @click.stop @keydown.enter.prevent="renamePostalGroup(group.name, postalEventValue($event))" @keydown.esc.prevent="postalRenamingGroup = ''" @blur="renamePostalGroup(group.name, postalEventValue($event))" />
+              <strong v-else>{{ group.name }}</strong>
+              <span class="postal-group-count">{{ group.rows.length }}</span>
+              <button class="postal-group-edit" :class="{ active: postalRenamingGroup === group.name }" type="button" title="Rename" aria-label="Rename group" @click.stop="startPostalRename(group.name)">✎</button>
+              <button class="postal-group-delete" type="button" title="Delete group" aria-label="Delete group" @click.stop="removePostalGroup(group.name)">×</button>
+            </header>
+            <div v-if="postalGroupIsOpen(group.name)" class="postal-group-body">
+              <template v-for="record in group.rows" :key="record.id">
+                <div class="postal-inline-row" :class="{ subunit: postalRecordDepth(record) > 0 }" :style="{ marginLeft: `${postalRecordDepth(record) * 20}px` }">
+                  <input class="postal-code-input" :value="dataOf(record).zip" placeholder="code" @change="updatePostalInline(record, 'zip', postalEventValue($event))" />
+                  <input class="postal-name-input" :value="dataOf(record).ward || dataOf(record).dist || dataOf(record).placeName" placeholder="Name" @change="updatePostalInline(record, 'ward', postalEventValue($event))" />
+                  <button v-if="postalRecordDepth(record) === 0" class="postal-add-under" type="button" title="Add a unit underneath" @click="startPostalUnder(record)">+</button>
+                  <span v-else></span>
+                  <button type="button" title="Remove" @click="removePostalInline(record)">×</button>
+                </div>
+                <div v-if="postalNewUnderId && postalUnderInsertAfterId(group.rows) === record.id" class="postal-inline-row new nested subunit" :style="{ marginLeft: `${postalNewUnderDepth * 20}px` }">
+                  <input v-model.trim="postalUnderDraft.zip" class="postal-code-input" :data-postal-under-code="postalNewUnderId" placeholder="+ code" @keydown.enter.prevent="addPostalUnderById" />
+                  <input v-model.trim="postalUnderDraft.name" class="postal-name-input" placeholder="name — press Enter to add" @keydown.enter.prevent="addPostalUnderById" />
+                  <span></span><button type="button" title="Cancel" @click="postalNewUnderId = ''">×</button>
+                </div>
+              </template>
+              <div class="postal-inline-row new">
+                <input v-model.trim="postalNewRows[group.name].zip" class="postal-code-input" :data-postal-new-code="group.name" placeholder="+ code" @keydown.enter.prevent="addPostalInline(group.name)" />
+                <input v-model.trim="postalNewRows[group.name].name" class="postal-name-input" placeholder="name — press Enter to add" @keydown.enter.prevent="addPostalInline(group.name)" />
+                <span></span><span></span>
+              </div>
+            </div>
+          </section>
+          <input ref="postalProvinceInput" v-model.trim="postalNewGroup" class="postal-new-group" placeholder="＋ new province / group — press Enter" @keydown.enter.prevent="addPostalGroup" />
+          <p v-if="postalDirectory.error" class="postal-form-error">{{ postalDirectory.error }}</p>
+        </div>
+        <div v-if="false" class="postal-manager-body">
+          <div class="postal-manager-list">
+            <div v-if="!postalFilteredTreeNodes.length" class="postal-manager-empty">
+              <template v-if="postalDirectory.search">No matching postal codes.</template>
+              <template v-else>Nothing here yet.<br />Type a province below, or use <b>⇅ Import</b> to add postal codes.</template>
+            </div>
+            <div
+              v-for="node in postalFilteredTreeNodes"
+              :key="node.key"
+              class="postal-tree-node"
+              :class="{ group: node.kind !== 'postal', selected: node.recordId && node.recordId === postalDirectory.editId }"
+              role="button" tabindex="0"
+              @click="selectPostalNode(node)" @keydown.enter.prevent="selectPostalNode(node)"
+            >
+              <span class="postal-node-name" :style="{ paddingLeft: `${8 + node.depth * 20}px` }">
+                <i v-if="node.kind !== 'postal'" class="postal-chevron" :class="{ open: postalNodeExpanded(node.key) }">›</i>
+                <i v-else class="postal-pin">●</i><b>{{ node.label }}</b>
+              </span>
+              <span>{{ node.zip || '—' }}</span>
+              <span><em :class="{ inactive: node.status === 'Inactive' }">{{ node.status || 'Active' }}</em></span>
+              <span><button v-if="node.recordId" class="postal-edit-mini" type="button" @click.stop="editPostalNode(node)">Edit</button></span>
+            </div>
+          </div>
+          <form class="postal-manager-form" @submit.prevent="savePostalForm">
+            <h3>{{ postalDirectory.editId ? 'Edit postal location' : 'Add postal location' }}</h3>
+            <label><span>Province / State *</span><input ref="postalProvinceInput" v-model.trim="postalDirectory.form.prov" type="text" /></label>
+            <label><span>District / City</span><input v-model.trim="postalDirectory.form.dist" type="text" /></label>
+            <label><span>Ward / Place</span><input v-model.trim="postalDirectory.form.ward" type="text" /></label>
+            <label><span>Zip Code *</span><input v-model.trim="postalDirectory.form.zip" type="text" /></label>
+            <label><span>Status</span><select v-model="postalDirectory.form.status"><option>Active</option><option>Inactive</option></select></label>
+            <p v-if="postalDirectory.error" class="postal-form-error">{{ postalDirectory.error }}</p>
+            <div class="postal-manager-actions">
+              <button v-if="postalDirectory.editId" class="sm-btn danger" type="button" :disabled="postalDirectory.saving" @click="removePostalRecord">Remove</button>
+              <button class="sm-btn" type="button" @click="resetPostalForm">Clear</button>
+              <button class="sm-btn primary" type="submit" :disabled="postalDirectory.saving">{{ postalDirectory.saving ? 'Saving...' : 'Save' }}</button>
+            </div>
+          </form>
+        </div>
+        <footer class="postal-manager-foot"><span>{{ postalCountForIso(postalDirectory.countryIso) }} codes</span><button class="sm-btn primary" type="button" @click="closePostalManager">Done</button></footer>
+      </section>
+    </div>
+
+    <div v-if="postalPasteImport.open" class="overlay show postal-import-overlay">
+      <section class="postal-import-modal" role="dialog" aria-modal="true" aria-label="Import postal codes">
+        <header>IMPORT — {{ postalDirectory.countryIso }}</header>
+        <div class="postal-import-content">
+          <p>Excel columns <b>Group, Unit, Sub-unit, PostalCode</b> — or paste rows directly from a postal-code page.</p>
+          <textarea v-if="!postalPasteImport.preview" v-model="postalPasteImport.text" placeholder="Ho Chi Minh City&#9;District 1&#9;Ben Nghe Ward&#9;700000&#10;Da Nang&#9;Hai Chau&#9;Hai Chau 1 Ward&#9;550000"></textarea>
+          <div v-else class="postal-import-preview">
+            <strong>{{ postalPasteImport.rows.length }} codes will be imported</strong>
+            <span v-if="postalPasteImport.skipped">{{ postalPasteImport.skipped }} lines skipped</span>
+            <table><thead><tr><th>Code</th><th>Where it goes</th></tr></thead><tbody><tr v-for="(row, index) in postalPasteImport.rows.slice(0, 10)" :key="index"><td>{{ row.zip }}</td><td>{{ [row.prov, row.dist, row.ward].filter(Boolean).join(' › ') }}</td></tr></tbody></table>
+          </div>
+          <div class="postal-import-file"><button class="sm-btn" type="button" @click="postalImportFileInput?.click()">↥ Choose CSV / XLSX file</button><input ref="postalImportFileInput" type="file" accept=".csv,.xlsx,.xls" hidden @change="readPostalImportFile" /><span>{{ postalPasteImport.fileName || 'Paste rows, or load a file — duplicates are dropped' }}</span></div>
+          <p v-if="postalPasteImport.error" class="postal-form-error">{{ postalPasteImport.error }}</p>
+        </div>
+        <footer><button class="sm-btn" type="button" :disabled="postalPasteImport.saving" @click="closePostalPasteImport">Cancel</button><button class="sm-btn primary" type="button" :disabled="postalPasteImport.saving" @click="previewOrImportPostal">{{ postalPasteImport.saving ? 'Importing...' : postalPasteImport.preview ? `Import ${postalPasteImport.rows.length}` : 'Preview' }}</button></footer>
+      </section>
+    </div>
+
     <div v-if="postalImportModal.open" class="overlay show" @mousedown.self="closePostalImportModal">
       <section class="modal import-modal">
         <div class="modal-head">
@@ -2134,6 +2251,17 @@
           <button class="prompt-btn primary" type="button" @click="resolvePrompt(promptModal.value)">Add</button>
         </div>
       </div>
+    </div>
+    <div v-if="postalDeleteModal.open" class="overlay show admin-confirm prompt-overlay postal-delete-overlay">
+      <section class="postal-delete-modal" role="alertdialog" aria-modal="true" :aria-label="`Delete ${postalDeleteModal.name}`">
+        <div class="postal-delete-head"><h3>Delete {{ postalDeleteModal.name }}</h3></div>
+        <p>{{ postalDeleteModal.message }}</p>
+        <input ref="postalDeleteInput" v-model.trim="postalDeleteModal.value" type="text" autocomplete="off" placeholder="TYPE DELETE TO CONFIRM" @keydown.enter.prevent="confirmPostalGroupDelete" />
+        <footer>
+          <button class="prompt-btn" type="button" :disabled="postalDeleteModal.busy" @click="closePostalDeleteModal">Cancel</button>
+          <button class="prompt-btn danger" type="button" :disabled="postalDeleteModal.value.toUpperCase() !== 'DELETE' || postalDeleteModal.busy" @click="confirmPostalGroupDelete">{{ postalDeleteModal.busy ? 'Deleting...' : 'Delete' }}</button>
+        </footer>
+      </section>
     </div>
     <div v-if="rolesModal.open" class="overlay show admin-confirm prompt-overlay" @mousedown.self="closeRolesModal">
       <div class="modal confirm-modal prompt-modal roles-modal">
@@ -2689,9 +2817,21 @@ const postalDirectory = reactive({
   saving: false,
   editId: '',
   error: '',
+  search: '',
   expanded: new Set<string>(),
   form: { prov: '', dist: '', ward: '', zip: '', status: 'Active' },
 })
+const postalProvinceInput = ref<HTMLInputElement | null>(null)
+const postalImportFileInput = ref<HTMLInputElement | null>(null)
+type PostalPasteRow = { prov: string, dist: string, ward: string, zip: string }
+const postalPasteImport = reactive({ open: false, text: '', fileName: '', preview: false, saving: false, skipped: 0, error: '', rows: [] as PostalPasteRow[] })
+const postalNewGroup = ref('')
+const postalRenamingGroup = ref('')
+const postalNewRows = reactive<Record<string, { zip: string, name: string }>>({})
+const postalNewUnderId = ref('')
+const postalUnderDraft = reactive({ zip: '', name: '' })
+const postalDeleteInput = ref<HTMLInputElement | null>(null)
+const postalDeleteModal = reactive({ open: false, name: '', message: '', value: '', busy: false, recordIds: [] as string[] })
 const salesFeeReferenceLists: Record<string, { bucket: 'ports' | 'airports' | 'postal', key: string }> = {
   dlPortCode: { bucket: 'ports', key: 'portcode' },
   dlPortName: { bucket: 'ports', key: 'portname' },
@@ -3151,7 +3291,7 @@ const referenceDefaultTabs = [
     ],
   },
   { id: 'airports', label: 'Airports', columns: [salesField('iata', 'Airport Code (IATA)', 150), salesField('airportname', 'Airport Name', 220), salesField('country', 'Country', 160, { kind: 'list' })] },
-  { id: 'countries', label: 'Countries', columns: [salesField('countryname', 'Country Name', 240), salesField('iso2', 'Code (ISO2)', 120), salesField('postalTree', 'Postal Codes', 150, { kind: 'postal-tree', optional: true })] },
+  { id: 'countries', label: 'Countries', columns: [salesField('countryname', 'Country Name', 200), salesField('iso2', 'Code (ISO2)', 120), salesField('postalTree', 'PostalCode', 118, { kind: 'postal-tree', optional: true })] },
   {
     id: 'ex_rate',
     label: 'Ex. Rate',
@@ -3179,14 +3319,24 @@ const isReferenceExRate = computed(() => currentPage.value.kind === 'reference-d
 const isReferenceWarehouses = computed(() => currentPage.value.kind === 'reference-data' && activeReferenceTab.value.id === 'warehouses')
 const isReferenceCountries = computed(() => currentPage.value.kind === 'reference-data' && activeReferenceTab.value.id === 'countries')
 const postalIsoOf = (record: AdminRecord | Record<string, any>) => String(dataOf(record as AdminRecord)?.iso2 || (record as any)?.iso2 || '').trim().toUpperCase()
-const postalCountForIso = (iso: any) => (postalRecordsByCountry[String(iso || '').trim().toUpperCase()] || []).length
+const postalCountForIso = (iso: any) => (postalRecordsByCountry[String(iso || '').trim().toUpperCase()] || []).filter((record) => String(dataOf(record).zip || '').trim()).length
 const postalCountForCountry = (record: AdminRecord) => postalCountForIso(postalIsoOf(record))
 const postalCountryIsOpen = (record: AdminRecord) => postalDirectory.countryRecordId === record.id
+const postalManagerCountryName = computed(() => {
+  const record = records.value.find((item) => item.id === postalDirectory.countryRecordId)
+  return String(record ? dataOf(record).countryname : postalDirectory.countryIso || 'Postal Codes').toUpperCase()
+})
 const postalNodeExpanded = (key: string) => postalDirectory.expanded.has(key)
 const resetPostalForm = () => {
   postalDirectory.editId = ''
   postalDirectory.error = ''
   Object.assign(postalDirectory.form, { prov: '', dist: '', ward: '', zip: '', status: 'Active' })
+}
+const closePostalManager = () => {
+  postalDirectory.countryIso = ''
+  postalDirectory.countryRecordId = ''
+  postalDirectory.search = ''
+  resetPostalForm()
 }
 const loadPostalCountryRecords = async (iso: string, force = false) => {
   const code = String(iso || '').trim().toUpperCase()
@@ -3197,24 +3347,37 @@ const loadPostalCountryRecords = async (iso: string, force = false) => {
 }
 const loadPostalCountryCounts = async () => {
   if (!isReferenceCountries.value) return
-  const codes = records.value.map((record) => postalIsoOf(record)).filter(Boolean)
-  await Promise.all(codes.map((code) => loadPostalCountryRecords(code, true).catch(() => [])))
+  const codes = Array.from(new Set(records.value.map((record) => postalIsoOf(record)).filter(Boolean)))
+  const results = await Promise.all(codes.map(async (code) => {
+    try {
+      const result = await apiFetch(`/records?country=${encodeURIComponent(code)}&page=admin&limit=1000`)
+      return [code, Array.isArray(result?.items) ? result.items : []] as const
+    } catch {
+      return [code, []] as const
+    }
+  }))
+  // Commit all counts in one reactive update so the Countries grid does not
+  // repaint once per country during its first load.
+  const batch: Record<string, AdminRecord[]> = {}
+  results.forEach(([code, items]) => { batch[code] = items })
+  Object.assign(postalRecordsByCountry, batch)
 }
 const togglePostalCountry = async (record: AdminRecord) => {
   if (postalCountryIsOpen(record)) {
-    postalDirectory.countryIso = ''
-    postalDirectory.countryRecordId = ''
-    resetPostalForm()
+    closePostalManager()
     return
   }
   postalDirectory.countryIso = postalIsoOf(record)
   postalDirectory.countryRecordId = record.id
   postalDirectory.loading = true
+  postalDirectory.search = ''
   resetPostalForm()
   try {
     await loadPostalCountryRecords(postalDirectory.countryIso, true)
     postalDirectory.expanded.clear()
     postalTreeAllNodes.value.filter((node) => node.kind !== 'postal').forEach((node) => postalDirectory.expanded.add(node.key))
+    const cardGroups = postalCardGroups.value
+    if (cardGroups.length === 1) postalDirectory.expanded.add(postalGroupKey(cardGroups[0].name))
   } catch (error: any) {
     postalDirectory.error = error?.data?.message || error?.message || 'Could not load postal codes.'
   } finally {
@@ -3285,6 +3448,195 @@ const postalVisibleNodes = computed(() => {
   }
   return visible
 })
+const postalFilteredTreeNodes = computed(() => {
+  const query = postalDirectory.search.trim().toLocaleLowerCase()
+  if (!query) return postalVisibleNodes.value
+  const matchingRecords = (postalRecordsByCountry[postalDirectory.countryIso] || []).filter((record) => {
+    const data = dataOf(record)
+    return [data.prov, data.dist, data.ward, data.placeName, data.zip, data.status].some((value) => String(value || '').toLocaleLowerCase().includes(query))
+  })
+  const keys = new Set<string>()
+  matchingRecords.forEach((record) => {
+    const data = dataOf(record)
+    const provKey = `p:${String(data.prov || 'Unassigned').trim()}`
+    const distKey = `${provKey}|d:${String(data.dist || 'Other areas').trim()}`
+    const wardKey = `${distKey}|w:${String(data.ward || data.placeName || 'Postal area').trim()}`
+    keys.add(provKey); keys.add(distKey); keys.add(wardKey); keys.add(`${wardKey}|z:${record.id}`)
+  })
+  return postalTreeAllNodes.value.filter((node) => keys.has(node.key))
+})
+const postalCardGroups = computed(() => {
+  const query = postalDirectory.search.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  const groups = new Map<string, AdminRecord[]>()
+  ;(postalRecordsByCountry[postalDirectory.countryIso] || []).forEach((record) => {
+    const data = dataOf(record)
+    const name = String(data.prov || 'Unassigned').trim()
+    const haystack = [name, data.dist, data.ward, data.placeName, data.zip].join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    if (query && !haystack.includes(query)) return
+    if (!groups.has(name)) groups.set(name, [])
+    if (String(data.zip || '').trim()) groups.get(name)!.push(record)
+  })
+  const treeOrder = (rows: AdminRecord[]) => {
+    const ids = new Set(rows.map((record) => record.id))
+    const children = new Map<string, AdminRecord[]>()
+    rows.forEach((record) => {
+      const parent = String(dataOf(record).parentId || '')
+      const key = parent && ids.has(parent) ? parent : ''
+      if (!children.has(key)) children.set(key, [])
+      children.get(key)!.push(record)
+    })
+    children.forEach((list) => list.sort((a, b) => String(dataOf(a).zip || '').localeCompare(String(dataOf(b).zip || ''))))
+    const ordered: AdminRecord[] = []
+    const walk = (parent = '') => (children.get(parent) || []).forEach((record) => { ordered.push(record); walk(record.id) })
+    walk()
+    return ordered
+  }
+  const result = Array.from(groups, ([name, rows]) => ({ name, rows: treeOrder(rows) })).sort((a, b) => a.name.localeCompare(b.name))
+  result.forEach(({ name }) => { if (!postalNewRows[name]) postalNewRows[name] = { zip: '', name: '' } })
+  return result
+})
+const postalGroupKey = (name: string) => `card:${name}`
+const postalEventValue = (event: Event) => (event.target as HTMLInputElement)?.value || ''
+const postalRecordDepth = (record: AdminRecord) => Math.max(0, Math.min(2, Number(dataOf(record).level) || 0))
+const postalNewUnderParent = computed(() => (postalRecordsByCountry[postalDirectory.countryIso] || []).find((record) => record.id === postalNewUnderId.value) || null)
+const postalNewUnderDepth = computed(() => postalNewUnderParent.value ? Math.min(2, postalRecordDepth(postalNewUnderParent.value) + 1) : 1)
+const postalUnderInsertAfterId = (rows: AdminRecord[]) => {
+  const parentId = postalNewUnderId.value
+  if (!parentId) return ''
+  const byId = new Map(rows.map((record) => [record.id, record]))
+  const belongsToBranch = (record: AdminRecord) => {
+    let current = String(dataOf(record).parentId || '')
+    while (current) {
+      if (current === parentId) return true
+      const parent = byId.get(current)
+      current = parent ? String(dataOf(parent).parentId || '') : ''
+    }
+    return false
+  }
+  const parentIndex = rows.findIndex((record) => record.id === parentId)
+  if (parentIndex < 0) return ''
+  let last = rows[parentIndex]
+  for (let index = parentIndex + 1; index < rows.length && belongsToBranch(rows[index]); index++) last = rows[index]
+  return last.id
+}
+const postalGroupIsOpen = (name: string) => postalDirectory.search ? true : postalDirectory.expanded.has(postalGroupKey(name))
+const togglePostalGroup = (name: string) => {
+  const key = postalGroupKey(name)
+  if (postalDirectory.expanded.has(key)) postalDirectory.expanded.delete(key)
+  else postalDirectory.expanded.add(key)
+}
+const focusPostalGroup = async () => {
+  await nextTick()
+  postalProvinceInput.value?.focus()
+}
+const addPostalGroup = async () => {
+  const name = postalNewGroup.value.trim().toUpperCase()
+  if (!name) return
+  if (postalCardGroups.value.some((group) => group.name.toUpperCase() === name)) { postalDirectory.error = 'This province / group already exists.'; return }
+  postalDirectory.saving = true
+  try {
+    await apiFetch('/records', { method: 'POST', body: { country: postalDirectory.countryIso, page: 'admin', kind: 'master-admin', data: { prov: name, dist: '', ward: '', placeName: '', zip: '', status: 'Active', source: 'Group' }, sortOrder: (postalRecordsByCountry[postalDirectory.countryIso] || []).length + 1 } })
+    await loadPostalCountryRecords(postalDirectory.countryIso, true)
+    postalDirectory.expanded.add(postalGroupKey(name)); postalNewGroup.value = ''; postalDirectory.error = ''
+  } finally { postalDirectory.saving = false }
+}
+const addPostalInline = async (groupName: string) => {
+  const draft = postalNewRows[groupName]
+  if (!draft?.zip.trim() || !draft?.name.trim()) return
+  postalDirectory.saving = true
+  try {
+    const data = { prov: groupName, dist: '', ward: draft.name.trim().toUpperCase(), placeName: draft.name.trim().toUpperCase(), zip: draft.zip.trim().toUpperCase(), parentId: '', level: 0, status: 'Active', source: 'Manual' }
+    await apiFetch('/records', { method: 'POST', body: { country: postalDirectory.countryIso, page: 'admin', kind: 'master-admin', data, sortOrder: (postalRecordsByCountry[postalDirectory.countryIso] || []).length + 1 } })
+    draft.zip = ''; draft.name = ''
+    await loadPostalCountryRecords(postalDirectory.countryIso, true)
+    await nextTick()
+    Array.from(document.querySelectorAll<HTMLInputElement>('[data-postal-new-code]')).find((input) => input.dataset.postalNewCode === groupName)?.focus()
+  } finally { postalDirectory.saving = false }
+}
+const startPostalUnder = (record: AdminRecord) => {
+  postalNewUnderId.value = postalNewUnderId.value === record.id ? '' : record.id
+  postalUnderDraft.zip = ''
+  postalUnderDraft.name = ''
+}
+const addPostalUnder = async (parent: AdminRecord) => {
+  if (!postalUnderDraft.zip.trim() || !postalUnderDraft.name.trim()) return
+  postalDirectory.saving = true
+  try {
+    const parentData = dataOf(parent)
+    const name = postalUnderDraft.name.trim().toUpperCase()
+    const data = { prov: parentData.prov || '', dist: parentData.dist || '', ward: name, placeName: name, zip: postalUnderDraft.zip.trim().toUpperCase(), parentId: parent.id, level: Math.min(2, postalRecordDepth(parent) + 1), status: 'Active', source: 'Manual' }
+    await apiFetch('/records', { method: 'POST', body: { country: postalDirectory.countryIso, page: 'admin', kind: 'master-admin', data, sortOrder: (postalRecordsByCountry[postalDirectory.countryIso] || []).length + 1 } })
+    postalUnderDraft.zip = ''; postalUnderDraft.name = ''
+    await loadPostalCountryRecords(postalDirectory.countryIso, true)
+    await nextTick()
+    Array.from(document.querySelectorAll<HTMLInputElement>('[data-postal-under-code]')).find((input) => input.dataset.postalUnderCode === parent.id)?.focus()
+  } finally { postalDirectory.saving = false }
+}
+const addPostalUnderById = async () => {
+  if (postalNewUnderParent.value) await addPostalUnder(postalNewUnderParent.value)
+}
+const updatePostalInline = async (record: AdminRecord, key: 'zip' | 'ward', value: string) => {
+  const current = dataOf(record)
+  const normalized = value.trim().toUpperCase()
+  const data = { ...current, [key]: normalized, ...(key === 'ward' ? { placeName: normalized } : {}) }
+  await apiFetch(`/records/${record.id}`, { method: 'PATCH', body: { country: record.country, page: record.page, kind: record.kind, data, sortOrder: record.sortOrder || 0 } })
+  await loadPostalCountryRecords(postalDirectory.countryIso, true)
+}
+const removePostalInline = async (record: AdminRecord) => {
+  const all = postalRecordsByCountry[postalDirectory.countryIso] || []
+  const descendants: AdminRecord[] = []
+  const collect = (id: string) => all.filter((item) => String(dataOf(item).parentId || '') === id).forEach((item) => { descendants.push(item); collect(item.id) })
+  collect(record.id)
+  for (const child of descendants.reverse()) await apiFetch(`/records/${child.id}`, { method: 'DELETE' })
+  await apiFetch(`/records/${record.id}`, { method: 'DELETE' })
+  await loadPostalCountryRecords(postalDirectory.countryIso, true)
+}
+const startPostalRename = async (name: string) => {
+  postalRenamingGroup.value = name
+  await nextTick()
+  const input = document.querySelector<HTMLInputElement>('.postal-group-rename')
+  input?.focus()
+  input?.select()
+}
+const renamePostalGroup = async (oldName: string, value: string) => {
+  if (postalRenamingGroup.value !== oldName) return
+  const name = value.trim().toUpperCase()
+  postalRenamingGroup.value = ''
+  if (!name || name === oldName) return
+  const targets = (postalRecordsByCountry[postalDirectory.countryIso] || []).filter((record) => String(dataOf(record).prov || '') === oldName)
+  for (const record of targets) await updatePostalInlineGroup(record, name)
+  await loadPostalCountryRecords(postalDirectory.countryIso, true)
+  postalDirectory.expanded.add(postalGroupKey(name))
+}
+const updatePostalInlineGroup = async (record: AdminRecord, prov: string) => apiFetch(`/records/${record.id}`, { method: 'PATCH', body: { country: record.country, page: record.page, kind: record.kind, data: { ...dataOf(record), prov }, sortOrder: record.sortOrder || 0 } })
+const removePostalGroup = async (name: string) => {
+  const targets = (postalRecordsByCountry[postalDirectory.countryIso] || []).filter((record) => String(dataOf(record).prov || '') === name)
+  const codes = targets.filter((record) => String(dataOf(record).zip || '').trim()).length
+  const units = new Set(targets.map((record) => String(dataOf(record).ward || dataOf(record).dist || dataOf(record).placeName || '').trim()).filter(Boolean)).size
+  Object.assign(postalDeleteModal, {
+    open: true,
+    name,
+    message: `This removes ${name}, ${units} unit${units === 1 ? '' : 's'} and ${codes} postal code${codes === 1 ? '' : 's'}. This cannot be undone.`,
+    value: '',
+    busy: false,
+    recordIds: targets.map((record) => record.id),
+  })
+  await nextTick()
+  postalDeleteInput.value?.focus()
+}
+const closePostalDeleteModal = () => Object.assign(postalDeleteModal, { open: false, value: '', busy: false, recordIds: [] })
+const confirmPostalGroupDelete = async () => {
+  if (postalDeleteModal.value.toUpperCase() !== 'DELETE' || postalDeleteModal.busy) return
+  postalDeleteModal.busy = true
+  try {
+    for (const id of postalDeleteModal.recordIds) await apiFetch(`/records/${id}`, { method: 'DELETE' })
+    await loadPostalCountryRecords(postalDirectory.countryIso, true)
+    closePostalDeleteModal()
+  } catch (error: any) {
+    postalDirectory.error = error?.data?.message || error?.message || 'Could not delete this group.'
+    postalDeleteModal.busy = false
+  }
+}
 const selectPostalNode = (node: PostalTreeNode) => {
   if (node.kind === 'postal') { editPostalNode(node); return }
   if (postalDirectory.expanded.has(node.key)) postalDirectory.expanded.delete(node.key)
@@ -3346,6 +3698,120 @@ const openPostalImportForCountry = async (record: AdminRecord) => {
   postalImportModal.error = ''
   postalImportModal.country = postalIsoOf(record)
   await loadPostalPreview()
+}
+const openPostalImportForActiveCountry = async () => {
+  Object.assign(postalPasteImport, { open: true, text: '', fileName: '', preview: false, saving: false, skipped: 0, error: '', rows: [] })
+}
+const closePostalPasteImport = () => Object.assign(postalPasteImport, { open: false, preview: false, saving: false, error: '', rows: [] })
+const parsePostalPasteRows = (text: string) => {
+  const rows: PostalPasteRow[] = []
+  let skipped = 0
+  const existing = new Set((postalRecordsByCountry[postalDirectory.countryIso] || []).map((record) => String(dataOf(record).zip || '').trim().toUpperCase()))
+  const seen = new Set<string>()
+  String(text || '').split(/\r?\n/).forEach((raw) => {
+    const line = raw.trim()
+    if (!line || /^(province|state|group|postal|zip)/i.test(line)) return
+    const cells = (line.includes('\t') ? line.split('\t') : line.split(',')).map((cell) => cell.replace(/^"|"$/g, '').trim()).filter(Boolean)
+    let codeIndex = -1
+    for (let index = cells.length - 1; index >= 0; index--) {
+      if (/^\d{4,6}(?:\s+\d{4,6})*$/.test(cells[index]) || (/^[A-Za-z0-9 -]{3,16}$/.test(cells[index]) && /\d/.test(cells[index]) && index === cells.length - 1)) { codeIndex = index; break }
+    }
+    if (codeIndex < 0) { skipped++; return }
+    const names = cells.filter((_, index) => index !== codeIndex)
+    if (!names.length) { skipped++; return }
+    const codes = cells[codeIndex].toUpperCase().split(/\s+/).filter(Boolean)
+    codes.forEach((zip) => {
+      if (existing.has(zip) || seen.has(zip)) { skipped++; return }
+      seen.add(zip)
+      rows.push({ prov: names[0] || '', dist: names[1] || '', ward: names[2] || '', zip })
+    })
+  })
+  return { rows, skipped }
+}
+const readPostalImportFile = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  postalPasteImport.fileName = file.name
+  postalPasteImport.preview = false
+  postalPasteImport.error = ''
+  try {
+    if (/\.xlsx?$/i.test(file.name)) {
+      const XLSX = await import('xlsx')
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' })
+      const values = XLSX.utils.sheet_to_json<any[]>(workbook.Sheets[workbook.SheetNames[0]], { header: 1, defval: '' })
+      postalPasteImport.text = values.map((row) => row.join('\t')).join('\n')
+    } else postalPasteImport.text = (await file.text()).replace(/^\uFEFF/, '')
+  } catch (error: any) {
+    postalPasteImport.error = error?.message || 'Could not read that file.'
+  } finally { input.value = '' }
+}
+const previewOrImportPostal = async () => {
+  if (!postalPasteImport.preview) {
+    const parsed = parsePostalPasteRows(postalPasteImport.text)
+    postalPasteImport.rows = parsed.rows
+    postalPasteImport.skipped = parsed.skipped
+    postalPasteImport.error = parsed.rows.length ? '' : 'No valid postal-code rows found.'
+    postalPasteImport.preview = parsed.rows.length > 0
+    return
+  }
+  if (!postalPasteImport.rows.length) return
+  postalPasteImport.saving = true
+  postalPasteImport.error = ''
+  try {
+    const existingRows = [...(postalRecordsByCountry[postalDirectory.countryIso] || [])]
+    const displayName = (record: AdminRecord) => String(dataOf(record).ward || dataOf(record).dist || dataOf(record).placeName || '').trim().toUpperCase()
+    const parentCache = new Map<string, AdminRecord>()
+    existingRows.filter((record) => postalRecordDepth(record) === 0).forEach((record) => parentCache.set(`${String(dataOf(record).prov || '').toUpperCase()}|${displayName(record)}`, record))
+    let sortOrder = existingRows.length
+    for (const row of postalPasteImport.rows) {
+      const prov = row.prov.trim().toUpperCase()
+      const unit = row.dist.trim().toUpperCase()
+      const subUnit = row.ward.trim().toUpperCase()
+      let parentId = ''
+      if (subUnit && unit) {
+        const cacheKey = `${prov}|${unit}`
+        let parent = parentCache.get(cacheKey)
+        if (!parent) {
+          const parentData = { prov, dist: '', ward: unit, placeName: unit, zip: '', parentId: '', level: 0, status: 'Active', source: 'Import' }
+          parent = await apiFetch('/records', { method: 'POST', body: { country: postalDirectory.countryIso, page: 'admin', kind: 'master-admin', data: parentData, sortOrder: ++sortOrder } })
+          parentCache.set(cacheKey, parent)
+        }
+        parentId = parent.id
+      }
+      const name = subUnit || unit || prov
+      const data = { prov, dist: '', ward: name, placeName: name, zip: row.zip, parentId, level: parentId ? 1 : 0, status: 'Active', source: 'Import' }
+      await apiFetch('/records', { method: 'POST', body: { country: postalDirectory.countryIso, page: 'admin', kind: 'master-admin', data, sortOrder: ++sortOrder } })
+    }
+    await loadPostalCountryRecords(postalDirectory.countryIso, true)
+    postalDirectory.expanded.clear()
+    postalTreeAllNodes.value.filter((node) => node.kind !== 'postal').forEach((node) => postalDirectory.expanded.add(node.key))
+    closePostalPasteImport()
+  } catch (error: any) {
+    postalPasteImport.error = error?.data?.message || error?.message || 'Could not import postal codes.'
+  } finally { postalPasteImport.saving = false }
+}
+const exportPostalCountry = async () => {
+  const rows = postalRecordsByCountry[postalDirectory.countryIso] || []
+  if (!rows.length) return
+  const quote = (value: any) => `"${String(value ?? '').replace(/"/g, '""')}"`
+  const byId = new Map(rows.map((record) => [record.id, record]))
+  const displayName = (record: AdminRecord) => String(dataOf(record).ward || dataOf(record).dist || dataOf(record).placeName || '')
+  const lines = ['"Group","Unit","Sub-unit","PostalCode"']
+  rows.filter((record) => String(dataOf(record).zip || '').trim()).forEach((record) => {
+    const data = dataOf(record)
+    const parent = data.parentId ? byId.get(String(data.parentId)) : null
+    const unit = parent ? displayName(parent) : displayName(record)
+    const subUnit = parent ? displayName(record) : ''
+    lines.push([data.prov, unit, subUnit, data.zip].map(quote).join(','))
+  })
+  const blob = new Blob([`\uFEFF${lines.join('\n')}`], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `postalcode_${postalDirectory.countryIso}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
 }
 const exRateLiveUrl = 'https://www.vietcombank.com.vn/en-us/Personal/Foreign-Exchange-Rate'
 const exRateToday = computed(() => {
@@ -9235,11 +9701,32 @@ textarea.haulage-textarea{min-height:30px;height:30px;resize:none;overflow:hidde
 @media(max-width:700px){.adm :deep(.ops-ms-tab){min-height:38px}.adm :deep(.ops-search-group){height:36px}.adm :deep(.ops-filter-select),.adm :deep(.ops-search){height:28px}.adm :deep(.ops-status-select){width:96px;height:32px}.adm :deep(.ops-ms-table tbody td){height:38px}}
 
 /* Reference Data / Countries postal-code hierarchy */
-.postal-open-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:86px;height:26px;padding:0 10px;border:1px solid #9bd6b4;border-radius:7px;background:#effaf4;color:#087d4b;font:inherit;font-weight:750;cursor:pointer}.postal-open-btn:hover{border-color:#22a155;background:#e3f6eb}.postal-open-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.2;transition:transform .15s}.postal-open-btn svg.open{transform:rotate(180deg)}
+.postal-open-btn{display:inline-flex;align-items:center;justify-content:center;min-width:74px;height:27px;padding:0 14px;border:1px solid #b9dcca;border-radius:7px;background:#fff;color:#60736a;font:inherit;font-weight:600;cursor:pointer}.postal-open-btn:hover{border-color:#159654;background:#f2faf5;color:#087d4b}.postal-open-btn.has{border-color:#a9d9bd;background:#eff9f3;color:#155d39}.postal-open-btn:disabled{opacity:.45;cursor:not-allowed}
+.postal-manager-overlay{z-index:115!important;background:rgba(25,44,34,.48)!important}.postal-manager-modal{position:relative;width:min(760px,94vw);max-height:90vh;display:flex;flex-direction:column;border-radius:12px;background:#fff;box-shadow:0 22px 60px rgba(0,0,0,.3);overflow:hidden}.postal-manager-close{position:absolute;z-index:2;right:12px;top:12px;width:28px;height:28px;border:0;border-radius:50%;background:#eef8f2;color:#6a8276;font-size:21px;line-height:1;cursor:pointer}.postal-manager-close:hover{background:#dff2e7;color:#087d4b}.postal-manager-head{display:flex;flex-direction:column;gap:3px;padding:18px 52px 11px 18px}.postal-manager-head strong{color:#164c30;font-size:15px}.postal-manager-head span{color:#75857d;font-size:11.5px}.postal-manager-tools{display:flex;align-items:center;gap:8px;padding:0 18px 11px}.postal-manager-search{flex:1;min-width:100px;height:32px;border:1px solid #c8d9cf;border-radius:8px;padding:0 11px;color:#27372f;font:inherit;outline:0}.postal-manager-search:focus{border-color:#159654;box-shadow:0 0 0 2px rgba(21,150,84,.1)}.postal-manager-body{display:grid;grid-template-columns:minmax(420px,1.4fr) minmax(275px,.8fr);min-height:235px;max-height:59vh;border-top:1px solid #e3e9e5;background:#f7f8f8;overflow:auto}.postal-manager-list{padding:8px 10px;border-right:1px solid #e3e9e5;overflow:auto}.postal-manager-list .postal-tree-node{grid-template-columns:minmax(210px,1fr) 88px 68px 42px;border:1px solid #e3e8e5;border-bottom:0;background:#fff}.postal-manager-list .postal-tree-node:first-of-type{border-radius:8px 8px 0 0}.postal-manager-list .postal-tree-node:last-of-type{border-bottom:1px solid #e3e8e5;border-radius:0 0 8px 8px}.postal-manager-list .postal-tree-node.group{background:#fff}.postal-manager-list .postal-tree-node.group:hover,.postal-manager-list .postal-tree-node:hover{background:#f2f7f4}.postal-manager-list .postal-chevron{font-size:16px;transform:none}.postal-manager-list .postal-chevron.open{transform:rotate(90deg)}.postal-manager-empty{padding:42px 18px;color:#71827a;font-size:12px;line-height:1.8;text-align:center}.postal-manager-form{display:flex;flex-direction:column;gap:9px;padding:14px;background:#fff}.postal-manager-form h3{margin:0 0 5px;color:#15532f;font-size:14px;font-weight:600;text-align:center}.postal-manager-form label{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:8px;color:#405249;font-size:11px;font-weight:700}.postal-manager-form input,.postal-manager-form select{width:100%;height:31px;box-sizing:border-box;border:1px solid #cad9d0;border-radius:6px;padding:5px 8px;background:#fff;color:#27372f;font:inherit;outline:0}.postal-manager-form input:focus,.postal-manager-form select:focus{border-color:#159654;box-shadow:0 0 0 2px rgba(21,150,84,.1)}.postal-manager-actions{display:flex;justify-content:flex-end;gap:7px;margin-top:auto;padding-top:8px;border-top:1px solid #edf1ee}.postal-manager-actions .danger{margin-right:auto}.postal-manager-foot{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid #e3e9e5;background:#f7f8f8}.postal-manager-foot span{color:#667970;font-size:11.5px}@media(max-width:760px){.postal-manager-body{grid-template-columns:1fr}.postal-manager-list{border-right:0;border-bottom:1px solid #e3e9e5}.postal-manager-tools{flex-wrap:wrap}.postal-manager-search{flex-basis:100%}}
+.postal-import-overlay{z-index:125!important;background:rgba(25,44,34,.58)!important}.postal-import-modal{width:min(760px,92vw);border-radius:12px;background:#fff;box-shadow:0 22px 60px rgba(0,0,0,.34);overflow:hidden}.postal-import-modal>header{padding:18px 18px 12px;color:#164c30;font-size:15px;font-weight:800}.postal-import-content{padding:0 18px 8px}.postal-import-content>p{margin:0 0 8px;color:#687a71;font-size:11.5px}.postal-import-content textarea{width:100%;min-height:200px;box-sizing:border-box;resize:vertical;border:1px solid #1aaa5d;border-radius:9px;padding:11px 12px;font:12px/1.6 ui-monospace,Menlo,Consolas,monospace;outline:0}.postal-import-file{display:flex;align-items:center;gap:10px;padding:10px 0}.postal-import-file span{color:#71827a;font-size:11.5px}.postal-import-preview{max-height:330px;overflow:auto;border:1px solid #d7e4dc;border-radius:9px;padding:12px;background:#f7faf8}.postal-import-preview>strong,.postal-import-preview>span{display:block;margin-bottom:6px;color:#15532f}.postal-import-preview table{width:100%;border-collapse:collapse;font-size:11.5px}.postal-import-preview th,.postal-import-preview td{padding:6px;border-bottom:1px solid #dde6e0;text-align:left}.postal-import-modal>footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 15px;border-top:1px solid #dce7e0;background:#eef9f3}
+.postal-manager-modal{width:min(600px,94vw)!important}.postal-card-list{flex:1;max-height:58vh;overflow:auto;padding:8px 10px;border-top:1px solid #e8ecea;border-bottom:1px solid #e8ecea;background:#f7f8f8}.postal-group-card{margin-bottom:8px;overflow:hidden;border:1px solid #e1e7e3;border-radius:9px;background:#fff}.postal-group-card>header{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 10px;border-left:3px solid transparent;cursor:pointer}.postal-group-card>header:hover{background:#f6f8f7}.postal-group-card>header.open{border-left-color:#0a9952;border-bottom:1px solid #edf1ee}.postal-group-arrow{width:12px;color:#9baaa2;font-size:9px;transition:transform .12s}.postal-group-card>header.open .postal-group-arrow{transform:rotate(90deg);color:#0a9952}.postal-group-card>header strong{flex:1;overflow:hidden;color:#26352e;font-size:13px;text-overflow:ellipsis;white-space:nowrap}.postal-group-count{padding:2px 9px;border-radius:20px;background:#eef1ef;color:#6b7c72;font-size:11px;font-weight:700}.postal-group-card>header button,.postal-inline-row button{width:24px;height:24px;border:0;border-radius:5px;background:transparent;color:#b3c1b9;cursor:pointer}.postal-group-card>header button:hover,.postal-inline-row button:hover{background:#fdecea;color:#c0392b}.postal-group-rename{flex:1;min-width:0;border:1px solid #0a9952;border-radius:6px;padding:4px 6px;color:#26352e;font:700 13px inherit;outline:0}.postal-group-body{padding:5px 8px 8px}.postal-inline-row{display:grid;grid-template-columns:96px minmax(0,1fr) 26px;align-items:center;gap:7px;min-height:34px}.postal-inline-row:hover{border-radius:6px;background:#f7f8f8}.postal-inline-row input{width:100%;height:29px;box-sizing:border-box;border:1px solid transparent;border-radius:6px;background:transparent;padding:4px 8px;color:#27372f;font:12.5px inherit;outline:0}.postal-inline-row input:hover{border-color:#dfe5e1}.postal-inline-row input:focus{border-color:#0a9952;background:#fff}.postal-inline-row .postal-code-input{color:#155d39;font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:650}.postal-inline-row.new input,.postal-new-group{border-style:dashed;border-color:#b9dfc8}.postal-new-group{width:100%;height:36px;box-sizing:border-box;border-width:1px;border-radius:8px;background:transparent;padding:7px 12px;color:#26352e;font:12.5px inherit;outline:0}.postal-new-group:focus{border-style:solid;border-color:#0a9952;background:#fff}.postal-card-list>.postal-form-error{margin:7px 3px 0}.postal-manager-tools:not(:has(.postal-manager-search)){justify-content:flex-start}.postal-manager-head{padding-bottom:9px}.postal-manager-foot{background:#f7f8f8}
 .postal-tree-host>td{padding:0!important;border-bottom:1px solid #9bd6b4!important;background:#f9fcfa!important}.postal-tree-panel{margin:8px 12px 12px;border:1px solid #b9dfc8;border-radius:10px;background:#fff;box-shadow:0 4px 16px rgba(20,90,52,.08);overflow:hidden}.postal-tree-toolbar{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #dcebe2;background:#f1faf5}.postal-tree-toolbar>div{display:flex;flex-direction:column;margin-right:auto;text-align:left}.postal-tree-toolbar strong{color:#15532f;font-size:13px}.postal-tree-toolbar span{color:#698076;font-size:11px}
 .postal-tree-layout{display:grid;grid-template-columns:minmax(520px,1.35fr) minmax(300px,.65fr);min-height:250px}.postal-tree-list{border-right:1px solid #dcebe2;overflow:auto}.postal-tree-head,.postal-tree-node{display:grid;grid-template-columns:minmax(260px,1fr) 110px 86px 58px;align-items:center}.postal-tree-head{min-height:34px;border-bottom:1px solid #cddfd4;background:#edf5f0;color:#53685e;font-size:11px;font-weight:800;text-transform:uppercase}.postal-tree-head>span,.postal-tree-node>span{padding:6px 9px;text-align:left}.postal-tree-node{min-height:33px;border-bottom:1px solid #edf3ef;color:#33443b;font-size:12px;cursor:pointer}.postal-tree-node:hover,.postal-tree-node.selected{background:#eef9f2}.postal-tree-node.group{background:#fbfdfc;color:#15532f}.postal-tree-node.group:hover{background:#eef9f2}.postal-node-name{display:flex;align-items:center;gap:7px}.postal-node-name b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.postal-chevron{display:inline-block;width:12px;color:#087d4b;font-style:normal;transition:transform .15s}.postal-chevron.open{transform:rotate(90deg)}.postal-pin{width:12px;color:#e58b08;font-size:9px;font-style:normal}.postal-tree-node em{display:inline-flex;padding:2px 7px;border-radius:10px;background:#e5f7ed;color:#087d4b;font-size:10px;font-style:normal;font-weight:750}.postal-tree-node em.inactive{background:#f1f2f2;color:#7f8c86}.postal-edit-mini{border:0;background:transparent;color:#087d4b;font-size:11px;font-weight:750;cursor:pointer}.postal-edit-mini:hover{text-decoration:underline}.postal-tree-empty{padding:32px;color:#73847c;text-align:center;font-size:12px}
 .postal-tree-form{display:flex;flex-direction:column;gap:9px;padding:14px}.postal-tree-form h3{margin:0 0 3px;color:#15532f;font-size:14px}.postal-tree-form label{display:grid;grid-template-columns:118px 1fr;align-items:center;gap:8px;color:#475a50;font-size:11px;font-weight:700}.postal-tree-form input,.postal-tree-form select{width:100%;height:31px;box-sizing:border-box;border:1px solid #cbd9d1;border-radius:6px;background:#fff;padding:5px 8px;color:#27372f;font:inherit;outline:0}.postal-tree-form input:focus,.postal-tree-form select:focus{border-color:#22a155;box-shadow:0 0 0 2px rgba(34,161,85,.12)}.postal-form-error{margin:0;color:#c0392b;font-size:11px}.postal-form-actions{display:grid;grid-template-columns:auto 1fr auto auto;gap:7px;margin-top:auto;padding-top:8px;border-top:1px solid #edf3ef}
 @media(max-width:1000px){.postal-tree-layout{grid-template-columns:1fr}.postal-tree-list{border-right:0;border-bottom:1px solid #dcebe2}.postal-tree-toolbar{flex-wrap:wrap}}
+.postal-manager-overlay{align-items:center!important;justify-content:center!important;padding:16px!important;overflow:hidden!important}
+.postal-manager-overlay .postal-manager-modal{max-height:calc(100vh - 32px)!important;margin:0!important}
+/* Keep the Countries grid geometry stable while postal counts are committed. */
+.sm-kind-reference-data .postal-open-btn{width:86px;min-width:86px;max-width:86px;box-sizing:border-box}
+.sm-tablewrap{position:relative}
+.sm-modern-loading{position:absolute;z-index:40;inset:0;display:flex;align-items:flex-start;justify-content:center;min-height:260px;padding-top:68px;box-sizing:border-box;background:linear-gradient(180deg,rgba(248,252,249,.94),rgba(255,255,255,.88));backdrop-filter:blur(2px);cursor:wait}
+.sm-loading-card{display:flex;min-width:178px;flex-direction:column;align-items:center;padding:23px 28px 20px;border:1px solid rgba(24,150,80,.14);border-radius:16px;background:rgba(255,255,255,.95);box-shadow:0 16px 38px rgba(22,74,45,.13);color:#164c30}
+.sm-loading-mark{position:relative;width:48px;height:48px;margin-bottom:11px;display:grid;place-items:center}.sm-loading-mark span{position:relative;z-index:2;display:grid;width:35px;height:35px;place-items:center;border-radius:10px;background:linear-gradient(145deg,#26c66d,#07904d);color:#fff;font-size:16px;font-weight:850;box-shadow:0 6px 14px rgba(9,145,77,.22)}.sm-loading-mark i{position:absolute;inset:0;border:2px solid #d7f1e2;border-top-color:#0ba85a;border-radius:50%;animation:sm-loading-spin .8s linear infinite}
+.sm-loading-card strong{font-size:13px;letter-spacing:.45px}.sm-loading-card small{margin-top:3px;color:#73847c;font-size:11px}.sm-loading-dots{display:flex;gap:4px;margin-top:12px}.sm-loading-dots i{width:5px;height:5px;border-radius:50%;background:#18ad60;animation:sm-loading-pulse 1s ease-in-out infinite}.sm-loading-dots i:nth-child(2){animation-delay:.14s}.sm-loading-dots i:nth-child(3){animation-delay:.28s}
+.sm-loading-fade-enter-active,.sm-loading-fade-leave-active{transition:opacity .18s ease}.sm-loading-fade-enter-from,.sm-loading-fade-leave-to{opacity:0}@keyframes sm-loading-spin{to{transform:rotate(360deg)}}@keyframes sm-loading-pulse{0%,80%,100%{opacity:.28;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+.postal-import-overlay{align-items:center!important;justify-content:center!important;padding:16px!important;overflow:hidden!important}.postal-import-overlay .postal-import-modal{max-height:calc(100vh - 32px);margin:0!important;overflow:auto}
+.postal-inline-row{grid-template-columns:96px minmax(0,1fr) 26px 26px!important}.postal-inline-row.nested{position:relative}.postal-inline-row.nested:before{content:"";position:absolute;left:-10px;top:-5px;bottom:-5px;border-left:1px dashed #b9dfc8}.postal-inline-row .postal-add-under{color:#28b86b;font-size:15px;font-weight:700}.postal-inline-row .postal-add-under:hover{background:#eaf8f0;color:#087d4b}
+.postal-group-card>header .postal-group-edit,.postal-group-card>header .postal-group-delete{display:inline-grid;flex:0 0 24px;width:24px;height:24px;margin:0;padding:0;place-items:center;border:0;border-radius:5px;background:transparent;font-family:Arial,sans-serif;font-size:13px;font-weight:400;line-height:1;box-shadow:none;transition:background .12s,color .12s}.postal-group-card>header .postal-group-edit{color:#b8dccc}.postal-group-card>header .postal-group-delete{color:#bdd0c6;font-size:16px}.postal-group-card>header .postal-group-edit:hover{background:#eaf8f0;color:#159654}.postal-group-card>header .postal-group-edit.active{background:#f9dfd9;color:#17643d}.postal-group-card>header .postal-group-delete:hover{background:#fdecea;color:#c0392b}.postal-group-rename{height:28px;box-sizing:border-box;font-family:inherit!important;font-size:13px!important;font-weight:700!important;line-height:1.2}.postal-group-rename::selection{background:#2f73d9;color:#fff}
+.postal-delete-overlay{z-index:135!important;align-items:center!important;justify-content:center!important}.postal-delete-modal{width:min(390px,calc(100vw - 32px));overflow:hidden;border-radius:12px;background:#fff;box-shadow:0 18px 50px rgba(0,0,0,.3)}.postal-delete-head{padding:17px 18px 6px}.postal-delete-head h3{margin:0;color:#164c30;font-size:15px;font-weight:800}.postal-delete-modal>p{margin:0;padding:4px 18px 10px;color:#667970;font-size:13px;line-height:1.55}.postal-delete-modal>input{display:block;width:calc(100% - 36px);height:36px;margin:0 18px 12px;box-sizing:border-box;border:1px solid #b9dfc8;border-radius:8px;padding:8px 11px;color:#26352e;font:13px inherit;outline:0;text-transform:uppercase}.postal-delete-modal>input:focus{border-color:#1aaa5d;box-shadow:inset 0 0 0 1px #1aaa5d}.postal-delete-modal>footer{display:flex;justify-content:flex-end;gap:9px;padding:12px 16px;border-top:1px solid #c9e7d5;background:#eef9f3}.postal-delete-modal .prompt-btn{min-width:66px;justify-content:center}.postal-delete-modal .prompt-btn.danger{border-color:#efc8c2;background:#fff;color:#d14a3d}.postal-delete-modal .prompt-btn.danger:not(:disabled):hover{background:#fdecea}.postal-delete-modal .prompt-btn.danger:disabled{opacity:.42;color:#d99c94;cursor:not-allowed}
+.postal-delete-modal footer .prompt-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:0;height:30px;box-sizing:border-box;margin:0;padding:7px 13px;border:1px solid #c4e6d1;border-radius:8px;background:#fff;color:#15532f;font-family:inherit;font-size:12.5px;font-weight:650;line-height:1;cursor:pointer;box-shadow:none;transition:background .12s,border-color .12s,color .12s,opacity .12s}.postal-delete-modal footer .prompt-btn:hover:not(:disabled){background:#eef9f1}.postal-delete-modal footer .prompt-btn.danger{border-color:#e7b9b3;background:#fff;color:#c0392b}.postal-delete-modal footer .prompt-btn.danger:hover:not(:disabled){border-color:#e7b9b3;background:#fdecea;color:#c0392b}.postal-delete-modal footer .prompt-btn:disabled{opacity:.45;cursor:not-allowed}.postal-delete-modal footer .prompt-btn.danger:disabled{border-color:#e7b9b3;background:#fff;color:#c0392b;opacity:.45}
+.postal-group-body .postal-inline-row{grid-template-columns:96px minmax(0,1fr) 18px 18px!important;column-gap:5px}.postal-group-body .postal-inline-row>button{width:18px;height:18px;padding:0;border-radius:4px;font-size:12px;line-height:18px}.postal-group-body .postal-inline-row>.postal-add-under{font-size:13px}.postal-group-body .postal-inline-row>button:hover{background:transparent}.postal-group-body .postal-inline-row>.postal-add-under:hover{color:#087d4b}.postal-group-body .postal-inline-row>button:not(.postal-add-under):hover{color:#c0392b}
+.postal-group-body .postal-inline-row.subunit{position:relative;width:calc(100% - 20px)}.postal-group-body .postal-inline-row.subunit:before{content:"";position:absolute;left:-10px;top:-5px;bottom:-5px;border-left:1px dashed #b9dfc8;pointer-events:none}.postal-group-body .postal-inline-row.subunit:first-child:before{top:50%}
+.postal-group-body .postal-inline-row{grid-template-columns:96px minmax(0,1fr) 22px 22px!important;column-gap:4px}.postal-group-body .postal-inline-row>button{display:grid;width:22px;height:22px;padding:0;place-items:center;border:0;border-radius:5px;background:transparent;line-height:1;transition:color .12s,background .12s}.postal-group-body .postal-inline-row>.postal-add-under{color:#b4e4c9;font-size:16px;font-weight:700}.postal-group-body .postal-inline-row>button:not(.postal-add-under){color:#c5ddd1;font-size:17px;font-weight:400}.postal-group-body .postal-inline-row>.postal-add-under:hover{background:#edf9f2;color:#08a957}.postal-group-body .postal-inline-row>button:not(.postal-add-under):hover{background:#fdeeed;color:#c43d32}
 </style>
 
 

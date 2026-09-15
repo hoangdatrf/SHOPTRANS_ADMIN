@@ -788,7 +788,7 @@
       </template>
       <button v-else class="ddfoot ddedit" type="button" @click="dropdownPopup.mode = 'edit'">Edit</button>
     </div>
-    <div v-if="datePopup.open" class="datepop on" :style="{ left: `${datePopup.left}px`, top: `${datePopup.top}px` }">
+    <div v-if="datePopup.open" class="datepop on" :class="{ 'modal-datepop': !!datePopup.cutoffField || !!nativePickerInput }" :style="{ left: `${datePopup.left}px`, top: `${datePopup.top}px` }">
       <div class="dp-head">
         <button type="button" @click="shiftDateMonth(-1)">‹</button>
         <strong>{{ datePopupMonthLabel }}</strong>
@@ -848,6 +848,20 @@
           <button type="button" class="wsmodal-btn" :class="!confirmModal.title ? 'solid-danger' : (confirmModal.tone === 'danger' || confirmModal.tone === 'remove' ? 'danger' : 'primary')" @click="resolveConfirm(true)">{{ confirmModal.okText }}</button>
         </div>
       </div>
+    </div>
+    <div v-if="cutoffTimePopup.open" class="cutoff-timepop" :style="{ left: `${cutoffTimePopup.left}px`, top: `${cutoffTimePopup.top}px` }" role="dialog" aria-label="Select cutoff time">
+      <div class="ctp-head"><strong>Select time</strong><span>24-hour</span></div>
+      <div class="ctp-labels"><span>Hour</span><span>Minute</span></div>
+      <div class="ctp-columns">
+        <div class="ctp-list"><button v-for="hour in cutoffHours" :key="`ctp-h-${hour}`" type="button" :class="{ selected: cutoffTimePopup.hour === hour }" @click="cutoffTimePopup.hour = hour">{{ hour }}</button></div>
+        <div class="ctp-list"><button v-for="minute in cutoffMinutes" :key="`ctp-m-${minute}`" type="button" :class="{ selected: cutoffTimePopup.minute === minute }" @click="cutoffTimePopup.minute = minute">{{ minute }}</button></div>
+      </div>
+      <div class="ctp-actions"><button type="button" @click="clearCutoffTime">Clear</button><button type="button" @click="setCutoffTimeNow">Now</button><button class="primary" type="button" @click="applyNativeOrCutoffTime">Done</button></div>
+    </div>
+    <div v-if="pickerFieldProxy.open" class="ops-picker-field-proxy" :class="pickerFieldProxy.type" :style="{ left: `${pickerFieldProxy.left}px`, top: `${pickerFieldProxy.top}px`, width: `${pickerFieldProxy.width}px`, height: `${pickerFieldProxy.height}px` }">
+      <span>{{ pickerFieldProxy.label }}</span>
+      <svg v-if="pickerFieldProxy.type === 'date'" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+      <svg v-else viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
     </div>
     <div v-if="dispatchLoading" class="dispatch-loading-overlay" role="dialog" aria-modal="true" aria-live="polite">
       <div class="dispatch-loading-modal">
@@ -1248,15 +1262,15 @@
               <div class="gsd-cutoff-block">
                 <div class="gsd-cutoff-label">SI CUTOFF</div>
                 <div class="gsd-cutoff-inputs">
-                  <input v-model="gsdModal.form.siDate" type="date" :min="todayIso()" @input="clearCutoffHint" />
-                  <input v-model="gsdModal.form.siTime" type="time" @input="clearCutoffHint" />
+                  <button class="gsd-cutoff-date" type="button" @click="openCutoffDatePopup('siDate', $event)"><span :class="{ placeholder: !gsdModal.form.siDate }">{{ cutoffDateLabel(gsdModal.form.siDate) }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button>
+                  <button class="gsd-cutoff-time" type="button" @click="openCutoffTimePopup('siTime', $event)"><span :class="{ placeholder: !gsdModal.form.siTime }">{{ gsdModal.form.siTime || '-- : --' }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
                 </div>
               </div>
               <div class="gsd-cutoff-block">
                 <div class="gsd-cutoff-label">{{ isLclSheet() ? 'CFS CUTOFF' : 'CY CUTOFF' }}</div>
                 <div class="gsd-cutoff-inputs">
-                  <input v-model="gsdModal.form.cyDate" type="date" :min="todayIso()" @input="clearCutoffHint" />
-                  <input v-model="gsdModal.form.cyTime" type="time" @input="clearCutoffHint" />
+                  <button class="gsd-cutoff-date" type="button" @click="openCutoffDatePopup('cyDate', $event)"><span :class="{ placeholder: !gsdModal.form.cyDate }">{{ cutoffDateLabel(gsdModal.form.cyDate) }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button>
+                  <button class="gsd-cutoff-time" type="button" @click="openCutoffTimePopup('cyTime', $event)"><span :class="{ placeholder: !gsdModal.form.cyTime }">{{ gsdModal.form.cyTime || '-- : --' }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
                 </div>
               </div>
             </div>
@@ -3972,7 +3986,13 @@ const datePopup = reactive({
   column: 0,
   viewYear: new Date().getFullYear(),
   viewMonth: new Date().getMonth(),
+  cutoffField: '' as '' | 'siDate' | 'cyDate',
 })
+const cutoffTimePopup = reactive({ open: false, left: 0, top: 0, field: '' as '' | 'siTime' | 'cyTime', hour: '00', minute: '00' })
+const pickerFieldProxy = reactive({ open: false, left: 0, top: 0, width: 0, height: 0, type: 'date' as 'date' | 'time', label: '' })
+let nativePickerInput: HTMLInputElement | null = null
+let nativePickerType: 'date' | 'time' | 'datetime-local' | '' = ''
+const nativePickerOriginalStyle = new WeakMap<HTMLInputElement, string>()
 type DoInfoFile = { name: string; dataUrl: string; type: string }
 const emptyDoInfoFile = (): DoInfoFile => ({ name: '', dataUrl: '', type: '' })
 const doInfoModal = reactive({
@@ -5149,7 +5169,7 @@ const datePopupDays = computed(() => {
   const mondayOffset = (first.getDay() + 6) % 7
   const start = new Date(first)
   start.setDate(first.getDate() - mondayOffset)
-  const current = parseOpsDate(rows.value[datePopup.row]?.[datePopup.column])
+  const current = parseOpsDate(datePopup.cutoffField ? gsdModal.form[datePopup.cutoffField] : nativePickerInput ? nativePickerInput.value : rows.value[datePopup.row]?.[datePopup.column])
   const today = new Date()
   return Array.from({ length: 42 }, (_, index) => {
     const date = new Date(start)
@@ -7129,12 +7149,52 @@ const onGlobalMouseUp = () => {
 
 const onGlobalMouseDown = (event: MouseEvent) => {
   const target = event.target as HTMLElement | null
+  if (isOpsPage.value && target instanceof HTMLInputElement && (['date', 'time', 'datetime-local'].includes(target.type) || target === nativePickerInput) && !target.disabled && !target.readOnly) {
+    event.preventDefault()
+    if (nativePickerInput && target !== nativePickerInput) cancelNativeOperationsPicker()
+    const pickerType = target === nativePickerInput ? nativePickerType : target.type as 'date' | 'time' | 'datetime-local'
+    const computed = window.getComputedStyle(target)
+    const rect = target.getBoundingClientRect()
+    if (!nativePickerOriginalStyle.has(target)) nativePickerOriginalStyle.set(target, target.style.cssText)
+    target.type = 'text'
+    target.classList.add('ops-picker-proxy')
+    Object.assign(target.style, {
+      width: `${rect.width}px`, height: `${rect.height}px`, minWidth: `${rect.width}px`, boxSizing: 'border-box',
+      borderTopWidth: computed.borderTopWidth, borderTopStyle: computed.borderTopStyle, borderTopColor: computed.borderTopColor,
+      borderRightWidth: computed.borderRightWidth, borderRightStyle: computed.borderRightStyle, borderRightColor: computed.borderRightColor,
+      borderBottomWidth: computed.borderBottomWidth, borderBottomStyle: computed.borderBottomStyle, borderBottomColor: computed.borderBottomColor,
+      borderLeftWidth: computed.borderLeftWidth, borderLeftStyle: computed.borderLeftStyle, borderLeftColor: computed.borderLeftColor,
+      borderRadius: computed.borderRadius, backgroundColor: computed.backgroundColor, backgroundImage: computed.backgroundImage,
+      backgroundRepeat: computed.backgroundRepeat, backgroundPosition: computed.backgroundPosition, backgroundSize: computed.backgroundSize,
+      paddingTop: computed.paddingTop, paddingRight: computed.paddingRight, paddingBottom: computed.paddingBottom, paddingLeft: computed.paddingLeft,
+      color: computed.color, fontFamily: computed.fontFamily, fontSize: computed.fontSize, fontWeight: computed.fontWeight,
+      lineHeight: computed.lineHeight, textAlign: computed.textAlign,
+    })
+    target.style.visibility = 'hidden'
+    const rawValue = target.value
+    const dateValue = rawValue ? cutoffDateLabel(rawValue.slice(0, 10)) : 'dd/mm/yyyy'
+    const timeValue = rawValue.match(/(?:T)?(\d{2}:\d{2})/)?.[1] || '-- : --'
+    Object.assign(pickerFieldProxy, { open: true, left: rect.left, top: rect.top, width: rect.width, height: rect.height, type: pickerType === 'time' ? 'time' : 'date', label: pickerType === 'time' ? timeValue : dateValue })
+    openNativeOperationsPicker(target, pickerType)
+    return
+  }
   if (!target?.closest('.country-dd')) countryOpen.value = false
   if (!target?.closest('.ops-head-menu')) closeOpsHeaderMenu()
   if (!target?.closest('.ctxmenu')) contextMenu.open = false
   if (!target?.closest('.notepop')) notePopover.open = false
   if (!target?.closest('.ddpop') && !target?.closest('.ddcell')) closeDropdownPopup()
-  if (!target?.closest('.datepop')) closeDatePopup()
+  if (!target?.closest('.datepop')) {
+    closeDatePopup()
+    if (nativePickerInput && !cutoffTimePopup.open) cancelNativeOperationsPicker()
+  }
+  if (!target?.closest('.cutoff-timepop') && !target?.closest('.gsd-cutoff-time')) {
+    closeCutoffTimePopup()
+    if (nativePickerInput && !datePopup.open) cancelNativeOperationsPicker()
+  }
+}
+const preventNativeOperationsPicker = (event: MouseEvent) => {
+  const target = event.target
+  if (isOpsPage.value && target instanceof HTMLInputElement && (['date', 'time', 'datetime-local'].includes(target.type) || target === nativePickerInput) && !target.disabled) event.preventDefault()
 }
 
 const onGlobalKeyDown = (event: KeyboardEvent) => {
@@ -17295,15 +17355,96 @@ const parseOpsDate = (value: any) => {
   return Number.isNaN(date.getTime()) ? null : date
 }
 const formatOpsDate = (date: Date) => `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`
+const cutoffDateLabel = (value: any) => { const date = parseOpsDate(value); return date ? formatOpsDate(date) : 'dd/mm/yyyy' }
+const cutoffHours = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, '0'))
+const cutoffMinutes = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
+const closeCutoffTimePopup = () => { cutoffTimePopup.open = false }
+const emitNativePickerChange = (input: HTMLInputElement) => {
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+  input.dispatchEvent(new Event('change', { bubbles: true }))
+}
+const restoreNativePickerType = () => {
+  if (!nativePickerInput || !nativePickerType) return
+  nativePickerInput.type = nativePickerType
+  nativePickerInput.classList.remove('ops-picker-proxy')
+  nativePickerInput.style.cssText = nativePickerOriginalStyle.get(nativePickerInput) || ''
+  nativePickerOriginalStyle.delete(nativePickerInput)
+}
+const cancelNativeOperationsPicker = () => {
+  restoreNativePickerType()
+  pickerFieldProxy.open = false
+  nativePickerInput = null
+  nativePickerType = ''
+}
+const openNativeOperationsPicker = (input: HTMLInputElement, pickerType: 'date' | 'time' | 'datetime-local') => {
+  nativePickerInput = input
+  nativePickerType = pickerType
+  if (nativePickerType === 'time') {
+    const match = input.value.match(/^(\d{2}):(\d{2})/)
+    const now = new Date()
+    const pos = positionPopupNear(input, 224)
+    Object.assign(cutoffTimePopup, { open: true, field: '', left: pos.left, top: pos.top, hour: match?.[1] || String(now.getHours()).padStart(2, '0'), minute: match?.[2] || String(now.getMinutes()).padStart(2, '0') })
+    closeDatePopup()
+    return
+  }
+  const current = parseOpsDate(input.value) || new Date()
+  const pos = positionPopupNear(input, 240)
+  Object.assign(datePopup, { open: true, cutoffField: '', row: -1, column: -1, left: pos.left, top: pos.top, viewYear: current.getFullYear(), viewMonth: current.getMonth() })
+  closeCutoffTimePopup()
+}
+const openCutoffTimePopup = (field: 'siTime' | 'cyTime', event: MouseEvent) => {
+  nativePickerInput = null
+  nativePickerType = ''
+  const match = String(gsdModal.form[field] || '').match(/^(\d{2}):(\d{2})$/)
+  const now = new Date()
+  const pos = positionPopupNear(event.currentTarget as HTMLElement, 224)
+  Object.assign(cutoffTimePopup, { open: true, field, left: pos.left, top: pos.top, hour: match?.[1] || String(now.getHours()).padStart(2, '0'), minute: match?.[2] || String(now.getMinutes()).padStart(2, '0') })
+  closeDatePopup()
+}
+const setCutoffTimeNow = () => {
+  const now = new Date()
+  cutoffTimePopup.hour = String(now.getHours()).padStart(2, '0')
+  cutoffTimePopup.minute = String(now.getMinutes()).padStart(2, '0')
+  applyNativeOrCutoffTime()
+}
+const applyCutoffTime = () => { if (cutoffTimePopup.field) gsdModal.form[cutoffTimePopup.field] = `${cutoffTimePopup.hour}:${cutoffTimePopup.minute}`; clearCutoffHint(); closeCutoffTimePopup() }
+const applyNativeOrCutoffTime = () => {
+  if (nativePickerInput) {
+    const prefix = nativePickerType === 'datetime-local' ? `${nativePickerInput.value.slice(0, 10) || todayIso()}T` : ''
+    restoreNativePickerType()
+    nativePickerInput.value = `${prefix}${cutoffTimePopup.hour}:${cutoffTimePopup.minute}`
+    emitNativePickerChange(nativePickerInput)
+    cancelNativeOperationsPicker()
+    closeCutoffTimePopup()
+    return
+  }
+  applyCutoffTime()
+}
+const clearCutoffTime = () => {
+  if (nativePickerInput) { restoreNativePickerType(); nativePickerInput.value = ''; emitNativePickerChange(nativePickerInput); cancelNativeOperationsPicker() }
+  else if (cutoffTimePopup.field) gsdModal.form[cutoffTimePopup.field] = ''
+  clearCutoffHint(); closeCutoffTimePopup()
+}
+const openCutoffDatePopup = (field: 'siDate' | 'cyDate', event: MouseEvent) => {
+  nativePickerInput = null
+  nativePickerType = ''
+  const current = parseOpsDate(gsdModal.form[field]) || new Date()
+  const pos = positionPopupNear(event.currentTarget as HTMLElement, 240)
+  Object.assign(datePopup, { open: true, cutoffField: field, row: -1, column: -1, left: pos.left, top: pos.top, viewYear: current.getFullYear(), viewMonth: current.getMonth() })
+  closeDropdownPopup()
+  closeCutoffTimePopup()
+}
 const sameDate = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 const openDatePopup = (row: number, column: number, target: HTMLElement) => {
+  nativePickerInput = null
+  nativePickerType = ''
   if (isLockedOpsCell(row, column)) {
     showToast('Column locked')
     return
   }
   const current = parseOpsDate(rows.value[row]?.[column]) || new Date()
   const pos = positionPopupNear(target, 240)
-  Object.assign(datePopup, { open: true, row, column, left: pos.left, top: pos.top, viewYear: current.getFullYear(), viewMonth: current.getMonth() })
+  Object.assign(datePopup, { open: true, cutoffField: '', row, column, left: pos.left, top: pos.top, viewYear: current.getFullYear(), viewMonth: current.getMonth() })
   closeDropdownPopup()
 }
 const openAtaDatePopup = (row: number, column: number, event: MouseEvent) => {
@@ -17330,6 +17471,33 @@ const persistDatePopupValue = async (row: number, column: number) => {
 }
 const selectDatePopup = (date: Date) => {
   if (isDatePopupDayDisabled(date)) return
+  if (datePopup.cutoffField) {
+    const pad = (part: number) => String(part).padStart(2, '0')
+    gsdModal.form[datePopup.cutoffField] = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+    clearCutoffHint()
+    closeDatePopup()
+    return
+  }
+  if (nativePickerInput) {
+    const input = nativePickerInput
+    const type = nativePickerType
+    const pad = (part: number) => String(part).padStart(2, '0')
+    const iso = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+    if (type === 'datetime-local') {
+      const time = input.value.match(/T(\d{2}):(\d{2})/) || []
+      input.value = `${iso}T${time[1] || '00'}:${time[2] || '00'}`
+      emitNativePickerChange(input)
+      const pos = positionPopupNear(input, 224)
+      Object.assign(cutoffTimePopup, { open: true, field: '', left: pos.left, top: pos.top, hour: time[1] || '00', minute: time[2] || '00' })
+    } else {
+      restoreNativePickerType()
+      input.value = iso
+      emitNativePickerChange(input)
+      cancelNativeOperationsPicker()
+    }
+    closeDatePopup()
+    return
+  }
   const value = formatOpsDate(date)
   const row = datePopup.row
   const column = datePopup.column
@@ -17338,12 +17506,31 @@ const selectDatePopup = (date: Date) => {
   void persistDatePopupValue(row, column)
 }
 const isDatePopupDayDisabled = (date: Date) => {
+  if (datePopup.cutoffField) {
+    const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+    const today = new Date()
+    return day < new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
+  }
   if (normalizedHeaderLabel(datePopup.column) !== 'DO VALIDITY') return false
   const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
   const today = new Date()
   return day < new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
 }
 const clearDatePopup = () => {
+  if (datePopup.cutoffField) {
+    gsdModal.form[datePopup.cutoffField] = ''
+    clearCutoffHint()
+    closeDatePopup()
+    return
+  }
+  if (nativePickerInput) {
+    restoreNativePickerType()
+    nativePickerInput.value = ''
+    emitNativePickerChange(nativePickerInput)
+    cancelNativeOperationsPicker()
+    closeDatePopup()
+    return
+  }
   const row = datePopup.row
   const column = datePopup.column
   rows.value[row][column] = ''
@@ -17810,7 +17997,8 @@ watch([selectedRect, selectionKind, visibleRowIndexes], () => {
 onMounted(() => {
   window.addEventListener('mousemove', onGlobalMouseMove)
   window.addEventListener('mouseup', onGlobalMouseUp)
-  window.addEventListener('mousedown', onGlobalMouseDown)
+  window.addEventListener('mousedown', onGlobalMouseDown, true)
+  window.addEventListener('click', preventNativeOperationsPicker, true)
   window.addEventListener('keydown', onGlobalKeyDown)
   window.addEventListener('paste', onGlobalPaste)
   window.addEventListener('scroll', onGlobalScrollClose, true)
@@ -17820,7 +18008,8 @@ onUpdated(syncRenderedRowHeights)
 onBeforeUnmount(() => {
   window.removeEventListener('mousemove', onGlobalMouseMove)
   window.removeEventListener('mouseup', onGlobalMouseUp)
-  window.removeEventListener('mousedown', onGlobalMouseDown)
+  window.removeEventListener('mousedown', onGlobalMouseDown, true)
+  window.removeEventListener('click', preventNativeOperationsPicker, true)
   window.removeEventListener('keydown', onGlobalKeyDown)
   window.removeEventListener('paste', onGlobalPaste)
   window.removeEventListener('scroll', onGlobalScrollClose, true)
@@ -18788,4 +18977,21 @@ onBeforeUnmount(() => {
 .wb-modal-overlay button:disabled,.overlay .modal button:disabled,.wsmodal-overlay button:disabled{opacity:.42!important;filter:saturate(.45) brightness(1.08);cursor:not-allowed!important;box-shadow:none!important;transform:none!important}
 .wb-modal-overlay button:disabled:hover,.overlay .modal button:disabled:hover,.wsmodal-overlay button:disabled:hover{opacity:.42!important;filter:saturate(.45) brightness(1.08);transform:none!important}
 .ops-ms-table .ops-locked-date-text,.sheet-body .ops-locked-date-text{display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-height:26px;box-sizing:border-box;color:#26312b!important;background:transparent!important;font:400 12px/1.35 Arial,sans-serif!important;text-decoration:none!important;letter-spacing:0!important;text-transform:none!important}
+/* Cutoff uses the same in-app calendar as ETD/ETA and compact 24-hour selectors. */
+.gsd-cutoff-inputs .gsd-cutoff-date{display:flex;align-items:center;justify-content:space-between;width:150px;height:38px;box-sizing:border-box;border:1px solid #cfd8d2;border-radius:8px;background:#fff;padding:0 10px;color:#33413b;font:inherit;font-size:13px;cursor:pointer}
+.gsd-cutoff-inputs .gsd-cutoff-date:hover,.gsd-cutoff-inputs .gsd-cutoff-date:focus{border-color:#00a85a;box-shadow:0 0 0 2px rgba(0,168,90,.1);outline:none}.gsd-cutoff-date .placeholder{color:#7a847d}
+.gsd-cutoff-date svg,.gsd-cutoff-time>svg{width:16px;height:16px;flex:0 0 16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.gsd-cutoff-inputs .gsd-cutoff-time{display:flex;align-items:center;justify-content:space-between;width:108px;height:38px;box-sizing:border-box;border:1px solid #cfd8d2;border-radius:8px;background:#fff;padding:0 10px;color:#33413b;font:inherit;font-size:13px;cursor:pointer}
+.gsd-cutoff-time:hover,.gsd-cutoff-time:focus{border-color:#00a85a;box-shadow:0 0 0 2px rgba(0,168,90,.1);outline:none}.gsd-cutoff-time .placeholder{color:#7a847d}.gsd-cutoff-time>svg{margin-left:auto}
+.datepop.modal-datepop{z-index:700}
+.cutoff-timepop{position:fixed;z-index:710;width:224px;box-sizing:border-box;border:1px solid #d3dacf;border-radius:12px;background:#fff;padding:12px;box-shadow:0 18px 45px rgba(14,40,27,.24);color:#33413b;font:13px/1.35 var(--sans,'Geist',sans-serif)}
+.ctp-head,.ctp-labels,.ctp-actions{display:flex;align-items:center}.ctp-head{justify-content:space-between;margin-bottom:10px}.ctp-head strong{font-size:13px;color:#17231d}.ctp-head span{border-radius:999px;background:#edf5f0;padding:3px 7px;color:#6c7b73;font-size:10px;font-weight:700}.ctp-labels{gap:8px;margin:0 0 5px}.ctp-labels span{width:92px;text-align:center;color:#7a847d;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.ctp-columns{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ctp-list{height:168px;overflow-y:auto;border:1px solid #e1e8e4;border-radius:8px;background:#f8faf9;padding:4px;scrollbar-width:thin;scrollbar-color:#b9c9c0 transparent}.ctp-list button{display:block;width:100%;height:30px;border:0;border-radius:6px;background:transparent;color:#425049;font:inherit;font-variant-numeric:tabular-nums;cursor:pointer}.ctp-list button:hover{background:#e3f3ea;color:#087d4b}.ctp-list button.selected{background:#008f4c;color:#fff;font-weight:800}
+.ctp-actions{justify-content:flex-end;gap:6px;margin:10px -12px -12px;padding:10px 12px;border-top:1px solid #e7ece9;background:#fafcfb;border-radius:0 0 12px 12px}.ctp-actions button{height:30px;border:1px solid #cfe0d6;border-radius:7px;background:#fff;padding:0 10px;color:#42604f;font:inherit;font-size:11px;font-weight:700;cursor:pointer}.ctp-actions button:hover{border-color:#81c9a5;color:#087d4b}.ctp-actions button.primary{border-color:#008f4c;background:#008f4c;color:#fff}
+.ops-picker-field-proxy{position:fixed;z-index:690;display:flex;align-items:center;justify-content:space-between;box-sizing:border-box;border:1px solid #cfd8d2;border-radius:8px;background:#fff;padding:0 10px;color:#33413b;font:400 13px/1.3 var(--sans,'Geist',sans-serif);pointer-events:none}
+.ops-picker-field-proxy svg{width:16px;height:16px;flex:0 0 16px;fill:none;stroke:#52615a;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.ops-picker-field-proxy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}.ops-picker-field-proxy.time span{letter-spacing:.02em}
+/* Linked values in Operations read like normal text; underline only signals interactivity on hover. */
+.ops-ms-table .ops-client,.ops-ms-table .ops-client b,.ops-ms-table .clival-btn,.ops-ms-table .clival-btn b,.ops-ms-table .ops-pill.linked-value,.ops-ms-table .gsd-btn.linked-value,.ops-ms-table .ops-pill.document-value,.ops-ms-table .gsd-btn.document-value{color:#26312b!important;font-weight:400!important;text-decoration:none!important}
+.ops-ms-table .ops-client:hover,.ops-ms-table .ops-client:hover b,.ops-ms-table .clival-btn:hover,.ops-ms-table .clival-btn:hover b,.ops-ms-table .ops-pill.linked-value:hover,.ops-ms-table .gsd-btn.linked-value:hover,.ops-ms-table .ops-pill.document-value:hover,.ops-ms-table .gsd-btn.document-value:hover{color:#26312b!important;text-decoration:underline!important;text-underline-offset:2px}
+.ops-ms-table .ops-client:disabled:hover,.ops-ms-table .ops-client:disabled:hover b,.ops-ms-table .clival-btn:disabled:hover,.ops-ms-table .clival-btn:disabled:hover b{cursor:default;text-decoration:none!important}
 </style>
