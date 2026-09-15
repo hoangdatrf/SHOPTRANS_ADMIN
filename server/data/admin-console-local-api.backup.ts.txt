@@ -1,0 +1,1188 @@
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { dirname, resolve } from 'node:path'
+import { randomUUID } from 'node:crypto'
+import { createError, defineEventHandler, getMethod, getQuery, readBody } from 'h3'
+import {
+  opsDeptsFor,
+  opsHeaderFor as mockupOpsHeaderFor,
+  opsLeafKey,
+  opsStatusKey,
+  opsTypesOf,
+  parseOpsKey as parseMockupOpsKey,
+  type OpsBase,
+  type OpsMode,
+  type OpsStatus,
+} from '../../../composables/useOpsSheet'
+
+type AdminRecord = {
+  id: string
+  country: string
+  page: string
+  kind: string
+  data: Record<string, any>
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
+type WorkbookSheet = {
+  id: string
+  key: string
+  label: string
+  group?: string
+  rows: any[][]
+  columnWidths: number[]
+  rowHeights: Record<string, number>
+  formatting: Record<string, any>
+  merges: number[][]
+  settings: Record<string, any>
+  createdAt: string
+  updatedAt: string
+}
+
+type AdminTrash = {
+  id: string
+  type: string
+  country?: string | null
+  page?: string | null
+  kind?: string | null
+  label: string
+  payload: Record<string, any>
+  deletedBy?: string | null
+  deletedAt: string
+}
+
+type AdminConsoleDb = {
+  meta: {
+    nav: any[]
+    pages: Record<string, any>
+    settings: Record<string, any>
+  }
+  records: AdminRecord[]
+  trash: AdminTrash[]
+  workbookSheets: WorkbookSheet[]
+  entities: any[]
+}
+
+type EntityOptionType = 'city' | 'country'
+
+const dbPath = resolve(process.cwd(), 'server/data/admin-console-db.json')
+
+const nowIso = () => new Date().toISOString()
+const makeId = (prefix: string) => `${prefix}-${randomUUID()}`
+const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value))
+const WORKBOOK_META_MARKER = '__SHOPTRANS_WORKBOOK_META__'
+
+const visibleWorkbookRows = (rows: any[][] = []) => rows.filter((row) => String(row?.[0] ?? '') !== WORKBOOK_META_MARKER)
+const text = (value: any) => String(value ?? '').trim()
+const upper = (value: any) => text(value).toUpperCase()
+const numberValue = (value: any, fallback = 0) => {
+  const parsed = Number(String(value ?? '').replace(/,/g, ''))
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+const comparableRecordData = (data: Record<string, any> = {}) => Object.fromEntries(Object.entries(data)
+  .filter(([key, value]) => !['id', 'status', 'notes', 'sortOrder', 'createdAt', 'updatedAt'].includes(key) && value !== '' && value !== null && value !== undefined)
+  .map(([key, value]) => [key, typeof value === 'string' ? upper(value) : value]))
+const isDuplicateRecordData = (records: AdminRecord[], candidate: AdminRecord) => {
+  const left = comparableRecordData(candidate.data)
+  const keys = Object.keys(left)
+  if (!keys.length) return false
+  return records.some((record) => {
+    if (record.country !== candidate.country || record.page !== candidate.page || record.kind !== candidate.kind) return false
+    const right = comparableRecordData(record.data)
+    return keys.length === Object.keys(right).length && keys.every((key) => JSON.stringify(left[key]) === JSON.stringify(right[key]))
+  })
+}
+const recordKey = (value: any) => upper(value).replace(/\s+/g, ' ')
+const normalizeEntity = (entity: any) => ({
+  ...entity,
+  type: text(entity?.type || 'client'),
+  id: text(entity?.id || makeId('entity')),
+  createdAt: text(entity?.createdAt || nowIso()),
+  updatedAt: text(entity?.updatedAt || nowIso()),
+})
+const normalizeClient = (client: any) => ({
+  id: upper(client?.id || ''),
+  namecode: text(client?.namecode || client?.nameCode || client?.id || ''),
+  companyName: text(client?.companyName || client?.company || ''),
+  address: text(client?.address || ''),
+  city: text(client?.city || ''),
+  country: text(client?.country || ''),
+  picName: text(client?.picName || client?.pic || ''),
+  phone: text(client?.phone || ''),
+  email: text(client?.email || ''),
+  status: upper(client?.status || 'ACTIVE') || 'ACTIVE',
+  roles: Array.from(new Set((Array.isArray(client?.roles) ? client.roles : ['CLIENT']).map((role: any) => upper(role)).filter(Boolean))),
+})
+const dateCode = () => {
+  const date = new Date()
+  return `${String(date.getDate()).padStart(2, '0')}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getFullYear()).slice(-2)}`
+}
+const countryCodeForClientId = (country: string) => {
+  const raw = upper(country)
+  if (!raw) return 'JP'
+  const countryMatch = settings.countries.find((item) => upper(item.id) === raw || upper(item.name) === raw)
+  return upper(countryMatch?.id || raw.slice(0, 2) || 'JP')
+}
+const nextClientId = (db: AdminConsoleDb, country: string) => {
+  const prefix = `${countryCodeForClientId(country)}${dateCode()}`
+  const used = db.entities
+    .filter((entity) => entity?.type === 'client')
+    .map((entity) => upper(entity?.data?.id))
+    .filter((id) => id.startsWith(prefix))
+    .map((id) => Number(id.slice(prefix.length)))
+    .filter(Number.isFinite)
+  const next = used.length ? Math.max(...used) + 1 : 1
+  return `${prefix}${String(next).padStart(2, '0')}`
+}
+
+const settings = {
+  countries: [
+    { id: 'CN', name: 'China', flag: 'cn', cur: 'CNY' },
+    { id: 'JP', name: 'Japan', flag: 'jp', cur: 'JPY' },
+    { id: 'VN', name: 'Vietnam', flag: 'vn', cur: 'VND' },
+    { id: 'ID', name: 'Indonesia', flag: 'id', cur: 'IDR' },
+    { id: 'IN', name: 'India', flag: 'in', cur: 'INR' },
+    { id: 'TH', name: 'Thailand', flag: 'th', cur: 'THB' },
+    { id: 'KR', name: 'South Korea', flag: 'kr', cur: 'KRW' },
+    { id: 'MY', name: 'Malaysia', flag: 'my', cur: 'MYR' },
+    { id: 'BD', name: 'Bangladesh', flag: 'bd', cur: 'BDT' },
+    { id: 'US', name: 'USA', flag: 'us', cur: 'USD' },
+    { id: 'TW', name: 'Taiwan', flag: 'tw', cur: 'TWD' },
+    { id: 'HK', name: 'Hong Kong', flag: 'hk', cur: 'HKD' },
+    { id: 'MX', name: 'Mexico', flag: 'mx', cur: 'MXN' },
+  ],
+  currencies: [
+    { code: 'USD', name: 'US Dollar', symbol: '$', rate: 1, base: true },
+    { code: 'VND', name: 'Vietnam Dong', symbol: '\u20ab', rate: 25000 },
+    { code: 'CNY', name: 'Chinese Yuan', symbol: '\u00a5', rate: 7.2 },
+    { code: 'JPY', name: 'Japanese Yen', symbol: '\u00a5', rate: 157 },
+  ],
+}
+
+const masterSheets: Record<string, string[]> = {
+  STAFF: ['CODE', 'FULL NAME', 'DEPARTMENT', 'POSITION', 'EMAIL', 'PHONE', 'STATUS', 'NOTE'],
+  'NEW CLIENT': ['CLIENT CODE', 'CLIENT NAME', 'TAX CODE', 'CONTACT', 'EMAIL', 'PHONE', 'ADDRESS', 'STATUS', 'NOTE'],
+  'MBL CNEE': ['CODE', 'CONSIGNEE NAME', 'TAX CODE', 'ADDRESS', 'CONTACT', 'EMAIL', 'PHONE', 'NOTE'],
+  AGENT: ['AGENT CODE', 'AGENT NAME', 'COUNTRY', 'CONTACT', 'EMAIL', 'PHONE', 'ADDRESS', 'NOTE'],
+  EDO: ['CODE', 'LINER', 'AGENT', 'EMAIL', 'PHONE', 'ADDRESS', 'REMARK'],
+}
+const masterSheetKeys = Object.keys(masterSheets)
+let mockupMasterRowsCache: Promise<Record<string, any[][]>> | null = null
+
+const normalizeRows = (rows: any[][] = []) => rows.map((row) => Array.isArray(row) ? row.map((cell) => cell ?? '') : [])
+
+const readMockupMasterRows = async () => {
+  const mockupPath = resolve(process.cwd(), 'GiaodienMockup/Admin/Operations_mockup.html')
+  try {
+    const html = await readFile(mockupPath, 'utf8')
+    const startTag = '<script id="wbdata" type="application/json">'
+    const start = html.indexOf(startTag)
+    if (start < 0) return {}
+    const bodyStart = start + startTag.length
+    const end = html.indexOf('</script>', bodyStart)
+    if (end < 0) return {}
+    const wbdata = JSON.parse(html.slice(bodyStart, end))
+    return masterSheetKeys.reduce((acc, key) => {
+      if (Array.isArray(wbdata?.[key])) acc[key] = normalizeRows(wbdata[key])
+      return acc
+    }, {} as Record<string, any[][]>)
+  } catch {
+    return {}
+  }
+}
+
+const mockupMasterRows = () => {
+  mockupMasterRowsCache ||= readMockupMasterRows()
+  return mockupMasterRowsCache
+}
+
+const opsBaseHeader: Record<string, string[]> = {
+  EFA: [
+    'TIME', 'BU', 'SALES', 'BRANCH', 'OPS1', 'OPS2', 'TERM', 'EFA+', 'TYPE', 'C. CODE',
+    'SHIPPER', 'CNEE', 'LINER', 'AGENT', 'BOOKING NO#', 'REF#', 'HBL NO#', 'MBL NO#',
+    'ETD', 'ETA', 'SI CUTOFF DATE', 'TIME', 'CY CUTOFF DATE', 'TIME', 'VOLUME', 'ROUTE',
+    'VESSEL NAME', 'VOYAGE', 'BC SENT', 'PICKUP CONFIRMATION', 'PICKUP INFORMATION',
+    'CONTAINER NO#', 'SEAL NO#', 'STUFFING COMPLETION', 'GATEIN', 'LOADING READINESS',
+    'FREETIME CONFIRMATION', 'FREETIME TYPE', 'ATD', 'PRE-ALERT SENDING',
+    'MBL RELEASE', 'HBL RELEASE', 'ATA', 'DAYS AFTER ATA', 'PICKUP DATE', 'RETURN DATE',
+    'DONE',
+  ],
+  FCF: [
+    'TIME', 'BU', 'SALES', 'BRANCH', 'OPS1', 'OPS2', 'TERM', 'FCF+', 'TYPE', 'C. CODE',
+    'SHIPPER', 'CNEE', 'LINER', 'AGENT', 'BOOKING NO#', 'REF#', 'HBL NO#', 'MBL NO#',
+    'ETD', 'ETA', 'SI CUTOFF DATE', 'TIME', 'CY CUTOFF DATE', 'TIME', 'VOLUME', 'ROUTE',
+    'VESSEL NAME', 'VOYAGE', 'BC SENT', 'PICKUP CONFIRMATION', 'PICKUP INFORMATION',
+    'CONTAINER NO#', 'SEAL NO#', 'STUFFING COMPLETION', 'GATEIN', 'LOADING READINESS',
+    'FREETIME CONFIRMATION', 'FREETIME TYPE', 'ATD', 'PRE-ALERT SENDING',
+    'MBL RELEASE', 'HBL RELEASE', 'ATA', 'DAYS AFTER ATA', 'PICKUP DATE', 'RETURN DATE',
+    'DONE',
+  ],
+  DO: [
+    'TIME', 'BU', 'SALES', 'BRANCH', 'OPS', 'TERM', 'DO+', 'TYPE', 'C.CODE', 'SHIPPER',
+    'CNEE', 'LINER', 'AGENT', 'REF#', 'HBL NO#', 'MBL NO#', 'ATD', 'ETA', 'VESSEL NAME',
+    'VOYAGE', 'CONTAINER NO#', 'SEAL NO#', 'PRE-ALERT RECIEPT', 'MBL CONFIRMATION',
+    'HBL CONFIRMATION', 'FREETIME CONFIRMATION', 'FREETIME TYPE', 'MBL RELEASE',
+    'HBL RELEASE', 'MNF SUBMIT', 'AN SENDING', 'ATA', 'DO RELEASE', 'DAYS AFTER ATA',
+    'PICKUP DATE', 'RETURN DATE', 'DONE',
+  ],
+  DUP: [
+    'TIME', 'BU', 'SALES', 'BRANCH', 'OPS1', 'OPS2', 'TERM', 'DUP+', 'TYPE', 'C.CODE',
+    'SHIPPER', 'CNEE', 'LINER', 'AGENT', 'ROUTE', 'REF#', 'HBL NO#', 'MBL NO#', 'ATD',
+    'ETA', 'VESSEL NAME', 'VOYAGE', 'CONTAINER/SEAL NO#', 'PRE-ALERT RECEIPT',
+    'MBL CONFIRMATION', 'HBL CONFIRMATION', 'CLEARANCE DOCS CONFIRMATION',
+    'FREETIME CONFIRMATION', 'MBL RELEASE', 'HBL RELEASE', 'MNF SUBMIT', 'AN SENDING',
+    'DO READINESS', 'CDS NO#', 'CDS DATE', 'CLEARANCE COMPLETION', 'TRUCK SCHEDULE',
+    'TRUCK COMPANY', 'DELIVERY INFORMATION', 'PICKUP DATE', 'RETURN DATE', 'DONE',
+  ],
+  D2D: [
+    'TIME', 'BU', 'SALES', 'BRANCH', 'OPS1', 'OPS2', 'TERM', 'D2D+', 'TYPE', 'C.CODE',
+    'SHIPPER', 'CNEE', 'LINER', 'AGENT', 'ROUTE', 'REF#', 'HBL NO#', 'MBL NO#', 'ATD',
+    'ETA', 'VESSEL NAME', 'VOYAGE', 'PICKUP DATE', 'DELIVERY DATE', 'POD', 'STATUS', 'DONE',
+  ],
+}
+
+const parseOpsKey = (sheetKey: string) => {
+  return parseMockupOpsKey(sheetKey)
+}
+
+const opsHeaderFor = (base: string, mode: string, dept: string, type?: string | null) => {
+  return mockupOpsHeaderFor(base as OpsBase, mode as OpsMode, dept as any, type as any)
+}
+
+const makeSheet = (key: string, label = key, rows?: any[][]): WorkbookSheet => {
+  const at = nowIso()
+  const header = rows?.[0] || masterSheets[key] || ['Column 1', 'Column 2', 'Column 3', 'Column 4']
+  const bodyRows = rows || [header, ...Array.from({ length: 30 }, () => Array(header.length).fill(''))]
+  return {
+    id: makeId('sheet'),
+    key,
+    label,
+    group: 'Master Data',
+    rows: bodyRows,
+    columnWidths: header.map(() => 132),
+    rowHeights: {},
+    formatting: {},
+    merges: [],
+    settings: {},
+    createdAt: at,
+    updatedAt: at,
+  }
+}
+
+const seedDb = (): AdminConsoleDb => ({
+  meta: { nav: [], pages: {}, settings: clone(settings) },
+  records: [],
+  trash: [],
+  workbookSheets: Object.entries(masterSheets).map(([key]) => makeSheet(key, key)),
+  entities: [],
+})
+
+const isEmptySeedSheet = (sheet: WorkbookSheet, key: string) => {
+  const fallbackHeader = masterSheets[key] || []
+  const firstRow = (sheet.rows?.[0] || []).map((cell) => String(cell ?? ''))
+  const hasFallbackHeader = firstRow.length === fallbackHeader.length && firstRow.every((cell, index) => cell === fallbackHeader[index])
+  const bodyIsBlank = (sheet.rows || []).slice(1).every((row) => (row || []).every((cell) => String(cell ?? '').trim() === ''))
+  return hasFallbackHeader && bodyIsBlank
+}
+
+const applyMasterSheetSeeds = async (db: AdminConsoleDb) => {
+  const mockupRows = await mockupMasterRows()
+  let changed = false
+  for (const key of masterSheetKeys) {
+    const rows = mockupRows[key]
+    const index = db.workbookSheets.findIndex((sheet) => sheet.key === key)
+    if (index < 0) {
+      db.workbookSheets.push(makeSheet(key, key, rows))
+      changed = true
+    } else if (rows?.length && isEmptySeedSheet(db.workbookSheets[index], key)) {
+      db.workbookSheets[index] = {
+        ...db.workbookSheets[index],
+        rows,
+        columnWidths: (rows[0] || masterSheets[key]).map(() => 132),
+        updatedAt: nowIso(),
+      }
+      changed = true
+    }
+  }
+  return changed
+}
+
+const operationBases: OpsBase[] = ['EFA', 'FCF', 'DO', 'DUP', 'D2D']
+const operationModes: OpsMode[] = ['FCL', 'LCL', 'AIR']
+const operationStatuses: OpsStatus[] = ['active', 'pending', 'done']
+
+const operationSheetKeys = () => {
+  const keys: string[] = []
+  for (const base of operationBases) {
+    for (const mode of operationModes) {
+      const types = opsTypesOf(base)
+      if (types.length) {
+        for (const type of types) {
+          for (const dept of opsDeptsFor(base, type)) {
+            const leaf = opsLeafKey(base, mode, type, dept)
+            operationStatuses.forEach((status) => keys.push(opsStatusKey(leaf, status)))
+          }
+        }
+      } else {
+        for (const dept of opsDeptsFor(base, null)) {
+          const leaf = opsLeafKey(base, mode, null, dept)
+          operationStatuses.forEach((status) => keys.push(opsStatusKey(leaf, status)))
+        }
+      }
+    }
+  }
+  return keys
+}
+
+const padRowTo = (row: any[], length: number) => {
+  const next = Array.isArray(row) ? row.slice(0, length) : []
+  while (next.length < length) next.push('')
+  return next
+}
+
+const alignOperationRows = (rows: any[][] = [], header: string[]) => {
+  const metaRows = rows.filter((row) => String(row?.[0] ?? '') === WORKBOOK_META_MARKER)
+  const bodyRows = rows.filter((row, index) => index > 0 && String(row?.[0] ?? '') !== WORKBOOK_META_MARKER)
+  return [
+    [...header],
+    ...bodyRows.map((row) => padRowTo(row, header.length)),
+    ...metaRows,
+  ]
+}
+
+const operationHeaderMatches = (sheet: WorkbookSheet, header: string[]) => {
+  const currentHeader = Array.isArray(sheet.rows?.[0]) ? sheet.rows[0] : []
+  return currentHeader.length >= header.length && header.every((cell, index) => String(currentHeader[index] ?? '') === String(cell ?? ''))
+}
+
+const hasNonBlankBodyRows = (sheet: WorkbookSheet) =>
+  (sheet.rows || [])
+    .filter((row, index) => index > 0 && String(row?.[0] ?? '') !== WORKBOOK_META_MARKER)
+    .some((row) => (row || []).some((cell) => String(cell ?? '').trim()))
+
+const applyOperationSheetSeeds = (db: AdminConsoleDb) => {
+  let changed = false
+  const expectedKeys = new Set(operationSheetKeys())
+  db.workbookSheets = db.workbookSheets.filter((sheet) => {
+    const parsed = parseOpsKey(sheet.key)
+    if (!parsed || expectedKeys.has(sheet.key)) return true
+    const canonical = opsStatusKey(opsLeafKey(parsed.base, parsed.mode, parsed.type, parsed.dept), parsed.status)
+    if (!expectedKeys.has(canonical) || hasNonBlankBodyRows(sheet)) return true
+    changed = true
+    return false
+  })
+  for (const key of expectedKeys) {
+    const parsed = parseOpsKey(key)
+    if (!parsed) continue
+    const header = opsHeaderFor(parsed.base, parsed.mode, parsed.dept, parsed.type)
+    const index = db.workbookSheets.findIndex((sheet) => sheet.key === key)
+    if (index < 0) {
+      const sheet = makeSheet(key, key, [header])
+      sheet.group = 'Operations'
+      sheet.columnWidths = header.map(() => 132)
+      db.workbookSheets.push(sheet)
+      changed = true
+      continue
+    }
+    const sheet = db.workbookSheets[index]
+    if (sheet.group !== 'Operations' || !operationHeaderMatches(sheet, header)) {
+      sheet.group = 'Operations'
+      sheet.rows = alignOperationRows(sheet.rows, header)
+      sheet.columnWidths = header.map((_, col) => sheet.columnWidths?.[col] || 132)
+      sheet.updatedAt = nowIso()
+      changed = true
+    }
+  }
+  return changed
+}
+
+const normalizeBillDetailRows = (rows: any[][] = []) => {
+  if (!Array.isArray(rows?.[0])) return rows
+  return rows.map((row, index) => index === 0
+    ? row.map((cell) => String(cell ?? '').trim().toUpperCase() === 'BILL APPROVAL' ? 'BILL DETAIL' : cell)
+    : row)
+}
+
+const normalizeBillDetailHeaders = (db: AdminConsoleDb) => {
+  let changed = false
+  for (const sheet of db.workbookSheets || []) {
+    if (!Array.isArray(sheet.rows?.[0])) continue
+    const sheetChanged = sheet.rows[0].some((cell) => String(cell ?? '').trim().toUpperCase() === 'BILL APPROVAL')
+    if (!sheetChanged) continue
+    sheet.rows = normalizeBillDetailRows(sheet.rows)
+    sheet.updatedAt = nowIso()
+    changed = true
+  }
+  return changed
+}
+
+const readDb = async (): Promise<AdminConsoleDb> => {
+  try {
+    const raw = await readFile(dbPath, 'utf8')
+    const db = JSON.parse(raw) as AdminConsoleDb
+    db.meta ||= { nav: [], pages: {}, settings: clone(settings) }
+    db.meta.settings = { ...clone(settings), ...(db.meta.settings || {}) }
+    db.records ||= []
+    db.trash ||= []
+    db.workbookSheets ||= []
+    db.entities = (db.entities || []).map(normalizeEntity)
+    for (const key of masterSheetKeys) {
+      if (!db.workbookSheets.some((sheet) => sheet.key === key)) db.workbookSheets.push(makeSheet(key, key))
+    }
+    const masterChanged = await applyMasterSheetSeeds(db)
+    const operationsChanged = applyOperationSheetSeeds(db)
+    const billDetailChanged = normalizeBillDetailHeaders(db)
+    if (masterChanged || operationsChanged || billDetailChanged) await writeDb(db)
+    return db
+  } catch {
+    const db = seedDb()
+    await applyMasterSheetSeeds(db)
+    applyOperationSheetSeeds(db)
+    normalizeBillDetailHeaders(db)
+    await writeDb(db)
+    return db
+  }
+}
+
+const writeDb = async (db: AdminConsoleDb) => {
+  await mkdir(dirname(dbPath), { recursive: true })
+  await writeFile(dbPath, `${JSON.stringify(db, null, 2)}\n`, 'utf8')
+}
+
+const getParts = (event: any) => {
+  const raw = event.context.params?.path
+  const text = Array.isArray(raw) ? raw.join('/') : String(raw || '')
+  return text.split('/').filter(Boolean)
+}
+
+const requireAuth = (event: any) => {
+  const auth = String(event.node.req.headers.authorization || '')
+  if (!auth.startsWith('Bearer st-admin-token-')) {
+    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+  }
+}
+
+const adminProfile = () => ({
+  id: 'admin-root',
+  username: 'admin',
+  email: 'admin@shoptrans.local',
+  displayName: 'SHOPTRANS Admin',
+  role: 'ADMIN',
+  country: null,
+  isActive: true,
+})
+
+const findRecord = (db: AdminConsoleDb, id: string) => {
+  const index = db.records.findIndex((record) => record.id === id)
+  if (index < 0) throw createError({ statusCode: 404, statusMessage: 'Record not found' })
+  return index
+}
+
+const recordLabel = (record: AdminRecord) => {
+  const data = record.data || {}
+  return data.title || data.name || data.code || data.key || data.feeType || data.zip || record.page || record.id
+}
+
+const sheetByKey = (db: AdminConsoleDb, key: string) => db.workbookSheets.find((sheet) => sheet.key === key)
+
+const ensureOpsSheet = async (db: AdminConsoleDb, key: string) => {
+  const parsed = parseOpsKey(key)
+  if (!parsed) return null
+  const header = opsHeaderFor(parsed.base, parsed.mode, parsed.dept, parsed.type)
+  const sheet = makeSheet(key, key, [header])
+  sheet.group = 'Operations'
+  db.workbookSheets.push(sheet)
+  await writeDb(db)
+  return sheet
+}
+
+const workbookSettings = (sheet: WorkbookSheet) => {
+  const metadataRow = (sheet.rows || []).find((row) => String(row?.[0] ?? '') === WORKBOOK_META_MARKER)
+  if (!metadataRow) return { ...(sheet.settings || {}) }
+  try {
+    const metadata = typeof metadataRow[1] === 'string' ? JSON.parse(metadataRow[1]) : metadataRow[1]
+    return { ...(sheet.settings || {}), ...(metadata?.settings || {}) }
+  } catch {
+    return { ...(sheet.settings || {}) }
+  }
+}
+
+const rowsWithWorkbookSettings = (sheet: WorkbookSheet, dataRows: any[][], nextSettings: Record<string, any>) => {
+  const metadataRow = (sheet.rows || []).find((row) => String(row?.[0] ?? '') === WORKBOOK_META_MARKER)
+  let metadata: Record<string, any> = {}
+  try {
+    const parsed = metadataRow ? (typeof metadataRow[1] === 'string' ? JSON.parse(metadataRow[1]) : metadataRow[1]) : {}
+    if (parsed && typeof parsed === 'object') metadata = parsed
+  } catch {}
+  return [...dataRows, [WORKBOOK_META_MARKER, JSON.stringify({ version: 1, ...metadata, settings: nextSettings })]]
+}
+
+const dispatchSentIcd = (db: AdminConsoleDb, sourceKey: string, body: any) => {
+  const countrySuffix = sourceKey.match(/::COUNTRY:[A-Z0-9_-]+$/i)?.[0] || ''
+  const sourceLeaf = countrySuffix ? sourceKey.slice(0, -countrySuffix.length) : sourceKey
+  const parsed = parseOpsKey(sourceLeaf)
+  const type = String(parsed?.type || '').toUpperCase()
+  if (!parsed || parsed.dept !== 'GSD' || !['LCL', 'AIR'].includes(parsed.mode) || !['DO', 'DAP', 'DDU', 'DDP'].includes(type)) {
+    throw createError({ statusCode: 400, statusMessage: 'SENT ICD dispatch is only available for LCL/AIR GSD import flows' })
+  }
+  const sourceSheet = sheetByKey(db, sourceKey)
+  if (!sourceSheet) throw createError({ statusCode: 404, statusMessage: 'Source workbook sheet does not exist' })
+  const sourceRows = (Array.isArray(body.rows) ? body.rows : sourceSheet.rows).filter((row: any[]) => String(row?.[0] ?? '') !== WORKBOOK_META_MARKER)
+  const sourceHeader = (sourceRows[0] || []).map((cell: any) => String(cell ?? '').trim())
+  const sourceRow = sourceRows[Number(body.rowIndex)]
+  const sentColumn = sourceHeader.findIndex((label: string) => label.toUpperCase() === 'SENT ICD')
+  const shipmentLink = String(body.shipmentLink || '').trim()
+  if (!sourceRow || sentColumn < 0 || !shipmentLink) throw createError({ statusCode: 400, statusMessage: 'Invalid SENT ICD source row' })
+  sourceRow[sentColumn] = `TRUE|${body.sentAt}`
+  const sourceSettings = { ...(body.settings || workbookSettings(sourceSheet)) }
+  sourceSettings.opsRowLinks = { ...(sourceSettings.opsRowLinks || {}), [String(body.rowIndex)]: shipmentLink }
+  sourceSheet.rows = rowsWithWorkbookSettings(sourceSheet, sourceRows, sourceSettings)
+  sourceSheet.settings = sourceSettings
+  sourceSheet.updatedAt = nowIso()
+
+  const targetDepts = type === 'DO' ? ['ICD', 'FCD'] : type === 'DAP' ? ['ICD', 'TCD', 'FCD'] : ['ICD', 'CCD', 'TCD', 'FCD']
+  const sourceValue = (label: string) => {
+    const index = sourceHeader.findIndex((item: string) => item.toUpperCase() === label.toUpperCase())
+    return index >= 0 ? sourceRow[index] ?? '' : ''
+  }
+  for (const dept of targetDepts) {
+    const targetLeaf = opsLeafKey(parsed.base, parsed.mode, parsed.type, dept as any)
+    const targetKey = `${targetLeaf}${countrySuffix}`
+    let targetSheet = sheetByKey(db, targetKey)
+    const header = opsHeaderFor(parsed.base, parsed.mode, dept, parsed.type)
+    if (!targetSheet) {
+      targetSheet = makeSheet(targetKey, targetLeaf, [header])
+      targetSheet.group = 'Operations'
+      targetSheet.columnWidths = header.map(() => 132)
+      db.workbookSheets.push(targetSheet)
+    }
+    const targetDataRows = (targetSheet.rows || []).filter((row) => String(row?.[0] ?? '') !== WORKBOOK_META_MARKER)
+    const alignedRows = alignOperationRows(targetDataRows.length ? targetDataRows : [header], header).filter((row) => String(row?.[0] ?? '') !== WORKBOOK_META_MARKER)
+    const targetSettings = workbookSettings(targetSheet)
+    const targetLinks = { ...(targetSettings.opsRowLinks || {}) }
+    let targetRowIndex = alignedRows.findIndex((_row, index) => index > 0 && String(targetLinks[String(index)] || '') === shipmentLink)
+    const nextRow = header.map((label) => {
+      if (label === 'TIME') return body.sentAt
+      if (label === 'MODE') return 'AUTO'
+      if (label === 'BU') return String(body.countryCode || '').toUpperCase()
+      if (label === 'SALES') return String(body.sales || '')
+      if (label === 'NOTICE') return ''
+      if (label === 'ACTION') return 'ACTIVE'
+      return sourceValue(label)
+    })
+    if (targetRowIndex < 1) {
+      alignedRows.push(nextRow)
+      targetRowIndex = alignedRows.length - 1
+    } else {
+      alignedRows[targetRowIndex] = alignedRows[targetRowIndex].map((current, column) => {
+        const label = header[column]
+        const sourceColumn = sourceHeader.findIndex((item: string) => item.toUpperCase() === label.toUpperCase())
+        if (['TIME', 'BU', 'SALES'].includes(label)) return nextRow[column] || current
+        return sourceColumn >= 0 ? sourceRow[sourceColumn] ?? '' : current
+      })
+    }
+    targetLinks[String(targetRowIndex)] = shipmentLink
+    targetSettings.opsRowLinks = targetLinks
+    targetSheet.rows = rowsWithWorkbookSettings(targetSheet, alignedRows, targetSettings)
+    targetSheet.settings = targetSettings
+    targetSheet.updatedAt = nowIso()
+  }
+  return { sentAt: body.sentAt, shipmentLink, departments: targetDepts }
+}
+
+const dispatchManifestSubmit = (db: AdminConsoleDb, sourceKey: string, body: any) => {
+  const submittedAt = String(body.submittedAt || body.sentAt || '').trim()
+  const countrySuffix = sourceKey.match(/::COUNTRY:[A-Z0-9_-]+$/i)?.[0] || ''
+  const sourceLeaf = countrySuffix ? sourceKey.slice(0, -countrySuffix.length) : sourceKey
+  const parsed = parseOpsKey(sourceLeaf)
+  const type = String(parsed?.type || '').toUpperCase()
+  if (!parsed || parsed.dept !== 'ICD' || !['DO', 'DAP', 'DDU', 'DDP'].includes(type)) {
+    throw createError({ statusCode: 400, statusMessage: 'MANIFEST SUBMIT is only available for ICD import flows' })
+  }
+  const sourceSheet = sheetByKey(db, sourceKey)
+  if (!sourceSheet) throw createError({ statusCode: 404, statusMessage: 'Source workbook sheet does not exist' })
+  const sourceRows = (Array.isArray(body.rows) ? body.rows : sourceSheet.rows)
+    .filter((row: any[]) => String(row?.[0] ?? '') !== WORKBOOK_META_MARKER)
+  const sourceHeader = (sourceRows[0] || []).map((cell: any) => String(cell ?? '').trim())
+  const sourceRow = sourceRows[Number(body.rowIndex)]
+  const manifestColumn = sourceHeader.findIndex((label: string) => label.toUpperCase() === 'MANIFEST SUBMIT')
+  const shipmentLink = String(body.shipmentLink || '').trim()
+  if (!sourceRow || manifestColumn < 0 || !shipmentLink) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid MANIFEST SUBMIT source row' })
+  }
+  sourceRow[manifestColumn] = `TRUE|${submittedAt}`
+  const sourceSettings = { ...(body.settings || workbookSettings(sourceSheet)) }
+  sourceSettings.opsRowLinks = { ...(sourceSettings.opsRowLinks || {}), [String(body.rowIndex)]: shipmentLink }
+  sourceSheet.rows = rowsWithWorkbookSettings(sourceSheet, sourceRows, sourceSettings)
+  sourceSheet.settings = sourceSettings
+  sourceSheet.updatedAt = nowIso()
+
+  const targetDepts = type === 'DO' ? ['FCD'] : type === 'DAP' ? ['TCD', 'FCD'] : ['CCD', 'TCD', 'FCD']
+  const sourceValue = (label: string) => {
+    const aliases: Record<string, string[]> = {
+      'CONSIGNEE': ['CONSIGNEE', 'CNEE'],
+      'CNEE': ['CNEE', 'CONSIGNEE'],
+      'TRUCK & CONT/SEAL INFO': ['TRUCK & CONT/SEAL INFO', 'CONT/SEAL INFO'],
+      'CONT/SEAL INFO': ['CONT/SEAL INFO', 'TRUCK & CONT/SEAL INFO'],
+      'DELIVERY DETAIL': ['DELIVERY DETAIL', 'DELIVERY DETAILS'],
+      'DELIVERY DETAILS': ['DELIVERY DETAILS', 'DELIVERY DETAIL'],
+    }
+    const labels = aliases[label.toUpperCase()] || [label.toUpperCase()]
+    const index = sourceHeader.findIndex((item: string) => labels.includes(item.toUpperCase()))
+    return index >= 0 ? sourceRow[index] ?? '' : ''
+  }
+  for (const dept of targetDepts) {
+    const targetLeaf = opsLeafKey(parsed.base, parsed.mode, parsed.type, dept as any)
+    const targetKey = `${targetLeaf}${countrySuffix}`
+    let targetSheet = sheetByKey(db, targetKey)
+    const header = opsHeaderFor(parsed.base, parsed.mode, dept, parsed.type)
+    if (!targetSheet) {
+      targetSheet = makeSheet(targetKey, targetLeaf, [header])
+      targetSheet.group = 'Operations'
+      targetSheet.columnWidths = header.map(() => 132)
+      db.workbookSheets.push(targetSheet)
+    }
+    const targetDataRows = (targetSheet.rows || []).filter((row) => String(row?.[0] ?? '') !== WORKBOOK_META_MARKER)
+    const alignedRows = alignOperationRows(targetDataRows.length ? targetDataRows : [header], header)
+      .filter((row) => String(row?.[0] ?? '') !== WORKBOOK_META_MARKER)
+    const targetSettings = workbookSettings(targetSheet)
+    const targetLinks = { ...(targetSettings.opsRowLinks || {}) }
+    let targetRowIndex = alignedRows.findIndex((_row, index) => index > 0 && String(targetLinks[String(index)] || '') === shipmentLink)
+    const nextRow = header.map((label) => {
+      const normalized = String(label || '').trim().toUpperCase()
+      if (normalized === 'TIME') return submittedAt
+      if (normalized === 'MODE') return 'AUTO'
+      if (normalized === 'NOTICE') return ''
+      if (normalized === 'ACTION') return 'ACTIVE'
+      return sourceValue(normalized)
+    })
+    const opsColumn = header.findIndex((label) => String(label || '').trim().toUpperCase() === `${dept} OPS`)
+    if (opsColumn >= 0 && !String(nextRow[opsColumn] || '').trim()) {
+      const candidates = Array.isArray(body.staffByDept?.[dept]) ? body.staffByDept[dept].map((item: any) => String(item || '').trim()).filter(Boolean) : []
+      if (candidates.length) {
+        const counts = new Map(candidates.map((candidate: string) => [candidate, 0]))
+        alignedRows.slice(1).forEach((row) => {
+          const owner = String(row?.[opsColumn] || '').trim()
+          if (counts.has(owner)) counts.set(owner, Number(counts.get(owner) || 0) + 1)
+        })
+        nextRow[opsColumn] = candidates.reduce((best: string, candidate: string) =>
+          Number(counts.get(candidate) || 0) < Number(counts.get(best) || 0) ? candidate : best, candidates[0])
+      }
+    }
+    if (targetRowIndex < 1) {
+      alignedRows.push(nextRow)
+      targetRowIndex = alignedRows.length - 1
+    } else {
+      alignedRows[targetRowIndex] = alignedRows[targetRowIndex].map((current, column) => nextRow[column] || current)
+    }
+    targetLinks[String(targetRowIndex)] = shipmentLink
+    targetSettings.opsRowLinks = targetLinks
+    targetSheet.rows = rowsWithWorkbookSettings(targetSheet, alignedRows, targetSettings)
+    targetSheet.settings = targetSettings
+    targetSheet.updatedAt = nowIso()
+  }
+  return { submittedAt, shipmentLink, departments: targetDepts, updatedAt: sourceSheet.updatedAt }
+}
+
+const findExistingRecord = (db: AdminConsoleDb, country: string, page: string, data: Record<string, any>, keys: string[]) => {
+  return db.records.findIndex((record) => {
+    if (record.country !== country || record.page !== page) return false
+    return keys.some((key) => {
+      const incoming = recordKey(data[key])
+      return incoming && recordKey(record.data?.[key]) === incoming
+    })
+  })
+}
+
+const upsertRecord = (
+  db: AdminConsoleDb,
+  input: { country: string; page: string; kind: string; data: Record<string, any>; sortOrder?: number },
+  keys: string[],
+) => {
+  const at = nowIso()
+  const index = findExistingRecord(db, input.country, input.page, input.data, keys)
+  if (index >= 0) {
+    db.records[index] = {
+      ...db.records[index],
+      kind: input.kind,
+      data: { ...db.records[index].data, ...input.data },
+      sortOrder: Number(input.sortOrder ?? db.records[index].sortOrder ?? 0),
+      updatedAt: at,
+    }
+    return 'updated'
+  }
+  db.records.push({
+    id: makeId('record'),
+    country: input.country,
+    page: input.page,
+    kind: input.kind,
+    data: input.data,
+    sortOrder: Number(input.sortOrder || 0),
+    createdAt: at,
+    updatedAt: at,
+  })
+  return 'created'
+}
+
+const importExchangeRates = (db: AdminConsoleDb, items: any[] = []) => {
+  db.meta.settings ||= clone(settings)
+  const currencies = Array.isArray(db.meta.settings.currencies) ? db.meta.settings.currencies : []
+  let created = 0
+  let updated = 0
+  let skipped = 0
+  for (const item of items) {
+    const code = upper(item?.code || item?.id || item?.currencyCode)
+    if (!code) {
+      skipped += 1
+      continue
+    }
+    const rate = numberValue(item?.rate ?? item?.value ?? item?.currentRate, NaN)
+    if (!Number.isFinite(rate)) {
+      skipped += 1
+      continue
+    }
+    const currency = {
+      code,
+      name: text(item?.name || item?.currency || item?.label || code),
+      symbol: text(item?.symbol || code),
+      rate,
+      base: Boolean(item?.base || code === 'USD'),
+    }
+    const index = currencies.findIndex((entry: any) => upper(entry?.code) === code)
+    if (index >= 0) {
+      currencies[index] = { ...currencies[index], ...currency }
+      updated += 1
+    } else {
+      currencies.push(currency)
+      created += 1
+    }
+  }
+  db.meta.settings.currencies = currencies
+  return { created, updated, skipped }
+}
+
+const importPostalCodes = (db: AdminConsoleDb, country: string, items: any[] = []) => {
+  let created = 0
+  let updated = 0
+  let skipped = 0
+  items.forEach((item, index) => {
+    const zip = text(item?.zip || item?.postalCode || item?.postcode || item?.code || item?.id)
+    if (!zip) {
+      skipped += 1
+      return
+    }
+    const result = upsertRecord(db, {
+      country,
+      page: 'admin',
+      kind: 'master-admin',
+      sortOrder: index,
+      data: {
+        zip,
+        prov: text(item?.prov || item?.province || item?.state || item?.city || item?.region),
+        dist: text(item?.dist || item?.district || item?.county || item?.area),
+        ward: text(item?.ward || item?.commune || item?.place || item?.locality),
+        source: text(item?.source),
+      },
+    }, ['zip'])
+    if (result === 'created') created += 1
+    else updated += 1
+  })
+  return { created, updated, skipped }
+}
+
+const importSeaports = (db: AdminConsoleDb, country: string, source: string, items: any[] = []) => {
+  let created = 0
+  let updated = 0
+  let skipped = 0
+  items.forEach((item, index) => {
+    const code = upper(item?.code || item?.locode || item?.unlocode || item?.id)
+    const name = text(item?.name || item?.portName || item?.title)
+    if (!code && !name) {
+      skipped += 1
+      return
+    }
+    const result = upsertRecord(db, {
+      country,
+      page: 'ports',
+      kind: 'master-ports',
+      sortOrder: index,
+      data: {
+        code,
+        name,
+        city: text(item?.city || item?.subdivision || item?.province),
+        source: text(source || item?.source || 'UNLOCODE'),
+      },
+    }, ['code', 'name'])
+    if (result === 'created') created += 1
+    else updated += 1
+  })
+  return { created, updated, skipped }
+}
+
+const importCfsWarehouses = (db: AdminConsoleDb, country: string, source: string, items: any[] = []) => {
+  let created = 0
+  let updated = 0
+  let skipped = 0
+  items.forEach((item, index) => {
+    const code = upper(item?.code || item?.facilityCode || item?.id)
+    const name = text(item?.name || item?.warehouse || item?.title)
+    if (!code && !name) {
+      skipped += 1
+      return
+    }
+    const result = upsertRecord(db, {
+      country,
+      page: 'cfs',
+      kind: 'master-cfs',
+      sortOrder: index,
+      data: {
+        code,
+        name,
+        addr: text(item?.addr || item?.address || item?.location),
+        port: upper(item?.port || item?.portCode || item?.locode),
+        source: text(source || item?.source || 'BIC'),
+      },
+    }, ['code', 'name'])
+    if (result === 'created') created += 1
+    else updated += 1
+  })
+  return { created, updated, skipped }
+}
+
+const importHsCodes = (db: AdminConsoleDb, items: any[] = []) => {
+  let created = 0
+  let updated = 0
+  let skipped = 0
+  items.forEach((item, index) => {
+    const hsCode = text(item?.hscode || item?.hsCode || item?.code || item?.id)
+    if (!hsCode) {
+      skipped += 1
+      return
+    }
+    const result = upsertRecord(db, {
+      country: 'GLOBAL',
+      page: 'page_fcl',
+      kind: 'page-fcl',
+      sortOrder: index,
+      data: {
+        section: 'cargo',
+        key: hsCode,
+        hsCode,
+        title: text(item?.description || item?.title || hsCode),
+        summary: text(item?.note || item?.summary),
+        source: 'Macmap',
+        status: 'active',
+      },
+    }, ['hsCode', 'key'])
+    if (result === 'created') created += 1
+    else updated += 1
+  })
+  return { created, updated, skipped }
+}
+
+export default defineEventHandler(async (event) => {
+  const parts = getParts(event)
+  const method = getMethod(event)
+
+  if (parts[0] === 'auth' && parts[1] === 'login' && method === 'POST') {
+    const body = await readBody(event)
+    const username = String(body?.username || '')
+    const password = String(body?.password || '')
+    const expectedUser = process.env.ADMIN_USERNAME || 'admin'
+    const expectedPass = process.env.ADMIN_PASSWORD || 'admin'
+    if (username !== expectedUser || password !== expectedPass) {
+      throw createError({ statusCode: 401, statusMessage: 'Invalid admin credentials' })
+    }
+    return { data: { access_token: `st-admin-token-${Date.now()}`, admin: adminProfile() } }
+  }
+
+  requireAuth(event)
+
+  if (parts[0] === 'auth' && parts[1] === 'profile' && method === 'GET') {
+    return { data: adminProfile() }
+  }
+
+  const db = await readDb()
+  const query = getQuery(event)
+
+  if (parts[0] === 'meta') {
+    if (method === 'GET') return { data: db.meta }
+    if (method === 'PATCH') {
+      const body = await readBody(event)
+      db.meta = {
+        nav: Array.isArray(body?.nav) ? body.nav : db.meta.nav,
+        pages: body?.pages && typeof body.pages === 'object' ? body.pages : db.meta.pages,
+        settings: body?.settings && typeof body.settings === 'object' ? body.settings : db.meta.settings,
+      }
+      await writeDb(db)
+      return { data: db.meta }
+    }
+  }
+
+  if (parts[0] === 'records') {
+    if (method === 'GET' && parts.length === 1) {
+      const country = String(query.country || '')
+      const page = String(query.page || '')
+      const search = String(query.search || '').trim().toLowerCase()
+      const limit = Math.max(1, Number(query.limit || 1000))
+      const items = db.records
+        .filter((record) => (!country || record.country === country) && (!page || record.page === page))
+        .filter((record) => !search || JSON.stringify(record).toLowerCase().includes(search))
+        .sort((a, b) => (a.sortOrder - b.sortOrder) || a.updatedAt.localeCompare(b.updatedAt))
+        .slice(0, limit)
+      return { data: { items, total: items.length } }
+    }
+    if (method === 'POST' && parts.length === 1) {
+      const body = await readBody(event)
+      const at = nowIso()
+      const record: AdminRecord = {
+        id: makeId('record'),
+        country: String(body.country || 'GLOBAL'),
+        page: String(body.page || ''),
+        kind: String(body.kind || 'record'),
+        data: body.data || {},
+        sortOrder: Number(body.sortOrder || 0),
+        createdAt: at,
+        updatedAt: at,
+      }
+      if (isDuplicateRecordData(db.records, record)) throw createError({ statusCode: 409, statusMessage: 'Duplicate data already exists in this tab.' })
+      db.records.push(record)
+      await writeDb(db)
+      return { data: record }
+    }
+    const id = parts[1]
+    const index = findRecord(db, id)
+    if (method === 'PATCH') {
+      const body = await readBody(event)
+      const updated = { ...db.records[index], ...body, id, data: { ...db.records[index].data, ...(body.data || {}) }, updatedAt: nowIso() } as AdminRecord
+      const peers = db.records.filter((record) => record.id !== id)
+      if (isDuplicateRecordData(peers, updated)) throw createError({ statusCode: 409, statusMessage: 'Duplicate data already exists in this tab.' })
+      db.records[index] = updated
+      await writeDb(db)
+      return { data: db.records[index] }
+    }
+    if (method === 'DELETE') {
+      const [record] = db.records.splice(index, 1)
+      db.trash.push({
+        id: makeId('trash'),
+        type: 'record',
+        country: record.country,
+        page: record.page,
+        kind: record.kind,
+        label: recordLabel(record),
+        payload: { record },
+        deletedAt: nowIso(),
+      })
+      await writeDb(db)
+      return { data: record }
+    }
+  }
+
+  if (parts[0] === 'entities') {
+    if (parts[1] === 'clients') {
+      if (method === 'GET') {
+        const search = String(query.search || '').trim().toLowerCase()
+        const field = String(query.field || '').trim()
+        const role = upper(query.role || '')
+        const limit = Math.max(1, Math.min(50, Number(query.limit || 8)))
+        const clients = db.entities
+          .filter((entity) => entity?.type === 'client')
+          .map((entity) => ({ entityId: entity.id, ...(entity.data || {}) }))
+          .filter((client) => !role || (Array.isArray(client.roles) && client.roles.map(upper).includes(role)))
+          .filter((client) => {
+            if (!search) return true
+            const haystack = field && client[field] !== undefined
+              ? String(client[field] || '').toLowerCase()
+              : JSON.stringify(client).toLowerCase()
+            return haystack.includes(search)
+          })
+          .slice(0, limit)
+        return { data: { items: clients, total: clients.length } }
+      }
+      if (parts[2] && method === 'PATCH') {
+        const entity = db.entities.find((item) => item?.type === 'client' && item.id === parts[2])
+        if (!entity) throw createError({ statusCode: 404, statusMessage: 'Client not found' })
+        const body = await readBody(event)
+        const currentRoles = Array.isArray(entity.data?.roles) ? entity.data.roles : []
+        const data = normalizeClient({ ...(entity.data || {}), ...(body || {}), roles: body?.roles || currentRoles })
+        if (!data.namecode) data.namecode = data.id
+        const dataRoles = data.roles.map(upper)
+        const duplicate = db.entities.find((item) => item?.type === 'client' && item.id !== entity.id && (
+          upper(item?.data?.id) === data.id ||
+          (data.namecode && upper(item?.data?.namecode) === upper(data.namecode) && (item?.data?.roles || []).map(upper).some((itemRole: string) => dataRoles.includes(itemRole)))
+        ))
+        if (duplicate) throw createError({ statusCode: 409, statusMessage: 'Client already exists' })
+        entity.data = data
+        entity.updatedAt = nowIso()
+        await writeDb(db)
+        return { data: { entityId: entity.id, ...data } }
+      }
+      if (method === 'POST') {
+        const body = await readBody(event)
+        const data = normalizeClient({ ...(body || {}), id: body?.id || nextClientId(db, body?.country || body?.countryCode || '') })
+        if (!data.namecode) data.namecode = data.id
+        const dataRoles = data.roles.map(upper)
+        const duplicate = db.entities.find((entity) => entity?.type === 'client' && (
+          upper(entity?.data?.id) === data.id ||
+          (data.namecode && upper(entity?.data?.namecode) === upper(data.namecode) && (entity?.data?.roles || []).map(upper).some((entityRole: string) => dataRoles.includes(entityRole)))
+        ))
+        if (duplicate) throw createError({ statusCode: 409, statusMessage: 'Client already exists' })
+        const at = nowIso()
+        const entity = { id: makeId('entity'), type: 'client', data, createdAt: at, updatedAt: at }
+        db.entities.push(entity)
+        await writeDb(db)
+        return { data: { entityId: entity.id, ...data } }
+      }
+    }
+    if (parts[1] === 'options') {
+      const optionType = String(parts[2] || query.type || '').trim().toLowerCase() as EntityOptionType
+      if (!['city', 'country'].includes(optionType)) throw createError({ statusCode: 400, statusMessage: 'Invalid option type' })
+      if (method === 'GET') {
+        const search = String(query.search || '').trim().toLowerCase()
+        const items = db.entities
+          .filter((entity) => entity?.type === `option:${optionType}`)
+          .map((entity) => ({ entityId: entity.id, value: text(entity.data?.value) }))
+          .filter((item) => item.value && (!search || item.value.toLowerCase().includes(search)))
+          .sort((a, b) => a.value.localeCompare(b.value))
+        return { data: { items, total: items.length } }
+      }
+      if (method === 'POST') {
+        const body = await readBody(event)
+        const value = text(body?.value)
+        if (!value) throw createError({ statusCode: 400, statusMessage: 'Value is required' })
+        const duplicate = db.entities.find((entity) => entity?.type === `option:${optionType}` && upper(entity.data?.value) === upper(value))
+        if (duplicate) return { data: { entityId: duplicate.id, value: text(duplicate.data?.value) } }
+        const at = nowIso()
+        const entity = { id: makeId('entity'), type: `option:${optionType}`, data: { value }, createdAt: at, updatedAt: at }
+        db.entities.push(entity)
+        await writeDb(db)
+        return { data: { entityId: entity.id, value } }
+      }
+    }
+  }
+
+  if (parts[0] === 'trash') {
+    if (method === 'GET') {
+      const limit = Math.max(1, Number(query.limit || 500))
+      return { data: { items: db.trash.slice(0, limit), total: db.trash.length } }
+    }
+    if (method === 'POST' && parts.length === 1) {
+      const body = await readBody(event)
+      const entry: AdminTrash = {
+        id: makeId('trash'),
+        type: String(body.type || 'item'),
+        country: body.country || null,
+        page: body.page || null,
+        kind: body.kind || null,
+        label: String(body.label || 'Deleted item'),
+        payload: body.payload || {},
+        deletedAt: nowIso(),
+      }
+      db.trash.push(entry)
+      await writeDb(db)
+      return { data: entry }
+    }
+    if (method === 'DELETE' && parts.length === 1) {
+      db.trash = []
+      await writeDb(db)
+      return { data: { ok: true } }
+    }
+    const id = parts[1]
+    const index = db.trash.findIndex((entry) => entry.id === id)
+    if (index < 0) throw createError({ statusCode: 404, statusMessage: 'Trash item not found' })
+    if (method === 'POST' && parts[2] === 'restore') {
+      const [entry] = db.trash.splice(index, 1)
+      if (entry.payload?.record) db.records.push({ ...entry.payload.record, updatedAt: nowIso() })
+      await writeDb(db)
+      return { data: entry.payload || {} }
+    }
+    if (method === 'DELETE') {
+      const [entry] = db.trash.splice(index, 1)
+      await writeDb(db)
+      return { data: entry }
+    }
+  }
+
+  if (parts[0] === 'workbook' && parts[1] === 'sheets') {
+    if (method === 'GET' && parts.length === 2) {
+      return { data: { items: db.workbookSheets.map(({ rows, ...sheet }) => ({ ...sheet, rowCount: visibleWorkbookRows(rows).length })) } }
+    }
+    if (method === 'POST' && parts.length === 2) {
+      const body = await readBody(event)
+      const sheet = makeSheet(String(body.key || makeId('sheet')), String(body.label || body.key || 'Sheet'), normalizeBillDetailRows(body.rows))
+      Object.assign(sheet, {
+        group: body.group || sheet.group,
+        columnWidths: Array.isArray(body.columnWidths) ? body.columnWidths : sheet.columnWidths,
+        rowHeights: body.rowHeights || {},
+        formatting: body.formatting || {},
+        merges: Array.isArray(body.merges) ? body.merges : [],
+        settings: body.settings || {},
+      })
+      const existing = db.workbookSheets.findIndex((item) => item.key === sheet.key)
+      if (existing >= 0) db.workbookSheets[existing] = { ...db.workbookSheets[existing], ...sheet, id: db.workbookSheets[existing].id, createdAt: db.workbookSheets[existing].createdAt, updatedAt: nowIso() }
+      else db.workbookSheets.push(sheet)
+      await writeDb(db)
+      return { data: existing >= 0 ? db.workbookSheets[existing] : sheet }
+    }
+    const key = decodeURIComponent(parts.slice(2).join('/'))
+    if (method === 'POST' && parts[parts.length - 1] === 'dispatch-sent-icd') {
+      const sourceKey = decodeURIComponent(parts.slice(2, -1).join('/'))
+      const body = await readBody(event)
+      const result = body?.manifestSubmit
+        ? dispatchManifestSubmit(db, sourceKey, body)
+        : dispatchSentIcd(db, sourceKey, body)
+      await writeDb(db)
+      return { data: result }
+    }
+    if (method === 'POST' && parts[parts.length - 1] === 'dispatch-manifest-submit') {
+      const sourceKey = decodeURIComponent(parts.slice(2, -1).join('/'))
+      const result = dispatchManifestSubmit(db, sourceKey, await readBody(event))
+      await writeDb(db)
+      return { data: result }
+    }
+    const sheet = sheetByKey(db, key) || await ensureOpsSheet(db, key)
+    if (!sheet) throw createError({ statusCode: 404, statusMessage: 'Worksheet not found' })
+    if (method === 'GET') return { data: sheet }
+    if (method === 'PATCH') {
+      const body = await readBody(event)
+      Object.assign(sheet, {
+        rows: Array.isArray(body.rows) ? normalizeBillDetailRows(body.rows) : sheet.rows,
+        columnWidths: Array.isArray(body.columnWidths) ? body.columnWidths : sheet.columnWidths,
+        rowHeights: body.rowHeights || sheet.rowHeights || {},
+        formatting: body.formatting || sheet.formatting || {},
+        merges: Array.isArray(body.merges) ? body.merges : sheet.merges,
+        settings: body.settings || sheet.settings || {},
+        updatedAt: nowIso(),
+      })
+      await writeDb(db)
+      return { data: sheet }
+    }
+    if (method === 'DELETE') {
+      db.workbookSheets = db.workbookSheets.filter((item) => item.key !== key)
+      await writeDb(db)
+      return { data: sheet }
+    }
+  }
+
+  if (parts[0] === 'preview') {
+    return { data: { source: 'local', items: [], updatedAt: nowIso(), nextUpdateAt: '', lastCheckedAt: nowIso() } }
+  }
+
+  if (parts[0] === 'import') {
+    if (method !== 'POST') throw createError({ statusCode: 405, statusMessage: 'Method not allowed' })
+    const body = await readBody(event)
+    const items = Array.isArray(body?.items) ? body.items : []
+    let result = { created: 0, updated: 0, skipped: 0 }
+    if (parts[1] === 'exchange-rates') result = importExchangeRates(db, items)
+    else if (parts[1] === 'postal-codes') result = importPostalCodes(db, String(body?.country || 'GLOBAL'), items)
+    else if (parts[1] === 'seaports') result = importSeaports(db, String(body?.country || 'GLOBAL'), String(body?.source || ''), items)
+    else if (parts[1] === 'cfs-warehouses') result = importCfsWarehouses(db, String(body?.country || 'GLOBAL'), String(body?.source || ''), items)
+    else if (parts[1] === 'macmap-hs') result = importHsCodes(db, items)
+    else throw createError({ statusCode: 404, statusMessage: 'Import endpoint not found' })
+    await writeDb(db)
+    return { data: result }
+  }
+
+  throw createError({ statusCode: 404, statusMessage: 'Admin console endpoint not found' })
+})

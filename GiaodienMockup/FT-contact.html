@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact Us — SHOPTRANS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-2: #ffffff;
+    --surface: rgba(0,0,0,0.025);
+    --surface-hover: rgba(0,230,118,0.06);
+    --border: rgba(0,0,0,0.1);
+    --border-hover: rgba(0,200,83,0.5);
+    --text: #0a0a0a;
+    --text-2: #525252;
+    --text-3: #9a9a9a;
+    --green: #00C853;           /* darker green for borders/accents on white */
+    --green-text: #008f3a;      /* even darker for inline text/links */
+    --green-bright: #00E676;    /* brand green for fills (chip active, CTA, toast) */
+    --green-dim: rgba(0,200,83,0.1);
+    --red: #e53935;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Geist', sans-serif;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  /* dot grid bg */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* subtle green glow top */
+  body::after {
+    content: '';
+    position: fixed; top: -300px; left: 50%;
+    width: 900px; height: 600px;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse at center, rgba(0,230,118,0.12), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .mono {
+    font-family: 'Geist Mono', monospace;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 80px 32px 120px;
+  }
+
+  /* ============ HEADER ============ */
+  .head {
+    margin-bottom: 56px;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--green-text);
+    margin-bottom: 20px;
+  }
+
+  .eyebrow::before {
+    content: '';
+    width: 8px; height: 8px;
+    background: var(--green-bright);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--green-bright);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  h1 {
+    font-size: clamp(40px, 6vw, 72px);
+    font-weight: 600;
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    margin-bottom: 18px;
+    white-space: nowrap;
+  }
+
+  h1 .accent {
+    color: var(--green-text);
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  .sub {
+    font-size: 17px;
+    color: var(--text-2);
+    line-height: 1.55;
+    white-space: nowrap;
+  }
+
+  /* ============ STATS BAR ============ */
+  .stats {
+    margin-top: 56px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat {
+    padding: 28px 0;
+    border-right: 1px solid var(--border);
+    text-align: center;
+  }
+  .stat:last-child { border-right: none; }
+
+  .stat-num {
+    font-family: 'Geist Mono', monospace;
+    font-size: 32px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+  .stat-num .plus { color: var(--green-text); }
+
+  .stat-lbl {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  /* ============ TOOLBAR ============ */
+  .toolbar {
+    margin: 48px 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    padding: 9px 16px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .chip:hover {
+    border-color: rgba(0,0,0,0.25);
+    color: var(--text);
+  }
+
+  .chip.active {
+    background: var(--green-bright);
+    border-color: var(--green-bright);
+    color: #000;
+  }
+
+  .chip .count {
+    font-size: 10px;
+    opacity: 0.6;
+  }
+  .chip.active .count { opacity: 0.8; }
+
+  .search {
+    position: relative;
+    width: 240px;
+  }
+  .search input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px 10px 36px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search input:focus { border-color: var(--green); }
+  .search input::placeholder { color: var(--text-3); text-transform: uppercase; letter-spacing: 0.12em; font-size: 10px; }
+  .search svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px; height: 14px;
+    color: var(--text-3);
+  }
+
+  /* ============ GRID ============ */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+
+  /* ============ CARD ============ */
+  .card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 26px 24px 22px;
+    position: relative;
+    transition:
+      transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+    transform: translateY(12px);
+    animation: rise 0.5s ease forwards;
+  }
+
+  @keyframes rise {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(0, 200, 83, 0.35);
+    box-shadow:
+      0 12px 28px rgba(0, 0, 0, 0.06),
+      0 4px 10px rgba(0, 200, 83, 0.06);
+  }
+
+  .card.hq {
+    background: linear-gradient(180deg, rgba(0,230,118,0.05), transparent 55%), var(--bg-2);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+
+  .flag-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .flag {
+    width: 28px;
+    height: 20px;
+    border-radius: 2px;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.12);
+    flex-shrink: 0;
+    background: #e5e5e5;
+  }
+  .flag img {
+    width: 100%; height: 100%;
+    display: block;
+    object-fit: cover;
+  }
+
+  .iso {
+    font-family: 'Geist Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text);
+  }
+
+  .badge {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    padding: 4px 8px;
+    border: 1px solid var(--green);
+    color: var(--green-text);
+    background: var(--green-dim);
+    font-weight: 600;
+  }
+
+  .region-tag {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    color: var(--text-3);
+  }
+
+  .country {
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+    line-height: 1.15;
+  }
+
+  .city {
+    color: var(--text-2);
+    font-size: 14px;
+    margin-bottom: 14px;
+  }
+
+  .time {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    color: var(--green-text);
+    letter-spacing: 0.08em;
+    margin-bottom: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+  }
+  .time::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--green-bright);
+    border-radius: 50%;
+    animation: blink 1.5s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 0 16px;
+  }
+
+  .contact-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 13px;
+    transition: color 0.2s ease;
+    padding: 2px 0;
+  }
+  .contact-row:hover { color: var(--green-text); }
+
+  .icon-btn {
+    width: 27px;
+    height: 27px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--text);
+    color: #fff;
+    border-radius: 6px;
+    flex-shrink: 0;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease,
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+  .icon-btn svg {
+    width: 12px;
+    height: 12px;
+    color: inherit;
+  }
+  .contact-row:hover .icon-btn {
+    background: var(--green-bright);
+    color: #000;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 200, 83, 0.25);
+  }
+
+  .contact-row span:not(.icon-btn) {
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+  }
+
+  .address {
+    color: var(--text-3);
+    font-size: 11.5px;
+    line-height: 1.55;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+  }
+
+  /* ============ FOOTER NOTE ============ */
+  .foot-note {
+    margin-top: 56px;
+    padding: 28px 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .foot-note-text {
+    color: var(--text-2);
+    font-size: 13px;
+  }
+  .foot-note-text strong {
+    color: var(--text);
+    font-weight: 500;
+  }
+  .foot-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--green-bright);
+    color: #000;
+    padding: 12px 20px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    font-weight: 600;
+    transition: transform 0.15s ease;
+  }
+  .foot-cta:hover { transform: translateX(2px); }
+
+  /* ============ TOAST ============ */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: var(--green-bright);
+    color: #000;
+    padding: 12px 20px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+    z-index: 100;
+    transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    box-shadow: 0 10px 32px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.06);
+  }
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* hidden state */
+  .card.hidden { display: none; }
+
+  /* View Transitions smooth cross-fade when filtering */
+  @media (prefers-reduced-motion: no-preference) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+      animation-duration: 0.22s;
+      animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+
+  /* responsive */
+  @media (max-width: 720px) {
+    .wrap { padding: 48px 20px 80px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .stat { border-bottom: 1px solid var(--border); }
+    .stat:nth-child(2) { border-right: none; }
+    .toolbar { flex-direction: column; align-items: flex-start; }
+    .search { width: 100%; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ============ HEADER ============ -->
+  <header class="head">
+    <div class="eyebrow">Contact / Global Network</div>
+    <h1>Fourteen offices, one <span class="accent">freight network.</span></h1>
+    <p class="sub">From Shanghai to Frankfurt — SHOPTRANS operates a fully staffed network across Asia, the Americas, and Europe. Reach the team closest to your cargo, 24/7.</p>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num">14<span class="plus">+</span></div>
+        <div class="stat-lbl">Offices</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">12</div>
+        <div class="stat-lbl">Countries</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">3</div>
+        <div class="stat-lbl">Continents</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">24/7</div>
+        <div class="stat-lbl">Support</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ TOOLBAR ============ -->
+  <div class="toolbar">
+    <div class="filters">
+      <button class="chip active" data-region="all">All <span class="count">14</span></button>
+      <button class="chip" data-region="asia">Asia <span class="count">11</span></button>
+      <button class="chip" data-region="americas">Americas <span class="count">2</span></button>
+      <button class="chip" data-region="europe">Europe <span class="count">1</span></button>
+    </div>
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" id="searchInput" placeholder="Search country or city">
+    </div>
+  </div>
+
+  <!-- ============ GRID ============ -->
+  <div class="grid" id="grid"></div>
+
+  <!-- ============ FOOT CTA ============ -->
+  <div class="foot-note">
+    <div class="foot-note-text">
+      <strong>Can't find your region?</strong> &nbsp;Our global desk routes inquiries to the nearest hub within 2 business hours.
+    </div>
+    <a href="mailto:contact@shoptrans.com" class="foot-cta">
+      contact@shoptrans.com
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+    </a>
+  </div>
+
+</div>
+
+<!-- ============ TOAST ============ -->
+<div class="toast" id="toast">Copied to clipboard</div>
+
+<script>
+  // ============ DATA ============
+  const offices = [
+    { iso:'CN', country:'China',           city:'Shanghai',     region:'asia',     tz:'Asia/Shanghai',     phone:'+86 21 6888 0001',  email:'cn@shoptrans.com', addr:'28F Shanghai Tower, 501 Yincheng Middle Rd, Pudong, Shanghai 200120', hq:true },
+    { iso:'JP', country:'Japan',           city:'Tokyo',        region:'asia',     tz:'Asia/Tokyo',        phone:'+81 3 5288 0002',   email:'jp@shoptrans.com', addr:'15F Marunouchi Building, 2-4-1 Marunouchi, Chiyoda-ku, Tokyo 100-6390' },
+    { iso:'VN', country:'Vietnam',         city:'Ho Chi Minh',  region:'asia',     tz:'Asia/Ho_Chi_Minh',  phone:'+84 28 3823 0003',  email:'vn@shoptrans.com', addr:'Bitexco Financial Tower, 2 Hai Trieu, District 1, Ho Chi Minh City' },
+    { iso:'KR', country:'South Korea',     city:'Seoul',        region:'asia',     tz:'Asia/Seoul',        phone:'+82 2 3471 0004',   email:'kr@shoptrans.com', addr:'12F Gangnam Finance Center, 152 Teheran-ro, Gangnam-gu, Seoul 06236' },
+    { iso:'TH', country:'Thailand',        city:'Bangkok',      region:'asia',     tz:'Asia/Bangkok',      phone:'+66 2 207 0005',    email:'th@shoptrans.com', addr:'21F Empire Tower, 1 South Sathorn Rd, Yan Nawa, Sathon, Bangkok 10120' },
+    { iso:'ID', country:'Indonesia',       city:'Jakarta',      region:'asia',     tz:'Asia/Jakarta',      phone:'+62 21 5021 0006',  email:'id@shoptrans.com', addr:'8F Sahid Sudirman Center, Jl. Jenderal Sudirman 86, Jakarta 10220' },
+    { iso:'MY', country:'Malaysia',        city:'Port Klang',   region:'asia',     tz:'Asia/Kuala_Lumpur', phone:'+60 3 3168 0007',   email:'my@shoptrans.com', addr:'Suite 5-2, Wisma Westports, Pulau Indah, 42920 Port Klang, Selangor' },
+    { iso:'IN', country:'India',           city:'Mumbai',       region:'asia',     tz:'Asia/Kolkata',      phone:'+91 22 6711 0008',  email:'in@shoptrans.com', addr:'14F One BKC, Bandra Kurla Complex, Bandra East, Mumbai 400051' },
+    { iso:'BD', country:'Bangladesh',      city:'Dhaka',        region:'asia',     tz:'Asia/Dhaka',        phone:'+880 2 5566 0009',  email:'bd@shoptrans.com', addr:'Level 9, Police Plaza Concord, Plot 02 Road 144, Gulshan-1, Dhaka 1212' },
+    { iso:'HK', country:'Hong Kong, China',city:'Hong Kong',    region:'asia',     tz:'Asia/Hong_Kong',    phone:'+852 3590 0010',    email:'hk@shoptrans.com', addr:'32F The Center, 99 Queen\'s Road Central, Central, Hong Kong', flagIso:'cn' },
+    { iso:'TW', country:'Taiwan, China',   city:'Taipei',       region:'asia',     tz:'Asia/Taipei',       phone:'+886 2 8758 0011',  email:'tw@shoptrans.com', addr:'27F Taipei 101 Tower, 7 Xinyi Rd Sec 5, Xinyi District, Taipei 110', flagIso:'cn' },
+    { iso:'US', country:'USA',             city:'Maryland',     region:'americas', tz:'America/New_York',  phone:'+1 301 555 0012',   email:'us@shoptrans.com', addr:'7700 Wisconsin Ave Suite 700, Bethesda, MD 20814' },
+    { iso:'MX', country:'Mexico',          city:'Mexico City',  region:'americas', tz:'America/Mexico_City',phone:'+52 55 5089 0013', email:'mx@shoptrans.com', addr:'Torre Mayor Piso 22, Paseo de la Reforma 505, Cuauhtémoc, 06500 CDMX' },
+    { iso:'DE', country:'Germany',         city:'Frankfurt',    region:'europe',   tz:'Europe/Berlin',     phone:'+49 69 7593 0014',  email:'de@shoptrans.com', addr:'24F Messeturm, Friedrich-Ebert-Anlage 49, 60308 Frankfurt am Main' }
+  ];
+
+  const regionLabel = { asia:'Asia', americas:'Americas', europe:'Europe' };
+
+  // ============ ICONS ============
+  const iconPhone = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+  const iconMail = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>`;
+
+  // ============ RENDER ============
+  const grid = document.getElementById('grid');
+  offices.forEach((o, i) => {
+    const card = document.createElement('div');
+    card.className = 'card' + (o.hq ? ' hq' : '');
+    card.dataset.region = o.region;
+    card.dataset.search = (o.country + ' ' + o.city + ' ' + o.iso).toLowerCase();
+    card.style.animationDelay = (i * 40) + 'ms';
+
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="flag-row">
+          <div class="flag"><img src="https://flagcdn.com/w40/${(o.flagIso || o.iso.toLowerCase())}.png" alt="${o.iso} flag" loading="lazy"></div>
+          <span class="iso">${o.iso}</span>
+          ${o.hq ? '<span class="badge">HQ</span>' : ''}
+        </div>
+        <span class="region-tag">${regionLabel[o.region]}</span>
+      </div>
+
+      <div class="country">${o.country}</div>
+      <div class="city">${o.city}</div>
+      <div class="time" data-tz="${o.tz}">--:--:--&nbsp;LOCAL</div>
+
+      <div class="divider"></div>
+
+      <a class="contact-row" href="tel:${o.phone.replace(/\s/g,'')}" data-copy="${o.phone}">
+        <span class="icon-btn">${iconPhone}</span><span>${o.phone}</span>
+      </a>
+      <a class="contact-row" href="mailto:${o.email}" data-copy="${o.email}">
+        <span class="icon-btn">${iconMail}</span><span>${o.email}</span>
+      </a>
+
+      <div class="address">${o.addr}</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  // ============ LIVE LOCAL TIME ============
+  function updateTimes() {
+    document.querySelectorAll('.time').forEach(el => {
+      const tz = el.dataset.tz;
+      try {
+        const t = new Intl.DateTimeFormat('en-GB', {
+          timeZone: tz,
+          hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+        }).format(new Date());
+        el.innerHTML = `${t}&nbsp;LOCAL`;
+      } catch(e) {}
+    });
+  }
+  updateTimes();
+  setInterval(updateTimes, 1000);
+
+  // ============ FILTER ============
+  const chips = document.querySelectorAll('.chip');
+  const searchInput = document.getElementById('searchInput');
+  let activeRegion = 'all';
+  let activeSearch = '';
+
+  function applyFilter() {
+    const doFilter = () => {
+      document.querySelectorAll('.card').forEach(c => {
+        const regionMatch = activeRegion === 'all' || c.dataset.region === activeRegion;
+        const searchMatch = !activeSearch || c.dataset.search.includes(activeSearch);
+        c.classList.toggle('hidden', !(regionMatch && searchMatch));
+      });
+    };
+    if (document.startViewTransition) {
+      document.startViewTransition(doFilter);
+    } else {
+      doFilter();
+    }
+  }
+
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      chips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeRegion = chip.dataset.region;
+      applyFilter();
+    });
+  });
+
+  searchInput.addEventListener('input', e => {
+    activeSearch = e.target.value.trim().toLowerCase();
+    applyFilter();
+  });
+
+  // ============ COPY ON CLICK (ctrl/cmd + click copies, normal click follows link) ============
+  // Click to copy with subtle: hold any key OR right-click? Simpler: dbl-click to copy.
+  // Going with: long-press / shift-click copies. Default click opens tel/mailto.
+  // Cleaner UX: add a small copy button? Let's do shift+click for copy, regular click follows link.
+  const toast = document.getElementById('toast');
+  let toastTimer;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+  }
+
+  document.querySelectorAll('.contact-row').forEach(row => {
+    row.addEventListener('click', e => {
+      if (e.shiftKey || e.metaKey || e.ctrlKey) {
+        e.preventDefault();
+        navigator.clipboard.writeText(row.dataset.copy).then(() => {
+          showToast('Copied · ' + row.dataset.copy);
+        });
+      }
+    });
+    // Also: right-click copies (suppress menu)
+    row.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      navigator.clipboard.writeText(row.dataset.copy).then(() => {
+        showToast('Copied · ' + row.dataset.copy);
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

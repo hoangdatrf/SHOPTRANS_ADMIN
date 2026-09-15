@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TX / SHOPTRANS - Booking Confirmation</title>
+<style>
+:root{
+  --navy:#0f4c81; --green:#008F4C; --green-d:#007a41;
+  --green-light:#e8f7ef; --green-lighter:#f4fbf7;
+  --orange:#e67e22; --orange-d:#cf6f1c;
+  --grey:#64748b; --grey-d:#51606e;
+  --danger:#c0392b; --danger-d:#a23227;
+  --line:#c9d8ce; --line-strong:#9db3c7;
+  --ink:#0e1512;
+}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
+body{margin:0;background:#e8edf2;font-family:Arial,Helvetica,sans-serif;color:var(--ink);font-size:12px}
+select{cursor:pointer;-webkit-appearance:none;appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,var(--grey) 50%),linear-gradient(135deg,var(--grey) 50%,transparent 50%);
+  background-position:calc(100% - 13px) 55%,calc(100% - 8px) 55%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:24px!important}
+input[type=text],input[type=number],input:not([type]),textarea{-webkit-appearance:none;appearance:none}
+
+/* ============ TOOLBAR (screen only) ============ */
+.toolbar{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #d5dde5;
+  padding:10px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.toolbar .tt{font-weight:700;color:var(--navy);margin-right:6px;font-size:13px}
+.cosel{border:1px solid var(--navy);color:var(--navy);font-weight:700;border-radius:6px;
+  padding:6px 8px;font-size:12px;background:#fff;cursor:pointer}
+.tab{border:1px solid var(--grey);background:#fff;color:var(--grey);padding:7px 14px;border-radius:6px;
+  font-weight:700;font-size:12px;cursor:pointer}
+.tab:hover{box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.tab.on{background:var(--green);border-color:var(--green);color:#fff}
+.spacer{flex:1}
+.btn{border:none;border-radius:6px;padding:8px 16px;font-weight:700;font-size:12px;color:#fff;cursor:pointer}
+.btn:hover{box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.btn.green{background:var(--green)} .btn.green:hover{background:var(--green-d)}
+.btn.grey{background:var(--grey)} .btn.grey:hover{background:var(--grey-d)}
+.btn.red{background:var(--danger)} .btn.red:hover{background:var(--danger-d)}
+.btn.orange{background:var(--orange)} .btn.orange:hover{background:var(--orange-d)}
+
+/* ============ SHEET (A4) ============ */
+.sheet{display:none;position:relative;width:210mm;min-height:296mm;margin:18px auto;background:#fff;
+  box-shadow:0 2px 14px rgba(0,0,0,.15);padding:14mm 14mm 42mm 14mm}
+.sheet.active{display:block}
+
+/* ---- auto-fit compact tier (applied by JS when content overflows 1 page) ---- */
+.sheet.compact{padding:6mm 10mm 28mm 10mm;font-size:11px}
+.sheet.compact .doc-head{padding-bottom:6px;margin-bottom:6px}
+.sheet.compact .co-mark{width:42px;height:42px;font-size:15px}
+.sheet.compact .doc-title{font-size:17px}
+.sheet.compact .info-strip{margin-bottom:6px}
+.sheet.compact .info-cell{padding:4px 10px}
+.sheet.compact .sec-h{margin:6px 0 4px}
+.sheet.compact .party-grid{gap:6px;margin-bottom:4px}
+.sheet.compact .party-box{padding:4px 7px}
+.sheet.compact .party-box [contenteditable]{min-height:16px}
+.sheet.compact .kv-grid{gap:4px 10px;margin-bottom:3px}
+.sheet.compact .kv select,.sheet.compact .kv input,.sheet.compact .kv textarea{padding:3px 6px;font-size:10px}
+.sheet.compact .vv-wrap td,.sheet.compact .vv-wrap th{padding:2px 4px}
+.sheet.compact .remarks-box{padding:5px 8px}
+.sheet.compact .remarks-box textarea{font-size:9px;line-height:1.4}
+.sheet.compact .doc-foot{left:10mm;right:10mm;bottom:6mm;padding-top:6px}
+.sheet.compact .stamp-box{height:46px;margin-bottom:4px}
+.sheet.compact .sign-block .sb-lbl{margin-bottom:4px}
+
+/* ---- header ---- */
+.doc-head{display:flex;justify-content:space-between;align-items:flex-start;
+  padding-bottom:20px;border-bottom:3px solid var(--green);margin-bottom:24px}
+.co-block{display:flex;gap:12px;align-items:flex-start}
+.co-mark{width:52px;height:52px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--green),var(--navy));color:#fff;
+  font-weight:800;font-size:19px;display:flex;align-items:center;justify-content:center;letter-spacing:.5px}
+.co-info .co-nm{font-size:14.5px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.2px}
+.co-info .co-addr{font-size:9.5px;color:#3a463f;line-height:1.55;max-width:300px;margin-top:2px}
+.co-info .co-telfax{font-size:9.5px;color:#3a463f;margin-top:1px}
+.doc-title-block{text-align:right}
+.doc-title{font-size:21px;font-weight:800;color:var(--green-d);letter-spacing:.4px;white-space:nowrap}
+.doc-sub{font-size:10.5px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:1.2px;margin-top:3px}
+
+/* ---- info strip ---- */
+.info-strip{display:flex;background:var(--green-lighter);border:1px solid var(--line);
+  border-radius:8px;overflow:hidden;margin-bottom:26px}
+.info-cell{flex:1;padding:14px 16px;border-right:1px solid var(--line)}
+.info-cell:last-child{border-right:none}
+.info-cell label{display:block;font-size:8.5px;font-weight:700;color:var(--green-d);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.info-cell input{border:none;background:transparent;font-size:12.5px;font-weight:700;
+  color:var(--ink);width:100%;padding:8px 0;font-family:inherit}
+.info-cell input:focus{outline:none}
+.info-cell .svc{font-size:12.5px;font-weight:800;color:var(--green-d)}
+
+/* ---- section header ---- */
+.sec-h{display:flex;align-items:center;gap:8px;margin:28px 0 13px}
+.sec-h .tag{background:var(--green);color:#fff;font-size:9.5px;font-weight:700;
+  padding:3px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.sec-h .ln{flex:1;height:1px;background:var(--line)}
+
+/* ---- party grid ---- */
+.party-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
+.party-box{border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:#fff}
+.party-box.wide{grid-column:1/-1}
+.party-box .lbl{font-size:8.5px;font-weight:700;color:var(--green-d);text-transform:uppercase;margin-bottom:3px;letter-spacing:.4px}
+.party-box [contenteditable]{min-height:32px;font-size:11px;outline:none;line-height:1.7}
+.party-box [contenteditable].ph-active{color:#a3aca5}
+
+/* ---- table (vessel / flight) ---- */
+.vv-wrap table{width:100%;border-collapse:collapse;font-size:10.8px}
+.vv-wrap th{background:var(--green-light);color:var(--navy);border:1px solid var(--line);
+  padding:11px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.3px}
+.vv-wrap td{border:1px solid var(--line);padding:10px 6px}
+.vv-wrap td input,.vv-wrap td select{width:100%;border:none;background:transparent;font:inherit;padding:10px 4px;font-family:inherit}
+.vv-wrap td input:focus,.vv-wrap td select:focus{outline:1px solid var(--green);border-radius:3px}
+.vv-wrap tbody tr:nth-child(even) td{background:#fafcfa}
+.vv-actions{text-align:center;width:30px}
+.rowdel{width:11px;height:11px;border-radius:50%;background:var(--danger);color:#fff;border:none;
+  font-size:6.5px;font-weight:700;cursor:pointer;line-height:1;box-shadow:0 1px 1px rgba(0,0,0,.18);
+  display:flex;align-items:center;justify-content:center;padding:0}
+.rowdel:hover{background:var(--danger-d)}
+.addrow-btn{margin-top:6px;background:var(--navy);color:#fff;border:none;border-radius:6px;
+  padding:6px 13px;font-size:10.5px;font-weight:700;cursor:pointer}
+.addrow-btn:hover{background:#0c3d68}
+
+/* ---- date overlay (global-date-fmt) ---- */
+/*global-date-fmt*/
+.gdwrap{position:relative;display:inline-block;width:100%}
+.gdwrap input[type=date]{position:relative;color:transparent;cursor:pointer;width:100%}
+.gdwrap input[type=date]::-webkit-datetime-edit{opacity:0}
+.gdwrap input[type=date]::-webkit-datetime-edit-fields-wrapper{opacity:0}
+.gdwrap input[type=date]::-webkit-calendar-picker-indicator{position:absolute;left:0;top:0;
+  width:100%;height:100%;opacity:0;cursor:pointer;margin:0}
+.gd-txt{position:absolute;left:6px;top:50%;transform:translateY(-50%);font-size:inherit;
+  color:inherit;pointer-events:none;font-weight:inherit;white-space:nowrap}
+.gd-txt:empty::before{content:"yyyy/mm/dd";color:#a3aca5;font-weight:400}
+
+/* ---- key/value grid ---- */
+.kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;margin-bottom:14px}
+.kv{display:flex;flex-direction:column;gap:5px}
+.kv.wide{grid-column:1/-1}
+.kv label{font-size:8.5px;font-weight:700;color:var(--green-d);text-transform:uppercase;letter-spacing:.4px}
+.kv select,.kv input{border:1px solid var(--line);border-radius:6px;padding:28px 14px;
+  font-size:11px;width:100%;background:#fff;font-family:inherit}
+.kv textarea{border:1px solid var(--line);border-radius:6px;padding:11px 12px;font-size:11px;
+  width:100%;background:#fff;font-family:inherit;resize:vertical;min-height:44px;line-height:1.5}
+.kv input[readonly]{background:#f0f3f1;color:#3a463f;cursor:default}
+.pkg-row{display:flex;gap:6px}
+.pkg-row input{flex:1.4}
+.pkg-row select{flex:1}
+
+/* ---- warehouse select row ---- */
+.wh-row{display:flex;gap:6px}
+.wh-row select{flex:1;border:1px solid var(--line);border-radius:6px;padding:18px 10px;font-size:11px;background:#fff;font-family:inherit}
+.wh-manage-btn{border:1px solid var(--orange);color:var(--orange);background:#fff;border-radius:6px;
+  padding:5px 10px;font-size:10.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.wh-manage-btn:hover{background:var(--orange);color:#fff}
+
+/* ---- dimension calc ---- */
+.dim-toggle{background:none;border:none;color:var(--navy);font-size:10px;font-weight:700;
+  text-decoration:underline;cursor:pointer;padding:2px 0;text-align:left}
+.dim-box{display:none;border:1px dashed var(--line-strong);border-radius:8px;padding:8px;margin-top:6px;background:#fafcfa;text-align:center}
+.dim-box.show{display:block}
+.dim-box table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:10.5px;margin-bottom:6px}
+.dim-box th{background:var(--green-light);color:var(--navy);border:1px solid var(--line);padding:4px;font-size:8.5px;text-transform:uppercase;text-align:center}
+.dim-box td{border:1px solid var(--line);padding:3px 4px;text-align:center}
+.dim-box td input{width:100%;border:none;background:transparent;font:inherit;padding:8px 2px;text-align:center;font-family:inherit}
+.dim-box td input:focus{outline:1px solid var(--green);border-radius:3px}
+.dim-box .addrow-btn{display:block;margin:0 0 0 auto}
+.dim-actions{margin-top:6px;display:flex;align-items:center;justify-content:flex-end;gap:8px}
+.dim-sum{font-size:10.5px;font-weight:700;color:var(--navy)}
+
+/* ---- remarks ---- */
+.remarks-box{background:#fafcfa;border-left:4px solid var(--green);border-radius:0 8px 8px 0;padding:18px 20px}
+.remarks-box textarea{width:100%;border:none;background:transparent;font-size:11px;
+  line-height:2.5;font-family:inherit;resize:none;overflow:hidden;display:block}
+.remarks-box textarea:focus{outline:none}
+
+/* ---- footer ---- */
+.doc-foot{position:absolute;left:14mm;right:14mm;bottom:9mm;display:flex;justify-content:space-between;align-items:flex-end;padding-top:9px;border-top:1px solid var(--line)}
+.foot-left{font-size:9.5px;color:#666;line-height:1.8}
+.foot-left input{border:none;background:transparent;font:inherit;border-bottom:1px dotted #999;color:#333;padding:6px 2px}
+.sign-block{text-align:center;width:210px}
+.sign-block .sb-lbl{font-size:8.5px;font-weight:700;color:var(--green-d);text-transform:uppercase;margin-bottom:6px;letter-spacing:.4px}
+.stamp-box{border:1px dashed var(--line-strong);border-radius:6px;height:64px;display:flex;
+  align-items:center;justify-content:center;color:#a3aca5;font-size:9px;margin-bottom:6px}
+.sign-name{border:none;background:transparent;font-size:11px;font-weight:700;color:var(--ink);
+  text-align:center;width:100%;font-family:inherit;padding:6px 0}
+.sign-name::placeholder{color:#9aa5ab;font-weight:600}
+
+/* ============ MODALS ============ */
+.ov{position:fixed;inset:0;background:rgba(15,25,20,.45);display:none;align-items:center;justify-content:center;z-index:200}
+.ov.show{display:flex}
+.wbox{background:#fff;border-radius:10px;padding:16px;width:600px;max-height:82vh;overflow:auto;
+  box-shadow:0 8px 30px rgba(0,0,0,.28)}
+.wbox h3{margin:0 0 10px;font-size:13.5px;color:var(--navy);display:flex;justify-content:space-between;align-items:center}
+.px{width:24px;height:24px;border-radius:50%;background:var(--danger);color:#fff;border:none;
+  font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.18);
+  display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
+.px:hover{background:var(--danger-d)}
+.wtbl{width:100%;border-collapse:collapse;font-size:10.8px;margin-bottom:10px}
+.wtbl th{background:#eef4f9;color:var(--navy);border:1px solid var(--line);padding:5px;font-size:9px;text-transform:uppercase}
+.wtbl td{border:1px solid var(--line);padding:3px 5px}
+.wtbl td input{width:100%;border:none;background:transparent;font:inherit;padding:10px 4px;font-family:inherit}
+.wtbl td input:focus{outline:1px solid var(--green);border-radius:3px}
+.wdel{width:10px;height:10px;border-radius:50%;background:var(--danger);color:#fff;border:none;
+  font-size:5.5px;font-weight:700;cursor:pointer;box-shadow:0 1px 1px rgba(0,0,0,.18);
+  display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
+.wdel:hover{background:var(--danger-d)}
+.wfoot{display:flex;justify-content:space-between;align-items:center}
+.wfoot small{color:#7a847d;font-size:9.5px}
+
+.cbox{background:#fff;border-radius:10px;padding:20px 24px;width:300px;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.28)}
+.cbox p{margin:0 0 14px;font-size:12.5px;color:var(--ink)}
+.cbox .btn{margin:0 4px;padding:7px 18px}
+
+/* ---- toast ---- */
+.toastwrap{position:fixed;bottom:18px;right:18px;z-index:300;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--navy);color:#fff;padding:9px 16px;border-radius:6px;font-size:11.5px;
+  box-shadow:0 3px 12px rgba(0,0,0,.25);opacity:0;transform:translateY(8px);transition:.2s}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* ============ PRINT ============ */
+@page{size:A4;margin:0}
+@media print{
+  body{background:#fff}
+  .toolbar,.ov,.no-print,.vv-actions,.addrow-btn,.wh-manage-btn,.dim-toggle,.dim-box{display:none!important}
+  .sheet{display:none;box-shadow:none;margin:0;width:auto;min-height:288mm}
+  .sheet.active{display:block}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= TOOLBAR ================= -->
+<div class="toolbar no-print">
+  <span class="tt">BOOKING</span>
+  <select class="cosel" id="coSel">
+    <option value="tx">TX LOGISTICS VIETNAM CO.,LTD</option>
+    <option value="st">SHOPTRANS VIETNAM CO., LTD</option>
+  </select>
+  <button class="tab on" data-t="sea">SEA · LCL BOOKING</button>
+  <button class="tab" data-t="air">AIR BOOKING</button>
+  <span class="spacer"></span>
+  <button class="btn grey" id="btnClear">Clear</button>
+  <button class="btn green" id="btnPdf">Export PDF</button>
+</div>
+
+<!-- ==================== SEA · LCL SHEET ==================== -->
+<div class="sheet active" id="sh-sea">
+  <div class="doc-head">
+    <div class="co-block">
+      <div class="co-mark co-mk">TX</div>
+      <div class="co-info">
+        <div class="co-nm">TX LOGISTICS VIETNAM CO.,LTD</div>
+        <div class="co-addr co-addr">3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam</div>
+        <div class="co-telfax co-telfax">Tel: +84 28 3547 0468 &nbsp;·&nbsp; Fax: +84 28 3547 0469</div>
+      </div>
+    </div>
+    <div class="doc-title-block">
+      <div class="doc-title">BOOKING CONFIRMATION</div>
+      <div class="doc-sub">Sea Freight · LCL</div>
+    </div>
+  </div>
+
+  <div class="info-strip">
+    <div class="info-cell"><label>Booking No#</label><input id="seaBkNo" placeholder="TXSEA000000-00"></div>
+    <div class="info-cell"><label>Ref No#</label><input id="seaRefNo" placeholder="Internal ref."></div>
+    <div class="info-cell"><label>Booking Date</label>
+      <div class="gdwrap"><input type="date" id="seaBkDate"><span class="gd-txt" id="seaBkDateTxt"></span></div>
+    </div>
+    <div class="info-cell"><label>Service</label><span class="svc">SEA · LCL</span></div>
+  </div>
+
+  <div class="sec-h"><span class="tag">Shipper / Consignee</span><span class="ln"></span></div>
+  <div class="party-grid">
+    <div class="party-box"><div class="lbl">Shipper</div><div contenteditable="true" data-ph="Company name, address, contact..." id="seaShipper"></div></div>
+    <div class="party-box"><div class="lbl">Consignee</div><div contenteditable="true" data-ph="Company name, address, contact..." id="seaConsignee"></div></div>
+    <div class="party-box wide"><div class="lbl">Notify Party (optional)</div><div contenteditable="true" data-ph="Same as Consignee if left blank" id="seaNotify"></div></div>
+  </div>
+
+  <div class="sec-h"><span class="tag">Vessel / Voyage</span><span class="ln"></span></div>
+  <div class="vv-wrap">
+    <table>
+      <thead><tr>
+        <th style="width:20%">Vessel / Voy</th><th>Port of Loading</th><th>Port of Discharge</th>
+        <th style="width:13%">ETD</th><th style="width:13%">ETA</th><th class="vv-actions"></th>
+      </tr></thead>
+      <tbody id="seaVVBody"></tbody>
+    </table>
+  </div>
+  <button class="addrow-btn" id="seaVVAdd" type="button">+ Add Leg</button>
+
+  <div class="sec-h"><span class="tag">Closing Time</span><span class="ln"></span></div>
+  <div class="kv-grid">
+    <div class="kv"><label>Cargo Close at</label>
+      <div style="display:flex;gap:6px">
+        <div class="gdwrap"><input type="date" id="seaCcDate"><span class="gd-txt" id="seaCcDateTxt"></span></div>
+        <input type="time" id="seaCcTime" style="max-width:100px">
+      </div>
+    </div>
+    <div class="kv"><label>S/I Close at</label>
+      <div style="display:flex;gap:6px">
+        <div class="gdwrap"><input type="date" id="seaSiDate"><span class="gd-txt" id="seaSiDateTxt"></span></div>
+        <input type="time" id="seaSiTime" style="max-width:100px">
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-h"><span class="tag">CFS Warehouse / Receiving Info</span><span class="ln"></span></div>
+  <div class="kv-grid">
+    <div class="kv wide">
+      <label>CFS Warehouse</label>
+      <div class="wh-row">
+        <select id="seaWhSel"><option value="">— Type new or select saved warehouse —</option></select>
+        <button class="wh-manage-btn" id="seaWhMng" type="button">✎ Manage list</button>
+      </div>
+    </div>
+    <div class="kv wide"><label>Warehouse Address</label><textarea id="seaWhAddr" placeholder="Warehouse address..."></textarea></div>
+    <div class="kv"><label>Terminal</label><input id="seaTerminal" placeholder="e.g. CANG NAM DINH VU - VNDVN"></div>
+    <div class="kv"><label>P.I.C at Warehouse</label>
+      <div style="display:flex;gap:6px">
+        <input id="seaPicName" placeholder="Contact name">
+        <input id="seaPicPhone" placeholder="Phone">
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-h"><span class="tag">Cargo Details</span><span class="ln"></span></div>
+  <div class="kv-grid">
+    <div class="kv"><label>Freight Term</label>
+      <select id="seaFreightTerm"><option>Prepaid</option><option>Collect</option></select>
+    </div>
+    <div class="kv"><label>Number of Package</label>
+      <div class="pkg-row">
+        <input type="number" id="seaPkgQty" min="0" placeholder="0">
+        <select id="seaPkgUnit"><option>PALLET</option><option>CARTON</option><option>PACKAGE</option>
+          <option>ROLL</option><option>BUNDLE</option><option>DRUM</option><option>BAG</option>
+          <option>CRATE</option><option>PIECE</option></select>
+      </div>
+    </div>
+    <div class="kv">
+      <label>DIM (L x W x H)</label>
+      <input id="seaDim" placeholder="L x W x H (cm)">
+      <button class="dim-toggle" id="seaDimToggle" type="button">Calculate from dimensions ▾</button>
+      <div class="dim-box" id="seaDimBox">
+        <table>
+          <thead><tr><th style="width:24%">L (cm)</th><th style="width:24%">W (cm)</th><th style="width:24%">H (cm)</th><th style="width:16%">Qty</th><th style="width:12%"></th></tr></thead>
+          <tbody id="seaDimBody"></tbody>
+        </table>
+        <button class="addrow-btn" id="seaDimAdd" type="button">+ Add Row</button>
+        <div class="dim-actions">
+          <span class="dim-sum">Total Volume: <span id="seaDimSum">0.00</span> CBM</span>
+          <button class="btn green" id="seaDimUse" type="button" style="padding:5px 10px;font-size:10px">Use this value</button>
+        </div>
+      </div>
+    </div>
+    <div class="kv"><label>Commodity</label><input id="seaCommodity" placeholder="Commodity description"></div>
+    <div class="kv"><label>Gross Weight (KGS)</label><input type="number" id="seaGw" min="0" step="0.01" placeholder="0.000"></div>
+    <div class="kv"><label>Volume (CBM)</label><input type="number" id="seaVol" min="0" step="0.01" placeholder="0.00"></div>
+  </div>
+
+  <div class="sec-h"><span class="tag">Remarks</span><span class="ln"></span></div>
+  <div class="remarks-box"><textarea id="seaRemarks"></textarea></div>
+
+  <div class="doc-foot">
+    <div class="foot-left">
+      Printed by: <input id="seaPrintedBy" placeholder="staff name" style="width:140px"><br>
+      Date &amp; Time: <span id="seaDT"></span>
+    </div>
+    <div class="sign-block">
+      <div class="sb-lbl">Authorized Signatory</div>
+      <div class="stamp-box">Company Stamp</div>
+      <input class="sign-name co-ph" id="seaSigner" placeholder="NGUYEN HUU PHUOC">
+    </div>
+  </div>
+</div>
+
+<!-- ==================== AIR SHEET ==================== -->
+<div class="sheet" id="sh-air">
+  <div class="doc-head">
+    <div class="co-block">
+      <div class="co-mark co-mk">TX</div>
+      <div class="co-info">
+        <div class="co-nm">TX LOGISTICS VIETNAM CO.,LTD</div>
+        <div class="co-addr co-addr">3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam</div>
+        <div class="co-telfax co-telfax">Tel: +84 28 3547 0468 &nbsp;·&nbsp; Fax: +84 28 3547 0469</div>
+      </div>
+    </div>
+    <div class="doc-title-block">
+      <div class="doc-title">BOOKING CONFIRMATION</div>
+      <div class="doc-sub">Air Freight</div>
+    </div>
+  </div>
+
+  <div class="info-strip">
+    <div class="info-cell"><label>Booking No#</label><input id="airBkNo" placeholder="TXAIR000000-00"></div>
+    <div class="info-cell"><label>Ref No#</label><input id="airRefNo" placeholder="Internal ref."></div>
+    <div class="info-cell"><label>Booking Date</label>
+      <div class="gdwrap"><input type="date" id="airBkDate"><span class="gd-txt" id="airBkDateTxt"></span></div>
+    </div>
+    <div class="info-cell"><label>Service</label><span class="svc">AIR FREIGHT</span></div>
+  </div>
+
+  <div class="sec-h"><span class="tag">Shipper / Consignee</span><span class="ln"></span></div>
+  <div class="party-grid">
+    <div class="party-box"><div class="lbl">Shipper</div><div contenteditable="true" data-ph="Company name, address, contact..." id="airShipper"></div></div>
+    <div class="party-box"><div class="lbl">Consignee</div><div contenteditable="true" data-ph="Company name, address, contact..." id="airConsignee"></div></div>
+    <div class="party-box wide"><div class="lbl">Notify Party (optional)</div><div contenteditable="true" data-ph="Same as Consignee if left blank" id="airNotify"></div></div>
+  </div>
+
+  <div class="sec-h"><span class="tag">Flight Details</span><span class="ln"></span></div>
+  <div class="vv-wrap">
+    <table>
+      <thead><tr>
+        <th style="width:14%">Flight No</th><th style="width:16%">Airline</th>
+        <th>Airport of Departure</th><th>Airport of Destination</th>
+        <th style="width:13%">ETD</th><th style="width:13%">ETA</th><th class="vv-actions"></th>
+      </tr></thead>
+      <tbody id="airFlBody"></tbody>
+    </table>
+  </div>
+  <button class="addrow-btn" id="airFlAdd" type="button">+ Add Leg</button>
+
+  <div class="sec-h"><span class="tag">Closing Time</span><span class="ln"></span></div>
+  <div class="kv-grid">
+    <div class="kv"><label>Cargo Close at</label>
+      <div style="display:flex;gap:6px">
+        <div class="gdwrap"><input type="date" id="airCcDate"><span class="gd-txt" id="airCcDateTxt"></span></div>
+        <input type="time" id="airCcTime" style="max-width:100px">
+      </div>
+    </div>
+    <div class="kv"><label>Document Close at</label>
+      <div style="display:flex;gap:6px">
+        <div class="gdwrap"><input type="date" id="airDcDate"><span class="gd-txt" id="airDcDateTxt"></span></div>
+        <input type="time" id="airDcTime" style="max-width:100px">
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-h"><span class="tag">Airport / Handling Warehouse Info</span><span class="ln"></span></div>
+  <div class="kv-grid">
+    <div class="kv wide">
+      <label>Handling Warehouse</label>
+      <div class="wh-row">
+        <select id="airWhSel"><option value="">— Type new or select saved warehouse —</option></select>
+        <button class="wh-manage-btn" id="airWhMng" type="button">✎ Manage list</button>
+      </div>
+    </div>
+    <div class="kv wide"><label>Warehouse Address</label><textarea id="airWhAddr" placeholder="Warehouse address..."></textarea></div>
+    <div class="kv"><label>Airport Code</label><input id="airAirportCode" placeholder="e.g. SGN / HAN"></div>
+    <div class="kv"><label>P.I.C at Warehouse</label>
+      <div style="display:flex;gap:6px">
+        <input id="airPicName" placeholder="Contact name">
+        <input id="airPicPhone" placeholder="Phone">
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-h"><span class="tag">Cargo Details</span><span class="ln"></span></div>
+  <div class="kv-grid">
+    <div class="kv"><label>Freight Term</label>
+      <select id="airFreightTerm"><option>Prepaid</option><option>Collect</option></select>
+    </div>
+    <div class="kv"><label>Commodity</label><input id="airCommodity" placeholder="Commodity description"></div>
+    <div class="kv"><label>Number of Package</label>
+      <div class="pkg-row">
+        <input type="number" id="airPkgQty" min="0" placeholder="0">
+        <select id="airPkgUnit"><option>PALLET</option><option>CARTON</option><option>PACKAGE</option>
+          <option>ROLL</option><option>BUNDLE</option><option>DRUM</option><option>BAG</option>
+          <option>CRATE</option><option>PIECE</option></select>
+      </div>
+    </div>
+    <div class="kv"><label>Gross Weight (KGS)</label><input type="number" id="airGw" min="0" step="0.01" placeholder="0.00"></div>
+    <div class="kv"><label>Volume (CBM)</label><input type="number" id="airVol" min="0" step="0.01" placeholder="0.00"></div>
+    <div class="kv">
+      <label>Chargeable Weight (KGS)</label>
+      <input type="number" id="airChgW" min="0" step="0.01" placeholder="0.00" readonly>
+      <button class="dim-toggle" id="airDimToggle" type="button">Calculate from dimensions ▾</button>
+      <div class="dim-box" id="airDimBox">
+        <table>
+          <thead><tr><th style="width:24%">L (cm)</th><th style="width:24%">W (cm)</th><th style="width:24%">H (cm)</th><th style="width:16%">Qty</th><th style="width:12%"></th></tr></thead>
+          <tbody id="airDimBody"></tbody>
+        </table>
+        <button class="addrow-btn" id="airDimAdd" type="button">+ Add Row</button>
+        <div class="dim-actions">
+          <span class="dim-sum">Total Volume: <span id="airDimSum">0.00</span> CBM</span>
+          <button class="btn green" id="airDimUse" type="button" style="padding:5px 10px;font-size:10px">Use this value</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-h"><span class="tag">Remarks</span><span class="ln"></span></div>
+  <div class="remarks-box"><textarea id="airRemarks"></textarea></div>
+
+  <div class="doc-foot">
+    <div class="foot-left">
+      Printed by: <input id="airPrintedBy" placeholder="staff name" style="width:140px"><br>
+      Date &amp; Time: <span id="airDT"></span>
+    </div>
+    <div class="sign-block">
+      <div class="sb-lbl">Authorized Signatory</div>
+      <div class="stamp-box">Company Stamp</div>
+      <input class="sign-name co-ph" id="airSigner" placeholder="NGUYEN HUU PHUOC">
+    </div>
+  </div>
+</div>
+
+<!-- ================= WAREHOUSE MANAGE MODAL ================= -->
+<div class="ov no-print" id="whOv">
+  <div class="wbox">
+    <h3><span id="whTitle">Manage Warehouse List</span>
+      <button class="px" id="whCloseX" type="button">✕</button>
+    </h3>
+    <table class="wtbl">
+      <thead><tr><th style="width:19%">Name</th><th style="width:22%">Address</th><th style="width:12%" id="whExtraHead">Terminal</th>
+        <th style="width:13%">Customs Code</th><th style="width:14%">P.I.C Name</th><th style="width:12%">Phone</th><th style="width:6%"></th></tr></thead>
+      <tbody id="whBody"></tbody>
+    </table>
+    <div class="wfoot">
+      <small>Changes are saved automatically.</small>
+      <div>
+        <button class="btn green" id="whAddBtn" type="button" style="padding:6px 14px">+ Add New</button>
+        <button class="btn grey" id="whCloseBtn" type="button" style="padding:6px 14px">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= CONFIRM BOX ================= -->
+<div class="ov no-print" id="cov">
+  <div class="cbox">
+    <p id="covMsg">Are you sure to clear?</p>
+    <button class="btn red" id="covYes" type="button">YES</button>
+    <button class="btn grey" id="covNo" type="button">NO</button>
+  </div>
+</div>
+
+<div class="toastwrap no-print" id="toastWrap"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ---------- Company switcher ---------- */
+  var COMPANIES={
+    tx:{name:'TX LOGISTICS VIETNAM CO.,LTD',mark:'TX',
+        addr:'3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam',
+        telfax:'Tel: +84 28 3547 0468 \u00B7 Fax: +84 28 3547 0469',
+        signerPh:'NGUYEN HUU PHUOC'},
+    st:{name:'SHOPTRANS VIETNAM CO., LTD',mark:'ST',
+        addr:'3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam',
+        telfax:'Tel: +84 28 3547 0468 \u00B7 Fax: +84 28 3547 0469',
+        signerPh:'Authorized Signatory'}
+  };
+  var coSel=document.getElementById('coSel');
+  var curCo='tx';
+  function applyCompany(key){
+    curCo=key;
+    var c=COMPANIES[key];
+    document.querySelectorAll('.co-nm').forEach(function(el){el.textContent=c.name;});
+    document.querySelectorAll('.co-mk').forEach(function(el){el.textContent=c.mark;});
+    document.querySelectorAll('.co-addr').forEach(function(el){el.textContent=c.addr;});
+    document.querySelectorAll('.co-telfax').forEach(function(el){el.textContent=c.telfax;});
+    document.querySelectorAll('.co-ph').forEach(function(el){el.setAttribute('placeholder',c.signerPh);});
+  }
+  coSel.addEventListener('change',function(){applyCompany(coSel.value);});
+
+  /* ---------- Tabs ---------- */
+  var tabs=document.querySelectorAll('.tab');
+  function activate(key){
+    tabs.forEach(function(t){t.classList.toggle('on',t.dataset.t===key);});
+    document.querySelectorAll('.sheet').forEach(function(s){s.classList.toggle('active',s.id==='sh-'+key);});
+    var ta=document.getElementById(key+'Remarks');
+    if(ta)autoGrow(ta);
+    fitSheetToPage(document.getElementById('sh-'+key));
+  }
+  tabs.forEach(function(t){t.addEventListener('click',function(){activate(t.dataset.t);});});
+
+  /* ---------- Toast ---------- */
+  function toast(msg){
+    var wrap=document.getElementById('toastWrap');
+    var el=document.createElement('div');
+    el.className='toast';el.textContent=msg;
+    wrap.appendChild(el);
+    var raf=window.requestAnimationFrame||function(fn){setTimeout(fn,16);};
+    raf(function(){el.classList.add('show');});
+    setTimeout(function(){el.classList.remove('show');setTimeout(function(){wrap.removeChild(el);},250);},2200);
+  }
+
+  /* ---------- Confirm box ---------- */
+  var cov=document.getElementById('cov'),covMsg=document.getElementById('covMsg'),
+      covYes=document.getElementById('covYes'),covNo=document.getElementById('covNo'),
+      covCb=null;
+  function confirmBox(msg,cb){covMsg.textContent=msg;covCb=cb;cov.classList.add('show');}
+  covYes.addEventListener('click',function(){cov.classList.remove('show');if(covCb)covCb();covCb=null;});
+  covNo.addEventListener('click',function(){cov.classList.remove('show');covCb=null;});
+
+  /* ---------- Contenteditable placeholder (real text, prints reliably) ---------- */
+  function phShow(el){el.textContent=el.getAttribute('data-ph');el.classList.add('ph-active');}
+  function phHide(el){el.textContent='';el.classList.remove('ph-active');}
+  function initPlaceholder(el){
+    phShow(el);
+    el.addEventListener('focus',function(){if(el.classList.contains('ph-active'))phHide(el);});
+    el.addEventListener('blur',function(){if(el.textContent.trim()==='')phShow(el);});
+  }
+  document.querySelectorAll('.party-box [contenteditable]').forEach(initPlaceholder);
+
+  /* ---------- Auto-fit to 1 A4 page ----------
+     transform:scale() does NOT change the element's layout box used for print
+     pagination, so it can't fix page-break overflow — only a real reduction of
+     padding/font-size (genuine layout height) does. This measures the actual
+     rendered height and applies the .compact tier (real CSS, not transform)
+     when content is taller than one A4 page. */
+  function fitSheetToPage(el){
+    if(!el)return;
+    el.classList.remove('compact');
+    void el.offsetHeight;
+    var targetPx=(297-3)*96/25.4; // A4 height minus small safety margin, in CSS px
+    if(el.scrollHeight>targetPx){
+      el.classList.add('compact');
+    }
+  }
+  function currentSheet(){return document.querySelector('.sheet.active');}
+
+  /* ---------- Date helpers (global-date-fmt) ---------- */
+  function pad2(n){return n<10?'0'+n:''+n;}
+  function isoToDisp(iso){
+    if(!iso)return'';
+    var p=iso.split('-');if(p.length!==3)return'';
+    return p[0]+'/'+p[1]+'/'+p[2];
+  }
+  function wireDateOverlay(input,txt){
+    function upd(){txt.textContent=isoToDisp(input.value);}
+    input.addEventListener('change',upd);
+    input.addEventListener('input',upd);
+    upd();
+  }
+  function bindDateClick(gdwrap){
+    gdwrap.addEventListener('click',function(){
+      var inp=gdwrap.querySelector('input[type=date]');
+      if(inp && !inp.disabled && inp.showPicker){try{inp.showPicker();}catch(e){}}
+    });
+  }
+  document.querySelectorAll('.gdwrap').forEach(bindDateClick);
+  wireDateOverlay(document.getElementById('seaBkDate'),document.getElementById('seaBkDateTxt'));
+  wireDateOverlay(document.getElementById('seaCcDate'),document.getElementById('seaCcDateTxt'));
+  wireDateOverlay(document.getElementById('seaSiDate'),document.getElementById('seaSiDateTxt'));
+  wireDateOverlay(document.getElementById('airBkDate'),document.getElementById('airBkDateTxt'));
+  wireDateOverlay(document.getElementById('airCcDate'),document.getElementById('airCcDateTxt'));
+  wireDateOverlay(document.getElementById('airDcDate'),document.getElementById('airDcDateTxt'));
+
+  function todayIso(){
+    var d=new Date();
+    return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+  }
+  function setToday(id,txtId){
+    var el=document.getElementById(id);el.value=todayIso();
+    document.getElementById(txtId).textContent=isoToDisp(el.value);
+  }
+  setToday('seaBkDate','seaBkDateTxt');
+  setToday('airBkDate','airBkDateTxt');
+
+  /* ---------- Booking No generator ---------- */
+  function genBookingNo(co,type){
+    var key='tx_booking_seq_v1';
+    var store=JSON.parse(localStorage.getItem(key)||'{}');
+    var d=new Date();
+    var ymd=String(d.getFullYear()).slice(2)+pad2(d.getMonth()+1)+pad2(d.getDate());
+    var ck=co+'_'+type+'_'+ymd;
+    var n=(store[ck]||0)+1;
+    store[ck]=n;
+    localStorage.setItem(key,JSON.stringify(store));
+    return COMPANIES[co].mark+type.toUpperCase()+ymd+'-'+pad2(n);
+  }
+
+  /* ---------- Vessel / Flight row builders ---------- */
+  function makeRow(cols,dateCols){
+    var tr=document.createElement('tr');
+    cols.forEach(function(ph,i){
+      var td=document.createElement('td');
+      if(dateCols.indexOf(i)>-1){
+        var wrap=document.createElement('div');wrap.className='gdwrap';
+        var inp=document.createElement('input');inp.type='date';
+        var span=document.createElement('span');span.className='gd-txt';
+        wrap.appendChild(inp);wrap.appendChild(span);
+        bindDateClick(wrap);
+        wireDateOverlay(inp,span);
+        td.appendChild(wrap);
+      }else{
+        var input=document.createElement('input');input.type='text';input.placeholder=ph;
+        td.appendChild(input);
+      }
+      tr.appendChild(td);
+    });
+    var tdA=document.createElement('td');tdA.className='vv-actions';
+    var delBtn=document.createElement('button');delBtn.className='rowdel';delBtn.type='button';delBtn.textContent='\u2715';
+    delBtn.addEventListener('click',function(){
+      confirmBox('Are you sure to remove?',function(){tr.parentNode.removeChild(tr);fitSheetToPage(currentSheet());});
+    });
+    tdA.appendChild(delBtn);tr.appendChild(tdA);
+    return tr;
+  }
+  var seaVVBody=document.getElementById('seaVVBody');
+  document.getElementById('seaVVAdd').addEventListener('click',function(){
+    seaVVBody.appendChild(makeRow(['Vessel / Voy','Port of Loading','Port of Discharge','',''],[3,4]));
+    fitSheetToPage(currentSheet());
+  });
+  var airFlBody=document.getElementById('airFlBody');
+  document.getElementById('airFlAdd').addEventListener('click',function(){
+    airFlBody.appendChild(makeRow(['Flight No','Airline','Airport of Departure','Airport of Destination','',''],[4,5]));
+    fitSheetToPage(currentSheet());
+  });
+  seaVVBody.appendChild(makeRow(['Vessel / Voy','Port of Loading','Port of Discharge','',''],[3,4]));
+  airFlBody.appendChild(makeRow(['Flight No','Airline','Airport of Departure','Airport of Destination','',''],[4,5]));
+
+  /* ---------- Chargeable Weight auto-calc (MAX of GW vs Volume Weight = CBM x 167) ---------- */
+  var airGwEl=document.getElementById('airGw'),airVolEl=document.getElementById('airVol'),
+      airChgWEl=document.getElementById('airChgW');
+  function recalcChargeable(){
+    var gw=parseFloat(airGwEl.value)||0;
+    var vol=parseFloat(airVolEl.value)||0;
+    var volW=vol*167;
+    airChgWEl.value=Math.max(gw,volW).toFixed(2);
+  }
+  airGwEl.addEventListener('input',recalcChargeable);
+  airVolEl.addEventListener('input',recalcChargeable);
+
+  /* ---------- Dimension calculator factory (SEA + AIR) — computes actual CBM from L x W x H x Qty ---------- */
+  function createDimCalculator(prefix,onUse){
+    var body=document.getElementById(prefix+'DimBody'),
+        sumEl=document.getElementById(prefix+'DimSum'),
+        toggle=document.getElementById(prefix+'DimToggle'),
+        box=document.getElementById(prefix+'DimBox'),
+        addBtn=document.getElementById(prefix+'DimAdd'),
+        useBtn=document.getElementById(prefix+'DimUse');
+    function calc(){
+      var sum=0;
+      body.querySelectorAll('tr').forEach(function(tr){
+        var vals=tr.querySelectorAll('input');
+        var l=parseFloat(vals[0].value)||0,w=parseFloat(vals[1].value)||0,
+            h=parseFloat(vals[2].value)||0,q=parseFloat(vals[3].value)||0;
+        /* cm -> m: (L/100)*(W/100)*(H/100)*Qty */
+        sum+=(l*w*h*q)/1000000;
+      });
+      sumEl.textContent=sum.toFixed(2);
+      return sum;
+    }
+    function makeRow(){
+      var tr=document.createElement('tr');
+      for(var i=0;i<4;i++){
+        var td=document.createElement('td');
+        var inp=document.createElement('input');inp.type='number';inp.min='0';inp.step='0.1';
+        inp.placeholder='0';
+        inp.addEventListener('input',calc);
+        td.appendChild(inp);tr.appendChild(td);
+      }
+      var tdA=document.createElement('td');
+      var delBtn=document.createElement('button');delBtn.className='rowdel';delBtn.type='button';delBtn.textContent='\u2715';
+      delBtn.addEventListener('click',function(){
+        confirmBox('Are you sure to remove?',function(){tr.parentNode.removeChild(tr);calc();fitSheetToPage(currentSheet());});
+      });
+      tdA.appendChild(delBtn);tr.appendChild(tdA);
+      return tr;
+    }
+    addBtn.addEventListener('click',function(){body.appendChild(makeRow());fitSheetToPage(currentSheet());});
+    body.appendChild(makeRow());
+    function setLabel(){toggle.textContent=box.classList.contains('show')?'Close ▲':'Calculate from dimensions ▾';}
+    toggle.addEventListener('click',function(){
+      box.classList.toggle('show');
+      setLabel();
+      fitSheetToPage(currentSheet());
+    });
+    useBtn.addEventListener('click',function(){
+      var sum=calc();
+      onUse(sum);
+      toast('Volume updated');
+    });
+    return {
+      calc:calc,
+      setLabel:setLabel,
+      reset:function(){
+        body.innerHTML='';body.appendChild(makeRow());sumEl.textContent='0.00';
+        box.classList.remove('show');setLabel();
+      }
+    };
+  }
+  var airDimCtrl=createDimCalculator('air',function(sum){
+    airVolEl.value=sum.toFixed(2);
+    recalcChargeable();
+  });
+  var seaDimCtrl=createDimCalculator('sea',function(sum){
+    document.getElementById('seaVol').value=sum.toFixed(2);
+  });
+
+  /* ---------- Warehouse manager ---------- */
+  var WH_KEYS={cfs:'tx_booking_cfs_v1',air:'tx_booking_air_v1'};
+  var whOv=document.getElementById('whOv'),whBody=document.getElementById('whBody'),
+      whTitle=document.getElementById('whTitle'),whExtraHead=document.getElementById('whExtraHead');
+  var curWhType='cfs';
+
+  function loadWh(type){return JSON.parse(localStorage.getItem(WH_KEYS[type])||'[]');}
+  function saveWh(type,arr){localStorage.setItem(WH_KEYS[type],JSON.stringify(arr));}
+
+  function collectWhRows(){
+    var out=[];
+    whBody.querySelectorAll('tr').forEach(function(tr){
+      var i=tr.querySelectorAll('input');
+      out.push({name:i[0].value,addr:i[1].value,extra:i[2].value,customs:i[3].value,pic:i[4].value,phone:i[5].value});
+    });
+    return out;
+  }
+  function persistWh(){saveWh(curWhType,collectWhRows());refreshWhSelect(curWhType);}
+
+  function makeWhRow(rec){
+    rec=rec||{name:'',addr:'',extra:'',customs:'',pic:'',phone:''};
+    var tr=document.createElement('tr');
+    ['name','addr','extra','customs','pic','phone'].forEach(function(k){
+      var td=document.createElement('td');
+      var inp=document.createElement('input');inp.type='text';inp.value=rec[k]||'';
+      inp.addEventListener('blur',persistWh);
+      td.appendChild(inp);tr.appendChild(td);
+    });
+    var tdA=document.createElement('td');
+    var delBtn=document.createElement('button');delBtn.className='wdel';delBtn.type='button';delBtn.textContent='\u2715';
+    delBtn.addEventListener('click',function(){
+      confirmBox('Are you sure to remove?',function(){tr.parentNode.removeChild(tr);persistWh();});
+    });
+    tdA.appendChild(delBtn);tr.appendChild(tdA);
+    return tr;
+  }
+  function renderWhBody(type){
+    whBody.innerHTML='';
+    loadWh(type).forEach(function(rec){whBody.appendChild(makeWhRow(rec));});
+  }
+  document.getElementById('whAddBtn').addEventListener('click',function(){
+    whBody.appendChild(makeWhRow());
+  });
+  function openWhManager(type){
+    curWhType=type;
+    whTitle.textContent=type==='cfs'?'Manage CFS Warehouse List':'Manage Airport Handling Warehouse List';
+    whExtraHead.textContent=type==='cfs'?'Terminal':'Airport Code';
+    renderWhBody(type);
+    whOv.classList.add('show');
+  }
+  function closeWhManager(){whOv.classList.remove('show');}
+  document.getElementById('whCloseBtn').addEventListener('click',closeWhManager);
+  document.getElementById('whCloseX').addEventListener('click',closeWhManager);
+  document.getElementById('seaWhMng').addEventListener('click',function(){openWhManager('cfs');});
+  document.getElementById('airWhMng').addEventListener('click',function(){openWhManager('air');});
+
+  function refreshWhSelect(type){
+    var sel=type==='cfs'?document.getElementById('seaWhSel'):document.getElementById('airWhSel');
+    var cur=sel.value;
+    sel.innerHTML='<option value="">\u2014 Type new or select saved warehouse \u2014</option>';
+    loadWh(type).forEach(function(rec,idx){
+      var op=document.createElement('option');op.value=idx;op.textContent=rec.name||'(unnamed)';
+      sel.appendChild(op);
+    });
+    sel.value=cur&&sel.querySelector('option[value="'+cur+'"]')?cur:'';
+  }
+  document.getElementById('seaWhSel').addEventListener('change',function(){
+    var idx=this.value;if(idx==='')return;
+    var rec=loadWh('cfs')[idx];if(!rec)return;
+    document.getElementById('seaWhAddr').value=rec.addr||'';
+    document.getElementById('seaTerminal').value=rec.extra||'';
+    document.getElementById('seaPicName').value=rec.pic||'';
+    document.getElementById('seaPicPhone').value=rec.phone||'';
+  });
+  document.getElementById('airWhSel').addEventListener('change',function(){
+    var idx=this.value;if(idx==='')return;
+    var rec=loadWh('air')[idx];if(!rec)return;
+    document.getElementById('airWhAddr').value=rec.addr||'';
+    document.getElementById('airAirportCode').value=rec.extra||'';
+    document.getElementById('airPicName').value=rec.pic||'';
+    document.getElementById('airPicPhone').value=rec.phone||'';
+  });
+  refreshWhSelect('cfs');refreshWhSelect('air');
+
+  /* ---------- Remarks default text ---------- */
+  function autoGrow(ta){
+    ta.style.height='0px';
+    ta.style.height=ta.scrollHeight+'px';
+    var sheet=currentSheet();
+    var wasCompact=sheet?sheet.classList.contains('compact'):false;
+    fitSheetToPage(sheet);
+    if(sheet&&sheet.classList.contains('compact')!==wasCompact){
+      /* font-size/line-height changed because compact tier toggled — resize again to match */
+      ta.style.height='0px';
+      ta.style.height=ta.scrollHeight+'px';
+    }
+  }
+  document.getElementById('seaRemarks').addEventListener('input',function(){autoGrow(this);});
+  document.getElementById('airRemarks').addEventListener('input',function(){autoGrow(this);});
+  document.getElementById('seaRemarks').value=
+"1. Please contact the P.I.C at warehouse before cargo delivery to CFS.\n"+
+"2. Please declare customs matching the customs authority in charge of the warehouse.\n"+
+"3. Warehouse handling fee (if any) must be settled before cargo is received.\n"+
+"4. Wooden packaging (crates/pallets) must comply with ISPM-15 fumigation standard.\n"+
+"5. Customer is responsible for cargo insurance.\n"+
+"6. In case the consignee refuses cargo / cancels shipment, all related costs are borne by the shipper.\n"+
+"7. This booking is issued for normal cargo only. For oversized, overweight, bulk/loose, liquid or flammable cargo, please inform us in advance for inspection and support.";
+  document.getElementById('airRemarks').value=
+"1. Please contact the P.I.C at warehouse before cargo delivery to the airport.\n"+
+"2. Chargeable weight is calculated as the greater of gross weight and volumetric weight (L\u00D7W\u00D7H/6000).\n"+
+"3. Dangerous goods (DG) must be declared and packed according to IATA regulations prior to booking.\n"+
+"4. Please ensure cargo arrives before Cargo Closing Time; late arrival may result in offload.\n"+
+"5. Customer is responsible for cargo insurance.\n"+
+"6. In case the consignee refuses cargo / cancels shipment, all related costs are borne by the shipper.\n"+
+"7. This booking is issued for normal cargo only. For valuable, perishable or special-handling cargo, please inform us in advance.";
+  autoGrow(document.getElementById('seaRemarks'));
+
+  /* ---------- Printed by / timestamp ---------- */
+  function nowStr(){
+    var d=new Date();
+    var h=d.getHours(),ap=h>=12?'PM':'AM';h=h%12;if(h===0)h=12;
+    return pad2(d.getDate())+'/'+pad2(d.getMonth()+1)+'/'+d.getFullYear()+' '+h+':'+pad2(d.getMinutes())+':'+pad2(d.getSeconds())+' '+ap;
+  }
+  function refreshTimestamps(){
+    document.getElementById('seaDT').textContent=nowStr();
+    document.getElementById('airDT').textContent=nowStr();
+  }
+  refreshTimestamps();
+
+  /* ---------- Export PDF ---------- */
+  document.getElementById('btnPdf').addEventListener('click',function(){
+    refreshTimestamps();
+    fitSheetToPage(currentSheet());
+    window.print();
+  });
+
+  /* ---------- Clear ---------- */
+  document.getElementById('btnClear').addEventListener('click',function(){
+    confirmBox('Are you sure to clear?',function(){
+      var activeSheet=document.querySelector('.sheet.active');
+      var prefix=activeSheet.id==='sh-sea'?'sea':'air';
+      activeSheet.querySelectorAll('input[type=text],input[type=number],input:not([type])').forEach(function(el){
+        if(!el.classList.contains('co-ph'))el.value='';
+      });
+      activeSheet.querySelectorAll('textarea').forEach(function(el){
+        if(el.id!==prefix+'Remarks')el.value='';
+      });
+      activeSheet.querySelectorAll('[contenteditable]').forEach(function(el){phShow(el);});
+      activeSheet.querySelectorAll('select').forEach(function(el){el.selectedIndex=0;});
+      activeSheet.querySelectorAll('input[type=time]').forEach(function(el){el.value='';});
+      if(prefix==='sea'){
+        seaVVBody.innerHTML='';
+        seaVVBody.appendChild(makeRow(['Vessel / Voy','Port of Loading','Port of Discharge','',''],[3,4]));
+        document.getElementById('seaBkNo').value=genBookingNo(curCo,'sea');
+        seaDimCtrl.reset();
+      }else{
+        airFlBody.innerHTML='';
+        airFlBody.appendChild(makeRow(['Flight No','Airline','Airport of Departure','Airport of Destination','',''],[4,5]));
+        document.getElementById('airBkNo').value=genBookingNo(curCo,'air');
+        airDimCtrl.reset();
+      }
+      setToday(prefix+'BkDate',prefix+'BkDateTxt');
+      autoGrow(document.getElementById(prefix+'Remarks'));
+      fitSheetToPage(activeSheet);
+      toast('Cleared');
+    });
+  });
+
+  /* ---------- Init ---------- */
+  applyCompany('tx');
+  document.getElementById('seaBkNo').value=genBookingNo('tx','sea');
+  document.getElementById('airBkNo').value=genBookingNo('tx','air');
+  fitSheetToPage(document.getElementById('sh-sea'));
+})();
+</script>
+</body>
+</html>

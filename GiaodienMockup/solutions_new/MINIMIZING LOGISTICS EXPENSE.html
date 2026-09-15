@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Service · Minimizing Logistics Expenses — SHOPTRANS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F6F5;
+    --panel:#FFFFFF;
+    --panel-2:#F7F9F8;
+    --line:#E2E7E5;
+    --line-soft:#EDF1EF;
+    --green:#00E676;
+    --green-text:#009E54;
+    --green-dim:#E4FAEE;
+    --green-glow:rgba(0,230,118,.16);
+    --txt:#0E1513;
+    --txt-2:#5A6663;
+    --txt-3:#94A09C;
+    --mono:'Geist Mono',ui-monospace,monospace;
+    --sans:'Geist',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--sans);
+    background:var(--bg);
+    color:var(--txt);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.6;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px 24px;
+    background-image:
+      radial-gradient(circle at center, rgba(0,0,0,.045) 1px, transparent 1px),
+      radial-gradient(1200px 600px at 80% -10%, var(--green-glow), transparent 70%);
+    background-size:22px 22px, 100% 100%;
+  }
+
+  .service{
+    width:100%;
+    max-width:1180px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 30px 70px -36px rgba(20,40,32,.28);
+    position:relative;
+  }
+  .topbar{
+    display:flex;align-items:center;gap:14px;
+    padding:14px 22px;
+    border-bottom:1px solid var(--line-soft);
+    background:var(--panel-2);
+    font-family:var(--mono);font-size:11px;
+    color:var(--txt-3);letter-spacing:.14em;text-transform:uppercase;
+  }
+  .topbar .right{margin-left:auto;color:var(--txt-3)}
+
+  .grid{
+    display:grid;
+    grid-template-columns:460px 1fr;
+    align-items:stretch;
+  }
+
+  /* ---- LEFT : illustration ---- */
+  .visual{
+    position:relative;
+    border-right:1px solid var(--line-soft);
+    padding:36px 26px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    background:
+      radial-gradient(circle at 50% 42%, var(--green-glow), transparent 62%),
+      radial-gradient(circle at center, rgba(0,0,0,.04) 1px, transparent 1px);
+    background-size:100% 100%, 18px 18px;
+    overflow:hidden;
+  }
+  .visual::before{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg,transparent 70%,rgba(0,0,0,.03));
+    pointer-events:none;
+  }
+  .hero-photo{
+    position:relative;
+    width:100%;
+    margin:0 auto;
+    border-radius:16px;
+    border:1px solid #0A1726;
+    box-shadow:0 22px 50px -18px rgba(8,20,34,.7), 0 0 0 4px rgba(255,255,255,.6);
+    display:block;
+    overflow:hidden;
+  }
+  .hero-screen svg{width:100%;height:auto;display:block;border-radius:15px;background:#0C1A2B}
+
+  /* ---- RIGHT : content ---- */
+  .content{padding:40px 48px;display:flex;flex-direction:column;justify-content:center}
+
+  h1{
+    font-size:25px;line-height:1.24;font-weight:600;
+    letter-spacing:-.01em;margin:0 0 14px 0;max-width:54ch;
+    text-wrap:balance;
+  }
+  h1 .em{color:var(--green-text)}
+
+  .lead{
+    font-size:15px;color:var(--txt-2);max-width:64ch;line-height:1.5;
+    padding-bottom:14px;
+  }
+  .lead b{color:var(--txt);font-weight:500}
+
+  .points{margin-top:4px;display:flex;flex-direction:column;gap:2px}
+  .point{
+    display:grid;grid-template-columns:auto 1fr;gap:16px;
+    padding:10px 0;
+  }
+  .point .n{
+    font-family:var(--mono);font-size:12px;font-weight:600;
+    color:var(--green-text);padding-top:3px;
+  }
+  .point .lbl{
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--txt-3);margin-bottom:4px;
+  }
+  .point .body{font-size:14px;color:var(--txt-2);max-width:62ch;line-height:1.5}
+  .point .body b{color:var(--txt);font-weight:500}
+
+  .closing{margin-top:14px;font-size:14px;color:var(--txt-2);line-height:1.5;max-width:64ch}
+  .closing b{color:var(--txt);font-weight:500}
+
+  /* ---- footer actions ---- */
+  .actions{
+    margin-top:22px;padding-top:18px;
+    display:flex;align-items:center;justify-content:flex-end;gap:13px;
+  }
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;
+    font-family:var(--sans);font-size:13.5px;font-weight:600;
+    text-decoration:none;cursor:pointer;
+    padding:12px 22px;border-radius:11px;
+    border:1px solid transparent;
+    transition:all .2s ease;white-space:nowrap;
+  }
+  .btn svg{width:16px;height:16px;flex-shrink:0}
+  .btn-ghost{background:#fff;color:var(--txt);border-color:var(--line)}
+  .btn-ghost:hover{border-color:var(--txt-3);background:#FBFCFC;transform:translateX(-2px)}
+  .btn-primary{background:var(--green);color:#fff}
+  .btn-primary:hover{background:#00B85F;transform:translateY(-1px);box-shadow:0 8px 20px -8px rgba(0,197,102,.7)}
+  .btn-primary:active,.btn-ghost:active{transform:none}
+
+  .service{animation:rise .5s ease both}
+  .content > *{animation:fade .5s ease both}
+  .content > *:nth-child(1){animation-delay:.05s}
+  .content > *:nth-child(2){animation-delay:.10s}
+  .content > *:nth-child(3){animation-delay:.15s}
+  .content > *:nth-child(4){animation-delay:.20s}
+  .content > *:nth-child(5){animation-delay:.25s}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  @media(max-width:860px){
+    body{padding:0}
+    .service{border-radius:0;border:none;min-height:100vh}
+    .grid{grid-template-columns:1fr}
+    .visual{border-right:none;border-bottom:1px solid var(--line-soft);padding:36px 28px}
+    .hero-photo{max-width:380px;margin:0 auto}
+    .content{padding:36px 28px}
+    h1{font-size:22px}
+    .actions{flex-wrap:wrap;gap:12px}
+    .btn{flex:1;justify-content:center;min-width:140px}
+  }
+</style>
+</head>
+<body>
+  <main class="service">
+    <div class="topbar">
+      <span class="right"></span>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT VISUAL : cost-down chart -->
+      <section class="visual">
+        <figure class="hero-photo hero-screen">
+          <svg viewBox="0 0 440 545" fill="none" font-family="Geist Mono, monospace"
+               role="img" aria-label="Cost optimizer dashboard — logistics cost trending down">
+            <defs>
+              <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#0E2236"/>
+                <stop offset="1" stop-color="#0A1626"/>
+              </linearGradient>
+              <radialGradient id="haze" cx="48%" cy="40%" r="62%">
+                <stop offset="0" stop-color="#1C5C7A" stop-opacity=".42"/>
+                <stop offset="1" stop-color="#0A1626" stop-opacity="0"/>
+              </radialGradient>
+              <pattern id="grid" width="26" height="26" patternUnits="userSpaceOnUse">
+                <path d="M26 0 H0 V26" fill="none" stroke="#16334C" stroke-width="1"/>
+              </pattern>
+              <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#00E676" stop-opacity=".34"/>
+                <stop offset="1" stop-color="#00E676" stop-opacity="0"/>
+              </linearGradient>
+              <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+                <feGaussianBlur stdDeviation="2.4" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+
+            <!-- background -->
+            <rect x="0" y="0" width="440" height="545" fill="url(#bg)"/>
+            <rect x="0" y="0" width="440" height="545" fill="url(#grid)" opacity=".55"/>
+            <rect x="0" y="0" width="440" height="545" fill="url(#haze)"/>
+
+            <!-- status pill -->
+            <g>
+              <rect x="24" y="26" width="208" height="30" rx="8" fill="#0E2336" stroke="#1E4A66" stroke-width="1.3"/>
+              <circle cx="42" cy="41" r="5" fill="#00E676" filter="url(#glow)"/>
+              <text x="58" y="45" font-size="12" font-weight="600" letter-spacing="1.2" fill="#9FE9C7">COST OPTIMIZER · LIVE</text>
+            </g>
+
+            <!-- headline : COST trending down (no number) -->
+            <text x="26" y="118" font-size="46" font-weight="700" letter-spacing="2" fill="#E6F3EC">COST</text>
+            <g filter="url(#glow)">
+              <line x1="196" y1="78" x2="232" y2="118" stroke="#00E676" stroke-width="7" stroke-linecap="round"/>
+              <path d="M232 118 l-2 -16 m2 16 l-16 1" stroke="#00E676" stroke-width="7"
+                    stroke-linecap="round" fill="none"/>
+            </g>
+            <text x="28" y="142" font-size="11" letter-spacing="3" fill="#5E86A6">TRENDING DOWN · OPTIMIZED</text>
+
+            <!-- chart frame -->
+            <g>
+              <line x1="56" y1="196" x2="56" y2="424" stroke="#1E4A66" stroke-width="1.4"/>
+              <line x1="56" y1="424" x2="412" y2="424" stroke="#1E4A66" stroke-width="1.4"/>
+              <g stroke="#16334C" stroke-width="1">
+                <line x1="56" y1="236" x2="412" y2="236"/>
+                <line x1="56" y1="282" x2="412" y2="282"/>
+                <line x1="56" y1="328" x2="412" y2="328"/>
+                <line x1="56" y1="374" x2="412" y2="374"/>
+              </g>
+              <circle cx="56" cy="188" r="10" fill="#0E2336" stroke="#2F88B0" stroke-width="1.6"/>
+              <text x="56" y="192" text-anchor="middle" font-size="11" font-weight="700" fill="#4FE3FF">$</text>
+            </g>
+
+            <!-- before trend (dim, flat) -->
+            <polyline points="74,224 142,230 210,226 278,234 346,230 404,238"
+                      fill="none" stroke="#3A5A72" stroke-width="2.5" stroke-dasharray="4 6"/>
+            <text x="330" y="220" font-size="10" letter-spacing="1" fill="#4E6E88">BEFORE</text>
+
+            <!-- area + optimized descending line -->
+            <path d="M74 242 L142 280 L210 320 L278 352 L346 384 L404 402 L404 424 L74 424 Z" fill="url(#area)"/>
+            <polyline points="74,242 142,280 210,320 278,352 346,384 404,402"
+                      fill="none" stroke="#00E676" stroke-width="4" filter="url(#glow)"/>
+            <g fill="#0C1A2B" stroke="#00E676" stroke-width="3" filter="url(#glow)">
+              <circle cx="74" cy="242" r="5"/>
+              <circle cx="142" cy="280" r="5"/>
+              <circle cx="210" cy="320" r="5"/>
+              <circle cx="278" cy="352" r="5"/>
+              <circle cx="346" cy="384" r="5"/>
+              <circle cx="404" cy="402" r="6" fill="#00E676"/>
+            </g>
+            <text x="338" y="396" font-size="10" letter-spacing="1" fill="#7FE9B4">OPTIMIZED</text>
+
+            <!-- stat chips -->
+            <g font-size="10" letter-spacing="1" fill="#9FE9C7">
+              <g>
+                <rect x="56" y="460" width="116" height="36" rx="9" fill="#0E2336" stroke="#1E4A66" stroke-width="1.2"/>
+                <g stroke="#00E676" stroke-width="2.4" fill="none" filter="url(#glow)">
+                  <line x1="74" y1="472" x2="74" y2="486"/><path d="M69 480 l5 6 5 -6"/>
+                </g>
+                <text x="88" y="482">FUEL &amp; TIME</text>
+              </g>
+              <g>
+                <rect x="180" y="460" width="116" height="36" rx="9" fill="#0E2336" stroke="#1E4A66" stroke-width="1.2"/>
+                <path d="M194 480 l4 4 8 -9" stroke="#00E676" stroke-width="2.6" fill="none" filter="url(#glow)"/>
+                <text x="212" y="482">ROUTES OK</text>
+              </g>
+              <g>
+                <rect x="304" y="460" width="116" height="36" rx="9" fill="#0E2336" stroke="#1E4A66" stroke-width="1.2"/>
+                <circle cx="322" cy="478" r="8" fill="#FFC928"/>
+                <text x="322" y="482" text-anchor="middle" font-size="11" font-weight="700" fill="#7A5A00">$</text>
+                <text x="338" y="482">CONSOLID.</text>
+              </g>
+            </g>
+
+            <!-- corner brackets -->
+            <g stroke="#2F88B0" stroke-width="2" opacity=".7" fill="none">
+              <path d="M414 26 h12 v12"/>
+              <path d="M414 519 h12 v-12"/>
+            </g>
+          </svg>
+        </figure>
+      </section>
+
+      <!-- RIGHT CONTENT -->
+      <section class="content">
+        <h1>Minimizing <span class="em">logistics expenses</span></h1>
+
+        <p class="lead">
+          With an extensive branch network, SHOPTRANS <b>effectively minimizes logistics
+          expenses</b> through:
+        </p>
+
+        <div class="points">
+          <div class="point">
+            <span class="n">01</span>
+            <div>
+              <div class="lbl">Optimizing Routes</div>
+              <div class="body">
+                Shortest, most cost-effective routes via global branches — less time &amp; fuel.
+              </div>
+            </div>
+          </div>
+
+          <div class="point">
+            <span class="n">02</span>
+            <div>
+              <div class="lbl">Consolidating Shipments</div>
+              <div class="body">
+                Group multiple orders into one shipment — lower cost per customer.
+              </div>
+            </div>
+          </div>
+
+          <div class="point">
+            <span class="n">03</span>
+            <div>
+              <div class="lbl">Multi-modal Transport</div>
+              <div class="body">
+                Combine sea, road &amp; air to optimize cost across regions.
+              </div>
+            </div>
+          </div>
+
+          <div class="point">
+            <span class="n">04</span>
+            <div>
+              <div class="lbl">Automated Quotation</div>
+              <div class="body">
+                Instant optimized pricing — minimal negotiation cost.
+              </div>
+            </div>
+          </div>
+
+          <div class="point">
+            <span class="n">05</span>
+            <div>
+              <div class="lbl">Cross-border Payments</div>
+              <div class="body">
+                Pay via local branches — cut bank fees, FX gaps &amp; paperwork.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="closing">
+          Thanks to its global network, SHOPTRANS <b>optimizes transport costs</b> while ensuring
+          the most efficient logistics solutions.
+        </p>
+
+        <div class="actions">
+          <button class="btn btn-ghost" onclick="history.back()">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 12H5M11 18l-6-6 6-6"/>
+            </svg>
+            Go back
+          </button>
+          <a href="#" class="btn btn-primary">
+            Contact us
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14M13 6l6 6-6 6"/>
+            </svg>
+          </a>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Service · D/O Release at Destination — SHOPTRANS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F6F5;
+    --panel:#FFFFFF;
+    --panel-2:#F7F9F8;
+    --line:#E2E7E5;
+    --line-soft:#EDF1EF;
+    --green:#00E676;
+    --green-text:#009E54;
+    --green-dim:#E4FAEE;
+    --green-glow:rgba(0,230,118,.16);
+    --txt:#0E1513;
+    --txt-2:#5A6663;
+    --txt-3:#94A09C;
+    --mono:'Geist Mono',ui-monospace,monospace;
+    --sans:'Geist',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--sans);
+    background:var(--bg);
+    color:var(--txt);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.6;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px 24px;
+    background-image:
+      radial-gradient(circle at center, rgba(0,0,0,.045) 1px, transparent 1px),
+      radial-gradient(1200px 600px at 80% -10%, var(--green-glow), transparent 70%);
+    background-size:22px 22px, 100% 100%;
+  }
+
+  .service{
+    width:100%;
+    max-width:1180px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 30px 70px -36px rgba(20,40,32,.28);
+    position:relative;
+  }
+  /* top status bar */
+  .topbar{
+    display:flex;align-items:center;gap:14px;
+    padding:14px 22px;
+    border-bottom:1px solid var(--line-soft);
+    background:var(--panel-2);
+    font-family:var(--mono);font-size:11px;
+    color:var(--txt-3);letter-spacing:.14em;text-transform:uppercase;
+  }
+  .topbar .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+  .topbar .crumb{color:var(--txt-2)}
+  .topbar .crumb b{color:var(--txt);font-weight:600}
+  .topbar .sep{color:var(--line)}
+  .topbar .right{margin-left:auto;color:var(--txt-3)}
+
+  .grid{
+    display:grid;
+    grid-template-columns:360px 1fr;
+    align-items:stretch;
+  }
+
+  /* ---- LEFT : icon panel ---- */
+  .visual{
+    position:relative;
+    border-right:1px solid var(--line-soft);
+    padding:40px 36px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:32px;
+    background:
+      radial-gradient(circle at 50% 42%, var(--green-glow), transparent 62%),
+      radial-gradient(circle at center, rgba(0,0,0,.04) 1px, transparent 1px);
+    background-size:100% 100%, 18px 18px;
+    overflow:hidden;
+  }
+  .visual::before{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg,transparent 70%,rgba(0,0,0,.03));
+    pointer-events:none;
+  }
+  .icon-wrap{
+    position:relative;
+    width:220px;height:220px;
+    margin:0 auto;
+    flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .icon-wrap .ring{
+    position:absolute;inset:0;border-radius:50%;
+    border:1px solid var(--line);
+  }
+  .icon-wrap .ring.r2{inset:26px;border-color:var(--line-soft)}
+  .icon-wrap .ring.r3{inset:52px;border:1px dashed rgba(0,158,84,.4)}
+  .icon-wrap svg{position:relative;width:60%;height:60%;overflow:visible;filter:drop-shadow(0 8px 16px rgba(46,77,160,.18))}
+  .tick{
+    position:absolute;bottom:8%;left:6%;
+    width:46px;height:46px;border-radius:50%;
+    background:var(--green);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 24px var(--green-glow), 0 8px 20px -6px rgba(0,230,118,.5);
+  }
+  .tick svg{position:static;width:22px;height:22px}
+
+  .visual-meta{position:relative}
+  .meta-row{
+    display:flex;justify-content:space-between;
+    padding:11px 0;
+    border-top:1px solid var(--line-soft);
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;
+  }
+  .meta-row .k{color:var(--txt-3);text-transform:uppercase}
+  .meta-row .v{color:var(--txt-2)}
+  .meta-row .v.on{color:var(--green-text)}
+
+  /* ---- RIGHT : content ---- */
+  .content{padding:40px 48px;display:flex;flex-direction:column;justify-content:center}
+  .tag-line{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+  .code-badge{
+    font-family:var(--mono);font-size:12px;font-weight:600;
+    color:var(--green-text);letter-spacing:.1em;
+    background:var(--green-dim);
+    border:1px solid rgba(0,230,118,.3);
+    padding:5px 11px;border-radius:6px;
+  }
+  .phase{
+    font-family:var(--mono);font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--txt-3);
+    border:1px solid var(--line);border-radius:6px;
+    padding:5px 11px;
+  }
+  .phase b{color:var(--txt);font-weight:500}
+
+  h1{
+    font-size:27px;line-height:1.22;font-weight:600;
+    letter-spacing:-.01em;margin:0 0 14px -16px;max-width:52ch;
+    text-wrap:balance;text-align:center;
+  }
+  h1 .em{color:var(--green-text)}
+
+  .lead{
+    font-size:15px;color:var(--txt-2);max-width:62ch;
+    padding-bottom:20px;
+  }
+  .lead b{color:var(--txt);font-weight:500}
+
+  .points{margin-top:18px;display:flex;flex-direction:column;gap:2px}
+  .point{
+    display:grid;grid-template-columns:auto 1fr;gap:16px;
+    padding:14px 0;
+  }
+  .point .n{
+    font-family:var(--mono);font-size:12px;font-weight:600;
+    color:var(--green-text);padding-top:3px;
+  }
+  .point .lbl{
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--txt-3);margin-bottom:6px;
+  }
+  .point .body{font-size:14.5px;color:var(--txt-2);max-width:60ch}
+  .point .body b{color:var(--txt);font-weight:500}
+
+  /* ---- footer actions ---- */
+  .actions{
+    margin-top:24px;padding-top:20px;
+    display:flex;align-items:center;justify-content:flex-end;gap:13px;
+  }
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;
+    font-family:var(--sans);font-size:13.5px;font-weight:600;
+    text-decoration:none;cursor:pointer;
+    padding:12px 22px;border-radius:11px;
+    border:1px solid transparent;
+    transition:all .2s ease;white-space:nowrap;
+  }
+  .btn svg{width:16px;height:16px;flex-shrink:0}
+  .btn-ghost{
+    background:#fff;color:var(--txt);
+    border-color:var(--line);
+  }
+  .btn-ghost:hover{
+    border-color:var(--txt-3);background:#FBFCFC;
+    transform:translateX(-2px);
+  }
+  .btn-primary{
+    background:var(--green);color:#fff;
+  }
+  .btn-primary:hover{
+    background:#00B85F;
+    transform:translateY(-1px);
+    box-shadow:0 8px 20px -8px rgba(0,197,102,.7);
+  }
+  .btn-primary:active,.btn-ghost:active{transform:none}
+
+  /* entrance animation */
+  .service{animation:rise .5s ease both}
+  .content > *{animation:fade .5s ease both}
+  .content > *:nth-child(1){animation-delay:.05s}
+  .content > *:nth-child(2){animation-delay:.10s}
+  .content > *:nth-child(3){animation-delay:.15s}
+  .content > *:nth-child(4){animation-delay:.20s}
+  .content > *:nth-child(5){animation-delay:.25s}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  @media(max-width:860px){
+    body{padding:0}
+    .service{border-radius:0;border:none;min-height:100vh}
+    .grid{grid-template-columns:1fr}
+    .visual{border-right:none;border-bottom:1px solid var(--line-soft);padding:36px 28px}
+    .icon-wrap{max-width:240px;margin:0 auto 24px}
+    .content{padding:36px 28px}
+    h1{font-size:24px}
+    .actions{flex-wrap:wrap;gap:12px}
+    .btn{flex:1;justify-content:center;min-width:140px}
+    .btn-primary{margin-left:0}
+  }
+</style>
+</head>
+<body>
+  <main class="service">
+    <!-- top status bar -->
+    <div class="topbar">
+      <span class="right">PHASE · AT DESTINATION</span>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT VISUAL -->
+      <section class="visual">
+        <div class="icon-wrap">
+          <span class="ring"></span>
+          <span class="ring r2"></span>
+          <span class="ring r3"></span>
+
+          <!-- flat clipart: signed document + pen + check -->
+          <svg viewBox="0 0 120 120" fill="none"
+               stroke-linecap="round" stroke-linejoin="round">
+            <!-- document body -->
+            <rect x="20" y="14" width="58" height="82" rx="7"
+                  fill="#5BA3E0" stroke="#2E4DA0" stroke-width="5"/>
+            <!-- soft side shade -->
+            <path d="M27 16 v78 a7 7 0 0 1 -7 -7 V21 a7 7 0 0 1 7 -5z"
+                  fill="#4A90D6" opacity=".5"/>
+            <!-- title highlight bar -->
+            <rect x="29" y="26" width="32" height="7" rx="3.5"
+                  fill="#FFC928" stroke="#2E4DA0" stroke-width="3"/>
+            <!-- text lines -->
+            <line x1="30" y1="42" x2="62" y2="42" stroke="#2E4DA0" stroke-width="4"/>
+            <line x1="30" y1="51" x2="55" y2="51" stroke="#2E4DA0" stroke-width="4"/>
+            <line x1="30" y1="60" x2="62" y2="60" stroke="#2E4DA0" stroke-width="4"/>
+            <line x1="30" y1="69" x2="50" y2="69" stroke="#2E4DA0" stroke-width="4"/>
+            <!-- signature -->
+            <path d="M33 82 q4 -11 8 -1 q2 7 4 -1 q2 -9 6 0 q1 6 5 -3"
+                  stroke="#2E4DA0" stroke-width="4" fill="none"/>
+            <!-- check circle -->
+            <circle cx="32" cy="88" r="14" fill="#FFC928" stroke="#2E4DA0" stroke-width="5"/>
+            <path d="M26 88 l4 4 7 -8" stroke="#2E4DA0" stroke-width="4.5" fill="none"/>
+            <!-- pen -->
+            <g stroke="#2E4DA0" stroke-width="5">
+              <path d="M58 92 L92 50 l9 7 -25 41 -10 3 z" fill="#FFC928"/>
+              <path d="M76 70 L101 57 l-9 -7 -16 13 z" fill="#F5921F"/>
+              <path d="M92 50 l6 -8 a6 6 0 0 1 9 7 l-6 8 z" fill="#FFC928"/>
+              <path d="M58 92 l-6 9 8 -3 z" fill="#8BC34A"/>
+              <circle cx="103" cy="46" r="2.4" fill="#8BC34A" stroke="none"/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="visual-meta">
+          <div class="meta-row"><span class="k">Role</span><span class="v">Destination Agent</span></div>
+          <div class="meta-row"><span class="k">Document</span><span class="v">Delivery Order</span></div>
+          <div class="meta-row"><span class="k">Coverage</span><span class="v on">● Worldwide</span></div>
+        </div>
+      </section>
+
+      <!-- RIGHT CONTENT -->
+      <section class="content">
+        <h1>Release Delivery Order&nbsp;<span class="em">(D/O)</span> to consignee(s) at destination</h1>
+
+        <p class="lead">
+          As <b>destination agent</b>, SHOPTRANS represents the overseas origin agent to release
+          Delivery Orders to the respective consignees for each nominated shipment — closing the
+          final handover before cargo delivery.
+        </p>
+
+        <div class="points">
+          <div class="point">
+            <span class="n">01</span>
+            <div>
+              <div class="lbl">D/O Release</div>
+              <div class="body">
+                Acting on behalf of the origin agent, SHOPTRANS issues the
+                <b>Delivery Order to each nominated consignee</b>, matched per shipment.
+              </div>
+            </div>
+          </div>
+
+          <div class="point">
+            <span class="n">02</span>
+            <div>
+              <div class="lbl">Charges &amp; Settlement</div>
+              <div class="body">
+                Coordinates directly with the shipping line to settle <b>destination local
+                charges</b> or verify prepaid status, and handles collection &amp; disbursement
+                on the origin agent's instruction.
+              </div>
+            </div>
+          </div>
+
+          <div class="point">
+            <span class="n">03</span>
+            <div>
+              <div class="lbl">Value-Added Handling</div>
+              <div class="body">
+                Beyond D/O release — <b>customs clearance, trucking, container unstuffing
+                supervision</b> and destination handling for smooth, efficient delivery.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-ghost" onclick="history.back()">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 12H5M11 18l-6-6 6-6"/>
+            </svg>
+            Go back
+          </button>
+          <a href="#" class="btn btn-primary">
+            Contact us
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14M13 6l6 6-6 6"/>
+            </svg>
+          </a>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

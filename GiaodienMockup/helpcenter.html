@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SHOPTRANS — Footer</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --green: #00E676;
+    --green-2: #00B85C;
+    --bg: #ffffff;
+    --bg-2: #f8faf9;
+    --bg-3: #f1f5f3;
+    --border: #e5e7eb;
+    --border-2: #d1d5db;
+    --text: #0F1411;
+    --text-2: #4b5563;
+    --text-3: #6b7280;
+  }
+
+  html, body {
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--text);
+    background-color: #ffffff;
+    background-image:
+      radial-gradient(circle at 80% 0%, rgba(0,230,118,0.04) 0%, transparent 40%),
+      radial-gradient(circle at 0% 100%, rgba(0,230,118,0.03) 0%, transparent 40%);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+
+
+  /* === FOOTER === */
+  .footer {
+    background: var(--bg);
+    border-top: 1px solid var(--border-2);
+    position: relative;
+    overflow: hidden;
+  }
+  .footer::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    opacity: 0.5;
+  }
+  .footer-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px 32px 12px;
+  }
+
+  /* === MENU GRID (4 cols) === */
+  .footer-menus {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .menu-col { display: flex; flex-direction: column; gap: 7px; }
+  .menu-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--green);
+    display: flex; align-items: center; gap: 6px;
+    padding-bottom: 4px;
+  }
+  .menu-label .index {
+    color: var(--text-3);
+    font-weight: 500;
+  }
+  .menu-list {
+    display: flex; flex-direction: column;
+    gap: 5px;
+    list-style: none;
+  }
+  .menu-link {
+    color: var(--text-2);
+    text-decoration: none;
+    font-size: 13.5px;
+    transition: color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+  }
+  .menu-link:hover { color: var(--green); }
+  .menu-link::before {
+    content: '›';
+    color: var(--text-3);
+    font-family: 'Geist Mono', monospace;
+    transition: all 0.15s;
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  .menu-link:hover::before {
+    color: var(--green);
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  /* Newsletter inside menu grid */
+  .news-col-desc {
+    color: var(--text-2);
+    font-size: 12.5px;
+    line-height: 1.55;
+    margin-bottom: 4px;
+  }
+  .news-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .news-input {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    border-radius: 7px;
+    color: var(--text);
+    font-family: 'Geist', sans-serif;
+    font-size: 12.5px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  .news-input::placeholder { color: var(--text-3); }
+  .news-input:focus { border-color: var(--green); }
+  .news-btn {
+    background: var(--green);
+    color: #000;
+    border: 0;
+    padding: 10px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .news-btn:hover { background: var(--green-2); }
+  .news-meta {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px;
+    color: var(--text-3);
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* === OFFICES === */
+  .offices {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .offices h4 {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 7px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .offices h4 .index { color: var(--text-3); font-weight: 500; }
+  .office-list {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px 14px;
+  }
+  .office {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+    color: var(--text-2);
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-2);
+    transition: all 0.15s;
+  }
+  .office:hover {
+    border-color: var(--green);
+    background: rgba(0, 230, 118, 0.05);
+  }
+  .office-code {
+    color: var(--green);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .office-tag {
+    font-size: 9px;
+    color: var(--text-3);
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    padding: 1px 4px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .office-more {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    color: var(--green);
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+  }
+  .office-more:hover { text-decoration: underline; }
+
+  /* === BOTTOM (socials + copyright) === */
+  .footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 12px 0;
+  }
+  .footer-bottom .socials {
+    display: flex;
+    gap: 8px;
+  }
+  .social {
+    width: 36px; height: 36px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-2);
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .social:hover {
+    border-color: var(--green);
+    color: var(--green);
+    transform: translateY(-1px);
+  }
+  .copyright {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .copyright .brand {
+    color: var(--green);
+    font-weight: 700;
+  }
+
+  /* Mobile */
+  @media (max-width: 900px) {
+    .footer-menus { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+    .office-list { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 540px) {
+    .footer-inner { padding: 40px 20px 20px; }
+    .footer-menus { grid-template-columns: 1fr; }
+    .office-list { grid-template-columns: 1fr; }
+    .footer-bottom { flex-direction: column-reverse; align-items: flex-start; }
+  }
+
+  /* === Locations Modal === */
+  .locations-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    animation: overlayIn 0.2s ease;
+  }
+  .locations-overlay.show { display: flex; }
+  @keyframes overlayIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .locations-modal {
+    background: var(--bg);
+    border: 1px solid var(--green);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 880px;
+    max-height: 86vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 80px rgba(0,230,118,0.15), 0 24px 60px rgba(0,0,0,0.7);
+    overflow: hidden;
+    animation: modalIn 0.25s cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .locations-head {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, var(--bg-3) 0%, var(--bg-2) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .locations-head::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    opacity: 0.5;
+  }
+  .locations-head h3 {
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .locations-head h3 .count {
+    color: var(--green);
+    background: rgba(0,230,118,0.1);
+    border: 1px solid rgba(0,230,118,0.3);
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+  }
+  .loc-close {
+    width: 30px; height: 30px;
+    background: transparent;
+    border: 1px solid var(--border-2);
+    border-radius: 6px;
+    color: var(--text-2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .loc-close:hover { color: var(--green); border-color: var(--green); }
+
+  /* === HELP CENTER PICKER === */
+  .help-picker { max-width: 560px; }
+  .help-picker-body {
+    padding: 22px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .help-opt {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    border-radius: 10px;
+    padding: 20px 18px;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: all 0.18s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .help-opt::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,230,118,0.08), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.18s ease;
+    pointer-events: none;
+  }
+  .help-opt:hover {
+    border-color: var(--green);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,230,118,0.12);
+  }
+  .help-opt:hover::before { opacity: 1; }
+  .help-opt-icon {
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    background: rgba(0,230,118,0.1);
+    border: 1px solid rgba(0,230,118,0.3);
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .help-opt-code {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  .help-opt-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .help-opt-desc {
+    font-size: 12.5px;
+    color: var(--text-2);
+    line-height: 1.5;
+    flex: 1;
+  }
+  .help-opt-cta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-top: 4px;
+  }
+  .help-opt:hover .help-opt-cta svg { transform: translateX(3px); }
+  .help-opt-cta svg { transition: transform 0.18s ease; }
+
+  @media (max-width: 560px) {
+    .help-picker-body { grid-template-columns: 1fr; padding: 16px; }
+  }
+
+  .locations-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 18px 18px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-2) transparent;
+  }
+  .locations-body::-webkit-scrollbar { width: 6px; }
+  .locations-body::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+  .loc-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .loc-card {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    border-radius: 8px;
+    padding: 12px 14px;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+  .loc-card:hover {
+    border-color: var(--green);
+    box-shadow: 0 2px 8px rgba(0, 230, 118, 0.12);
+  }
+  .loc-card.hq {
+    border-color: rgba(0,230,118,0.3);
+    background: linear-gradient(135deg, rgba(0,230,118,0.06) 0%, var(--bg-2) 100%);
+  }
+  .loc-card.hq::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--green);
+  }
+  .loc-card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .loc-code {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: 0.1em;
+    background: var(--bg-3);
+    border: 1px solid var(--border-2);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .loc-city {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.005em;
+  }
+  .loc-country {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-left: auto;
+  }
+  .loc-hq {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px;
+    background: var(--green);
+    color: #000;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .loc-addr {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    color: var(--text-2);
+    line-height: 1.55;
+  }
+
+  @media (max-width: 720px) {
+    .loc-grid { grid-template-columns: 1fr; }
+    .locations-modal { max-height: 92vh; }
+    .locations-head h3 { font-size: 11px; gap: 6px; }
+  }
+</style>
+</head>
+<body>
+
+
+
+<footer class="footer">
+  <div class="footer-inner">
+
+    <!-- Menus: Company / Solutions / Resources / Newsletter -->
+    <div class="footer-menus">
+
+      <div class="menu-col">
+        <div class="menu-label"><span class="index">01</span> Company</div>
+        <ul class="menu-list">
+          <li><a class="menu-link" href="#">About SHOPTRANS</a></li>
+          <li><a class="menu-link" href="#">Our network</a></li>
+          <li><a class="menu-link" href="#">Customers &amp; case studies</a></li>
+          <li><a class="menu-link" href="#">Partners</a></li>
+          <li><a class="menu-link" href="#">Contact</a></li>
+        </ul>
+      </div>
+
+      <div class="menu-col">
+        <div class="menu-label"><span class="index">02</span> Solutions</div>
+        <ul class="menu-list">
+          <li><a class="menu-link" href="#">FCL Ocean freight</a></li>
+          <li><a class="menu-link" href="#">LCL Ocean freight</a></li>
+          <li><a class="menu-link" href="#">Air freight</a></li>
+          <li><a class="menu-link" href="#">Customs clearance</a></li>
+          <li><a class="menu-link" href="#">Warehousing &amp; 3PL</a></li>
+        </ul>
+      </div>
+
+      <div class="menu-col">
+        <div class="menu-label"><span class="index">03</span> Resources</div>
+        <ul class="menu-list">
+          <li><a class="menu-link" href="#" onclick="openHelpPicker(event)">Help center</a></li>
+          <li><a class="menu-link" href="#">FAQ &amp; guides</a></li>
+          <li><a class="menu-link" href="http://14.225.207.194:5000/local-info">Local information</a></li>
+          <li><a class="menu-link" href="http://14.225.207.194:5000/terms-and-conditions">Terms &amp; conditions</a></li>
+        </ul>
+      </div>
+
+      <div class="menu-col">
+        <div class="menu-label"><span class="index">04</span> Newsletter</div>
+        <p class="news-col-desc">Logistics insights &amp; freight rate updates. Monthly. No spam.</p>
+        <form class="news-form" onsubmit="subscribe(event)">
+          <input type="email" class="news-input" placeholder="you@company.com" required>
+          <button type="submit" class="news-btn">
+            Subscribe
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </form>
+        <span class="news-meta">12,400+ subscribers</span>
+      </div>
+
+    </div>
+
+    <!-- Offices -->
+    <div class="offices">
+      <h4><span class="index">05</span> Offices</h4>
+      <div class="office-list">
+        <div class="office"><span class="office-code">CN</span> China <span class="office-tag">HQ</span></div>
+        <div class="office"><span class="office-code">JP</span> Japan</div>
+        <div class="office"><span class="office-code">VN</span> Vietnam</div>
+        <div class="office"><span class="office-code">ID</span> Indonesia</div>
+        <div class="office"><span class="office-code">IN</span> India</div>
+        <div class="office"><span class="office-code">TH</span> Thailand</div>
+        <div class="office"><span class="office-code">KR</span> South Korea</div>
+        <div class="office"><span class="office-code">MY</span> Malaysia</div>
+        <div class="office"><span class="office-code">BD</span> Bangladesh</div>
+        <div class="office"><span class="office-code">US</span> USA</div>
+        <div class="office"><span class="office-code">TW</span> Taiwan (CN)</div>
+        <div class="office"><span class="office-code">HK</span> Hong Kong (CN)</div>
+        <div class="office"><span class="office-code">MX</span> Mexico</div>
+        <a class="office-more" onclick="openLocations()">+ View all locations →</a>
+      </div>
+    </div>
+
+    <!-- Bottom: copyright + socials -->
+    <div class="footer-bottom">
+      <div class="copyright">
+        <span class="brand">SHOPTRANS</span> © 2026
+      </div>
+      <div class="socials">
+        <a class="social" href="#" title="Facebook">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        </a>
+        <a class="social" href="#" title="TikTok">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
+        </a>
+        <a class="social" href="#" title="WeChat">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 0 1 .598.082l1.584.926a.272.272 0 0 0 .14.047c.134 0 .24-.111.24-.247 0-.06-.023-.12-.038-.177l-.327-1.233a.582.582 0 0 1-.023-.156.49.49 0 0 1 .201-.398C23.024 18.48 24 16.82 24 14.98c0-3.21-2.931-5.837-6.656-6.088V8.89c-.135-.01-.27-.027-.407-.03zm-2.53 3.274c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.97-.982zm4.844 0c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.969-.982z"/></svg>
+        </a>
+        <a class="social" href="#" title="LinkedIn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.063 2.063 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        </a>
+        <a class="social" href="#" title="YouTube">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+        </a>
+        <a class="social" href="#" title="Instagram">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.899 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.899-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0 3.678c-3.405 0-6.162 2.76-6.162 6.162 0 3.405 2.76 6.162 6.162 6.162 3.405 0 6.162-2.76 6.162-6.162 0-3.405-2.76-6.162-6.162-6.162zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405c0 .795-.646 1.44-1.44 1.44-.795 0-1.44-.646-1.44-1.44 0-.794.646-1.439 1.44-1.439.793-.001 1.44.645 1.44 1.439z"/></svg>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</footer>
+
+<!-- Locations Modal -->
+<div class="locations-overlay" id="locOverlay" onclick="if(event.target===this)closeLocations()">
+  <div class="locations-modal">
+    <div class="locations-head">
+      <h3>Global Network <span class="count">13 LOCATIONS</span></h3>
+      <button class="loc-close" onclick="closeLocations()" title="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="locations-body">
+      <div class="loc-grid">
+
+        <div class="loc-card hq">
+          <div class="loc-card-head">
+            <span class="loc-code">CN</span>
+            <span class="loc-city">China</span>
+            <span class="loc-hq">HQ</span>
+            <span class="loc-country">Shanghai</span>
+          </div>
+          <p class="loc-addr">Rm B1505, No.2816, Yixian Rd, Shanghai, China 200441</p>
+        </div>
+
+        <div class="loc-card">
+          <div class="loc-card-head">
+            <span class="loc-code">JP</span>
+            <span class="loc-city">Tokyo</span>
+            <span class="loc-country">Japan</span>
+          </div>
+          <p class="loc-addr">Kandamihama Bld., 1-7-5, Kandasudacho, Chiyoda Ku, Tokyo, 101-0041, Japan</p>
+        </div>
+
+        <div class="loc-card">
+          <div class="loc-card-head">
+            <span class="loc-code">VN</span>
+            <span class="loc-city">Ho Chi Minh</span>
+            <span class="loc-country">Vietnam</span>
+          </div>
+          <p class="loc-addr">3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Ward 2, Tan Binh District, Ho Chi Minh City, Viet Nam</p>
+        </div>
+
+        <div class="loc-card">
+          <div class="loc-card-head">
+            <span class="loc-code">ID</span>
+            <span class="loc-city">Jakarta</span>
+            <span class="loc-country">Indonesia</span>
+          </div>
+          <p class="loc-addr">JL. Main Road Sedayu City Blok Gsod 035, Kel. Cakung Barat 13910 — Jakarta Timur, Indonesia</p>
+        </div>
+
+        <div class="loc-card">
+          <div class="loc-card-head">
+            <span class="loc-code">MY</span>
+            <span class="loc-city">Port Klang</span>
+            <span class="loc-country">Malaysia</span>
+          </div>
+          <p class="loc-addr">The Landmark, No. 5-13, MTBBT2, Jalan Batu Nilam 16, Bandar Bukit Tinggi, 41200 Klang, Selangor Darul Ehsan, Malaysia</p>
+        </div>
+
+        <div class="loc-card">
+          <div class="loc-card-head">
+            <span class="loc-code">TH</span>
+            <span class="loc-city">Bangkok</span>
+            <span class="loc-country">Thailand</span>
+          </div>
+          <p class="loc-addr">942/13 Park Avenue Building, Room No. 205, 2nd Fl., Lasalle Road, South-Bangna, Bangna, Bangkok 10260</p>
+        </div>
+
+        <div class="loc-card">
+          <div class="loc-card-head">
+            <span class="loc-code">IN</span>
+            <span class="loc-city">Mumbai</span>
+            <span class="loc-country">India</span>
+          </div>
+          <p class="loc-addr">First Floor, 01-A-46, Haware Centurion Premises, Sector-19A, Plot No. 88-91, Nerul East, Navi Mumbai, Thane, Maharashtra, 400706</p>
+        </div>
+
+        <div class="loc-card">
+          <div class="loc-card-head">
+            <span class="loc-code">KR</span>
+            <span class="loc-city">Seoul</span>
+            <span class="loc-country">Korea</span>
+          </div>
+          <p class="loc-addr">Room 701, Rohas Tower, 93-45 Sangsu-Dong, Mapo-Gu, Seoul, Korea</p>
+        </div>
+
+        <div class="loc-card">
+          <div class="loc-card-head">
+            <span class="loc-code">BD</span>
+            <span class="loc-city">Dhaka</span>
+            <span class="loc-country">Bangladesh</span>
+          </div>
+          <p class="loc-addr">MF Tower, 13th Floor, Progoti Sharoni, Dhaka-1212, Bangladesh</p>
+        </div>
+
+        <div class="loc-card">
+          <div class="loc-card-head">
+            <span class="loc-code">US</span>
+            <span class="loc-city">Los Angeles</span>
+            <span class="loc-country">United States</span>
+          </div>
+          <p class="loc-addr">5716 Corsa Ave, Ste 110, Westlake Village, Los Angeles County, CA 91362, USA</p>
+        </div>
+
+        <div class="loc-card">
+          <div class="loc-card-head">
+            <span class="loc-code">DE</span>
+            <span class="loc-city">Frankfurt</span>
+            <span class="loc-country">Germany</span>
+          </div>
+          <p class="loc-addr">DE-Neufville-Str. 25, 60599 Frankfurt am Main, Germany</p>
+        </div>
+
+        <div class="loc-card">
+          <div class="loc-card-head">
+            <span class="loc-code">TW</span>
+            <span class="loc-city">Taipei</span>
+            <span class="loc-country">Taiwan, CN</span>
+          </div>
+          <p class="loc-addr">5F-5, No. 142, Sec. 4, Zhongxiao East Road, Da'an Dist., Taipei City 106429, Taiwan</p>
+        </div>
+
+        <div class="loc-card">
+          <div class="loc-card-head">
+            <span class="loc-code">HK</span>
+            <span class="loc-city">Hong Kong</span>
+            <span class="loc-country">CN</span>
+          </div>
+          <p class="loc-addr">532B, 5/F, Starlight Centre, 3 Salisbury Road, Tsim Sha Tsui, Hong Kong, China</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Help Center Picker Modal -->
+<div class="locations-overlay" id="helpOverlay" onclick="if(event.target===this)closeHelpPicker()">
+  <div class="locations-modal help-picker">
+    <div class="locations-head">
+      <h3>Help Center <span class="count">CHOOSE A CHANNEL</span></h3>
+      <button class="loc-close" onclick="closeHelpPicker()" title="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="help-picker-body">
+
+      <a class="help-opt" href="online_support_functional.html">
+        <div class="help-opt-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <div class="help-opt-title">Online Support</div>
+        <p class="help-opt-desc">Chat with us via WhatsApp, Zalo, Telegram or WeChat. No login required — quick answers for general inquiries.</p>
+        <div class="help-opt-cta">
+          Open chat
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+      </a>
+
+      <a class="help-opt" href="#login">
+        <div class="help-opt-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </div>
+        <div class="help-opt-title">Instant Support</div>
+        <p class="help-opt-desc">Priority live agents tied to your shipments &amp; cases. Sign in to access full case history and SLA tracking.</p>
+        <div class="help-opt-cta">
+          Sign in
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  function subscribe(e) {
+    e.preventDefault();
+    const input = e.target.querySelector('input');
+    alert('Subscribed: ' + input.value);
+    input.value = '';
+  }
+
+  function openLocations() {
+    document.getElementById('locOverlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeLocations() {
+    document.getElementById('locOverlay').classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
+  function openHelpPicker(e) {
+    if (e) e.preventDefault();
+    document.getElementById('helpOverlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeHelpPicker() {
+    document.getElementById('helpOverlay').classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeLocations();
+      closeHelpPicker();
+    }
+  });
+</script>
+
+</body>
+</html>

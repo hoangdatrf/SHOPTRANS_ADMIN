@@ -1,0 +1,2299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shipping Booking Form</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#1ab3a0;--teal-d:#129e8d;--teal-pale:#e6f9f7;--teal-pale2:#c8f0eb;
+  --blue:#1a72b8;--blue-pale:#e8f3fb;
+  --navy:#1a3a5c;--navy-light:#2d5480;
+  --g50:#f8fafc;--g100:#f0f4f8;--g200:#e2eaf3;--g300:#c8d8ea;
+  --g400:#90a8c0;--g500:#607890;--g700:#2d4a65;--g900:#0f2233;
+  --red:#ef4444;--red-pale:#fee2e2;
+  --orange:#f59e0b;--orange-pale:#fef3c7;
+  --green:#22c55e;--green-pale:#dcfce7;
+  --locked-bg:#f7f9fb;--locked-border:#dde6ef;--locked-text:#b0c4d8;
+  --sh:0 2px 16px rgba(0,60,120,.07);
+  --sh-focus:0 0 0 3px rgba(26,179,160,.18);
+  --r:14px;--rsm:8px;
+}
+body{font-family:'Sora',sans-serif;background:var(--g100);color:var(--g900);font-size:14px;min-height:100vh;padding:32px 20px 60px}
+
+/* ─── WRAPPER ─── */
+.form-wrap{max-width:860px;margin:0 auto}
+
+.form-title{font-size:22px;font-weight:700;color:var(--navy);margin-bottom:6px}
+.form-sub{font-size:13px;color:var(--g500);margin-bottom:28px}
+
+/* ─── SECTION CARD ─── */
+.section{
+  background:#fff;border:1.5px solid var(--g200);border-radius:var(--r);
+  margin-bottom:16px;overflow:visible;
+  box-shadow:var(--sh);
+  transition:border-color .25s,opacity .3s;
+}
+.section.locked{
+  background:var(--locked-bg);border-color:var(--locked-border);
+  pointer-events:none;
+}
+.section.locked .sec-body{opacity:.45;filter:grayscale(.3)}
+.section.unlocked{transition:opacity .25s}
+
+.sec-head{padding:18px 24px 0}
+.sec-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:50%;
+  background:var(--teal);color:#fff;font-size:11px;font-weight:700;
+  margin-right:8px;flex-shrink:0;vertical-align:middle;
+}
+.section.locked .sec-num{background:var(--g300)}
+.section.done .sec-num{background:var(--green)}
+.sec-title{font-size:15px;font-weight:700;color:var(--teal);display:inline;vertical-align:middle}
+.section.locked .sec-title{color:var(--g400)}
+.section.done .sec-title{color:var(--navy)}
+.sec-lock-note{display:none;font-size:11px;color:var(--g400);margin-left:30px;margin-top:3px}
+.section.locked .sec-lock-note{display:block}
+.sec-body{padding:16px 24px 20px}
+
+/* ─── INPUTS ─── */
+.field-row{display:flex;gap:12px;margin-bottom:12px}
+.field-col{display:flex;flex-direction:column;gap:12px;flex:1}
+.field-group{display:flex;flex-direction:column;gap:5px}
+.field-label{font-size:12px;font-weight:600;color:var(--g500);letter-spacing:.04em;text-transform:uppercase}
+
+input[type=text],input[type=number],input[type=date],select,.fake-input{
+  width:100%;padding:10px 14px;
+  border:1.5px solid var(--g300);border-radius:var(--rsm);
+  font-family:'Sora',sans-serif;font-size:13px;color:var(--g900);
+  background:#fff;outline:none;
+  transition:border-color .2s,box-shadow .2s;
+  -webkit-appearance:none;appearance:none;
+}
+input::placeholder,select option[value=""]{color:var(--g400)}
+input:focus,select:focus{border-color:var(--teal);box-shadow:var(--sh-focus)}
+input.error{border-color:var(--red);box-shadow:0 0 0 3px rgba(239,68,68,.12)}
+.err-msg{font-size:11px;color:var(--red);margin-top:3px;display:none}
+.err-msg.show{display:block}
+
+/* select arrow */
+.sel-wrap{position:relative}
+.sel-wrap select{padding-right:32px;cursor:pointer}
+.sel-wrap::after{content:'▾';position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--g400);pointer-events:none;font-size:13px}
+
+/* number stepper */
+.qty-row{display:flex;align-items:center;gap:0;border:1.5px solid var(--g300);border-radius:var(--rsm);overflow:hidden;background:#fff;width:100%;transition:border-color .2s}
+.qty-row:focus-within{border-color:var(--teal);box-shadow:var(--sh-focus)}
+.qty-btn{width:36px;height:40px;border:none;background:var(--g50);color:var(--g700);font-size:18px;cursor:pointer;font-weight:300;transition:background .15s;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.qty-btn:hover{background:var(--g200)}
+.qty-num{flex:1;text-align:center;border:none;outline:none;font-family:'Sora',sans-serif;font-size:14px;font-weight:600;color:var(--g900);background:transparent;padding:0;height:40px;line-height:40px;display:flex;align-items:center;justify-content:center;-moz-appearance:textfield;}
+.qty-num::-webkit-outer-spin-button,.qty-num::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+/* weight row */
+.weight-row{display:flex;gap:0;align-items:stretch}
+.weight-row input{border-radius:var(--rsm) 0 0 var(--rsm);border-right:none;flex:1}
+.weight-unit{
+  padding:10px 12px;border:1.5px solid var(--g300);border-left:none;
+  border-radius:0 var(--rsm) var(--rsm) 0;
+  background:var(--g50);color:var(--g700);
+  font-size:12px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;gap:4px;
+  transition:background .15s;
+  white-space:nowrap;
+}
+.weight-unit:hover{background:var(--g200)}
+
+/* ─── CHECKBOXES ─── */
+.check-group{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.check-item{display:flex;align-items:flex-start;gap:9px;cursor:pointer;padding:7px 10px;border-radius:var(--rsm);border:1.5px solid transparent;transition:all .18s;user-select:none}
+.check-item:hover:not(.disabled){background:var(--teal-pale);border-color:var(--teal-pale2)}
+.check-item.checked{background:var(--teal-pale);border-color:var(--teal)}
+.check-item.disabled{opacity:.4;cursor:not-allowed}
+.check-item.exclusive-conflict{opacity:.35;cursor:not-allowed;}
+
+.custom-check{
+  width:17px;height:17px;border-radius:4px;border:2px solid var(--g300);
+  background:#fff;flex-shrink:0;margin-top:1px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .18s;
+}
+.check-item.checked .custom-check{background:var(--teal);border-color:var(--teal)}
+.check-tick{color:#fff;font-size:9px;font-weight:700;display:none}
+.check-item.checked .check-tick{display:block}
+
+.check-label{font-size:13px;color:var(--g700);line-height:1.5}
+.check-label strong{color:var(--teal);font-weight:600}
+.check-desc{font-size:11px;color:var(--g400)}
+
+/* ─── CONTAINER ROWS ─── */
+.container-rows{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.cont-row{
+  display:grid;grid-template-columns:1fr 150px 180px auto;
+  gap:10px;align-items:end;
+  background:var(--g50);border:1.5px solid var(--g200);
+  border-radius:var(--rsm);padding:12px 14px;
+}
+.cont-row.has-oog{
+  display:grid;
+  grid-template-columns:1fr 150px 180px auto;
+  grid-template-areas:
+    "type qty weight rm"
+    "oog  oog oog    oog";
+  gap:10px 10px;
+}
+.cont-row.has-oog > div:nth-of-type(1){ grid-area:type; }
+.cont-row.has-oog > div:nth-of-type(2){ grid-area:qty; }
+.cont-row.has-oog > div:nth-of-type(3){ grid-area:weight; }
+.cont-row.has-oog > .remove-btn{ grid-area:rm; }
+.cont-row.has-oog > .oog-panel{ grid-area:oog; }
+
+/* ─── OOG PANEL (Open Top / Flat Rack) ─── */
+.oog-panel{
+  margin-top:4px;
+  background:linear-gradient(180deg,#fff8eb 0%,#fef3c7 100%);
+  border:1.5px solid #fbbf24;
+  border-radius:var(--rsm);
+  padding:14px 16px;
+  display:grid;
+  grid-template-columns:200px 1fr;
+  gap:14px;
+  position:relative;
+}
+.oog-panel::before{
+  content:'';
+  position:absolute;
+  top:-7px;left:20px;width:12px;height:12px;
+  background:#fef3c7;
+  border-left:1.5px solid #fbbf24;
+  border-top:1.5px solid #fbbf24;
+  transform:rotate(45deg);
+}
+.oog-head{
+  grid-column:1 / -1;
+  display:flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:700;
+  color:#92400e;letter-spacing:.08em;text-transform:uppercase;
+  margin-bottom:-2px;
+}
+.oog-head .badge{
+  background:#92400e;color:#fef3c7;
+  padding:2px 8px;border-radius:4px;
+  font-size:10px;letter-spacing:.06em;
+}
+.oog-diagram{
+  background:#fff;border:1px solid #fde68a;border-radius:6px;
+  padding:8px;display:flex;align-items:center;justify-content:center;
+  min-height:140px;
+}
+.oog-diagram svg{width:100%;height:auto;max-height:130px;display:block}
+.oog-fields{
+  display:flex;flex-direction:column;gap:11px;
+}
+.oog-mode-row{
+  display:inline-flex;background:#fff;border:1.5px solid #fde68a;
+  border-radius:6px;padding:3px;gap:2px;align-self:flex-start;
+}
+.oog-mode-pill{
+  font-family:'Sora',sans-serif;font-size:12px;font-weight:600;
+  padding:6px 14px;border-radius:4px;cursor:pointer;
+  background:transparent;border:none;color:var(--g500);
+  transition:all .15s;letter-spacing:.02em;
+}
+.oog-mode-pill.active{background:#92400e;color:#fef3c7;box-shadow:0 1px 4px rgba(146,64,14,.3)}
+.oog-mode-pill:not(.active):hover{background:var(--g50);color:var(--g700)}
+
+.oog-label{
+  font-size:10.5px;font-weight:600;color:#92400e;
+  letter-spacing:.05em;text-transform:uppercase;
+  margin-bottom:5px;display:block;
+}
+.oog-dim-grid{
+  display:grid;grid-template-columns:1fr 1fr 1fr 70px;gap:6px;
+}
+.oog-dim-grid input{
+  font-family:'DM Mono',monospace;font-size:13px;
+  padding:8px 10px;border:1.5px solid #fde68a;border-radius:6px;
+  background:#fff;color:var(--g900);width:100%;
+}
+.oog-dim-grid input:focus{outline:none;border-color:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.18)}
+.oog-dim-grid input::placeholder{color:#d4a574;font-style:italic}
+.oog-unit-toggle{
+  font-family:'DM Mono',monospace;font-size:12px;font-weight:600;
+  background:#92400e;color:#fef3c7;border:none;border-radius:6px;
+  cursor:pointer;text-align:center;letter-spacing:.04em;
+  transition:background .15s;
+}
+.oog-unit-toggle:hover{background:#78350f}
+
+/* ─── PACKAGES (multi-piece OOG) ─── */
+.oog-pkg-section{display:flex;flex-direction:column;gap:8px}
+.oog-pkg-header{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-bottom:2px;
+}
+.oog-pkg-header .oog-label{margin:0}
+.oog-pkg-header .oog-unit-toggle{padding:6px 10px;height:auto}
+
+.oog-pkg-grid-head{
+  display:grid;grid-template-columns:34px 1fr 1fr 1fr 70px 28px;gap:6px;
+  font-size:9.5px;font-weight:700;color:#92400e;letter-spacing:.06em;
+  text-transform:uppercase;padding:0 2px;
+}
+.oog-pkg-grid-head span{text-align:left}
+.oog-pkg-grid-head span:nth-child(n+2):nth-child(-n+5){padding-left:11px}
+
+.oog-pkg-list{display:flex;flex-direction:column;gap:6px}
+.oog-pkg-row{
+  display:grid;grid-template-columns:34px 1fr 1fr 1fr 70px 28px;gap:6px;
+  align-items:center;
+}
+.oog-pkg-label{
+  font-family:'DM Mono',monospace;font-size:11px;font-weight:700;
+  color:#92400e;background:#fef3c7;border:1px solid #fde68a;
+  border-radius:5px;padding:6px 0;text-align:center;letter-spacing:.02em;
+}
+.oog-pkg-row input{
+  font-family:'DM Mono',monospace;font-size:13px;
+  padding:8px 10px;border:1.5px solid #fde68a;border-radius:6px;
+  background:#fff;color:var(--g900);width:100%;outline:none;
+  transition:border-color .15s,box-shadow .15s;
+}
+.oog-pkg-row input:focus{border-color:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.18)}
+.oog-pkg-row input::placeholder{color:#d4a574;font-style:italic}
+.oog-pkg-row input[type=number]::-webkit-outer-spin-button,
+.oog-pkg-row input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.oog-pkg-row input[type=number]{-moz-appearance:textfield}
+
+.oog-pkg-remove{
+  width:26px;height:32px;border-radius:5px;
+  border:1px solid #fde68a;background:#fff;color:#dc2626;
+  font-size:15px;cursor:pointer;font-weight:600;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;padding:0;
+}
+.oog-pkg-remove:hover:not(:disabled){background:#fee2e2;border-color:#dc2626}
+.oog-pkg-remove:disabled{opacity:.25;cursor:not-allowed}
+
+.oog-pkg-footer{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-top:2px;
+}
+.oog-pkg-add{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:'Sora',sans-serif;font-size:11.5px;font-weight:700;
+  background:transparent;color:#92400e;
+  border:1.5px dashed #f59e0b;border-radius:6px;
+  padding:7px 12px;cursor:pointer;letter-spacing:.04em;
+  transition:all .15s;
+}
+.oog-pkg-add:hover{background:#fef3c7;border-style:solid}
+.oog-pkg-total{
+  font-size:11.5px;color:#78350f;
+}
+.oog-pkg-total strong{
+  font-family:'DM Mono',monospace;color:#92400e;
+  font-size:13px;font-weight:700;
+}
+.oog-pkg-worst{
+  display:inline-block;
+  font-size:9px;font-weight:700;letter-spacing:.06em;
+  background:#dc2626;color:#fff;
+  padding:2px 6px;border-radius:3px;margin-left:6px;
+  vertical-align:middle;
+}
+
+.oog-dim-hint{
+  display:flex;align-items:center;gap:7px;
+  margin-top:7px;
+  font-size:11px;line-height:1.45;
+  color:#78350f;
+  background:rgba(255,255,255,.55);
+  border:1px solid #fde68a;border-radius:5px;
+  padding:6px 9px;
+}
+.oog-dim-hint svg{
+  width:13px;height:13px;flex-shrink:0;color:#92400e;
+}
+.oog-dim-hint strong{color:#92400e;font-weight:700;font-family:'DM Mono',monospace}
+
+.oog-dim-locked{
+  display:flex;align-items:center;gap:11px;
+  padding:14px 16px;
+  background:repeating-linear-gradient(
+    45deg,
+    rgba(255,255,255,.4) 0 8px,
+    rgba(254,243,199,.6) 8px 16px
+  );
+  border:1.5px dashed #d4a574;
+  border-radius:6px;
+  color:#78350f;
+}
+.oog-dim-locked svg{
+  width:22px;height:22px;flex-shrink:0;color:#92400e;
+}
+.oog-dim-locked-txt{display:flex;flex-direction:column;gap:2px}
+.oog-dim-locked-txt strong{
+  font-size:12px;font-weight:700;color:#92400e;
+  letter-spacing:.04em;text-transform:uppercase;
+}
+.oog-dim-locked-txt span{font-size:11.5px;color:#78350f;line-height:1.45}
+
+.oog-overhang{
+  background:rgba(255,255,255,.55);border:1px dashed #fbbf24;
+  border-radius:6px;padding:10px 12px;
+}
+.oog-badge-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;
+}
+.oog-badge{
+  background:#fff;border:1.5px solid var(--g200);border-radius:6px;
+  padding:8px 10px;display:flex;flex-direction:column;gap:2px;
+  transition:all .2s;
+  position:relative;overflow:hidden;
+}
+.oog-badge::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--g300);transition:background .2s;
+}
+.oog-badge.on{
+  background:linear-gradient(180deg,#fef2f2 0%,#fee2e2 100%);
+  border-color:#fca5a5;
+}
+.oog-badge.on::before{background:#dc2626}
+.oog-badge .b-axis{
+  font-size:10px;font-weight:700;color:#92400e;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.oog-badge.on .b-axis{color:#991b1b}
+.oog-badge .b-val{
+  font-family:'DM Mono',monospace;font-size:15px;font-weight:600;
+  color:var(--g500);letter-spacing:-.01em;
+}
+.oog-badge.on .b-val{color:#dc2626}
+.oog-badge .b-sub{
+  font-size:9.5px;color:var(--g400);font-weight:500;
+  letter-spacing:.02em;
+}
+.oog-badge.on .b-sub{color:#991b1b}
+.oog-overhang-mini-label{font-size:10px;color:#92400e;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+
+.oog-extra-row{
+  display:flex;flex-wrap:wrap;gap:14px;align-items:center;
+  font-size:12.5px;color:var(--g700);
+}
+.oog-extra-row label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.oog-extra-row select{
+  font-family:'Sora',sans-serif;font-size:12px;font-weight:500;
+  padding:6px 26px 6px 10px;border:1.5px solid #fde68a;border-radius:5px;
+  background:#fff;color:var(--g700);cursor:pointer;
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%2392400e' d='M0 0l5 6 5-6z'/></svg>");
+  background-repeat:no-repeat;background-position:right 9px center;
+}
+.oog-extra-row .check-mini{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:16px;height:16px;border:1.5px solid #fbbf24;border-radius:3px;
+  background:#fff;flex-shrink:0;transition:all .15s;
+}
+.oog-extra-row input[type=checkbox]{display:none}
+.oog-extra-row input[type=checkbox]:checked + .check-mini{
+  background:#92400e;border-color:#92400e;
+}
+.oog-extra-row input[type=checkbox]:checked + .check-mini::after{
+  content:'✓';color:#fef3c7;font-size:11px;font-weight:700;line-height:1;
+}
+
+.oog-warn{
+  grid-column:1 / -1;
+  font-size:11.5px;color:#78350f;
+  background:rgba(255,255,255,.6);
+  border:1px solid #fbbf24;border-radius:6px;
+  padding:8px 12px;
+  display:flex;align-items:flex-start;gap:8px;
+  line-height:1.5;
+}
+.oog-warn svg{width:14px;height:14px;flex-shrink:0;margin-top:1px;color:#92400e}
+.oog-warn strong{color:#92400e;font-weight:700}
+.oog-warn em{font-style:normal;font-weight:600;color:#92400e;background:#fef3c7;padding:0 4px;border-radius:3px}
+
+.oog-warn--ok{
+  background:rgba(220,252,231,.7);border-color:#86efac;color:#14532d;
+}
+.oog-warn--ok svg, .oog-warn--ok strong{color:#15803d}
+.oog-warn--ok em{background:#dcfce7;color:#15803d}
+
+.oog-warn--info{
+  background:rgba(219,234,254,.7);border-color:#93c5fd;color:#1e3a8a;
+}
+.oog-warn--info svg, .oog-warn--info strong{color:#1d4ed8}
+.oog-warn--info em{background:#dbeafe;color:#1d4ed8}
+
+.oog-warn--alert{
+  background:rgba(254,226,226,.85);border-color:#f87171;color:#7f1d1d;
+}
+.oog-warn--alert svg, .oog-warn--alert strong{color:#dc2626}
+.oog-warn--alert em{background:#fee2e2;color:#dc2626}
+
+/* ─── Stack feasibility detail (inside alert banner) ─── */
+.oog-feas-detail{
+  margin-top:8px;
+  border-top:1px dashed #fca5a5;
+  padding-top:8px;
+}
+.oog-feas-list{
+  margin:0 0 10px 18px;padding:0;
+  font-size:11.5px;line-height:1.55;color:#7f1d1d;
+}
+.oog-feas-list li{margin:2px 0}
+.oog-feas-list strong{color:#991b1b;font-weight:700}
+.oog-feas-cta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.oog-upgrade-btn{
+  background:linear-gradient(135deg,#dc2626,#991b1b);
+  color:#fff;border:none;
+  border-radius:6px;
+  padding:8px 14px;
+  font-family:'Sora',sans-serif;font-size:11.5px;font-weight:700;
+  letter-spacing:.04em;text-transform:uppercase;
+  cursor:pointer;
+  box-shadow:0 3px 10px rgba(220,38,38,.3);
+  transition:all .15s;
+}
+.oog-upgrade-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 5px 14px rgba(220,38,38,.4);
+}
+.oog-breakbulk-note{
+  font-size:11.5px;color:#7f1d1d;line-height:1.5;
+}
+.oog-breakbulk-note strong{
+  background:#fef3c7;color:#92400e;
+  padding:2px 6px;border-radius:3px;font-weight:700;
+}
+
+@media (max-width:680px){
+  .oog-panel{grid-template-columns:1fr}
+  .oog-diagram{min-height:120px}
+}
+
+.cont-row:first-child .remove-btn{visibility:hidden}
+.remove-btn{
+  width:32px;height:32px;border-radius:50%;border:1.5px solid var(--red-pale);
+  background:#fff;color:var(--red);font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;flex-shrink:0;
+}
+.remove-btn:hover{background:var(--red-pale);border-color:var(--red)}
+
+.add-cont-btn{
+  display:flex;align-items:center;gap:7px;
+  background:var(--teal);color:#fff;
+  border:none;border-radius:var(--rsm);
+  padding:9px 18px;font-family:'Sora',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .18s;align-self:flex-end;
+  box-shadow:0 2px 8px rgba(26,179,160,.25);
+}
+.add-cont-btn:hover{background:var(--teal-d);transform:translateY(-1px);box-shadow:0 4px 14px rgba(26,179,160,.35)}
+
+/* SOC note */
+.soc-note{font-size:11px;color:var(--g400);margin-top:3px;margin-left:26px;display:none}
+.soc-note.show{display:block}
+
+/* ─── DATE ─── */
+input[type=date]{cursor:pointer}
+input[type=date]::-webkit-calendar-picker-indicator{opacity:.5;cursor:pointer}
+
+/* ─── SERVICES RANGE ─── */
+.services-section{background:var(--g50);border-radius:var(--r);padding:20px 24px;border:1.5px solid var(--g200)}
+.services-title{font-size:13px;color:var(--g700);margin-bottom:16px}
+.services-title span{color:var(--g400);font-size:12px}
+
+.svc-group{margin-bottom:20px}
+.svc-group:last-child{margin-bottom:0}
+.svc-group-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.svc-group-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.icon-origin{background:linear-gradient(135deg,#fef3c7,#fed7aa)}
+.icon-sea{background:linear-gradient(135deg,#dbeafe,var(--blue-pale))}
+.icon-dest{background:linear-gradient(135deg,var(--green-pale),#d1fae5)}
+.svc-group-name{font-size:13px;font-weight:700;color:var(--navy);letter-spacing:.06em}
+.svc-divider{flex:1;height:1px;background:var(--g200)}
+
+.svc-items{display:flex;flex-direction:column;gap:4px;padding-left:48px}
+
+/* ─── CONTINUE BTN ─── */
+.form-footer{display:flex;justify-content:flex-end;margin-top:20px}
+.continue-btn{
+  background:var(--g200);color:var(--g400);border:none;
+  border-radius:var(--rsm);padding:12px 32px;
+  font-family:'Sora',sans-serif;font-size:14px;font-weight:700;
+  cursor:not-allowed;transition:all .25s;
+  letter-spacing:.04em;
+}
+.continue-btn.active{
+  background:linear-gradient(135deg,var(--teal),var(--teal-d));
+  color:#fff;cursor:pointer;
+  box-shadow:0 4px 16px rgba(26,179,160,.35);
+  transform:translateY(-1px);
+}
+.continue-btn.active:hover{box-shadow:0 6px 20px rgba(26,179,160,.45);transform:translateY(-2px)}
+
+/* ─── AUTOCOMPLETE ─── */
+.ac-wrap{position:relative;z-index:auto}
+.ac-dropdown{
+  position:fixed;z-index:99999;
+  background:#fff;border:1.5px solid var(--teal);border-radius:var(--rsm);
+  box-shadow:0 12px 32px rgba(0,60,120,.18);
+  max-height:260px;overflow-y:auto;display:none;
+}
+.ac-dropdown.open{display:block}
+.ac-opt-default{
+  padding:7px 14px 4px;font-size:10px;font-weight:700;
+  color:var(--g400);letter-spacing:.06em;text-transform:uppercase;
+  border-bottom:1px solid var(--g100);
+}
+.ac-opt{padding:9px 14px;cursor:pointer;font-size:13px;color:var(--g900);transition:background .12s}
+.ac-opt:hover{background:var(--teal-pale)}
+.ac-opt mark{background:transparent;color:var(--teal);font-weight:700}
+.ac-opt-sub{font-size:10px;color:var(--g400);display:block;margin-top:1px}
+
+/* ─── PROGRESS STRIP ─── */
+.progress-strip{display:flex;gap:4px;margin-bottom:24px;max-width:860px;margin-left:auto;margin-right:auto}
+.prog-seg{flex:1;height:4px;border-radius:2px;background:var(--g200);transition:background .4s}
+.prog-seg.done{background:var(--green)}
+.prog-seg.active{background:var(--teal)}
+
+@media(max-width:640px){
+  .field-row{flex-direction:column}
+  .cont-row{grid-template-columns:1fr 90px;grid-template-rows:auto auto}
+  .cont-row .remove-btn{grid-column:2;grid-row:1;justify-self:end}
+}
+</style>
+</head>
+<body>
+
+<!-- Progress -->
+<div class="progress-strip" id="progress">
+  <div class="prog-seg active" id="ps1"></div>
+  <div class="prog-seg" id="ps2"></div>
+  <div class="prog-seg" id="ps3"></div>
+  <div class="prog-seg" id="ps4"></div>
+  <div class="prog-seg" id="ps5"></div>
+</div>
+
+<div class="form-wrap">
+  <div class="form-title">Check Live Price</div>
+  <div class="form-sub">Complete each section to unlock the next step</div>
+
+  <!-- ═══ SECTION 1: LOCATION ═══ -->
+  <div class="section unlocked" id="sec1">
+    <div class="sec-head">
+      <span class="sec-num">1</span>
+      <span class="sec-title">Location details</span>
+    </div>
+    <div class="sec-body">
+      <div class="field-row">
+        <!-- FROM -->
+        <div class="field-col">
+          <div class="field-group">
+            <label class="field-label">From</label>
+            <div class="ac-wrap">
+              <input type="text" id="from-country" placeholder="Country / Region" autocomplete="off" oninput="acCountry(this,'from-port-wrap','from-port')">
+              <div class="ac-dropdown" id="ac-from-country"></div>
+            </div>
+          </div>
+          <div class="field-group" id="from-port-wrap" style="opacity:.4;pointer-events:none">
+            <div class="ac-wrap">
+              <input type="text" id="from-port" placeholder="From Port / location,..." autocomplete="off" oninput="acPort(this,'from-country')" disabled>
+              <div class="ac-dropdown" id="ac-from-port"></div>
+            </div>
+          </div>
+        </div>
+        <!-- TO -->
+        <div class="field-col">
+          <div class="field-group">
+            <label class="field-label">To</label>
+            <div class="ac-wrap">
+              <input type="text" id="to-country" placeholder="Country / Region" autocomplete="off" oninput="acCountry(this,'to-port-wrap','to-port')">
+              <div class="ac-dropdown" id="ac-to-country"></div>
+            </div>
+          </div>
+          <div class="field-group" id="to-port-wrap" style="opacity:.4;pointer-events:none">
+            <div class="ac-wrap">
+              <input type="text" id="to-port" placeholder="To Port / location,..." autocomplete="off" oninput="acPort(this,'to-country')" disabled>
+              <div class="ac-dropdown" id="ac-to-port"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 2: CARGO ═══ -->
+  <div class="section locked" id="sec2">
+    <div class="sec-head">
+      <span class="sec-num">2</span>
+      <span class="sec-title">What do you want to ship?</span>
+      <div class="sec-lock-note">Complete Location details first</div>
+    </div>
+    <div class="sec-body">
+      <div class="field-row" style="margin-bottom:12px">
+        <div class="field-group" style="flex:2">
+          <div class="ac-wrap">
+            <input type="text" id="commodity" placeholder="Search commodity or HS code..." autocomplete="off" oninput="acCommodity(this)">
+            <div class="ac-dropdown" id="ac-commodity"></div>
+          </div>
+        </div>
+        <div class="field-group" style="flex:1">
+          <input type="text" id="hs-code" placeholder="HS code (auto-filled)" maxlength="6" oninput="validateHS(this);document.getElementById('commodity').value = document.getElementById('commodity').value || ''">
+          <span class="err-msg" id="hs-err">Must be exactly 6 digits</span>
+        </div>
+        <div class="field-group sel-wrap" style="flex:1">
+          <select id="cargo-condition" onchange="validate()">
+            <option value="new">100% new cargo</option>
+            <option value="used">Used cargo</option>
+          </select>
+        </div>
+      </div>
+      <div class="check-group" style="flex-direction:row;flex-wrap:wrap;gap:8px">
+        <div class="check-item" id="chk-temp" onclick="toggleCheck(this,'temp');applyTempFilter()">
+          <div class="custom-check"><span class="check-tick">✓</span></div>
+          <span class="check-label">This cargo requires temperature control</span>
+        </div>
+        <div class="check-item" id="chk-danger" onclick="toggleCheck(this,'danger');applyDangerFilter()">
+          <div class="custom-check"><span class="check-tick">✓</span></div>
+          <span class="check-label">This cargo is considered dangerous</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 3: SHIPPING ═══ -->
+  <div class="section locked" id="sec3">
+    <div class="sec-head">
+      <span class="sec-num">3</span>
+      <span class="sec-title">How will your cargo be shipped?</span>
+      <div class="sec-lock-note">Complete Cargo details first</div>
+    </div>
+    <div class="sec-body">
+      <div class="container-rows" id="cont-rows">
+        <!-- built by JS -->
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div class="check-item" id="chk-soc" onclick="toggleCheck(this,'soc');validate()">
+          <div class="custom-check"><span class="check-tick">✓</span></div>
+          <span class="check-label">It is SOC container (Shipper-Owned Container)</span>
+        </div>
+        <button class="add-cont-btn" onclick="addContRow()">+ Add another container</button>
+      </div>
+      <div class="soc-note" id="soc-note">⚠️ SOC is not available when dangerous goods are declared</div>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 4: DATE ═══ -->
+  <div class="section locked" id="sec4">
+    <div class="sec-head">
+      <span class="sec-num">4</span>
+      <span class="sec-title">When is your cargo ready to ship?</span>
+      <div class="sec-lock-note">Complete Container details first</div>
+    </div>
+    <div class="sec-body">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <label style="font-size:13px;color:var(--g700);font-weight:500">Please select cargo ready date:</label>
+        <input type="date" id="cargo-date" style="width:auto;min-width:160px" onchange="validate()" min="">
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 5: SERVICES ═══ -->
+  <div class="section locked" id="sec5">
+    <div class="sec-head">
+      <span class="sec-num">5</span>
+      <span class="sec-title">Please choose services range</span>
+      <div class="sec-lock-note">Complete Cargo ready date first</div>
+    </div>
+    <div class="sec-body">
+      <div class="services-title">Multiple options available <span>(mutually exclusive options are auto-disabled)</span></div>
+
+      <!-- AT ORIGIN -->
+      <div class="svc-group">
+        <div class="svc-group-head">
+          <div class="svc-group-icon icon-origin">🌍</div>
+          <span class="svc-group-name">AT ORIGIN</span>
+          <div class="svc-divider"></div>
+        </div>
+        <div class="svc-items" id="svc-origin">
+          <div class="check-item" data-svc="exw" data-excl="fca customs-origin" onclick="toggleSvc(this)">
+            <div class="custom-check"><span class="check-tick">✓</span></div>
+            <span class="check-label"><strong>Full EXW service:</strong> From shipper's warehouse to container yard / port (customs clearance included)</span>
+          </div>
+          <div class="check-item" data-svc="fca" data-excl="exw customs-origin" onclick="toggleSvc(this)">
+            <div class="custom-check"><span class="check-tick">✓</span></div>
+            <span class="check-label"><strong>Full FCA service:</strong> From shipper's warehouse to container yard / port (customs clearance excluded)</span>
+          </div>
+          <div class="check-item" data-svc="customs-origin" data-excl="exw fca" onclick="toggleSvc(this)">
+            <div class="custom-check"><span class="check-tick">✓</span></div>
+            <span class="check-label">Customs clearance service only</span>
+          </div>
+          <div class="check-item" data-svc="collect-origin" onclick="toggleSvc(this)">
+            <div class="custom-check"><span class="check-tick">✓</span></div>
+            <span class="check-label">Collect / pay charges as nominated</span>
+          </div>
+          <div class="check-item" data-svc="insurance-origin" onclick="toggleSvc(this)">
+            <div class="custom-check"><span class="check-tick">✓</span></div>
+            <span class="check-label">Buy cargo insurance</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEA FREIGHT -->
+      <div class="svc-group">
+        <div class="svc-group-head">
+          <div class="svc-group-icon icon-sea">🚢</div>
+          <span class="svc-group-name">SEA FREIGHT</span>
+          <div class="svc-divider"></div>
+        </div>
+        <div class="svc-items" id="svc-sea">
+          <div class="check-item" data-svc="booking-offered" data-excl="booking-spot booking-available booking-contract" onclick="toggleSvc(this)">
+            <div class="custom-check"><span class="check-tick">✓</span></div>
+            <span class="check-label">Place booking at the offered rate</span>
+          </div>
+          <div class="check-item" data-svc="booking-spot" data-excl="booking-offered booking-available booking-contract" onclick="toggleSvc(this)">
+            <div class="custom-check"><span class="check-tick">✓</span></div>
+            <span class="check-label">Place booking at SPOT rate</span>
+          </div>
+          <div class="check-item" data-svc="booking-available" data-excl="booking-offered booking-spot booking-contract" onclick="toggleSvc(this)">
+            <div class="custom-check"><span class="check-tick">✓</span></div>
+            <span class="check-label">Handle the shipment under an available booking</span>
+          </div>
+          <div class="check-item" data-svc="booking-contract" data-excl="booking-offered booking-spot booking-available" onclick="toggleSvc(this)">
+            <div class="custom-check"><span class="check-tick">✓</span></div>
+            <span class="check-label">Place booking under available service contract / quotation</span>
+          </div>
+          <div class="check-item" data-svc="switch-bl" onclick="toggleSvc(this)">
+            <div class="custom-check"><span class="check-tick">✓</span></div>
+            <span class="check-label">Switch bill of lading</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AT DESTINATION -->
+      <div class="svc-group">
+        <div class="svc-group-head">
+          <div class="svc-group-icon icon-dest">🌍</div>
+          <span class="svc-group-name">AT DESTINATION</span>
+          <div class="svc-divider"></div>
+        </div>
+        <div class="svc-items" id="svc-dest">
+          <div class="check-item" data-svc="dap" data-excl="ddu ddp customs-dest" onclick="toggleSvc(this)">
+            <div class="custom-check"><span class="check-tick">✓</span></div>
+            <span class="check-label"><strong>Full DAP service:</strong> From POD to consignee's door (customs clearance included)</span>
+          </div>
+          <div class="check-item" data-svc="ddu" data-excl="dap ddp" onclick="toggleSvc(this)">
+            <div class="custom-check"><span class="check-tick">✓</span></div>
+            <span class="check-label"><strong>Full DDU service:</strong> From POD to consignee's door (import duty excluded)</span>
+          </div>
+          <div class="check-item" data-svc="ddp" data-excl="dap ddu" onclick="toggleSvc(this)">
+            <div class="custom-check"><span class="check-tick">✓</span></div>
+            <span class="check-label"><strong>Full DDP service:</strong> From POD to consignee's door (import duty included)</span>
+          </div>
+          <div class="check-item" data-svc="customs-dest" data-excl="dap" onclick="toggleSvc(this)">
+            <div class="custom-check"><span class="check-tick">✓</span></div>
+            <span class="check-label">Customs clearance service only</span>
+          </div>
+          <div class="check-item" data-svc="collect-dest" onclick="toggleSvc(this)">
+            <div class="custom-check"><span class="check-tick">✓</span></div>
+            <span class="check-label">Collect / pay charges as nominated</span>
+          </div>
+          <div class="check-item" data-svc="insurance-dest" onclick="toggleSvc(this)">
+            <div class="custom-check"><span class="check-tick">✓</span></div>
+            <span class="check-label">Buy cargo insurance</span>
+          </div>
+          <div class="check-item" data-svc="do-release" onclick="toggleSvc(this)">
+            <div class="custom-check"><span class="check-tick">✓</span></div>
+            <span class="check-label">Consignee Delivery Order (D/O) Release Service</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="form-footer">
+    <button class="continue-btn" id="continue-btn" disabled>CONTINUE →</button>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════
+   HS CODE CATALOG (6-digit, key categories)
+══════════════════════════════════════════════ */
+const HS_CATALOG = [
+  // LIVE ANIMALS & ANIMAL PRODUCTS
+  {hs:'010121',name:"Live horses – pure-bred breeding"},
+  {hs:'010221',name:"Live bovine animals – pure-bred breeding"},
+  {hs:'020110',name:"Beef – carcasses and half-carcasses, fresh/chilled"},
+  {hs:'020311',name:"Pork – carcasses, fresh/chilled"},
+  {hs:'030110',name:"Live ornamental freshwater fish"},
+  {hs:'030211',name:"Trout – fresh or chilled"},
+  {hs:'030617',name:"Shrimps and prawns – frozen"},
+  {hs:'040110',name:"Milk – not concentrated, fat ≤1%"},
+  {hs:'040210',name:"Milk powder – fat ≤1.5%"},
+  {hs:'040700',name:"Birds eggs – in shell, fresh"},
+  // VEGETABLE PRODUCTS
+  {hs:'060110',name:"Bulbs, tubers – dormant (flower bulbs)"},
+  {hs:'070190',name:"Potatoes – fresh or chilled"},
+  {hs:'070200',name:"Tomatoes – fresh or chilled"},
+  {hs:'070960',name:"Capsicum peppers – fresh or chilled"},
+  {hs:'080110',name:"Coconuts – fresh or dried"},
+  {hs:'080212',name:"Almonds – shelled"},
+  {hs:'080510',name:"Oranges – fresh or dried"},
+  {hs:'080610',name:"Grapes – fresh"},
+  {hs:'090111',name:"Coffee – not roasted, not decaffeinated"},
+  {hs:'090420',name:"Pepper – dried, crushed or ground"},
+  {hs:'100190',name:"Wheat – other than durum"},
+  {hs:'100300',name:"Barley"},
+  {hs:'100590',name:"Maize (corn) – other than seed"},
+  // FOOD & BEVERAGES
+  {hs:'110100',name:"Wheat flour"},
+  {hs:'110813',name:"Potato starch"},
+  {hs:'120100',name:"Soybeans – whether or not broken"},
+  {hs:'130120',name:"Gum Arabic"},
+  {hs:'150710',name:"Crude soybean oil"},
+  {hs:'151110',name:"Crude palm oil"},
+  {hs:'160231',name:"Turkeys – prepared or preserved"},
+  {hs:'160414',name:"Tunas and skipjack – prepared or preserved"},
+  {hs:'170111',name:"Cane sugar – raw"},
+  {hs:'170199',name:"Refined sugar – white"},
+  {hs:'180100',name:"Cocoa beans – whole or broken, raw"},
+  {hs:'190110',name:"Infant formula (preparations for infant use)"},
+  {hs:'190190',name:"Food preparations of flour, starch – NEC"},
+  {hs:'200199',name:"Vegetables and mixtures – prepared/preserved, vinegar"},
+  {hs:'200290',name:"Tomatoes – preserved (canned tomatoes)"},
+  {hs:'210120',name:"Extracts, essences of tea or maté"},
+  {hs:'220110',name:"Mineral waters – not sweetened"},
+  {hs:'220210',name:"Waters, flavoured or sweetened"},
+  {hs:'220290',name:"Non-alcoholic beverages – NEC"},
+  {hs:'220300',name:"Beer made from malt"},
+  {hs:'220421',name:"Wine of fresh grapes – in containers ≤2L"},
+  {hs:'220830',name:"Whiskies"},
+  // MINERAL PRODUCTS
+  {hs:'270111',name:"Anthracite coal"},
+  {hs:'270112',name:"Bituminous coal"},
+  {hs:'270900',name:"Petroleum oils – crude"},
+  {hs:'271019',name:"Petroleum oils – medium oils, not crude"},
+  {hs:'271600',name:"Electrical energy"},
+  // CHEMICALS
+  {hs:'280511',name:"Sodium metal"},
+  {hs:'290110',name:"Saturated acyclic hydrocarbons"},
+  {hs:'290711',name:"Phenol"},
+  {hs:'291531',name:"Ethyl acetate"},
+  {hs:'293359',name:"Compounds with triazine ring – NEC"},
+  {hs:'300190',name:"Glands and organs – dried, for therapeutic use"},
+  {hs:'300210',name:"Antisera and other blood fractions"},
+  {hs:'300490',name:"Medicaments – mixtures, not elsewhere classified"},
+  {hs:'310210',name:"Urea – anhydrous or in aqueous solution"},
+  {hs:'320110',name:"Quebracho tanning extract"},
+  {hs:'320411',name:"Disperse dyes"},
+  {hs:'330190',name:"Essential oils – other than citrus"},
+  {hs:'330300',name:"Perfumes and toilet waters"},
+  {hs:'340111',name:"Soap – for toilet use"},
+  {hs:'340120',name:"Soap – in flakes or powder"},
+  {hs:'340211',name:"Anionic surfactants – organic"},
+  // PLASTICS & RUBBER
+  {hs:'390110',name:"Polyethylene – density < 0.94 (LDPE)"},
+  {hs:'390120',name:"Polyethylene – density ≥ 0.94 (HDPE)"},
+  {hs:'390210',name:"Polypropylene"},
+  {hs:'390310',name:"Polystyrene – expandable"},
+  {hs:'390410',name:"Polyvinyl chloride (PVC) – not mixed"},
+  {hs:'390760',name:"Poly(ethylene terephthalate) (PET)"},
+  {hs:'391290',name:"Cellulose and its derivatives – NEC"},
+  {hs:'392321',name:"Sacks and bags – of polymers of ethylene"},
+  {hs:'400110',name:"Natural rubber – latex"},
+  {hs:'400122',name:"Technically specified natural rubber (TSNR)"},
+  {hs:'401110',name:"Pneumatic tyres – for motor cars"},
+  {hs:'401120',name:"Pneumatic tyres – for buses or lorries"},
+  // WOOD & PAPER
+  {hs:'440320',name:"Wood in the rough – tropical"},
+  {hs:'440710',name:"Coniferous wood – sawn or chipped"},
+  {hs:'441121',name:"Fibreboard – density > 0.8 g/cm³"},
+  {hs:'441231',name:"Plywood – outer ply coniferous"},
+  {hs:'470100',name:"Mechanical wood pulp"},
+  {hs:'480100',name:"Newsprint – in rolls or sheets"},
+  {hs:'480256',name:"Printing paper – coated"},
+  {hs:'481910',name:"Cartons, boxes – corrugated paper"},
+  // TEXTILES & APPAREL
+  {hs:'500400',name:"Silk yarn – not put up for retail sale"},
+  {hs:'510111',name:"Wool – greasy, shorn"},
+  {hs:'520100',name:"Cotton – not carded or combed"},
+  {hs:'520512',name:"Cotton yarn – single, ≥ 714.29 decitex"},
+  {hs:'520811',name:"Cotton woven fabrics – plain weave, unbleached"},
+  {hs:'540110',name:"Sewing thread of synthetic filaments"},
+  {hs:'540761',name:"Woven fabrics of synthetic filaments"},
+  {hs:'550953',name:"Yarn of polyester with cotton"},
+  {hs:'610110',name:"Overcoats – mens, of wool, knitted"},
+  {hs:'610342',name:"Trousers – mens, of cotton, knitted"},
+  {hs:'610462',name:"Trousers – womens, of cotton, knitted"},
+  {hs:'610910',name:"T-shirts – cotton, knitted"},
+  {hs:'620342',name:"Trousers – mens, of cotton, not knitted"},
+  {hs:'620462',name:"Trousers – womens, of cotton, not knitted"},
+  {hs:'620520',name:"Shirts – mens, of cotton"},
+  {hs:'620630',name:"Blouses – womens, of man-made fibres"},
+  {hs:'630120',name:"Electric blankets"},
+  {hs:'630211',name:"Bed linen – printed, of cotton"},
+  {hs:'640311',name:"Ski-boots"},
+  {hs:'640419',name:"Footwear – outer soles of rubber, NEC"},
+  // STONE, GLASS, CERAMICS
+  {hs:'680221',name:"Marble – simply cut, sawn"},
+  {hs:'690710',name:"Ceramic tiles – floor/wall"},
+  {hs:'700100',name:"Cullet and other waste/scrap of glass"},
+  {hs:'700519',name:"Float glass – non-wired"},
+  {hs:'711319',name:"Jewellery – of precious metal NEC"},
+  // BASE METALS
+  {hs:'720230',name:"Ferro-silico-manganese"},
+  {hs:'720711',name:"Semi-finished iron/steel – cross-section < 25cm²"},
+  {hs:'721011',name:"Flat-rolled iron/steel – tin-plated"},
+  {hs:'721310',name:"Bars – hot-rolled, with indentations (rebar)"},
+  {hs:'721420',name:"Bars and rods – of free-cutting steel"},
+  {hs:'730110',name:"Sheet piling of iron or steel"},
+  {hs:'730300',name:"Cast iron tubes, pipes and hollows"},
+  {hs:'730410',name:"Line pipe – seamless, for oil/gas"},
+  {hs:'740311',name:"Copper – cathodes and sections"},
+  {hs:'760110',name:"Aluminium – unwrought, not alloyed"},
+  {hs:'760612',name:"Aluminium plates and sheets – alloy"},
+  // MACHINERY & EQUIPMENT
+  {hs:'840110',name:"Nuclear reactors"},
+  {hs:'840290',name:"Steam boilers – auxiliary plant"},
+  {hs:'840510',name:"Producer gas or water gas generators"},
+  {hs:'840710',name:"Spark-ignition piston engines – aircraft"},
+  {hs:'840810',name:"Compression-ignition engines – for marine propulsion"},
+  {hs:'840910',name:"Parts for aircraft engines"},
+  {hs:'841011',name:"Hydraulic turbines – ≤1000 kW"},
+  {hs:'841430',name:"Compressors – for refrigerating equipment"},
+  {hs:'841510',name:"Air conditioners – window or wall type"},
+  {hs:'841810',name:"Refrigerators – combined with freezer"},
+  {hs:'841910',name:"Instantaneous gas water heaters"},
+  {hs:'842010',name:"Calendering or rolling machines – for rubber or plastics"},
+  {hs:'842121',name:"Filtering machinery – for water"},
+  {hs:'842460',name:"Fire extinguishers"},
+  {hs:'843010',name:"Pile drivers and pile extractors"},
+  {hs:'843210',name:"Ploughs"},
+  {hs:'843410',name:"Milking machines"},
+  {hs:'843510',name:"Presses for wine, cider, fruit juices"},
+  {hs:'843680',name:"Agricultural machinery – NEC"},
+  {hs:'844011',name:"Paper-making machines"},
+  {hs:'844331',name:"Offset printing machinery – sheet-fed"},
+  {hs:'844390',name:"Parts for printing machines"},
+  {hs:'845011',name:"Fully-automatic household washing machines – ≤10 kg"},
+  {hs:'845121',name:"Sewing machines"},
+  {hs:'846011',name:"Planing machines – for metal"},
+  {hs:'846110',name:"Lathes – for metal"},
+  {hs:'846290',name:"Machine tools for working metal – NEC"},
+  {hs:'847130',name:"Laptops and portable computers"},
+  {hs:'847141',name:"Other computers – including servers"},
+  {hs:'847150',name:"Processing units – not combined with peripherals"},
+  {hs:'847160',name:"Input/output units for computers"},
+  {hs:'847170',name:"Storage units for computers"},
+  {hs:'847190',name:"Computer parts and accessories – NEC"},
+  {hs:'847210',name:"Duplicating machines"},
+  {hs:'847310',name:"Parts and accessories for typewriters"},
+  {hs:'847330',name:"Parts and accessories for computers – NEC"},
+  {hs:'847490',name:"Machinery for sorting, screening, mixing minerals – NEC"},
+  {hs:'847710',name:"Injection moulding machines"},
+  {hs:'847989',name:"Industrial machines – NEC"},
+  {hs:'848010',name:"Boxes, cases, crates – for foundry moulds"},
+  {hs:'848180',name:"Taps, cocks, valves – industrial"},
+  {hs:'848340',name:"Gear boxes and speed changers"},
+  {hs:'848360',name:"Clutches and shaft couplings"},
+  {hs:'848390',name:"Parts of machinery – NEC"},
+  {hs:'848510',name:"Ships propellers and blades"},
+  // ELECTRICAL & ELECTRONICS
+  {hs:'850110',name:"Electric motors – output ≤37.5 W"},
+  {hs:'850151',name:"AC motors – multi-phase, output ≤750 W"},
+  {hs:'850161',name:"AC generators (alternators) – ≤75 kVA"},
+  {hs:'850211',name:"Electric generating sets – diesel, ≤75 kVA"},
+  {hs:'850300',name:"Parts for electric motors and generators"},
+  {hs:'850410',name:"Ballasts for discharge lamps"},
+  {hs:'850421',name:"Liquid dielectric transformers – ≤650 kVA"},
+  {hs:'850440',name:"Static converters"},
+  {hs:'850450',name:"Inductors"},
+  {hs:'850490',name:"Parts for electric transformers"},
+  {hs:'850610',name:"Manganese dioxide primary cells"},
+  {hs:'850710',name:"Lead-acid accumulators – for starting engines"},
+  {hs:'850720',name:"Lead-acid accumulators – NEC"},
+  {hs:'850760',name:"Lithium-ion batteries"},
+  {hs:'851410',name:"Resistance heated industrial furnaces"},
+  {hs:'851640',name:"Electric smoothing irons"},
+  {hs:'851650',name:"Microwave ovens – household"},
+  {hs:'851671',name:"Coffee or tea makers – electric household"},
+  {hs:'851679',name:"Electrothermic appliances – household NEC"},
+  {hs:'851712',name:"Telephones for cellular networks (smartphones)"},
+  {hs:'851769',name:"Telephone sets – NEC"},
+  {hs:'851780',name:"Electrical apparatus for line telephony – NEC"},
+  {hs:'851820',name:"Loudspeakers – not mounted in enclosures"},
+  {hs:'851830',name:"Headphones and earphones"},
+  {hs:'851840',name:"Audio-frequency electric amplifiers"},
+  {hs:'851869',name:"Sound recording/reproducing apparatus – NEC"},
+  {hs:'852190',name:"Video recording apparatus – NEC"},
+  {hs:'852320',name:"Semiconductors for data storage (flash/SSD)"},
+  {hs:'852351',name:"Solid-state storage devices (SSD)"},
+  {hs:'852580',name:"Television cameras, digital cameras – NEC"},
+  {hs:'852691',name:"Radio navigational aid apparatus"},
+  {hs:'852872',name:"Colour television sets – LCD/LED"},
+  {hs:'853221',name:"Tantalum fixed capacitors"},
+  {hs:'853400',name:"Printed circuits (PCB)"},
+  {hs:'853510',name:"Fuses – electrical"},
+  {hs:'853590',name:"Electrical apparatus – NEC ≤1000V"},
+  {hs:'853610',name:"Fuses for voltage ≤1000V"},
+  {hs:'853690',name:"Electrical switches – NEC ≤1000V"},
+  {hs:'853710',name:"Boards and panels – for electric control ≤1000V"},
+  {hs:'854011',name:"Cathode-ray television picture tubes"},
+  {hs:'854140',name:"Photosensitive semiconductors (solar cells)"},
+  {hs:'854150',name:"Light-emitting diodes (LED)"},
+  {hs:'854160',name:"Piezoelectric crystals – mounted"},
+  {hs:'854389',name:"Electrical machines – NEC"},
+  {hs:'854411',name:"Winding wire – of copper"},
+  {hs:'854420',name:"Coaxial cable and other coaxial electric conductors"},
+  {hs:'854430',name:"Ignition wiring sets – vehicles"},
+  {hs:'854442',name:"Electric conductors – voltage ≤80V, with connectors"},
+  {hs:'854449',name:"Electric conductors – voltage ≤80V, NEC"},
+  {hs:'854460',name:"Electric conductors – voltage 80V–1000V"},
+  {hs:'854470',name:"Optical fibre cables"},
+  // VEHICLES
+  {hs:'870120',name:"Road tractors for semi-trailers"},
+  {hs:'870210',name:"Motor vehicles for ≥10 persons – diesel"},
+  {hs:'870310',name:"Vehicles specially designed for snow"},
+  {hs:'870321',name:"Automobiles – cylinder capacity ≤1000 cc"},
+  {hs:'870322',name:"Automobiles – cylinder capacity 1000–1500 cc"},
+  {hs:'870323',name:"Automobiles – cylinder capacity 1500–3000 cc"},
+  {hs:'870324',name:"Automobiles – cylinder capacity > 3000 cc"},
+  {hs:'870380',name:"Electric vehicles – for transport of persons"},
+  {hs:'870410',name:"Dumpers for off-highway use"},
+  {hs:'870422',name:"Motor vehicles for goods – diesel, GVW > 20t"},
+  {hs:'870510',name:"Mobile cranes"},
+  {hs:'870600',name:"Chassis fitted with engines – for motor vehicles"},
+  {hs:'870710',name:"Bodies for motor cars"},
+  {hs:'870810',name:"Bumpers and parts – motor vehicles"},
+  {hs:'870821',name:"Safety seat belts"},
+  {hs:'870829',name:"Parts and accessories for motor vehicle bodies – NEC"},
+  {hs:'870840',name:"Gear boxes and parts – motor vehicles"},
+  {hs:'870850',name:"Drive axles with differential – motor vehicles"},
+  {hs:'870870',name:"Road wheels and parts – motor vehicles"},
+  {hs:'870880',name:"Suspension shock-absorbers – motor vehicles"},
+  {hs:'870891',name:"Radiators – motor vehicles"},
+  {hs:'870899',name:"Other parts and accessories – motor vehicles NEC"},
+  {hs:'871310',name:"Invalid carriages – not mechanically propelled"},
+  {hs:'871491',name:"Frames and forks for bicycles"},
+  {hs:'871492',name:"Wheel rims and spokes for bicycles"},
+  {hs:'880330',name:"Parts of aeroplanes – NEC"},
+  {hs:'890190',name:"Cargo vessels – bulk carriers, container ships"},
+  // OPTICAL, PHOTOGRAPHIC, MEDICAL
+  {hs:'900110',name:"Optical fibres and bundles"},
+  {hs:'900130',name:"Contact lenses"},
+  {hs:'900140',name:"Spectacle lenses – of glass"},
+  {hs:'900150',name:"Spectacle lenses – of materials other than glass"},
+  {hs:'900211',name:"Objective lenses – for cameras, projectors"},
+  {hs:'900290',name:"Lenses, prisms, mirrors – NEC"},
+  {hs:'901380',name:"Liquid crystal devices (LCD panels)"},
+  {hs:'902212',name:"CT scanners"},
+  {hs:'902213',name:"Dental X-ray apparatus"},
+  {hs:'902214',name:"Medical X-ray apparatus – NEC"},
+  {hs:'902780',name:"Instruments and apparatus – NEC (analytical)"},
+  {hs:'903180',name:"Instruments, appliances for measuring – NEC"},
+  {hs:'903289',name:"Regulating or controlling instruments – NEC"},
+  // FURNITURE & MISC
+  {hs:'940110',name:"Seats for aircraft"},
+  {hs:'940120',name:"Seats for motor vehicles"},
+  {hs:'940161',name:"Seats upholstered – wooden frame"},
+  {hs:'940169',name:"Seats with wooden frame – NEC"},
+  {hs:'940180',name:"Seats – NEC (non-medical)"},
+  {hs:'940190',name:"Parts of seats"},
+  {hs:'940310',name:"Office furniture – metal"},
+  {hs:'940320',name:"Furniture – metal NEC"},
+  {hs:'940340',name:"Kitchen furniture – wooden"},
+  {hs:'940350',name:"Bedroom furniture – wooden"},
+  {hs:'940360',name:"Wooden furniture – NEC"},
+  {hs:'940370',name:"Plastic furniture"},
+  {hs:'940390',name:"Parts of furniture – NEC"},
+  {hs:'950110',name:"Electric trains and track sets"},
+  {hs:'950300',name:"Tricycles, scooters, toy vehicles – no motor"},
+  {hs:'950410',name:"Video games – console type"},
+  {hs:'950490',name:"Articles for funfair, table or parlour games – NEC"},
+  {hs:'960810',name:"Ball-point pens"},
+  {hs:'960820',name:"Felt-tipped and fibre-tipped pens"},
+  {hs:'960840',name:"Propelling or sliding pencils"},
+];
+/* ══════════════════════════════════════════════
+   DATA
+══════════════════════════════════════════════ */
+const COUNTRIES = [
+  'China','Japan','Vietnam','Indonesia','India','Thailand',
+  'South Korea','Malaysia','Bangladesh','United States','Taiwan (CN)','Hong Kong (CN)','Mexico',
+];
+
+const PORTS = {
+  'China': [
+    'Shanghai (SHA) – Yangshan Deep Water Port','Shenzhen (SZX) – Yantian International','Guangzhou (CAN) – Nansha Port',
+    'Ningbo-Zhoushan (NGB)','Tianjin (TSN) – Tianjin Port','Qingdao (TAO)','Xiamen (XMN)',
+    'Dalian (DLC)','Suzhou (SZV) – Taicang Port','Wuhan (WUH)','Chongqing (CKG)',
+    'Lianyungang (LYG)','Nanjing (NKG)','Zhongshan Port','Zhuhai Port','Fuzhou (FOC)',
+  ],
+  'Japan': [
+    'Tokyo (TYO) – Tokyo International Container Terminal','Yokohama (YOK)',
+    'Osaka (OSA) – Osaka Port','Nagoya (NGO) – Port of Nagoya','Kobe (UKB)',
+    'Hakata (FUK) – Hakata Port','Shimizu (SHM)','Kawasaki Port','Chiba Port',
+  ],
+  'Vietnam': [
+    'Ho Chi Minh City – Cat Lai Terminal (TCT)','Ho Chi Minh City – Cai Mep – Thi Vai (CMTV)',
+    'Hai Phong – TC-HICT Lach Huyen (Berth 1-2)','Hai Phong – TIL Lach Huyen (Berth 3-4)',
+    'Hai Phong – Hateco Lach Huyen (Berth 5-6)','Hai Phong – Nam Dinh Vu Port',
+    'Da Nang – Tien Sa Terminal','Quy Nhon Port','Vung Tau – SPCT',
+    'Can Tho Port','Quang Ninh – Hon Gai International',
+  ],
+  'Indonesia': [
+    'Jakarta – Tanjung Priok (JKT)','Surabaya – Tanjung Perak (SUB)',
+    'Belawan – Medan Port (BLW)','Makassar – Soekarno Hatta Port',
+    'Semarang – Tanjung Emas','Balikpapan Port','Batam – Batu Ampar',
+    'Panjang Port (Lampung)','Palembang – Boom Baru',
+  ],
+  'India': [
+    'Nhava Sheva – JNPT (Mumbai)','Mumbai – Ballard Pier','Chennai (MAA)',
+    'Kolkata – Syama Prasad Mookerjee Port (CCU)','Mundra Port (Gujarat)',
+    'Hazira Port (Surat)','Visakhapatnam (VTZ)','Cochin (COK)',
+    'Tuticorin – V.O. Chidambaranar Port','Ennore (Kamarajar Port)',
+    'Pipavav Port','Kandla Port',
+  ],
+  'Thailand': [
+    'Bangkok – Laem Chabang (LCH)','Bangkok – Map Ta Phut Industrial Port',
+    'Bangkok Port (BKK)','Songkhla Port','Ranong Port',
+  ],
+  'South Korea': [
+    'Busan – Busan New Port (PUS)','Busan – North Port Terminal',
+    'Incheon (ICN)','Gwangyang Port (KWJ)','Pyeongtaek Port',
+    'Ulsan Port','Mokpo Port',
+  ],
+  'Malaysia': [
+    'Port Klang – Westports (KUL)','Port Klang – North Port',
+    'Penang – Butterworth (PEN)','Johor – Port of Tanjung Pelepas (PTP)',
+    'Johor – Pasir Gudang','Kuantan Port','Bintulu Port (Sarawak)',
+    'Kota Kinabalu (Sabah)',
+  ],
+  'Bangladesh': [
+    'Chittagong Port (CGP) – Main Terminal','Chittagong – NCT (New Mooring Container Terminal)',
+    'Mongla Port','Dhaka – ICD Dhaka',
+  ],
+  'United States': [
+    'Los Angeles (LAX) – Port of Los Angeles','Long Beach (LGB) – Port of Long Beach',
+    'New York / New Jersey (JFK) – Port Newark','Seattle (SEA) – Northwest Seaport Alliance',
+    'Tacoma (TAC)','Houston (HOU) – Port of Houston','Savannah (SAV) – Garden City Terminal',
+    'Charleston (CHS)','Miami (MIA) – PortMiami','Baltimore (BAL)',
+    'Norfolk (ORF) – Virginia International Gateway','New Orleans (MSY)',
+    'Oakland (OAK) – Port of Oakland','Chicago – ICTF (Rail Inland)',
+  ],
+  'Taiwan (CN)': [
+    'Kaohsiung (KHH) – Kaohsiung International Port','Taipei (TPE) – Keelung Port',
+    'Taichung (TXG) – Taichung Port','Hualien Port',
+  ],
+  'Hong Kong (CN)': [
+    'Kwai Tsing Container Terminals (HKG)','Stonecutters Island Terminal',
+    'Hongkong International Terminals (HIT)','Asia Container Terminals (ACT)',
+    'Modern Terminals (MTL)','COSCO-HIT Terminals',
+  ],
+  'Mexico': [
+    'Manzanillo (MZT) – Puerto de Manzanillo','Veracruz (VER) – Puerto de Veracruz',
+    'Altamira (TAM) – Puerto Altamira','Lázaro Cárdenas (LZC)',
+    'Ensenada (ENS)','Guaymas Port','Salina Cruz Port',
+    'Progreso Port (Yucatán)',
+  ],
+};
+
+
+
+const CONTAINER_TYPES_ALL = [
+  // ── General Purpose ──
+  {val:'20GP', label:"20' General Purpose (20GP)", reefer:false, group:'General Purpose'},
+  {val:'40GP', label:"40' General Purpose (40GP)", reefer:false, group:'General Purpose'},
+  // ── High Cube ──
+  {val:'40HC', label:"40' High Cube (40HC)",        reefer:false, group:'High Cube'},
+  {val:'45HC', label:"45' High Cube (45HC)",        reefer:false, group:'High Cube'},
+  // ── Reefer ──
+  {val:'20RF', label:"20' Reefer (20RF)",            reefer:true,  group:'Reefer'},
+  {val:'40RF', label:"40' Reefer (40RF)",            reefer:true,  group:'Reefer'},
+  // ── Open Top ──
+  {val:'20OT', label:"20' Open Top (20OT)",          reefer:false, group:'Open Top'},
+  {val:'40OT', label:"40' Open Top (40OT)",          reefer:false, group:'Open Top'},
+  // ── Flat Rack ──
+  {val:'20FR', label:"20' Flat Rack (20FR)",         reefer:false, group:'Flat Rack'},
+  {val:'40FR', label:"40' Flat Rack (40FR)",         reefer:false, group:'Flat Rack'},
+];
+
+/* ══════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════ */
+const state = {
+  fromCountry:'', fromPort:'', toCountry:'', toPort:'',
+  commodity:'', tempControl:false, dangerous:false,
+  containers:[{type:'',qty:1,weight:'',unit:'kg',oog:null}],
+  date:'',
+  services: new Set()
+};
+
+/* ══════════════════════════════════════════════
+   AUTOCOMPLETE
+══════════════════════════════════════════════ */
+function acCountry(input, portWrapId, portInputId){
+  const q = input.value.trim().toLowerCase();
+  const dd = document.getElementById('ac-'+input.id);
+  const portWrap = document.getElementById(portWrapId);
+  const portInput = document.getElementById(portInputId);
+
+  if(q.length < 1){
+    // Show top 4 defaults
+    const top4 = COUNTRIES.slice(0,4).map(c=>`<div class="ac-opt" onclick="selectCountry('${input.id}','${portWrapId}','${portInputId}','${c}')">${c}</div>`).join('');
+    const rest = COUNTRIES.slice(4).map(c=>`<div class="ac-opt" onclick="selectCountry('${input.id}','${portWrapId}','${portInputId}','${c}')">${c}</div>`).join('');
+    dd.innerHTML = `<div class="ac-opt-default">Popular</div>${top4}${rest ? '<div class="ac-opt-default" style="margin-top:4px">All</div>'+rest : ''}`;
+    openDropdown(dd, input);
+    return;
+  }
+
+  const qL = q.toLowerCase();
+  const startsWith = COUNTRIES.filter(c=>c.toLowerCase().startsWith(qL));
+  const contains = COUNTRIES.filter(c=>!c.toLowerCase().startsWith(qL) && c.toLowerCase().includes(qL));
+  const matches = [...startsWith, ...contains];
+  if(!matches.length){ dd.classList.remove('open'); return; }
+
+  dd.innerHTML = matches.map(c=>`<div class="ac-opt" onclick="selectCountry('${input.id}','${portWrapId}','${portInputId}','${c}')">${highlight(c,q)}</div>`).join('');
+  openDropdown(dd, input);
+
+  // Reset port if country changed
+  portInput.value = '';
+  portInput.disabled = true;
+  portWrap.style.opacity = '.4';
+  portWrap.style.pointerEvents = 'none';
+  if(input.id==='from-country'){state.fromCountry='';state.fromPort='';}
+  else{state.toCountry='';state.toPort='';}
+  validate();
+}
+
+function selectCountry(inputId, portWrapId, portInputId, country){
+  document.getElementById(inputId).value = country;
+  document.getElementById('ac-'+inputId).classList.remove('open');
+  const portInput = document.getElementById(portInputId);
+  const portWrap = document.getElementById(portWrapId);
+  portInput.disabled = false;
+  portWrap.style.opacity = '1';
+  portWrap.style.pointerEvents = 'auto';
+  portInput.focus();
+
+  if(inputId==='from-country') state.fromCountry = country;
+  else state.toCountry = country;
+  validate();
+}
+
+function acPort(input, countryInputId){
+  const country = document.getElementById(countryInputId).value.trim();
+  const q = input.value.trim().toLowerCase();
+  const dd = document.getElementById('ac-'+input.id);
+  const ports = PORTS[country] || [];
+
+  if(input.id==='from-port'){state.fromPort='';} else {state.toPort='';}
+  validate();
+
+  if(q.length < 1 && ports.length){
+    const top3 = ports.slice(0,3).map(p=>{
+      const safeP = p.replace(/'/g,'&#39;');
+      return `<div class="ac-opt" onclick="selectPort('${input.id}','${countryInputId}','${safeP}')">${p}</div>`;
+    }).join('');
+    const rest = ports.slice(3).map(p=>{
+      const safeP = p.replace(/'/g,'&#39;');
+      return `<div class="ac-opt" onclick="selectPort('${input.id}','${countryInputId}','${safeP}')">${p}</div>`;
+    }).join('');
+    dd.innerHTML = `<div class="ac-opt-default">Popular</div>${top3}${rest.length ? '<div class="ac-opt-default" style="margin-top:4px">All</div>'+rest : ''}`;
+    openDropdown(dd, input); return;
+  }
+  if(q.length < 1){ dd.classList.remove('open'); return; }
+
+  // Search from beginning of each word (starts-with priority)
+  const qL = q.toLowerCase();
+  const startsWith = ports.filter(p => p.toLowerCase().startsWith(qL));
+  const contains = ports.filter(p => !p.toLowerCase().startsWith(qL) && p.toLowerCase().includes(qL));
+  const matches = [...startsWith, ...contains];
+  if(!matches.length){ dd.classList.remove('open'); return; }
+  dd.innerHTML = matches.slice(0,10).map(p=>{
+    const safeP = p.replace(/'/g,'&#39;');
+    return `<div class="ac-opt" onclick="selectPort('${input.id}','${countryInputId}','${safeP}')">${highlightStart(p,q)}</div>`;
+  }).join('');
+  openDropdown(dd, input);
+}
+
+function selectPort(inputId, countryInputId, port){
+  const decoded = port.replace(/&#39;/g, "'");
+  document.getElementById(inputId).value = decoded;
+  document.getElementById('ac-'+inputId).classList.remove('open');
+  if(inputId==='from-port') state.fromPort = decoded;
+  else state.toPort = decoded;
+  validate();
+}
+
+function highlight(str, q){
+  const idx = str.toLowerCase().indexOf(q.toLowerCase());
+  if(idx<0) return str;
+  return str.slice(0,idx)+'<mark>'+str.slice(idx,idx+q.length)+'</mark>'+str.slice(idx+q.length);
+}
+function highlightStart(str, q){
+  // Same as highlight but marks wherever match appears
+  return highlight(str, q);
+}
+
+function acCommodity(input){
+  const q = input.value.trim().toLowerCase();
+  const dd = document.getElementById('ac-commodity');
+  if(q.length < 2){ dd.classList.remove('open'); return; }
+
+  // Match: starts-with priority, then contains
+  const qClean = q.replace(/\D/g,'');
+  const byHS = qClean.length >= 2 ? HS_CATALOG.filter(h => h.hs.startsWith(qClean)) : [];
+  const byNameStart = HS_CATALOG.filter(h => h.name.toLowerCase().startsWith(q) && !byHS.includes(h));
+  const byNameContains = HS_CATALOG.filter(h => h.name.toLowerCase().includes(q) && !h.name.toLowerCase().startsWith(q) && !byHS.includes(h));
+  const matches = [...byHS, ...byNameStart, ...byNameContains].slice(0, 12);
+
+  if(!matches.length){ dd.classList.remove('open'); return; }
+
+  dd.innerHTML = matches.map(h => {
+    const safeName = h.name.replace(/'/g, '&#39;');
+    return `<div class="ac-opt" onclick="selectCommodity('${h.hs}','${safeName}')">
+      <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--teal);font-weight:600">${h.hs}</span>
+      &nbsp;·&nbsp;${highlight(h.name, q)}
+    </div>`;
+  }).join('');
+  openDropdown(dd, input);
+}
+
+function selectCommodity(hs, name){
+  const decoded = name.replace(/&#39;/g, "'");
+  document.getElementById('commodity').value = decoded;
+  document.getElementById('hs-code').value = hs;
+  document.getElementById('ac-commodity').classList.remove('open');
+  document.getElementById('hs-code').classList.remove('error');
+  document.getElementById('hs-err').classList.remove('show');
+  validate();
+}
+
+// Position dropdown using fixed coords relative to input
+function openDropdown(dd, inputEl){
+  const rect = inputEl.getBoundingClientRect();
+  dd.style.top = (rect.bottom + 4) + 'px';
+  dd.style.left = rect.left + 'px';
+  dd.style.width = rect.width + 'px';
+  dd.classList.add('open');
+}
+
+// Close dropdowns on outside click (but NOT when clicking inside dropdown)
+document.addEventListener('click', e=>{
+  document.querySelectorAll('.ac-dropdown').forEach(dd=>{
+    // Don't close if click was inside dropdown or its parent input
+    if(dd.contains(e.target)) return;
+    if(dd.parentElement && dd.parentElement.contains(e.target)) return;
+    dd.classList.remove('open');
+  });
+});
+
+// Close dropdown only when page (not dropdown itself) is scrolled
+window.addEventListener('scroll', (e)=>{
+  const target = e.target;
+  // If scroll happened inside a dropdown, let it scroll freely
+  if(target && target.classList && target.classList.contains('ac-dropdown')) return;
+  document.querySelectorAll('.ac-dropdown.open').forEach(dd=>dd.classList.remove('open'));
+}, true);
+
+// Prevent dropdown scroll from bubbling to page
+document.querySelectorAll('.ac-dropdown').forEach(dd=>{
+  dd.addEventListener('scroll', e=>e.stopPropagation());
+});
+
+// Port input: show dropdown on focus
+['from-port','to-port'].forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener('focus', function(){
+    if(!this.disabled) acPort(this, id==='from-port'?'from-country':'to-country');
+  });
+});
+
+/* ══════════════════════════════════════════════
+   SECTION 2 CHECKS
+══════════════════════════════════════════════ */
+function toggleCheck(el, key){
+  const wasChecked = el.classList.contains('checked');
+  el.classList.toggle('checked', !wasChecked);
+  if(key==='temp') state.tempControl = !wasChecked;
+  if(key==='danger') state.dangerous = !wasChecked;
+  if(key==='soc') state.soc = !wasChecked;
+  validate();
+}
+
+function validateHS(input){
+  const v = input.value.replace(/\D/g,'');
+  input.value = v;
+  const err = document.getElementById('hs-err');
+  if(v.length > 0 && v.length !== 6){
+    input.classList.add('error'); err.classList.add('show');
+  } else {
+    input.classList.remove('error'); err.classList.remove('show');
+  }
+  validate();
+}
+
+function applyTempFilter(){
+  buildContainerRows();
+}
+function applyDangerFilter(){
+  const socItem = document.getElementById('chk-soc');
+  if(state.dangerous){
+    socItem.classList.add('disabled');
+    socItem.classList.remove('checked');
+    state.soc = false;
+    document.getElementById('soc-note').classList.add('show');
+  } else {
+    socItem.classList.remove('disabled');
+    document.getElementById('soc-note').classList.remove('show');
+  }
+  validate();
+}
+
+/* ══════════════════════════════════════════════
+   CONTAINER ROWS
+══════════════════════════════════════════════ */
+function buildContainerRows(){
+  const wrap = document.getElementById('cont-rows');
+  wrap.innerHTML = '';
+  state.containers.forEach((c,i) => {
+    const row = document.createElement('div');
+    const weightOk = c.weight !== '' && parseFloat(c.weight) > 0;
+    const showOOG  = c.oog && weightOk;
+    row.className = 'cont-row' + (showOOG ? ' has-oog' : '');
+    const typesHTML = getContainerOptions(i);
+    const oogHTML = showOOG ? buildOOGPanel(i,c) : '';
+    row.innerHTML = `
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--g500);letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px">Container type &amp; size</div>
+        <div class="sel-wrap">
+          <select onchange="setContType(${i},this.value)">${typesHTML}</select>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--g500);letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px">Quantity</div>
+        <div class="qty-row">
+          <button class="qty-btn" onclick="changeQty(${i},-1)">−</button>
+          <input class="qty-num" type="number" min="1" max="99" value="${c.qty}" onchange="setContQty(${i},this.value)">
+          <button class="qty-btn" onclick="changeQty(${i},1)">+</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--g500);letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px">Cargo weight per container</div>
+        <div class="weight-row">
+          <input type="number" min="0" placeholder="Enter weight" value="${c.weight||''}" onchange="setContWeight(${i},this.value)">
+          <div class="weight-unit" onclick="toggleUnit(${i})">${c.unit||'kg'} ▾</div>
+        </div>
+      </div>
+      <button class="remove-btn" onclick="removeCont(${i})" title="Remove">×</button>
+      ${oogHTML}
+    `;
+    wrap.appendChild(row);
+  });
+}
+
+/* Internal cargo-space dimensions (metres) for each OOG container type.
+   These represent the IN-GAUGE ENVELOPE — the maximum cargo dimensions
+   that still fit within a standard ISO container slot (8'6" external H)
+   without triggering OOG / over-height surcharges. NOT to be confused
+   with end-wall heights of Flat Racks, which are smaller structural figures.
+   Sourced from carrier specs (Maersk / ONE / MSC / Hapag-Lloyd / OOCL). */
+const CONTAINER_INTERNAL_DIMS = {
+  '20OT': {L:5.89,  W:2.35, H:2.35, label:"20' Open Top"},
+  '40OT': {L:12.03, W:2.35, H:2.35, label:"40' Open Top"},
+  '20FR': {L:5.94,  W:2.35, H:2.34, label:"20' Flat Rack"},
+  '40FR': {L:12.13, W:2.40, H:2.34, label:"40' Flat Rack"},
+};
+
+/* Maximum allowable cargo dimension PER AXIS (metres).
+   Open Top: L and W are HARD-CAPPED to internal walls — cargo physically
+   cannot exceed the container body since walls are solid; only height (roof)
+   is open. Height is loose-capped against typo (no realistic cargo > 6 m).
+   Flat Rack: L/W can overhang generously; capped at practical maxima. */
+function getOOGMax(c){
+  const dims = CONTAINER_INTERNAL_DIMS[c.type];
+  if(!dims) return null;
+  if(/OT$/.test(c.type)){
+    return {L:dims.L, W:dims.W, H:6.0, hardLW:true};   // walls bounded
+  }
+  // Flat Rack: allow overhang on all axes
+  if(c.type === '20FR') return {L:9.50,  W:4.0, H:6.0, hardLW:false};
+  if(c.type === '40FR') return {L:19.00, W:4.0, H:6.0, hardLW:false};
+  return null;
+}
+
+/* Convert max-in-metres into the unit currently selected by the user. */
+function getOOGMaxInUnit(c){
+  const max = getOOGMax(c);
+  if(!max) return null;
+  const f = (c.oog.unit === 'cm') ? 100 : 1;
+  return {L:+(max.L*f).toFixed(2), W:+(max.W*f).toFixed(2), H:+(max.H*f).toFixed(2), hardLW:max.hardLW};
+}
+
+/* Live input filter for OOG dimension fields.
+   - strips letters, special chars, extra dots
+   - limits to 2 decimal places
+   - hard-clamps the numeric value to `max`
+   Runs on `oninput` so it never triggers a row rebuild → focus is preserved. */
+function clampOOGInput(el, max){
+  let v = el.value;
+  // 1) strip everything except digits and dot
+  v = v.replace(/[^0-9.]/g,'');
+  // 2) keep only the first dot
+  const firstDot = v.indexOf('.');
+  if(firstDot !== -1){
+    v = v.slice(0, firstDot+1) + v.slice(firstDot+1).replace(/\./g,'');
+  }
+  // 3) limit to 2 decimal places
+  const parts = v.split('.');
+  if(parts.length === 2 && parts[1].length > 2){
+    v = parts[0] + '.' + parts[1].slice(0,2);
+  }
+  // 4) hard-clamp to max
+  const num = parseFloat(v);
+  if(isFinite(num) && num > max){
+    v = String(max);
+  }
+  el.value = v;
+}
+
+/* ──────────────────────────────────────────────
+   OOG PANEL (Open Top / Flat Rack)
+   ────────────────────────────────────────────── */
+
+/* Compute overhang from current cargo dims vs container internal dims.
+   Returns metres. Length/width overhangs are reported "each end / each side"
+   assuming the cargo is centred on the platform (industry-standard).      */
+function computeOverhang(c){
+  if(!c.oog) return null;
+  const dims = CONTAINER_INTERNAL_DIMS[c.type];
+  if(!dims) return null;
+  const toM = v => {
+    const x = parseFloat(v);
+    if(!isFinite(x) || x<=0) return 0;
+    return c.oog.unit === 'cm' ? x/100 : x;
+  };
+  let overH=0, overL=0, overW=0, anyDimEntered=false;
+  let worstIdx=-1, worstSum=-1;
+  (c.oog.packages||[]).forEach((p,idx)=>{
+    const L = toM(p.L), W = toM(p.W), H = toM(p.H);
+    const pH = Math.max(0, +(H - dims.H).toFixed(2));
+    const pL = Math.max(0, +((L - dims.L) / 2).toFixed(2));
+    const pW = Math.max(0, +((W - dims.W) / 2).toFixed(2));
+    if(L>0 || W>0 || H>0) anyDimEntered = true;
+    if(pH>overH) overH = pH;
+    if(pL>overL) overL = pL;
+    if(pW>overW) overW = pW;
+    const sum = pH + pL + pW;
+    if(sum > worstSum){ worstSum = sum; worstIdx = idx; }
+  });
+  const exceeds = overH>0 || overL>0 || overW>0;
+  return {overH, overL, overW, anyDimEntered, exceeds, internal:dims, worstIdx};
+}
+
+function fmtM(v){ return v>0 ? `+${v.toFixed(2)} m` : '—'; }
+
+/* ──────────────────────────────────────────────
+   STACK FEASIBILITY — can all pieces physically fit
+   in the container platform?
+   Two simple stacking strategies (covers ~95% of real cases):
+     A) Lengthwise (nose-to-tail):  Σ L ≤ env.L  AND  max(W) ≤ env.W
+     B) Side-by-side (parallel):    Σ W ≤ env.W  AND  max(L) ≤ env.L
+   Feasible if EITHER passes.
+   Uses OOG envelope (overhang allowed) for OOG mode,
+   internal platform for In-gauge mode.
+   ────────────────────────────────────────────── */
+function computeStackFeasibility(c){
+  if(!c.oog || !c.oog.packages) return null;
+  const isOOG = c.oog.mode === 'oog';
+  const env = isOOG ? getOOGMax(c) : CONTAINER_INTERNAL_DIMS[c.type];
+  if(!env) return null;
+
+  const toM = v => {
+    const x = parseFloat(v);
+    if(!isFinite(x) || x<=0) return 0;
+    return c.oog.unit === 'cm' ? x/100 : x;
+  };
+
+  // Expand packages × qty → individual pieces
+  const pieces = [];
+  c.oog.packages.forEach(p => {
+    const L = toM(p.L), W = toM(p.W);
+    const qty = Math.max(1, parseInt(p.qty)||1);
+    if(L>0 && W>0){
+      for(let k=0; k<qty; k++) pieces.push({L, W});
+    }
+  });
+
+  if(pieces.length === 0) return null;
+
+  const EPS = 0.01;   // 1 cm tolerance
+
+  // Single piece: just envelope check (overhang already allowed via env)
+  if(pieces.length === 1){
+    const p = pieces[0];
+    return {
+      feasible: p.L <= env.L + EPS && p.W <= env.W + EPS,
+      applicable: false,   // single piece — stacking N/A
+      pieces: 1
+    };
+  }
+
+  // Multi-piece: try both strategies
+  const sumL = pieces.reduce((s,p)=>s+p.L, 0);
+  const sumW = pieces.reduce((s,p)=>s+p.W, 0);
+  const maxL = Math.max(...pieces.map(p=>p.L));
+  const maxW = Math.max(...pieces.map(p=>p.W));
+
+  const stratA = (sumL <= env.L + EPS) && (maxW <= env.W + EPS);
+  const stratB = (sumW <= env.W + EPS) && (maxL <= env.L + EPS);
+
+  return {
+    feasible: stratA || stratB,
+    applicable: true,
+    pieces: pieces.length,
+    sumL, sumW, maxL, maxW,
+    envL: env.L, envW: env.W,
+    stratA, stratB,
+    isOOG
+  };
+}
+
+/* ──────────────────────────────────────────────
+   Suggest a larger container that WOULD fit.
+   Upgrade ladder:
+     20FR → 40FR
+     20OT → 40OT → 40FR (FR gives wider overhang)
+     40OT → 40FR
+     40FR → null (recommend Break Bulk / RoRo)
+   ────────────────────────────────────────────── */
+function suggestUpgradeFor(c){
+  if(!c.oog || !c.type) return null;
+  const is20  = c.type.startsWith('20');
+  const isFR  = /FR$/.test(c.type);
+  const isOT  = /OT$/.test(c.type);
+
+  const candidates = [];
+  if(is20 && isFR) candidates.push('40FR');
+  if(is20 && isOT){ candidates.push('40OT'); candidates.push('40FR'); }
+  if(!is20 && isOT) candidates.push('40FR');
+  // 40FR has no upgrade → caller falls back to Break Bulk
+
+  for(const cand of candidates){
+    const fake = { type: cand, oog: c.oog };
+    const f = computeStackFeasibility(fake);
+    if(f && f.feasible){
+      const dims = CONTAINER_INTERNAL_DIMS[cand];
+      return { type: cand, label: dims ? dims.label : cand };
+    }
+  }
+  return null;
+}
+
+function buildOOGPanel(i,c){
+  const o = c.oog;
+  const isFR = /FR$/.test(c.type);
+  const isOT = /OT$/.test(c.type);
+  const containerLabel = isFR ? 'Flat Rack' : 'Open Top';
+  const isOOG = o.mode === 'oog';
+  const oh = computeOverhang(c);     // {overH, overL, overW, anyDimEntered, exceeds, internal}
+  const maxU = getOOGMaxInUnit(c);   // {L, W, H, hardLW} in current unit (m or cm)
+  const maxM = getOOGMax(c);         // {L, W, H, hardLW} always in metres — for hint text
+
+  // ── Computed overhang badges — only meaningful in OOG mode ──
+  const badgesBlock = isOOG ? `
+    <div class="oog-overhang">
+      <div class="oog-overhang-mini-label" style="margin-bottom:6px">
+        Computed overhang vs ${containerLabel} envelope
+        <span style="color:var(--g500);font-weight:400;text-transform:none;letter-spacing:0">
+          (internal ${oh.internal.L} × ${oh.internal.W} × ${oh.internal.H} m)
+        </span>
+      </div>
+      <div class="oog-badge-grid">
+        ${isFR ? `
+        <div class="oog-badge ${oh.overL>0?'on':''}">
+          <span class="b-axis">Over-length</span>
+          <span class="b-val">${fmtM(oh.overL)}</span>
+          <span class="b-sub">each end</span>
+        </div>
+        <div class="oog-badge ${oh.overW>0?'on':''}">
+          <span class="b-axis">Over-width</span>
+          <span class="b-val">${fmtM(oh.overW)}</span>
+          <span class="b-sub">each side</span>
+        </div>` : ''}
+        <div class="oog-badge ${oh.overH>0?'on':''}">
+          <span class="b-axis">Over-height</span>
+          <span class="b-val">${fmtM(oh.overH)}</span>
+          <span class="b-sub">above roof</span>
+        </div>
+      </div>
+    </div>
+  ` : '';
+
+  // ── Dimension section: full grid in OOG mode; hint-only in IG mode ──
+  const hintHTML = `
+          <div class="oog-dim-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>${maxU.hardLW
+              ? `${containerLabel} walls limit cargo to <strong>L ≤ ${oh.internal.L} m</strong> and <strong>W ≤ ${oh.internal.W} m</strong>. Larger pieces require Flat Rack.`
+              : `${containerLabel} platform (${oh.internal.L} × ${oh.internal.W} m) allows cargo up to <strong>L ≤ ${maxM.L.toFixed(2)} m</strong> and <strong>W ≤ ${maxM.W.toFixed(2)} m</strong> incl. overhang. Larger pieces require break-bulk / RoRo.`
+            }</span>
+          </div>
+  `;
+
+  const dimSection = isOOG ? (() => {
+    const packages = c.oog.packages || [];
+    const totalPieces = packages.reduce((s,p)=>s + (parseInt(p.qty)||0), 0);
+    const canRemove = packages.length > 1;
+    const pkgRows = packages.map((p,pi) => {
+      const isWorst = (oh.worstIdx === pi) && oh.exceeds && packages.length > 1;
+      return `
+        <div class="oog-pkg-row">
+          <span class="oog-pkg-label">#${pi+1}${isWorst ? '' : ''}</span>
+          <input type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]{0,2}"
+                 placeholder="L" value="${p.L||''}"
+                 oninput="clampOOGInput(this, ${maxU.L})"
+                 onchange="setPkg(${i},${pi},'L',this.value)">
+          <input type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]{0,2}"
+                 placeholder="W" value="${p.W||''}"
+                 oninput="clampOOGInput(this, ${maxU.W})"
+                 onchange="setPkg(${i},${pi},'W',this.value)">
+          <input type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]{0,2}"
+                 placeholder="H" value="${p.H||''}"
+                 oninput="clampOOGInput(this, ${maxU.H})"
+                 onchange="setPkg(${i},${pi},'H',this.value)">
+          <input type="number" min="1" max="999" placeholder="Qty" value="${p.qty||''}"
+                 onchange="setPkg(${i},${pi},'qty',this.value)">
+          <button type="button" class="oog-pkg-remove" ${canRemove?'':'disabled'}
+                  onclick="removePkg(${i},${pi})" title="Remove package">×</button>
+        </div>`;
+    }).join('');
+
+    const worstNote = (oh.exceeds && packages.length > 1 && oh.worstIdx >= 0)
+      ? ` <span class="oog-pkg-worst">Worst: pkg #${oh.worstIdx+1}</span>` : '';
+
+    return `
+        <div class="oog-pkg-section">
+          <div class="oog-pkg-header">
+            <span class="oog-label">Cargo packages per container (L × W × H × Qty)${worstNote}</span>
+            <button type="button" class="oog-unit-toggle" onclick="toggleOOGUnit(${i})">${o.unit} ▾</button>
+          </div>
+          <div class="oog-pkg-grid-head">
+            <span></span><span>Length</span><span>Width</span><span>Height</span><span>Pieces</span><span></span>
+          </div>
+          <div class="oog-pkg-list">${pkgRows}</div>
+          <div class="oog-pkg-footer">
+            <button type="button" class="oog-pkg-add" onclick="addPkg(${i})">+ Add package</button>
+            <span class="oog-pkg-total">Total: <strong>${totalPieces}</strong> piece${totalPieces===1?'':'s'} / container</span>
+          </div>
+          ${hintHTML}
+        </div>
+        ${badgesBlock}
+    `;
+  })() : `
+        <div>
+          <span class="oog-label">Maximum cargo envelope (in-gauge)</span>
+          ${hintHTML}
+        </div>
+  `;
+
+  // Cover / lashing controls (unchanged)
+  const opControls = isOT ? `
+    <div class="oog-extra-row">
+      <span style="font-weight:600;color:#92400e">Cover:</span>
+      <select onchange="setOOG(${i},'cover',this.value)">
+        <option value="tarpaulin" ${o.cover==='tarpaulin'?'selected':''}>Tarpaulin (provided by carrier)</option>
+        <option value="roof_returned" ${o.cover==='roof_returned'?'selected':''}>Steel roof returned after loading</option>
+        <option value="open" ${o.cover==='open'?'selected':''}>Open / no cover</option>
+      </select>
+    </div>
+  ` : `
+    <div class="oog-extra-row">
+      <span style="font-weight:600;color:#92400e">Lashing &amp; securing by:</span>
+      <select onchange="setOOG(${i},'lashing',this.value)">
+        <option value="carrier" ${o.lashing==='carrier'?'selected':''}>Carrier / port</option>
+        <option value="shipper" ${o.lashing==='shipper'?'selected':''}>Shipper</option>
+      </select>
+      <label>
+        <input type="checkbox" ${o.heavyLift?'checked':''} onchange="setOOG(${i},'heavyLift',this.checked)">
+        <span class="check-mini"></span>
+        Heavy-lift (per piece &gt; 20 MT)
+      </label>
+    </div>
+  `;
+
+  const heavyLiftOT = isOT ? `
+    <div class="oog-extra-row" style="margin-top:-4px">
+      <label>
+        <input type="checkbox" ${o.heavyLift?'checked':''} onchange="setOOG(${i},'heavyLift',this.checked)">
+        <span class="check-mini"></span>
+        Heavy-lift (per piece &gt; 20 MT)
+      </label>
+    </div>
+  ` : '';
+
+  // Smart warning banner — varies by mode / dim coherence
+  let warnText, warnTone='warn';
+  if(!oh.anyDimEntered){
+    if(isOOG){
+      warnText = `<strong>Out-of-gauge declared</strong> — enter cargo dimensions above to compute overhang.`;
+      warnTone = 'warn';
+    } else {
+      warnText = `<strong>In-gauge selected</strong> — cargo will fit within the ${containerLabel} envelope. Switch to <em>Out-of-gauge</em> if your cargo exceeds the limits above.`;
+      warnTone = 'info';
+    }
+  } else if(isOOG && !oh.exceeds){
+    warnText = `<strong>Cargo fits within ${containerLabel} envelope</strong> — select <em>In-gauge</em> above to avoid OOG surcharge.`;
+    warnTone = 'info';
+  } else if(!isOOG && oh.exceeds){
+    warnText = `<strong>Cargo exceeds ${containerLabel} envelope</strong> — switch to <em>Out-of-gauge</em>; carrier approval required.`;
+    warnTone = 'alert';
+  } else if(isOOG && oh.exceeds){
+    warnText = `<strong>Out-of-gauge confirmed</strong> — requires carrier approval &amp; special handling. Final rate subject to confirmation.`;
+  } else {
+    warnText = `<strong>In-gauge confirmed</strong> — fits within ${containerLabel} envelope. No overhang surcharge.`;
+    warnTone = 'ok';
+  }
+
+  // ── STACK FEASIBILITY OVERRIDE ──
+  // If multiple pieces don't physically fit either lengthwise or side-by-side,
+  // the overhang-only warning is misleading. Override with an alert.
+  const feas = computeStackFeasibility(c);
+  let feasibilityBlock = '';
+  if(feas && feas.applicable && !feas.feasible){
+    warnTone = 'alert';
+    const suggested = suggestUpgradeFor(c);
+
+    // Build human-readable reason — both strategies failed, explain each
+    const reasonItems = [];
+    if(!feas.stratA){
+      const bits = [];
+      if(feas.sumL > feas.envL + 0.01) bits.push(`total length end-to-end <strong>${feas.sumL.toFixed(2)} m</strong> &gt; limit <strong>${feas.envL.toFixed(2)} m</strong>`);
+      if(feas.maxW > feas.envW + 0.01) bits.push(`max width <strong>${feas.maxW.toFixed(2)} m</strong> &gt; limit <strong>${feas.envW.toFixed(2)} m</strong>`);
+      reasonItems.push(`<li><strong>Nose-to-tail:</strong> ${bits.join(' &amp; ')}</li>`);
+    }
+    if(!feas.stratB){
+      const bits = [];
+      if(feas.sumW > feas.envW + 0.01) bits.push(`total width side-by-side <strong>${feas.sumW.toFixed(2)} m</strong> &gt; limit <strong>${feas.envW.toFixed(2)} m</strong>`);
+      if(feas.maxL > feas.envL + 0.01) bits.push(`max length <strong>${feas.maxL.toFixed(2)} m</strong> &gt; limit <strong>${feas.envL.toFixed(2)} m</strong>`);
+      reasonItems.push(`<li><strong>Side-by-side:</strong> ${bits.join(' &amp; ')}</li>`);
+    }
+
+    const cta = suggested
+      ? `<button type="button" class="oog-upgrade-btn" onclick="upgradeContainer(${i},'${suggested.type}')">Switch to ${suggested.label} →</button>`
+      : `<span class="oog-breakbulk-note">No standard FR/OT container can hold this cargo footprint — consider <strong>Break Bulk / RoRo</strong> shipment.</span>`;
+
+    warnText = `<strong>Cargo footprint exceeds ${containerLabel} platform (${feas.envL.toFixed(2)} × ${feas.envW.toFixed(2)} m)</strong> — ${feas.pieces} pieces won't fit in either layout:`;
+
+    feasibilityBlock = `
+      <div class="oog-feas-detail">
+        <ul class="oog-feas-list">${reasonItems.join('')}</ul>
+        <div class="oog-feas-cta">${cta}</div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="oog-panel">
+      <div class="oog-head">
+        <span class="badge">${containerLabel}</span>
+        <span>Cargo &amp; handling specifications</span>
+      </div>
+
+      <div class="oog-diagram">${buildOOGDiagram(c,oh)}</div>
+
+      <div class="oog-fields">
+        <div>
+          <span class="oog-label">Cargo profile</span>
+          <div class="oog-mode-row" role="tablist">
+            <button class="oog-mode-pill ${o.mode==='ingauge'?'active':''}"
+                    onclick="setOOG(${i},'mode','ingauge')">In-gauge</button>
+            <button class="oog-mode-pill ${o.mode==='oog'?'active':''}"
+                    onclick="setOOG(${i},'mode','oog')">Out-of-gauge</button>
+          </div>
+        </div>
+
+        ${dimSection}
+        ${opControls}
+        ${heavyLiftOT}
+      </div>
+
+      <div class="oog-warn oog-warn--${warnTone}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div style="flex:1">
+          <div>${warnText}</div>
+          ${feasibilityBlock}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ──────────────────────────────────────────────
+   OOG SVG DIAGRAM — side view: container + cargo + overhang
+   Now driven by computed overhang (oh), not user-entered values.
+   ────────────────────────────────────────────── */
+function buildOOGDiagram(c, oh){
+  const o = c.oog;
+  const isFR = /FR$/.test(c.type);
+  const isOOG = o.mode === 'oog';
+
+  const overH = oh ? oh.overH : 0;
+  const overL = isFR && oh ? oh.overL : 0;
+  const overW = isFR && oh ? oh.overW : 0;
+
+  // Canvas geometry
+  const W=200, H=130;
+  const cx=W/2, cy=80;
+  const cw=120, ch=42;
+  const cLeft=cx-cw/2, cTop=cy-ch, cRight=cLeft+cw, cBottom=cy;
+
+  // Cargo overlay — scale visually with computed overhang
+  let cargoW = cw*0.7, cargoH = ch*0.78;
+  if(overH>0) cargoH = ch * 1.4;
+  if(overL>0) cargoW = cw * 1.18;
+  const carLeft = cx - cargoW/2;
+  const carTop  = cBottom - cargoH;
+
+  const showSideShade = isFR && overW>0;
+
+  const lashLines = isFR ? `
+    <line x1="${cLeft+10}" y1="${cTop}" x2="${cLeft+cw-10}" y2="${cTop}" stroke="#92400e" stroke-width="0.8" stroke-dasharray="3 2" opacity=".55"/>
+  ` : '';
+
+  const overHLine = (overH>0) ? `
+    <line x1="${cLeft-4}" y1="${cTop}" x2="${cRight+4}" y2="${cTop}" stroke="#dc2626" stroke-width="1.1" stroke-dasharray="4 3"/>
+    <text x="${cRight+8}" y="${cTop+3}" font-family="DM Mono, monospace" font-size="8" fill="#dc2626">roof</text>
+  ` : '';
+
+  const containerShape = isFR ? `
+    <line x1="${cLeft}" y1="${cBottom}" x2="${cRight}" y2="${cBottom}" stroke="#1a3a5c" stroke-width="2"/>
+    <line x1="${cLeft}" y1="${cBottom}" x2="${cLeft}" y2="${cTop+6}" stroke="#1a3a5c" stroke-width="2"/>
+    <line x1="${cRight}" y1="${cBottom}" x2="${cRight}" y2="${cTop+6}" stroke="#1a3a5c" stroke-width="2"/>
+  ` : `
+    <path d="M ${cLeft} ${cTop+2} L ${cLeft} ${cBottom} L ${cRight} ${cBottom} L ${cRight} ${cTop+2}"
+          stroke="#1a3a5c" stroke-width="2" fill="none"/>
+    <line x1="${cLeft-2}" y1="${cTop}" x2="${cLeft+8}" y2="${cTop}" stroke="#1a3a5c" stroke-width="1.5"/>
+    <line x1="${cRight-8}" y1="${cTop}" x2="${cRight+2}" y2="${cTop}" stroke="#1a3a5c" stroke-width="1.5"/>
+  `;
+
+  // Cargo box colour reflects overhang status, regardless of declared mode
+  const exceeds = overH>0 || overL>0 || overW>0;
+  const cargoFill   = exceeds ? 'rgba(239,68,68,.25)' : 'rgba(26,179,160,.22)';
+  const cargoStroke = exceeds ? '#dc2626' : '#129e8d';
+
+  const sideShade = showSideShade ? `
+    <rect x="${cLeft-12}" y="${cBottom-4}" width="12" height="4" fill="#dc2626" opacity=".35"/>
+    <rect x="${cRight}"   y="${cBottom-4}" width="12" height="4" fill="#dc2626" opacity=".35"/>
+  ` : '';
+
+  const labelTxt = `${c.type||'—'}  ·  ${exceeds ? 'OOG' : 'IN-GAUGE'}`;
+
+  return `
+<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+  <line x1="6" y1="${cBottom+2}" x2="${W-6}" y2="${cBottom+2}" stroke="#92400e" stroke-width="0.8" opacity=".4" stroke-dasharray="2 3"/>
+  ${containerShape}
+  ${lashLines}
+  ${sideShade}
+  <rect x="${carLeft}" y="${carTop}" width="${cargoW}" height="${cargoH}"
+        fill="${cargoFill}" stroke="${cargoStroke}" stroke-width="1.4" rx="2"/>
+  ${overHLine}
+  <text x="${cx}" y="${H-6}" text-anchor="middle"
+        font-family="DM Mono, monospace" font-size="9" font-weight="600"
+        fill="#92400e" letter-spacing="0.5">${labelTxt}</text>
+</svg>
+  `;
+}
+
+/* OOG state setters */
+function setOOG(i,key,val){
+  const c = state.containers[i];
+  if(!c.oog) return;
+  c.oog[key] = val;
+  // Switching to In-gauge: clear any persisted dims (IG needs no declaration —
+  // keeps state coherent so warning banner never references invisible inputs).
+  if(key === 'mode' && val === 'ingauge'){
+    c.oog.packages = [{L:'',W:'',H:'',qty:1}];
+  }
+  // Mode change or any dimension change → re-render row to refresh diagram
+  buildContainerRows();
+  validate();
+}
+function toggleOOGUnit(i){
+  const c = state.containers[i];
+  if(!c.oog) return;
+  // Convert any entered dims so the displayed number matches the new unit
+  const fromCm = c.oog.unit === 'cm';
+  const factor = fromCm ? 0.01 : 100;     // cm→m or m→cm
+  (c.oog.packages||[]).forEach(p => {
+    ['L','W','H'].forEach(k => {
+      const v = parseFloat(p[k]);
+      if(isFinite(v) && v>0){
+        p[k] = (fromCm ? (v*factor).toFixed(2) : (v*factor).toFixed(0));
+      }
+    });
+  });
+  c.oog.unit = fromCm ? 'm' : 'cm';
+  buildContainerRows();
+}
+
+/* Multi-package setters — keep focus by NOT rebuilding on every keystroke;
+   onchange (blur) triggers the rebuild so diagram + overhang refresh once. */
+function setPkg(i,pi,key,val){
+  const c = state.containers[i];
+  if(!c.oog || !c.oog.packages || !c.oog.packages[pi]) return;
+  if(key === 'qty'){
+    const n = parseInt(val);
+    c.oog.packages[pi].qty = (isFinite(n) && n>0) ? Math.min(999, n) : 1;
+  } else {
+    c.oog.packages[pi][key] = val;
+  }
+  buildContainerRows();
+  validate();
+}
+function addPkg(i){
+  const c = state.containers[i];
+  if(!c.oog) return;
+  if(c.oog.packages.length >= 20) return;   // sane upper bound
+  c.oog.packages.push({L:'',W:'',H:'',qty:1});
+  buildContainerRows();
+  validate();
+}
+function removePkg(i,pi){
+  const c = state.containers[i];
+  if(!c.oog || !c.oog.packages) return;
+  if(c.oog.packages.length <= 1) return;
+  c.oog.packages.splice(pi,1);
+  buildContainerRows();
+  validate();
+}
+
+/* Upgrade container type while preserving OOG state (packages, mode, etc.).
+   Called from the alert banner's "Switch to 40FR →" button. */
+function upgradeContainer(i, newType){
+  const c = state.containers[i];
+  if(!c) return;
+  c.type = newType;
+  // Keep existing c.oog (packages survive); just verify new type still OOG
+  const isOOG = /^(20|40)(OT|FR)$/.test(newType);
+  if(!isOOG){ c.oog = null; }
+  buildContainerRows();
+  validate();
+}
+
+function getContainerOptions(idx){
+  const c = state.containers[idx];
+  const showReeferOnly = state.tempControl;
+  const list = showReeferOnly ? CONTAINER_TYPES_ALL.filter(t=>t.reefer) : CONTAINER_TYPES_ALL;
+  let html = `<option value="">Select container type and size</option>`;
+  let currentGroup = '';
+  list.forEach(t=>{
+    if(t.group !== currentGroup){
+      currentGroup = t.group;
+      html += `<optgroup label="── ${t.group} ──">`;
+    }
+    html += `<option value="${t.val}" ${c.type===t.val?'selected':''}>${t.label}</option>`;
+  });
+  return html;
+}
+
+function setContType(i,v){
+  const c = state.containers[i];
+  c.type = v;
+  // Init or clear OOG sub-state when switching to/from Open Top / Flat Rack
+  const isOOG = /^(20|40)(OT|FR)$/.test(v);
+  if(isOOG){
+    if(!c.oog){
+      c.oog = {
+        mode:'ingauge',           // 'ingauge' | 'oog'
+        packages:[{L:'',W:'',H:'',qty:1}],  // multi-package support
+        unit:'m',
+        cover:'tarpaulin',         // OT only: 'tarpaulin' | 'open' | 'roof_returned'
+        lashing:'carrier',         // FR only: 'carrier' | 'shipper'
+        heavyLift:false,
+        note:''
+      };
+    }
+  } else {
+    c.oog = null;
+  }
+  buildContainerRows();
+  validate();
+}
+function setContQty(i,v){ state.containers[i].qty=Math.max(1,parseInt(v)||1); validate(); }
+function setContWeight(i,v){ state.containers[i].weight=v; validate(); }
+function changeQty(i,d){
+  const c=state.containers[i]; c.qty=Math.max(1,Math.min(99,c.qty+d));
+  document.querySelectorAll('.qty-num')[i].value=c.qty;
+  validate();
+}
+function toggleUnit(i){
+  const c=state.containers[i];
+  c.unit = c.unit==='kg'?'mt':'kg';
+  buildContainerRows();
+}
+function addContRow(){
+  state.containers.push({type:'',qty:1,weight:'',unit:'kg',oog:null});
+  buildContainerRows(); validate();
+}
+function removeCont(i){
+  if(state.containers.length<=1) return;
+  state.containers.splice(i,1);
+  buildContainerRows(); validate();
+}
+
+/* ══════════════════════════════════════════════
+   SERVICES
+══════════════════════════════════════════════ */
+function toggleSvc(el){
+  // Allow clicking even if currently in conflict state — last click wins
+  if(el.classList.contains('disabled')) return;
+
+  const svc = el.dataset.svc;
+  const wasChecked = el.classList.contains('checked');
+
+  // If currently conflicted and user clicks → treat as: clear conflict, check this one
+  if(el.classList.contains('exclusive-conflict')){
+    el.classList.remove('exclusive-conflict');
+  }
+
+  // Toggle this item
+  el.classList.toggle('checked', !wasChecked);
+  if(!wasChecked) state.services.add(svc); else state.services.delete(svc);
+
+  // When CHECKING: uncheck (not disable) all mutual exclusives
+  if(!wasChecked){
+    const excl = (el.dataset.excl||'').split(' ').filter(Boolean);
+    excl.forEach(e=>{
+      const conflEl = document.querySelector(`[data-svc="${e}"]`);
+      if(conflEl){
+        // Uncheck it and remove from state
+        conflEl.classList.remove('checked','exclusive-conflict');
+        state.services.delete(e);
+      }
+    });
+  } else {
+    // When UNCHECKING: re-enable any items that were blocked purely by this item
+    // (nothing to do since we don't use exclusive-conflict to block anymore)
+  }
+
+  // Switch BL: only available if a booking is selected
+  updateSwitchBL();
+  validate();
+}
+
+function updateSwitchBL(){
+  // Switch BL is independent — not affected by other options
+}
+
+/* ══════════════════════════════════════════════
+   MAIN VALIDATE → unlock chain
+══════════════════════════════════════════════ */
+function setSection(id, locked){
+  const el = document.getElementById(id);
+  if(locked){ el.classList.add('locked'); el.classList.remove('unlocked','done'); }
+  else      { el.classList.remove('locked'); el.classList.add('unlocked'); }
+}
+function markDone(id, done){
+  const el = document.getElementById(id);
+  if(done) el.classList.add('done'); else el.classList.remove('done');
+}
+function setProgress(step){
+  for(let i=1;i<=5;i++){
+    const seg = document.getElementById('ps'+i);
+    if(i<step) seg.className='prog-seg done';
+    else if(i===step) seg.className='prog-seg active';
+    else seg.className='prog-seg';
+  }
+}
+
+function validate(){
+  // S1: all 4 location fields
+  const s1ok = state.fromCountry && state.fromPort && state.toCountry && state.toPort;
+  markDone('sec1', s1ok);
+
+  // S2
+  setSection('sec2', !s1ok);
+  const hsOk = document.getElementById('hs-code').value.length === 0 || document.getElementById('hs-code').value.length === 6;
+  const s2ok = s1ok && document.getElementById('commodity').value.trim().length > 1 && hsOk;
+  markDone('sec2', s2ok);
+
+  // S3
+  setSection('sec3', !s2ok);
+  if(s2ok) buildContainerRows();
+  const s3ok = s2ok && state.containers.every(c=>c.type && c.weight && parseFloat(c.weight)>0);
+  markDone('sec3', s3ok);
+
+  // S4
+  setSection('sec4', !s3ok);
+  const s4ok = s3ok && document.getElementById('cargo-date').value !== '';
+  markDone('sec4', s4ok);
+
+  // S5
+  setSection('sec5', !s4ok);
+  const s5ok = s4ok && state.services.size > 0;
+
+  // Continue btn
+  const btn = document.getElementById('continue-btn');
+  btn.classList.toggle('active', s5ok);
+  btn.disabled = !s5ok;
+
+  // Progress
+  if(!s1ok) setProgress(1);
+  else if(!s2ok) setProgress(2);
+  else if(!s3ok) setProgress(3);
+  else if(!s4ok) setProgress(4);
+  else setProgress(5);
+}
+
+/* ══════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════ */
+// Set min date to today
+document.getElementById('cargo-date').min = new Date().toISOString().split('T')[0];
+
+// Prevent dropdown scroll events bubbling to window
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.querySelectorAll('.ac-dropdown').forEach(dd=>{
+    dd.addEventListener('scroll', e=>{ e.stopPropagation(); }, true);
+  });
+});
+
+buildContainerRows();
+validate();
+
+// Trigger port dropdown on click and focus
+['from-port','to-port'].forEach(id => {
+  const countryId = id === 'from-port' ? 'from-country' : 'to-country';
+  const el = document.getElementById(id);
+  ['click','focus'].forEach(evt => {
+    el.addEventListener(evt, function(){ if(!this.disabled) acPort(this, countryId); });
+  });
+});
+
+// Trigger country dropdown on click and focus
+[
+  {id:'from-country', portWrap:'from-port-wrap', portId:'from-port'},
+  {id:'to-country',   portWrap:'to-port-wrap',   portId:'to-port'},
+].forEach(({id, portWrap, portId}) => {
+  const el = document.getElementById(id);
+  ['click','focus'].forEach(evt => {
+    el.addEventListener(evt, function(){
+      acCountry(this, portWrap, portId);
+    });
+  });
+});
+</script>
+</body>
+</html>

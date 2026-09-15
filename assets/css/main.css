@@ -1,0 +1,215 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --app-header-h: 112px;
+  --green: #00E676;
+  --green-2: #00B85C;
+  --green-glow: rgba(0, 230, 118, 0.18);
+  --bg: #0A0D0B;
+  --bg-2: #0F1411;
+  --bg-3: #161C19;
+  --bg-4: #1C241F;
+  --border: #1F2724;
+  --border-2: #2A332E;
+  --text: #E8F0EB;
+  --text-2: #8A938D;
+  --text-3: #5A625D;
+  --amber: #FFB300;
+  --red: #FF5252;
+  --g300: #c8d8ea;
+  --g400: #90a8c0;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --app-header-h: 100px;
+  }
+}
+
+
+/* ─── Flatpickr wrapper reset ───────────────────────────────────────────
+   flatpickr injects a <div class="flatpickr-wrapper"> around the input.
+   "display: contents" makes the wrapper invisible to layout so the input
+   behaves exactly like a plain <input> in flex / grid containers.
+   This restores the original border, height, and width of every datepicker.
+─────────────────────────────────────────────────────────────────────── */
+.flatpickr-wrapper {
+  display: contents !important;
+}
+
+.flatpickr-input {
+  box-sizing: border-box !important;
+}
+
+/* When disabled via the component, reduce opacity like a native disabled input */
+.flatpickr-input:disabled,
+.flatpickr-input[disabled] {
+  opacity: 1;
+  /* let the class (e.g. .disabled) control appearance instead */
+}
+
+/* ─── .form-input global base ──────────────────────────────────────────────
+   Defined globally so it applies inside child components (e.g. EnDatePicker).
+   Scoped CSS from quote-request.vue / fcl.vue cannot pierce component boundaries,
+   so the base border/padding must live here.
+─────────────────────────────────────────────────────────────────────────── */
+.form-input {
+  border: 2px solid #848485;
+  padding: 8px 10px;
+  border-radius: 6px;
+  min-height: 34px;
+  box-sizing: border-box;
+  box-shadow: 0 2px 8px rgba(78, 162, 255, 0.08);
+  transition: border-color 160ms ease, box-shadow 180ms ease, background-color 160ms ease;
+  font-size: 13px;
+  background: #fff;
+  color: #1f2937;
+  outline: none;
+  width: 100%;
+}
+
+.form-input:hover {
+  border-color: #1BA1E2;
+  box-shadow: 0 4px 12px rgba(27, 161, 226, 0.15);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #1BA1E2;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(27, 161, 226, 0.2), 0 4px 16px rgba(27, 161, 226, 0.12);
+}
+
+.form-input[disabled],
+.form-input:disabled {
+  color: #666 !important;
+  border-color: #dfe6ea !important;
+  background-color: #f8f9fa !important;
+  cursor: not-allowed !important;
+}
+
+
+
+body {
+  font-family: "Geist", Arial, Helvetica, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+button,
+select,
+label:has(> input[type="checkbox"], > input[type="radio"]),
+input[type="checkbox"],
+input[type="radio"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="week"] {
+  cursor: pointer;
+}
+
+button:disabled,
+select:disabled,
+input:disabled {
+  cursor: not-allowed;
+}
+
+.anticon {
+  vertical-align: 1px !important;
+}
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--g300) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--g300);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--g400);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.custom-spin-in-container {
+  text-align: center;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  padding: 30px 50px;
+  margin: 20px 0;
+  width: 100%;
+}
+
+
+.layout-action-button {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  outline: 0;
+  cursor: pointer;
+  border: none;
+  border-radius: 7px;
+  font-weight: 500;
+  background: #fff;
+  color: #000;
+  box-shadow: 0 4px 14px 0 rgb(0 0 0 / 1%);
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  z-index: 1000;
+}
+
+.layout-action-button:hover {
+  background: rgba(255, 255, 255) !important;
+  box-shadow: 0 6px 20px rgb(93 93 93 / 15%);
+  background-color: #fff !important;
+  color: #0097B8 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SHARED SIDEBAR — Applied globally to all bh-page layouts
+   Responsive width | position: sticky | no scrollbar
+══════════════════════════════════════════════════════════════ */
+
+/* Layout shell */
+.bh-page {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Main content area — dùng flex: 1 tự nhiên, không margin-left cứng */
+.ft-main,
+.bh-page>main.main,
+.bh-page>.bh-main {
+  margin-left: 0 !important;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  /* overflow-y: auto; BỎ overflow-y để cuộn bằng window scroll */
+  transition: none;
+}

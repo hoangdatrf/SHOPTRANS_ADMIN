@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /bookings
+Disallow: /fcl
+Disallow: /fcl_temp
+Disallow: /finance-task
+Disallow: /login
+Disallow: /my-account
+Disallow: /register
+Disallow: /shipment-detail
+Disallow: /shipment-journey
+Disallow: /submit-si
+Disallow: /support
+Disallow: /unauthorized
+
+Sitemap: https://shoptrans.com/sitemap.xml

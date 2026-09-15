@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHOPTRANS — Account Settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#00C566; --green-d:#00A857; --green-l:#E6F9F0;
+  --ink:#0E1726; --g600:#475569; --g400:#94A3B8; --g300:#CBD5E1;
+  --g100:#EEF2F6; --g50:#F6F8FA; --bg:#FBFCFD; --border:#E5EAF0;
+  --white:#fff; --danger:#E5484D; --amber:#F5A623;
+  --shadow:0 1px 2px rgba(14,23,38,.04),0 4px 16px rgba(14,23,38,.05);
+  --radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Geist',sans-serif;color:var(--ink);background:var(--bg);
+  -webkit-font-smoothing:antialiased;font-size:14px;line-height:1.5;
+  background-image:radial-gradient(var(--g100) 1px,transparent 1px);
+  background-size:22px 22px;background-attachment:fixed;
+}
+.mono{font-family:'Geist Mono',monospace}
+
+/* LAYOUT */
+.shell{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{
+  background:var(--white);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;position:sticky;top:0;height:100vh;
+}
+.brand{padding:22px 22px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.logo{width:32px;height:32px;border-radius:9px;background:var(--green);display:grid;place-items:center;flex:0 0 auto;
+  box-shadow:0 2px 8px rgba(0,197,102,.35)}
+.logo svg{width:18px;height:18px}
+.brand b{font-size:16px;font-weight:700;letter-spacing:-.02em}
+.brand span{font-size:11px;color:var(--g400);font-weight:500;display:block;margin-top:-2px}
+.nav{padding:14px 12px;flex:1}
+.nav-label{font-size:11px;font-weight:600;color:var(--g400);text-transform:uppercase;letter-spacing:.06em;padding:8px 12px 6px}
+.nav-item{
+  display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;
+  color:var(--g600);font-weight:500;cursor:pointer;border:none;background:none;width:100%;
+  font-family:inherit;font-size:14px;text-align:left;transition:.15s;margin-bottom:2px;
+}
+.nav-item svg{width:18px;height:18px;flex:0 0 auto;stroke-width:1.8}
+.nav-item:hover{background:var(--g50);color:var(--ink)}
+.nav-item.active{background:var(--green-l);color:var(--green-d);font-weight:600}
+.nav-item.active svg{color:var(--green-d)}
+.sb-user{padding:14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:11px}
+.sb-user .ava{width:36px;height:36px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;flex:0 0 auto}
+.sb-user .meta{min-width:0}
+.sb-user .meta b{font-size:13px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-user .meta span{font-size:12px;color:var(--g400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+
+/* MAIN */
+.main{padding:30px 48px 60px;max-width:1200px;width:100%;margin:0 auto}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}
+.topbar h1{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.topbar p{color:var(--g600);font-size:13px;margin-top:2px}
+.badge-verified{display:inline-flex;align-items:center;gap:5px;background:var(--green-l);color:var(--green-d);font-size:12px;font-weight:600;padding:5px 11px;border-radius:20px}
+.badge-verified svg{width:14px;height:14px}
+
+/* CARD */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:22px;overflow:hidden}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border)}
+.card-head .t b{font-size:15px;font-weight:600}
+.card-head .t p{font-size:12.5px;color:var(--g400);margin-top:1px}
+.card-body{padding:22px}
+
+/* AVATAR BLOCK */
+.ava-row{display:flex;align-items:center;gap:18px;padding-bottom:22px;margin-bottom:22px;border-bottom:1px solid var(--border)}
+.ava-lg{width:72px;height:72px;border-radius:18px;background:linear-gradient(135deg,var(--green),var(--green-d));color:#fff;display:grid;place-items:center;font-weight:700;font-size:26px;flex:0 0 auto}
+.ava-row .info b{font-size:16px;font-weight:600;display:block}
+.ava-row .info span{font-size:13px;color:var(--g600)}
+.ava-actions{margin-left:auto;display:flex;gap:8px}
+
+/* FORM GRID */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px}
+.grid .full{grid-column:1/-1}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--g600);margin-bottom:6px}
+.field label .req{color:var(--danger)}
+.field input,.field select,.field textarea{
+  width:100%;padding:10px 13px;border:1px solid var(--border);border-radius:10px;
+  font-family:inherit;font-size:14px;color:var(--ink);background:var(--white);transition:.15s;
+}
+.field textarea{resize:vertical;min-height:70px}
+.field input:focus,.field select:focus,.field textarea:focus{
+  outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-l)
+}
+.field input:disabled,.field select:disabled,.field textarea:disabled{
+  background:var(--g50);color:var(--g600);cursor:not-allowed;border-color:var(--g100)
+}
+.field .hint{font-size:11.5px;color:var(--g400);margin-top:5px}
+#formBill textarea,#mBill{text-transform:uppercase}
+#formBill textarea::placeholder,#mBill::placeholder{text-transform:none}
+.input-wrap{position:relative}
+.input-wrap .eye{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--g400);padding:4px;display:grid;place-items:center}
+.input-wrap .eye:hover{color:var(--g600)}
+.input-wrap .eye svg{width:18px;height:18px}
+
+/* ROLE CHIPS */
+.chips{display:flex;flex-wrap:wrap;gap:8px;min-height:34px;align-items:center}
+.chips:empty::after{content:'No roles selected';color:var(--g400);font-size:13px}
+.chip{display:inline-flex;align-items:center;gap:7px;background:var(--green-l);color:var(--green-d);font-size:13px;font-weight:600;padding:6px 12px;border-radius:20px;line-height:1}
+.chip .x{cursor:pointer;display:none;width:16px;height:16px;border-radius:50%;align-items:center;justify-content:center;background:rgba(0,168,87,.18);font-size:13px;font-weight:700;transition:.15s}
+.chip .x:hover{background:var(--green-d);color:#fff}
+.chips.editing .chip .x{display:inline-flex}
+.role-add{display:flex;gap:8px;margin-top:11px}
+.role-add input{flex:1;padding:9px 13px;border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;color:var(--ink);background:var(--white);transition:.15s}
+.role-add input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-l)}
+.role-add button{padding:13px 30px;font-size:14.5px;font-weight:700;border-radius:11px;min-width:110px;justify-content:center}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:10px;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:.15s;white-space:nowrap}
+.btn svg{width:16px;height:16px;stroke-width:2}
+.btn-primary{background:var(--green);color:#fff;box-shadow:0 2px 8px rgba(0,197,102,.3)}
+.btn-primary:hover{background:var(--green-d)}
+.btn-ghost{background:var(--white);color:var(--g600);border-color:var(--border)}
+.btn-ghost:hover{background:var(--g50);color:var(--ink)}
+.btn-sm{padding:7px 13px;font-size:12.5px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* PASSWORD STRENGTH */
+.pw-strength{margin-top:8px}
+.pw-bars{display:flex;gap:5px;margin-bottom:5px}
+.pw-bars span{height:4px;flex:1;background:var(--g100);border-radius:3px;transition:.25s}
+.pw-meta{font-size:11.5px;color:var(--g400);display:flex;justify-content:space-between}
+.pw-reqs{list-style:none;margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}
+.pw-reqs li{font-size:12px;color:var(--g400);display:flex;align-items:center;gap:7px}
+.pw-reqs li svg{width:14px;height:14px;flex:0 0 auto}
+.pw-reqs li.ok{color:var(--green-d)}
+
+/* LINKED TABLE */
+.tbl-wrap{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;min-width:560px}
+.tbl th{text-align:left;font-size:11.5px;font-weight:600;color:var(--g400);text-transform:uppercase;letter-spacing:.05em;padding:0 14px 10px}
+.tbl td{padding:13px 14px;border-top:1px solid var(--border);font-size:13.5px;vertical-align:middle}
+.tbl tbody tr:hover td{background:var(--g50)}
+.tbl .cname{font-weight:600;color:var(--ink)}
+.tbl .csub{font-size:12px;color:var(--g400);margin-top:2px}
+.rbs{display:flex;flex-wrap:wrap;gap:5px}
+.rb{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:14px;white-space:nowrap}
+.rb-green{background:var(--green-l);color:var(--green-d)}
+.rb-blue{background:#E6F0FB;color:#1E6FD9}
+.rb-gray{background:var(--g100);color:var(--g600)}
+.row-act{display:flex;gap:6px;justify-content:flex-end}
+.icon-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;display:grid;place-items:center;color:var(--g600);transition:.15s}
+.icon-btn:hover{background:var(--g50);color:var(--ink)}
+.icon-btn.del:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
+.icon-btn svg{width:15px;height:15px;stroke-width:1.9}
+.empty-state{text-align:center;padding:46px 20px;color:var(--g400)}
+.empty-state svg{width:38px;height:38px;margin-bottom:10px;opacity:.5;stroke-width:1.6}
+
+/* MODAL */
+.modal-bg{position:fixed;top:0;right:0;bottom:0;left:248px;background:rgba(14,23,38,.45);backdrop-filter:blur(2px);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:48px;overflow-y:auto}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:1104px;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:pop .3s cubic-bezier(.16,1,.3,1)}
+@keyframes pop{from{opacity:0;transform:translateY(20px) scale(.98)}to{opacity:1;transform:none}}
+.modal-head{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-head b{font-size:16px;font-weight:700}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--g400);padding:4px;border-radius:8px;display:grid;place-items:center}
+.modal-close:hover{background:var(--g50);color:var(--ink)}
+.modal-close svg{width:20px;height:20px}
+.modal-body{padding:22px 24px;display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+.modal-body .full{grid-column:1/-1}
+.modal-foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+.tog-chips{display:flex;flex-wrap:wrap;gap:8px}
+.tog{font-size:13px;font-weight:600;padding:7px 13px;border-radius:20px;border:1px solid var(--border);background:#fff;color:var(--g600);cursor:pointer;transition:.15s;font-family:inherit}
+.tog:hover{border-color:var(--green);color:var(--green-d)}
+.tog.on{background:var(--green-l);border-color:var(--green);color:var(--green-d)}
+
+/* SECTIONS */
+.tab-panel{display:none;animation:fade .35s ease}
+.tab-panel.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* TOAST */
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(calc(100% + 40px));opacity:0;visibility:hidden;pointer-events:none;background:var(--ink);color:#fff;padding:13px 20px;border-radius:12px;font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:10px;box-shadow:0 10px 40px rgba(0,0,0,.25);transition:transform .4s cubic-bezier(.16,1,.3,1),opacity .3s ease,visibility .3s;z-index:99}
+.toast svg{width:18px;height:18px;color:var(--green)}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible;pointer-events:auto}
+
+/* DANGER ZONE */
+.danger-zone{border-color:#FADBDC}
+.danger-zone .card-head{border-color:#FADBDC;background:#FEF5F5}
+.dz-row{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.dz-row .t b{font-size:14px;font-weight:600}
+.dz-row .t p{font-size:12.5px;color:var(--g600);margin-top:2px}
+.btn-danger{background:#fff;color:var(--danger);border-color:#F3C0C2}
+.btn-danger:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
+
+@media(max-width:860px){
+  .shell{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto;flex-direction:row;align-items:center;overflow-x:auto}
+  .brand{border-bottom:none;border-right:1px solid var(--border)}
+  .nav{display:flex;padding:10px;gap:4px}.nav-label,.sb-user{display:none}
+  .nav-item{white-space:nowrap}
+  .main{padding:24px 18px 50px}
+  .grid{grid-template-columns:1fr}
+  .pw-reqs{grid-template-columns:1fr}
+  .modal-body{grid-template-columns:1fr}
+  .modal-bg{left:0;padding:28px 16px}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-5 9 5v6l-9 5-9-5z"/><path d="M3 9l9 5 9-5M12 14v6"/></svg>
+      </div>
+      <div><b>SHOPTRANS</b><span>Freight Platform</span></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-label">Settings</div>
+      <button class="nav-item active" data-tab="account">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0114 0v1"/></svg>
+        Account Information
+      </button>
+      <button class="nav-item" data-tab="company">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h2M13 8h2M9 12h2M13 12h2M9 16h6"/></svg>
+        Company Information
+      </button>
+      <button class="nav-item" data-tab="linked">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M10 7h4a3 3 0 013 3v4"/></svg>
+        Linked Companies
+      </button>
+      <button class="nav-item" data-tab="security">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>
+        Security & Password
+      </button>
+    </nav>
+    <div class="sb-user">
+      <div class="ava" id="sbAva">AN</div>
+      <div class="meta">
+        <b id="sbName">An Nguyen</b>
+        <span id="sbEmail">an.nguyen@rul.vn</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ===== ACCOUNT ===== -->
+    <section class="tab-panel active" id="tab-account">
+      <div class="topbar">
+        <div>
+          <h1>Account Information</h1>
+          <p>Manage your personal profile and contact details.</p>
+        </div>
+        <div class="badge-verified">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          Verified
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="t"><b>User Profile</b><p>Information shown across the platform.</p></div>
+          <div id="actAccount">
+            <button class="btn btn-ghost btn-sm" onclick="enableEdit('account')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg>
+              Edit
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="ava-row">
+            <div class="ava-lg" id="avaLg">AN</div>
+            <div class="info">
+              <b id="dispName">An Nguyen</b>
+              <span id="dispRole">Head of Import &amp; Export</span>
+            </div>
+            <div class="ava-actions" data-edit="account" style="display:none">
+              <input type="file" id="avaInput" accept="image/*" hidden onchange="uploadAva(this)">
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('avaInput').click()">Upload Photo</button>
+              <button class="btn btn-ghost btn-sm" onclick="removeAva()">Remove</button>
+            </div>
+          </div>
+
+          <form class="grid" onsubmit="return false" id="formAccount">
+            <div class="field">
+              <label>Full Name <span class="req">*</span></label>
+              <input data-edit="account" value="An Nguyen" disabled name="fullname">
+            </div>
+            <div class="field">
+              <label>Job Title</label>
+              <input data-edit="account" value="Head of Import & Export" disabled name="role">
+            </div>
+            <div class="field">
+              <label>Email <span class="req">*</span></label>
+              <input data-edit="account" value="an.nguyen@rul.vn" disabled name="email" type="email" onblur="formatEmails(this)">
+              <div class="hint">Used for login and shipment notifications.</div>
+            </div>
+            <div class="field">
+              <label>Phone Number</label>
+              <input data-edit="account" value="+84 909 123 456" disabled name="phone">
+            </div>
+            <div class="field">
+              <label>User ID</label>
+              <input class="mono" value="USR-2024-08817" disabled>
+              <div class="hint">Cannot be changed.</div>
+            </div>
+            <div class="field">
+              <label>Display Language</label>
+              <select data-edit="account" disabled name="lang">
+                <option>English</option>
+                <option>Vietnamese</option>
+              </select>
+            </div>
+          </form>
+
+          <div data-edit="account" style="display:none;margin-top:22px;padding-top:20px;border-top:1px solid var(--border);justify-content:flex-end;gap:10px" class="save-row">
+            <button class="btn btn-ghost" onclick="cancelEdit('account')">Cancel</button>
+            <button class="btn btn-primary" onclick="saveEdit('account')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12l5 5L20 7"/></svg>
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== COMPANY ===== -->
+    <section class="tab-panel" id="tab-company">
+      <div class="topbar">
+        <div>
+          <h1>Company Information</h1>
+          <p>Business details used for documents, invoices and bookings.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="t"><b>Business Profile</b><p>Shown on Bookings, Bill of Lading and invoices.</p></div>
+          <div id="actCompany">
+            <button class="btn btn-ghost btn-sm" onclick="enableEdit('company')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg>
+              Edit
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <form class="grid" onsubmit="return false" id="formCompany">
+            <div class="field full">
+              <label>Company Name <span class="req">*</span></label>
+              <input data-edit="company" value="RUL Logistics Vietnam Co., Ltd." disabled>
+            </div>
+            <div class="field full">
+              <label>Business Type / Roles</label>
+              <div class="chips" id="roleChips"></div>
+              <div class="role-add" data-edit="company" style="display:none">
+                <input list="roleOptions" id="roleInput" placeholder="Select or type a role…" onkeydown="if(event.key==='Enter'){event.preventDefault();addRole();}">
+                <datalist id="roleOptions">
+                  <option>Freight Forwarder</option>
+                  <option>Shipper / Exporter</option>
+                  <option>Consignee / Importer</option>
+                  <option>Customs Broker</option>
+                  <option>NVOCC</option>
+                  <option>Carrier / Shipping Line</option>
+                  <option>Trucking / Haulage</option>
+                  <option>Warehouse / 3PL</option>
+                </datalist>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="addRole()">+ Add</button>
+              </div>
+              <div class="hint" data-edit="company" style="display:none">Select all roles that apply, or type a custom one and press Enter.</div>
+            </div>
+            <div class="field">
+              <label>Company ID</label>
+              <input class="mono" value="ORG-2024-00482" disabled>
+              <div class="hint">System identifier — cannot be changed.</div>
+            </div>
+            <div class="field">
+              <label>Tax ID <span class="req">*</span></label>
+              <input class="mono" data-edit="company" value="0312456789" disabled>
+            </div>
+            <div class="field">
+              <label>Legal Representative</label>
+              <input data-edit="company" value="Bich Tran" disabled>
+            </div>
+            <div class="field">
+              <label>Website</label>
+              <input data-edit="company" value="https://rul.vn" disabled>
+            </div>
+            <div class="field full">
+              <label>Head Office Address <span class="req">*</span></label>
+              <input data-edit="company" value="Floor 8, Pearl Plaza, 561A Dien Bien Phu, Binh Thanh District, HCMC" disabled>
+            </div>
+            <div class="field">
+              <label>Primary Port / Airport</label>
+              <input class="mono" data-edit="company" value="VNSGN — Cat Lai" disabled>
+            </div>
+            <div class="field">
+              <label>Accounting / Billing Email</label>
+              <input data-edit="company" value="accounting@rul.vn" disabled type="email" onblur="formatEmails(this)">
+              <div class="hint">Separate multiple emails with a comma or semicolon.</div>
+            </div>
+            <div class="field full">
+              <label>Company Description / Notes</label>
+              <textarea data-edit="company" disabled placeholder="Brief description of your company, services, or shipping preferences…">Customs-cleared FCL & LCL forwarder specializing in Asia–Europe trade lanes.</textarea>
+            </div>
+          </form>
+
+          <div data-edit="company" style="display:none;margin-top:22px;padding-top:20px;border-top:1px solid var(--border);justify-content:flex-end;gap:10px" class="save-row">
+            <button class="btn btn-ghost" onclick="cancelEdit('company')">Cancel</button>
+            <button class="btn btn-primary" onclick="saveEdit('company')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12l5 5L20 7"/></svg>
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="t"><b>Bill of Lading Information</b><p>Exactly as it should appear on the B/L and shipping documents.</p></div>
+          <div id="actBill">
+            <button class="btn btn-ghost btn-sm" onclick="enableEdit('bill')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg>
+              Edit
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <form onsubmit="return false" id="formBill">
+            <div class="field">
+              <label>Bill of Lading Details <span style="font-weight:500;color:var(--g400)">— company name, address, email, phone, business registration no.</span></label>
+              <textarea data-edit="bill" disabled style="min-height:150px" placeholder="Company name&#10;Full address&#10;Email&#10;Phone&#10;Business registration no.">RUL LOGISTICS VIETNAM CO., LTD.
+Floor 8, Pearl Plaza, 561A Dien Bien Phu St., Binh Thanh Dist., Ho Chi Minh City, Vietnam
+Email: docs@rul.vn
+Tel: +84 28 3999 8888
+Business Reg. No.: 0312456789</textarea>
+            </div>
+          </form>
+          <div data-edit="bill" style="display:none;margin-top:22px;padding-top:20px;border-top:1px solid var(--border);justify-content:flex-end;gap:10px" class="save-row">
+            <button class="btn btn-ghost" onclick="cancelEdit('bill')">Cancel</button>
+            <button class="btn btn-primary" onclick="saveEdit('bill')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12l5 5L20 7"/></svg>
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== LINKED COMPANIES ===== -->
+    <section class="tab-panel" id="tab-linked">
+      <div class="topbar">
+        <div>
+          <h1>Linked Companies</h1>
+          <p>Partners you manage — shippers, consignees and agents used across your shipments.</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>
+          Add Company
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="t"><b>Managed Parties</b><p>Visible only to your account and selectable per shipment.</p></div>
+        </div>
+        <div class="card-body" style="padding:14px">
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>ID</th><th>Company</th><th>Roles in shipments</th><th>Country / Port</th><th>Contact</th><th></th></tr></thead>
+              <tbody id="linkedBody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state" id="linkedEmpty" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M10 7h4a3 3 0 013 3v4"/></svg>
+            <div>No linked companies yet. Add a shipper, consignee or agent to use in your bookings.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SECURITY ===== -->
+    <section class="tab-panel" id="tab-security">
+      <div class="topbar">
+        <div>
+          <h1>Security & Password</h1>
+          <p>Update your password and manage account access.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="t"><b>Change Password</b><p>A strong password helps protect your shipment data.</p></div>
+        </div>
+        <div class="card-body">
+          <form onsubmit="return false" id="formPw" style="max-width:440px;margin:0 auto;display:flex;flex-direction:column;gap:18px">
+            <div class="field full" style="max-width:440px">
+              <label>Current Password <span class="req">*</span></label>
+              <div class="input-wrap">
+                <input type="password" id="pwCur" placeholder="••••••••">
+                <button type="button" class="eye" onclick="toggleEye('pwCur',this)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="field full" style="max-width:440px">
+              <label>New Password <span class="req">*</span></label>
+              <div class="input-wrap">
+                <input type="password" id="pwNew" placeholder="Enter new password" oninput="checkPw()">
+                <button type="button" class="eye" onclick="toggleEye('pwNew',this)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+              <div class="pw-strength">
+                <div class="pw-bars"><span></span><span></span><span></span><span></span></div>
+                <div class="pw-meta"><span>Password strength</span><b id="pwLabel">—</b></div>
+              </div>
+              <ul class="pw-reqs">
+                <li id="r-len"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/></svg>At least 8 characters</li>
+                <li id="r-up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/></svg>One uppercase letter</li>
+                <li id="r-num"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/></svg>One number</li>
+                <li id="r-sym"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/></svg>One special character</li>
+              </ul>
+            </div>
+            <div class="field full" style="max-width:440px">
+              <label>Confirm New Password <span class="req">*</span></label>
+              <div class="input-wrap">
+                <input type="password" id="pwConf" placeholder="Re-enter new password" oninput="checkMatch()">
+                <button type="button" class="eye" onclick="toggleEye('pwConf',this)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+              <div class="hint" id="matchHint"></div>
+            </div>
+          </form>
+          <div style="max-width:440px;margin:22px auto 0;padding-top:20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+            <button class="btn btn-primary" id="pwSubmit" onclick="savePw()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>
+              Update Password
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card danger-zone">
+        <div class="card-head"><div class="t"><b>Danger Zone</b><p>These actions cannot be undone.</p></div></div>
+        <div class="card-body">
+          <div class="dz-row">
+            <div class="t"><b>Log out all devices</b><p>End every session except your current device.</p></div>
+            <button class="btn btn-ghost btn-sm" onclick="logoutAll()">Log Out</button>
+          </div>
+          <div class="dz-row" style="margin-top:18px;padding-top:18px;border-top:1px solid #FADBDC">
+            <div class="t"><b>Deactivate account</b><p>Suspend access. An administrator must reactivate it.</p></div>
+            <button class="btn btn-danger btn-sm" onclick="deactivate()">Deactivate</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <b id="modalTitle">Add Linked Company</b>
+      <button class="modal-close" onclick="closeModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Company ID</label>
+        <input id="mId" class="mono" disabled>
+      </div>
+      <div class="field">
+        <label>Tax ID / Code</label>
+        <input id="mCode" class="mono" placeholder="Optional">
+      </div>
+      <div class="field full">
+        <label>Company Name <span class="req">*</span></label>
+        <input id="mName" placeholder="e.g. Saigon Textiles JSC">
+      </div>
+      <div class="field full">
+        <label>Roles in shipments</label>
+        <div class="tog-chips" id="mRoles"></div>
+      </div>
+      <div class="field">
+        <label>Country / Port</label>
+        <input id="mLoc" placeholder="e.g. VNSGN — Ho Chi Minh">
+      </div>
+      <div class="field">
+        <label>Contact Email</label>
+        <input id="mContact" type="email" placeholder="a@x.com; b@y.com" onblur="formatEmails(this)">
+      </div>
+      <div class="field full">
+        <label>Bill of Lading <span style="font-weight:500;color:var(--g400)">— name, address, email, phone, business code</span></label>
+        <textarea id="mBill" style="min-height:118px" placeholder="Company name, address, email, phone, business reg. no."></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLinked()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12l5 5L20 7"/></svg>
+        Save
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+  <span id="toastMsg">Changes saved</span>
+</div>
+
+<script>
+/* ---- TAB SWITCH ---- */
+document.querySelectorAll('.nav-item').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('tab-'+b.dataset.tab).classList.add('active');
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+});
+
+/* ---- EDIT MODE ---- */
+let snapshot={};
+let roles=['Freight Forwarder','Customs Broker'];
+let rolesSnap=[];
+function escHtml(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function renderRoles(){
+  const c=document.getElementById('roleChips');
+  c.innerHTML=roles.map((r,i)=>`<span class="chip">${escHtml(r)}<span class="x" onclick="removeRole(${i})" title="Remove">×</span></span>`).join('');
+}
+function addRole(){
+  const inp=document.getElementById('roleInput');
+  const v=inp.value.trim();
+  if(!v) return;
+  if(roles.some(r=>r.toLowerCase()===v.toLowerCase())){ toast('Role already added','err'); inp.value=''; return; }
+  roles.push(v); renderRoles(); inp.value=''; inp.focus();
+}
+function removeRole(i){ roles.splice(i,1); renderRoles(); }
+renderRoles();
+
+/* ---- LINKED COMPANIES ---- */
+const ROLE_OPTS=['Shipper','Consignee','Notify Party','Origin Agent','Destination Agent','Carrier'];
+function roleVariant(r){
+  if(/agent/i.test(r)) return 'rb-blue';
+  if(/carrier/i.test(r)) return 'rb-gray';
+  return 'rb-green';
+}
+let linked=[
+  {id:'PTY-0001', name:'Saigon Textiles JSC', roles:['Shipper'], loc:'VNSGN — Ho Chi Minh', code:'0301122334', contact:'export@sgtextiles.vn', bill:'SAIGON TEXTILES JSC\n12 NGUYEN HUE BLVD., DIST. 1, HO CHI MINH CITY, VIETNAM\nTEL: +84 28 3822 1100'},
+  {id:'PTY-0002', name:'Hamburg Import GmbH', roles:['Consignee','Notify Party'], loc:'DEHAM — Hamburg', code:'DE811234567', contact:'ops@hh-import.de', bill:'HAMBURG IMPORT GMBH\nGROSSE ELBSTRASSE 45, 22767 HAMBURG, GERMANY\nVAT: DE811234567'},
+  {id:'PTY-0003', name:'PT Jakarta Forwarding', roles:['Destination Agent'], loc:'IDJKT — Jakarta', code:'—', contact:'agent@jktfwd.co.id', bill:''}
+];
+let editIdx=-1;
+function nextPartyId(){
+  let max=0;
+  linked.forEach(c=>{ const n=parseInt((c.id||'').replace(/\D/g,''),10); if(n>max)max=n; });
+  return 'PTY-'+String(max+1).padStart(4,'0');
+}
+function renderLinked(){
+  const b=document.getElementById('linkedBody');
+  const empty=document.getElementById('linkedEmpty');
+  if(!linked.length){ b.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  b.innerHTML=linked.map((c,i)=>`
+    <tr>
+      <td><span class="mono csub" style="color:var(--g600);font-weight:600">${escHtml(c.id||'—')}</span></td>
+      <td><div class="cname">${escHtml(c.name)}</div>${c.code&&c.code!=='—'?`<div class="csub mono">Tax: ${escHtml(c.code)}</div>`:''}</td>
+      <td><div class="rbs">${c.roles.length?c.roles.map(r=>`<span class="rb ${roleVariant(r)}">${escHtml(r)}</span>`).join(''):'<span class="csub">—</span>'}</div></td>
+      <td>${escHtml(c.loc||'—')}</td>
+      <td>${escHtml(c.contact||'—')}</td>
+      <td><div class="row-act">
+        <button class="icon-btn" onclick="openModal(${i})" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg></button>
+        <button class="icon-btn del" onclick="delLinked(${i})" title="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button>
+      </div></td>
+    </tr>`).join('');
+}
+function renderRoleToggles(sel){
+  document.getElementById('mRoles').innerHTML=ROLE_OPTS.map(r=>
+    `<button type="button" class="tog${sel.includes(r)?' on':''}" onclick="this.classList.toggle('on')">${r}</button>`).join('');
+}
+function openModal(i){
+  editIdx=(typeof i==='number')?i:-1;
+  const c=editIdx>-1?linked[editIdx]:{id:nextPartyId(),name:'',roles:[],loc:'',code:'',contact:'',bill:''};
+  document.getElementById('modalTitle').textContent=editIdx>-1?'Edit Linked Company':'Add Linked Company';
+  document.getElementById('mId').value=c.id;
+  document.getElementById('mName').value=c.name;
+  document.getElementById('mLoc').value=c.loc;
+  document.getElementById('mCode').value=c.code==='—'?'':c.code;
+  document.getElementById('mContact').value=c.contact;
+  document.getElementById('mBill').value=c.bill||'';
+  renderRoleToggles(c.roles);
+  document.getElementById('modalBg').classList.add('show');
+}
+function closeModal(){ document.getElementById('modalBg').classList.remove('show'); }
+function saveLinked(){
+  const name=document.getElementById('mName').value.trim();
+  if(!name){ toast('Company name is required','err'); return; }
+  const obj={
+    id:document.getElementById('mId').value,
+    name,
+    roles:[...document.querySelectorAll('#mRoles .tog.on')].map(b=>b.textContent),
+    loc:document.getElementById('mLoc').value.trim(),
+    code:document.getElementById('mCode').value.trim()||'—',
+    contact:document.getElementById('mContact').value.trim(),
+    bill:document.getElementById('mBill').value.trim().toUpperCase()
+  };
+  if(editIdx>-1) linked[editIdx]=obj; else linked.push(obj);
+  renderLinked(); closeModal();
+  toast(editIdx>-1?'Company updated':'Company added');
+}
+function delLinked(i){
+  if(confirm(`Remove "${linked[i].name}" from your linked companies?`)){
+    linked.splice(i,1); renderLinked(); toast('Company removed');
+  }
+}
+renderLinked();
+function setEdit(sec,on){
+  document.querySelectorAll(`[data-edit="${sec}"]`).forEach(el=>{
+    if(el.tagName==='INPUT'||el.tagName==='SELECT'||el.tagName==='TEXTAREA'){
+      if(el.classList.contains('mono') && el.value.startsWith('USR')) return;
+      el.disabled=!on;
+    } else {
+      el.style.display = on ? 'flex' : 'none';
+    }
+  });
+  document.getElementById('act'+cap(sec)).style.display = on?'none':'block';
+  if(sec==='company') document.getElementById('roleChips').classList.toggle('editing',on);
+}
+function enableEdit(sec){
+  snapshot[sec]=[...document.querySelectorAll(`#form${cap(sec)} input,#form${cap(sec)} select,#form${cap(sec)} textarea`)].map(e=>e.value);
+  if(sec==='company') rolesSnap=[...roles];
+  setEdit(sec,true);
+}
+function cancelEdit(sec){
+  const els=[...document.querySelectorAll(`#form${cap(sec)} input,#form${cap(sec)} select,#form${cap(sec)} textarea`)];
+  els.forEach((e,i)=>e.value=snapshot[sec][i]);
+  if(sec==='company'){ roles=[...rolesSnap]; renderRoles(); }
+  setEdit(sec,false);
+}
+function saveEdit(sec){
+  setEdit(sec,false);
+  if(sec==='account') syncHeader();
+  const msg={account:'Account information updated',company:'Company information updated',bill:'Bill of Lading information updated'}[sec]||'Changes saved';
+  toast(msg);
+}
+function cap(s){return s[0].toUpperCase()+s.slice(1)}
+
+function syncHeader(){
+  const name=document.querySelector('[name=fullname]').value;
+  const role=document.querySelector('[name=role]').value;
+  const email=document.querySelector('[name=email]').value;
+  const initials=name.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  avaInitials=initials;
+  document.getElementById('dispName').textContent=name;
+  document.getElementById('dispRole').textContent=role;
+  document.getElementById('sbName').textContent=name;
+  document.getElementById('sbEmail').textContent=email;
+  document.getElementById('avaLg').textContent=initials;
+  document.getElementById('sbAva').textContent=initials;
+}
+
+/* ---- PASSWORD ---- */
+function toggleEye(id,btn){
+  const inp=document.getElementById(id);
+  const show=inp.type==='password';
+  inp.type=show?'text':'password';
+  btn.innerHTML=show
+    ?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3l18 18M10.6 10.6a3 3 0 004.2 4.2M9.4 5.2A9.7 9.7 0 0112 5c6.5 0 10 7 10 7a16 16 0 01-3 3.6M6.1 6.1A16 16 0 002 12s3.5 7 10 7a9.6 9.6 0 003.5-.6"/></svg>'
+    :'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+}
+function checkPw(){
+  const v=document.getElementById('pwNew').value;
+  const rules={len:v.length>=8,up:/[A-Z]/.test(v),num:/\d/.test(v),sym:/[^A-Za-z0-9]/.test(v)};
+  let score=0;
+  for(const k in rules){
+    const li=document.getElementById('r-'+k);
+    li.classList.toggle('ok',rules[k]);
+    li.querySelector('svg').innerHTML=rules[k]
+      ?'<path d="M20 6L9 17l-5-5" stroke-width="2.5"/>'
+      :'<circle cx="12" cy="12" r="9"/>';
+    if(rules[k])score++;
+  }
+  const bars=document.querySelectorAll('.pw-bars span');
+  const colors=['','#E5484D','#F5A623','#00C566','#00A857'];
+  const labels=['—','Weak','Fair','Good','Strong'];
+  bars.forEach((b,i)=>b.style.background=i<score?colors[score]:'#EEF2F6');
+  const lbl=document.getElementById('pwLabel');
+  lbl.textContent=labels[score]; lbl.style.color=colors[score]||'#94A3B8';
+  checkMatch();
+}
+function checkMatch(){
+  const n=document.getElementById('pwNew').value, c=document.getElementById('pwConf').value;
+  const h=document.getElementById('matchHint');
+  if(c){
+    const m=n===c;
+    h.textContent=m?'✓ Passwords match':'✗ Passwords do not match';
+    h.style.color=m?'var(--green-d)':'var(--danger)';
+  } else h.textContent='';
+}
+function savePw(){
+  const cur=document.getElementById('pwCur').value;
+  const n=document.getElementById('pwNew').value;
+  const c=document.getElementById('pwConf').value;
+  const strong=n.length>=8&&/[A-Z]/.test(n)&&/\d/.test(n)&&/[^A-Za-z0-9]/.test(n);
+  if(!cur){ toast('Please enter your current password','err'); return; }
+  if(!strong){ toast('New password does not meet the requirements','err'); return; }
+  if(n!==c){ toast('Passwords do not match','err'); return; }
+  ['pwCur','pwNew','pwConf'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('matchHint').textContent='';
+  document.getElementById('pwLabel').textContent='—';
+  document.querySelectorAll('.pw-bars span').forEach(b=>b.style.background='#EEF2F6');
+  document.querySelectorAll('.pw-reqs li').forEach(li=>{li.classList.remove('ok');li.querySelector('svg').innerHTML='<circle cx="12" cy="12" r="9"/>';});
+  toast('Password updated successfully');
+}
+
+/* ---- AVATAR ---- */
+let avaInitials='AN';
+function uploadAva(input){
+  const f=input.files&&input.files[0];
+  if(!f) return;
+  if(!f.type.startsWith('image/')){ toast('Please select an image file','err'); return; }
+  if(f.size>3*1024*1024){ toast('Image must be smaller than 3 MB','err'); return; }
+  const r=new FileReader();
+  r.onload=e=>{
+    [document.getElementById('avaLg'),document.getElementById('sbAva')].forEach(el=>{
+      el.style.backgroundImage=`url(${e.target.result})`;
+      el.style.backgroundSize='cover';
+      el.style.backgroundPosition='center';
+      el.style.color='transparent';
+      el.dataset.txt=el.textContent; el.textContent='';
+    });
+    toast('Photo updated');
+  };
+  r.readAsDataURL(f);
+  input.value='';
+}
+function removeAva(){
+  [document.getElementById('avaLg'),document.getElementById('sbAva')].forEach(el=>{
+    el.style.backgroundImage='';el.style.color='#fff';
+    el.textContent=avaInitials;
+  });
+  toast('Photo removed');
+}
+
+/* ---- DANGER ZONE ---- */
+function logoutAll(){
+  if(confirm('Log out of all other devices? Your current session stays active.'))
+    toast('All other sessions have been signed out');
+}
+function deactivate(){
+  if(confirm('Deactivate your account? Access will be suspended until an administrator reactivates it.'))
+    toast('Account deactivation requested','err');
+}
+
+/* ---- EMAILS (multiple, comma/semicolon) ---- */
+function formatEmails(el){
+  const raw=el.value.trim();
+  if(!raw){ return; }
+  const parts=raw.split(/[,;]+/).map(s=>s.trim()).filter(Boolean);
+  const re=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const bad=parts.filter(p=>!re.test(p));
+  el.value=parts.join('; ');
+  el.style.borderColor = bad.length ? 'var(--danger)' : '';
+  if(bad.length) toast('Invalid email: '+bad.join(', '),'err');
+}
+
+/* ---- TOAST ---- */
+let toastT;
+function toast(msg,type){
+  document.getElementById('toastMsg').textContent=msg;
+  const t=document.getElementById('toast');
+  const icon=t.querySelector('svg');
+  if(type==='err'){
+    icon.style.color='var(--danger)';
+    icon.innerHTML='<path d="M12 8v5M12 16.5v.01" stroke-width="2.5"/><circle cx="12" cy="12" r="9"/>';
+  } else {
+    icon.style.color='var(--green)';
+    icon.innerHTML='<path d="M20 6L9 17l-5-5"/>';
+  }
+  t.classList.add('show'); clearTimeout(toastT);
+  toastT=setTimeout(()=>t.classList.remove('show'),2800);
+}
+</script>
+</body>
+</html>

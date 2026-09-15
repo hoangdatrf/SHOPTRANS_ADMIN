@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Service · Combine Featured Services — SHOPTRANS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F6F5;
+    --panel:#FFFFFF;
+    --panel-2:#F7F9F8;
+    --line:#E2E7E5;
+    --line-soft:#EDF1EF;
+    --green:#00E676;
+    --green-text:#009E54;
+    --green-dim:#E4FAEE;
+    --green-glow:rgba(0,230,118,.16);
+    --txt:#0E1513;
+    --txt-2:#5A6663;
+    --txt-3:#94A09C;
+    --mono:'Geist Mono',ui-monospace,monospace;
+    --sans:'Geist',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--sans);
+    background:var(--bg);
+    color:var(--txt);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.6;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px 24px;
+    background-image:
+      radial-gradient(circle at center, rgba(0,0,0,.045) 1px, transparent 1px),
+      radial-gradient(1200px 600px at 80% -10%, var(--green-glow), transparent 70%);
+    background-size:22px 22px, 100% 100%;
+  }
+
+  .service{
+    width:100%;
+    max-width:1180px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 30px 70px -36px rgba(20,40,32,.28);
+    position:relative;
+  }
+  .topbar{
+    display:flex;align-items:center;gap:14px;
+    padding:14px 22px;
+    border-bottom:1px solid var(--line-soft);
+    background:var(--panel-2);
+    font-family:var(--mono);font-size:11px;
+    color:var(--txt-3);letter-spacing:.14em;text-transform:uppercase;
+  }
+  .topbar .right{margin-left:auto;color:var(--txt-3)}
+
+  .grid{
+    display:grid;
+    grid-template-columns:460px 1fr;
+    align-items:stretch;
+  }
+
+  /* ---- LEFT : illustration ---- */
+  .visual{
+    position:relative;
+    border-right:1px solid var(--line-soft);
+    padding:36px 26px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    background:
+      radial-gradient(circle at 50% 42%, var(--green-glow), transparent 62%),
+      radial-gradient(circle at center, rgba(0,0,0,.04) 1px, transparent 1px);
+    background-size:100% 100%, 18px 18px;
+    overflow:hidden;
+  }
+  .visual::before{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg,transparent 70%,rgba(0,0,0,.03));
+    pointer-events:none;
+  }
+  .hero-photo{
+    position:relative;
+    width:100%;
+    margin:0 auto;
+    border-radius:16px;
+    border:1px solid #0A1726;
+    box-shadow:0 22px 50px -18px rgba(8,20,34,.7), 0 0 0 4px rgba(255,255,255,.6);
+    display:block;
+    overflow:hidden;
+  }
+  .hero-screen svg{width:100%;height:auto;display:block;border-radius:15px;background:#0C1A2B}
+
+  /* ---- RIGHT : content ---- */
+  .content{padding:40px 48px;display:flex;flex-direction:column;justify-content:center}
+
+  h1{
+    font-size:25px;line-height:1.24;font-weight:600;
+    letter-spacing:-.01em;margin:0 0 14px 0;max-width:54ch;
+    text-wrap:balance;
+  }
+  h1 .em{color:var(--green-text)}
+
+  .lead{
+    font-size:15px;color:var(--txt-2);max-width:64ch;line-height:1.5;
+    padding-bottom:14px;
+  }
+  .lead b{color:var(--txt);font-weight:500}
+
+  .points{margin-top:4px;display:flex;flex-direction:column;gap:2px}
+  .point{
+    display:grid;grid-template-columns:auto 1fr;gap:16px;
+    padding:12px 0;
+  }
+  .point .n{
+    font-family:var(--mono);font-size:12px;font-weight:600;
+    color:var(--green-text);padding-top:3px;
+  }
+  .point .lbl{
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--txt-3);margin-bottom:5px;
+  }
+  .point .body{font-size:14px;color:var(--txt-2);max-width:62ch;line-height:1.5}
+  .point .body b{color:var(--txt);font-weight:500}
+
+  .closing{margin-top:16px;font-size:14px;color:var(--txt-2);line-height:1.5;max-width:64ch}
+  .closing b{color:var(--txt);font-weight:500}
+
+  /* ---- footer actions ---- */
+  .actions{
+    margin-top:22px;padding-top:18px;
+    display:flex;align-items:center;justify-content:flex-end;gap:13px;
+  }
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;
+    font-family:var(--sans);font-size:13.5px;font-weight:600;
+    text-decoration:none;cursor:pointer;
+    padding:12px 22px;border-radius:11px;
+    border:1px solid transparent;
+    transition:all .2s ease;white-space:nowrap;
+  }
+  .btn svg{width:16px;height:16px;flex-shrink:0}
+  .btn-ghost{background:#fff;color:var(--txt);border-color:var(--line)}
+  .btn-ghost:hover{border-color:var(--txt-3);background:#FBFCFC;transform:translateX(-2px)}
+  .btn-primary{background:var(--green);color:#fff}
+  .btn-primary:hover{background:#00B85F;transform:translateY(-1px);box-shadow:0 8px 20px -8px rgba(0,197,102,.7)}
+  .btn-primary:active,.btn-ghost:active{transform:none}
+
+  .service{animation:rise .5s ease both}
+  .content > *{animation:fade .5s ease both}
+  .content > *:nth-child(1){animation-delay:.05s}
+  .content > *:nth-child(2){animation-delay:.10s}
+  .content > *:nth-child(3){animation-delay:.15s}
+  .content > *:nth-child(4){animation-delay:.20s}
+  .content > *:nth-child(5){animation-delay:.25s}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  @media(max-width:860px){
+    body{padding:0}
+    .service{border-radius:0;border:none;min-height:100vh}
+    .grid{grid-template-columns:1fr}
+    .visual{border-right:none;border-bottom:1px solid var(--line-soft);padding:36px 28px}
+    .hero-photo{max-width:380px;margin:0 auto}
+    .content{padding:36px 28px}
+    h1{font-size:22px}
+    .actions{flex-wrap:wrap;gap:12px}
+    .btn{flex:1;justify-content:center;min-width:140px}
+  }
+</style>
+</head>
+<body>
+  <main class="service">
+    <div class="topbar">
+      <span class="right"></span>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT VISUAL : service ecosystem -->
+      <section class="visual">
+        <figure class="hero-photo hero-screen">
+          <svg viewBox="0 0 480 420" fill="none" font-family="Geist Mono, monospace"
+               role="img" aria-label="Service ecosystem dashboard — SHOPTRANS platform integrating partner service modules">
+            <defs>
+              <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#0E2236"/>
+                <stop offset="1" stop-color="#0A1626"/>
+              </linearGradient>
+              <radialGradient id="haze" cx="50%" cy="55%" r="55%">
+                <stop offset="0" stop-color="#00E676" stop-opacity=".22"/>
+                <stop offset="1" stop-color="#0A1626" stop-opacity="0"/>
+              </radialGradient>
+              <pattern id="grid" width="26" height="26" patternUnits="userSpaceOnUse">
+                <path d="M26 0 H0 V26" fill="none" stroke="#16334C" stroke-width="1"/>
+              </pattern>
+              <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+                <feGaussianBlur stdDeviation="2.4" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+
+            <!-- background -->
+            <rect x="0" y="0" width="480" height="420" fill="url(#bg)"/>
+            <rect x="0" y="0" width="480" height="420" fill="url(#grid)" opacity=".55"/>
+            <rect x="0" y="0" width="480" height="420" fill="url(#haze)"/>
+
+            <!-- status pill -->
+            <g>
+              <rect x="22" y="22" width="200" height="30" rx="8" fill="#0E2336" stroke="#1E4A66" stroke-width="1.3"/>
+              <circle cx="40" cy="37" r="5" fill="#00E676" filter="url(#glow)"/>
+              <text x="56" y="41" font-size="12" font-weight="600" letter-spacing="1.3" fill="#9FE9C7">SERVICE STORE · LIVE</text>
+            </g>
+            <!-- integrated chip -->
+            <g>
+              <rect x="346" y="22" width="112" height="30" rx="8" fill="#0E2336" stroke="#1E4A66" stroke-width="1.3"/>
+              <g stroke="#4FE3FF" stroke-width="2.4">
+                <line x1="362" y1="37" x2="372" y2="37"/>
+                <line x1="367" y1="32" x2="367" y2="42"/>
+              </g>
+              <text x="378" y="41" font-size="11" font-weight="600" letter-spacing="1.2" fill="#9FE9C7">INTEGRATED</text>
+            </g>
+
+            <!-- decorative orbit rings around hub -->
+            <g stroke="#1E4A66" stroke-width="1.2" fill="none" opacity=".7">
+              <circle cx="240" cy="230" r="105" stroke-dasharray="2 8"/>
+              <circle cx="240" cy="230" r="68" stroke-dasharray="2 8" opacity=".55"/>
+            </g>
+
+            <!-- connection lines (glow) -->
+            <g stroke="#00E676" stroke-width="1.8" opacity=".85" filter="url(#glow)"
+               fill="none" stroke-dasharray="3 6">
+              <line x1="282" y1="230" x2="312" y2="230"/>
+              <line x1="198" y1="230" x2="168" y2="230"/>
+              <line x1="268" y1="188" x2="284" y2="166"/>
+              <line x1="212" y1="188" x2="196" y2="166"/>
+              <line x1="268" y1="272" x2="284" y2="294"/>
+              <line x1="212" y1="272" x2="196" y2="294"/>
+            </g>
+
+            <!-- service tiles -->
+            <!-- ROAD (0°) -->
+            <g>
+              <rect x="312" y="202" width="56" height="56" rx="12" fill="#102A40" stroke="#2F88B0" stroke-width="1.5"/>
+              <g stroke="#4FE3FF" stroke-width="2.2" fill="none" filter="url(#glow)">
+                <rect x="322" y="220" width="16" height="13"/>
+                <path d="M338 224 l9 0 5 6 0 3 -14 0 z"/>
+                <circle cx="329" cy="236" r="3.5"/>
+                <circle cx="346" cy="236" r="3.5"/>
+              </g>
+            </g>
+            <!-- DOCS (180°) -->
+            <g>
+              <rect x="112" y="202" width="56" height="56" rx="12" fill="#102A40" stroke="#2F88B0" stroke-width="1.5"/>
+              <rect x="128" y="214" width="24" height="32" rx="3" fill="#0E2236" stroke="#4FE3FF" stroke-width="2"/>
+              <g stroke="#3F88A8" stroke-width="2.2">
+                <line x1="132" y1="222" x2="148" y2="222"/>
+                <line x1="132" y1="230" x2="148" y2="230"/>
+                <line x1="132" y1="238" x2="143" y2="238"/>
+              </g>
+            </g>
+            <!-- SEA (240°) -->
+            <g>
+              <rect x="162" y="115" width="56" height="56" rx="12" fill="#102A40" stroke="#2F88B0" stroke-width="1.5"/>
+              <g stroke="#4FE3FF" stroke-width="2.2" filter="url(#glow)">
+                <path d="M178 152 h24 l-4 9 h-16 z" fill="#103B52"/>
+                <line x1="190" y1="134" x2="190" y2="152"/>
+                <path d="M190 134 l9 13 h-9 z" fill="#FFC928" stroke="#E0A100"/>
+              </g>
+            </g>
+            <!-- AIR (300°) -->
+            <g>
+              <rect x="262" y="115" width="56" height="56" rx="12" fill="#102A40" stroke="#2F88B0" stroke-width="1.5"/>
+              <path d="M276 152 l28 -13 -8 13 8 9 -28 -6 6 -5 z" fill="#4FE3FF" stroke="#2F88B0" stroke-width="1.6"
+                    filter="url(#glow)"/>
+            </g>
+            <!-- QC (60°) -->
+            <g>
+              <rect x="262" y="289" width="56" height="56" rx="12" fill="#102A40" stroke="#2F88B0" stroke-width="1.5"/>
+              <path d="M290 300 l13 5 v9 c0 10 -7 14 -13 18 c-6 -4 -13 -8 -13 -18 v-9 z"
+                    fill="#00E676" stroke="#009E54" stroke-width="1.6" filter="url(#glow)"/>
+              <path d="M283 317 l5 5 9 -11" stroke="#0C1A2B" stroke-width="3" fill="none"/>
+            </g>
+            <!-- PAY (120°) -->
+            <g>
+              <rect x="162" y="289" width="56" height="56" rx="12" fill="#102A40" stroke="#2F88B0" stroke-width="1.5"/>
+              <circle cx="190" cy="317" r="14" fill="#FFC928" stroke="#E0A100" stroke-width="2.4" filter="url(#glow)"/>
+              <text x="190" y="322" text-anchor="middle" font-size="15" font-weight="700" fill="#7A5A00">$</text>
+            </g>
+
+            <!-- central hub -->
+            <g>
+              <!-- glow halo -->
+              <circle cx="240" cy="230" r="60" fill="#00E676" opacity=".14" filter="url(#glow)"/>
+              <rect x="200" y="190" width="80" height="80" rx="18" fill="#0E2A1C" stroke="#00E676" stroke-width="2.4"/>
+              <rect x="200" y="190" width="80" height="80" rx="18" fill="none" stroke="#00E676"
+                    stroke-width="1.2" opacity=".8" filter="url(#glow)"/>
+              <g fill="#9FFFCE">
+                <rect x="216" y="206" width="20" height="20" rx="4"/>
+                <rect x="244" y="206" width="20" height="20" rx="4"/>
+                <rect x="216" y="234" width="20" height="20" rx="4"/>
+                <rect x="244" y="234" width="20" height="20" rx="4"/>
+              </g>
+              <!-- + combine badge -->
+              <circle cx="204" cy="194" r="13" fill="#0E2A1C" stroke="#00E676" stroke-width="2.4"/>
+              <g stroke="#00E676" stroke-width="3" filter="url(#glow)">
+                <line x1="204" y1="189" x2="204" y2="199"/>
+                <line x1="199" y1="194" x2="209" y2="194"/>
+              </g>
+            </g>
+
+            <!-- bottom HUD strip : modules synced -->
+            <g>
+              <rect x="22" y="372" width="436" height="34" rx="10" fill="#0E2336" stroke="#1E4A66" stroke-width="1.2"/>
+              <text x="40" y="393" font-size="11" letter-spacing="1.4" fill="#5E86A6">MODULES SYNCED</text>
+              <g fill="#00E676" filter="url(#glow)">
+                <circle cx="260" cy="389" r="5"/>
+                <circle cx="284" cy="389" r="5"/>
+                <circle cx="308" cy="389" r="5"/>
+                <circle cx="332" cy="389" r="5"/>
+                <circle cx="356" cy="389" r="5"/>
+                <circle cx="380" cy="389" r="5"/>
+              </g>
+              <text x="408" y="393" font-size="11" letter-spacing="1.4" fill="#9FE9C7">LIVE</text>
+            </g>
+
+            <!-- corner brackets -->
+            <g stroke="#2F88B0" stroke-width="2" opacity=".7" fill="none">
+              <path d="M464 22 h-12 v12" transform="translate(12 0)"/>
+            </g>
+          </svg>
+        </figure>
+      </section>
+
+      <!-- RIGHT CONTENT -->
+      <section class="content">
+        <h1>Combine featured services to <span class="em">SHOPTRANS' store</span></h1>
+
+        <p class="lead">
+          SHOPTRANS doesn't have to build every service itself. Instead, we <b>integrate unique
+          services from trusted partners</b> into one system for optimal customer solutions.
+        </p>
+
+        <div class="points">
+          <div class="point">
+            <span class="n">01</span>
+            <div>
+              <div class="lbl">Integrate Trusted Partners</div>
+              <div class="body">
+                Bring <b>specialized partner services</b> into our platform instead of building
+                everything in-house.
+              </div>
+            </div>
+          </div>
+
+          <div class="point">
+            <span class="n">02</span>
+            <div>
+              <div class="lbl">Offered As Our Own</div>
+              <div class="body">
+                Partner products become part of <b>SHOPTRANS' own logistics solutions</b> —
+                unified for the customer.
+              </div>
+            </div>
+          </div>
+
+          <div class="point">
+            <span class="n">03</span>
+            <div>
+              <div class="lbl">Expand &amp; Promote</div>
+              <div class="body">
+                Expands our offerings while letting partners <b>promote their services</b> to a
+                wider client base.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="closing">
+          Clients gain <b>advanced logistics solutions</b> that improve operational efficiency and
+          reduce costs.
+        </p>
+
+        <div class="actions">
+          <button class="btn btn-ghost" onclick="history.back()">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 12H5M11 18l-6-6 6-6"/>
+            </svg>
+            Go back
+          </button>
+          <a href="#" class="btn btn-primary">
+            Contact us
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14M13 6l6 6-6 6"/>
+            </svg>
+          </a>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Service · Instant Quotation — SHOPTRANS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F6F5;
+    --panel:#FFFFFF;
+    --panel-2:#F7F9F8;
+    --line:#E2E7E5;
+    --line-soft:#EDF1EF;
+    --green:#00E676;
+    --green-text:#009E54;
+    --green-dim:#E4FAEE;
+    --green-glow:rgba(0,230,118,.16);
+    --txt:#0E1513;
+    --txt-2:#5A6663;
+    --txt-3:#94A09C;
+    --mono:'Geist Mono',ui-monospace,monospace;
+    --sans:'Geist',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--sans);
+    background:var(--bg);
+    color:var(--txt);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.6;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px 24px;
+    background-image:
+      radial-gradient(circle at center, rgba(0,0,0,.045) 1px, transparent 1px),
+      radial-gradient(1200px 600px at 80% -10%, var(--green-glow), transparent 70%);
+    background-size:22px 22px, 100% 100%;
+  }
+
+  .service{
+    width:100%;
+    max-width:1180px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 30px 70px -36px rgba(20,40,32,.28);
+    position:relative;
+  }
+  .topbar{
+    display:flex;align-items:center;gap:14px;
+    padding:14px 22px;
+    border-bottom:1px solid var(--line-soft);
+    background:var(--panel-2);
+    font-family:var(--mono);font-size:11px;
+    color:var(--txt-3);letter-spacing:.14em;text-transform:uppercase;
+  }
+  .topbar .right{margin-left:auto;color:var(--txt-3)}
+
+  .grid{
+    display:grid;
+    grid-template-columns:460px 1fr;
+    align-items:stretch;
+  }
+
+  /* ---- LEFT : illustration ---- */
+  .visual{
+    position:relative;
+    border-right:1px solid var(--line-soft);
+    padding:36px 26px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:24px;
+    background:
+      radial-gradient(circle at 50% 42%, var(--green-glow), transparent 62%),
+      radial-gradient(circle at center, rgba(0,0,0,.04) 1px, transparent 1px);
+    background-size:100% 100%, 18px 18px;
+    overflow:hidden;
+  }
+  .visual::before{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg,transparent 70%,rgba(0,0,0,.03));
+    pointer-events:none;
+  }
+  .hero-photo{
+    position:relative;
+    width:100%;
+    margin:0 auto;
+    border-radius:14px;
+    border:1px solid var(--line);
+    box-shadow:0 18px 40px -18px rgba(20,40,32,.4);
+    display:block;
+    background:#fff;
+  }
+  .hero-illus svg{width:100%;height:auto;display:block;border-radius:13px;padding:14px;background:#fff}
+
+  .visual-meta{position:relative}
+  .meta-row{
+    display:flex;justify-content:space-between;
+    padding:11px 0;
+    border-top:1px solid var(--line-soft);
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;
+  }
+  .meta-row .k{color:var(--txt-3);text-transform:uppercase}
+  .meta-row .v{color:var(--txt-2)}
+  .meta-row .v.on{color:var(--green-text)}
+
+  /* ---- RIGHT : content ---- */
+  .content{padding:40px 48px;display:flex;flex-direction:column;justify-content:center}
+
+  h1{
+    font-size:25px;line-height:1.24;font-weight:600;
+    letter-spacing:-.01em;margin:0 0 14px 0;max-width:54ch;
+    text-wrap:balance;
+  }
+  h1 .em{color:var(--green-text)}
+
+  .lead{
+    font-size:15px;color:var(--txt-2);max-width:64ch;line-height:1.5;
+    padding-bottom:16px;
+  }
+  .lead b{color:var(--txt);font-weight:500}
+
+  .points{margin-top:6px;display:flex;flex-direction:column;gap:2px}
+  .point{
+    display:grid;grid-template-columns:auto 1fr;gap:16px;
+    padding:12px 0;
+  }
+  .point .n{
+    font-family:var(--mono);font-size:12px;font-weight:600;
+    color:var(--green-text);padding-top:3px;
+  }
+  .point .lbl{
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--txt-3);margin-bottom:5px;
+  }
+  .point .body{font-size:14px;color:var(--txt-2);max-width:62ch;line-height:1.5}
+  .point .body b{color:var(--txt);font-weight:500}
+
+  .closing{margin-top:16px;font-size:14px;color:var(--txt-2);line-height:1.5;max-width:64ch}
+  .closing b{color:var(--txt);font-weight:500}
+
+  /* ---- footer actions ---- */
+  .actions{
+    margin-top:22px;padding-top:18px;
+    display:flex;align-items:center;justify-content:flex-end;gap:13px;
+  }
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;
+    font-family:var(--sans);font-size:13.5px;font-weight:600;
+    text-decoration:none;cursor:pointer;
+    padding:12px 22px;border-radius:11px;
+    border:1px solid transparent;
+    transition:all .2s ease;white-space:nowrap;
+  }
+  .btn svg{width:16px;height:16px;flex-shrink:0}
+  .btn-ghost{background:#fff;color:var(--txt);border-color:var(--line)}
+  .btn-ghost:hover{border-color:var(--txt-3);background:#FBFCFC;transform:translateX(-2px)}
+  .btn-primary{background:var(--green);color:#fff}
+  .btn-primary:hover{background:#00B85F;transform:translateY(-1px);box-shadow:0 8px 20px -8px rgba(0,197,102,.7)}
+  .btn-primary:active,.btn-ghost:active{transform:none}
+
+  .service{animation:rise .5s ease both}
+  .content > *{animation:fade .5s ease both}
+  .content > *:nth-child(1){animation-delay:.05s}
+  .content > *:nth-child(2){animation-delay:.10s}
+  .content > *:nth-child(3){animation-delay:.15s}
+  .content > *:nth-child(4){animation-delay:.20s}
+  .content > *:nth-child(5){animation-delay:.25s}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  @media(max-width:860px){
+    body{padding:0}
+    .service{border-radius:0;border:none;min-height:100vh}
+    .grid{grid-template-columns:1fr}
+    .visual{border-right:none;border-bottom:1px solid var(--line-soft);padding:36px 28px}
+    .hero-photo{max-width:380px;margin:0 auto}
+    .content{padding:36px 28px}
+    h1{font-size:22px}
+    .actions{flex-wrap:wrap;gap:12px}
+    .btn{flex:1;justify-content:center;min-width:140px}
+  }
+</style>
+</head>
+<body>
+  <main class="service">
+    <div class="topbar">
+      <span class="right"></span>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT VISUAL -->
+      <section class="visual">
+        <figure class="hero-photo hero-illus">
+          <svg viewBox="0 0 520 430" fill="none"
+               stroke-linecap="round" stroke-linejoin="round" role="img"
+               aria-label="Instant quotation — shipping container with an instant price quote, 30-second stopwatch and sea, air, road modes">
+            <!-- backdrop -->
+            <circle cx="250" cy="206" r="152" fill="#EAF1FA"/>
+            <circle cx="250" cy="206" r="152" fill="none" stroke="#D7E5F4" stroke-width="3" stroke-dasharray="2 10"/>
+
+            <!-- shipping container (orange, brand-recognizable) -->
+            <g>
+              <rect x="56" y="106" width="214" height="206" rx="10" fill="#F2851F" stroke="#B85410" stroke-width="6"/>
+              <rect x="56" y="106" width="214" height="30" rx="6" fill="#E0760F"/>
+              <rect x="56" y="282" width="214" height="30" rx="6" fill="#E0760F"/>
+              <!-- corrugation -->
+              <g stroke="#C25E0C" stroke-width="4" opacity=".8">
+                <line x1="82" y1="140" x2="82" y2="282"/>
+                <line x1="104" y1="140" x2="104" y2="282"/>
+                <line x1="126" y1="140" x2="126" y2="282"/>
+                <line x1="148" y1="140" x2="148" y2="282"/>
+                <line x1="170" y1="140" x2="170" y2="282"/>
+                <line x1="192" y1="140" x2="192" y2="282"/>
+                <line x1="214" y1="140" x2="214" y2="282"/>
+                <line x1="236" y1="140" x2="236" y2="282"/>
+              </g>
+              <!-- corner castings -->
+              <g fill="#7A3A06">
+                <rect x="58" y="108" width="16" height="16" rx="3"/>
+                <rect x="252" y="108" width="16" height="16" rx="3"/>
+                <rect x="58" y="294" width="16" height="16" rx="3"/>
+                <rect x="252" y="294" width="16" height="16" rx="3"/>
+              </g>
+            </g>
+
+            <!-- instant quote card (overlapping, front-right) -->
+            <g>
+              <rect x="228" y="150" width="208" height="166" rx="16" fill="#fff" stroke="#2E4DA0" stroke-width="5"/>
+              <rect x="234" y="156" width="196" height="34" rx="10" fill="#00C566"/>
+              <text x="332" y="178" text-anchor="middle" font-family="Geist Mono, monospace"
+                    font-size="13" font-weight="700" letter-spacing="1.5" fill="#fff">INSTANT QUOTE</text>
+              <!-- $ coin -->
+              <circle cx="266" cy="232" r="22" fill="#FFC928" stroke="#E0A100" stroke-width="4"/>
+              <text x="266" y="240" text-anchor="middle" font-family="Geist Mono, monospace"
+                    font-size="22" font-weight="700" fill="#7A5A00">$</text>
+              <!-- amount lines -->
+              <line x1="300" y1="222" x2="412" y2="222" stroke="#C9D4E8" stroke-width="7"/>
+              <line x1="300" y1="240" x2="384" y2="240" stroke="#C9D4E8" stroke-width="7"/>
+              <!-- total (green) + check -->
+              <line x1="266" y1="282" x2="392" y2="282" stroke="#00C566" stroke-width="7"/>
+              <circle cx="412" cy="282" r="12" fill="#00C566"/>
+              <path d="M406 282 l4 5 8 -9" stroke="#fff" stroke-width="3" fill="none"/>
+            </g>
+
+            <!-- 30s stopwatch badge -->
+            <g>
+              <circle cx="416" cy="146" r="34" fill="#fff" stroke="#E2E7E5" stroke-width="3"/>
+              <rect x="410" y="108" width="12" height="9" rx="2" fill="#2E4DA0"/>
+              <line x1="416" y1="117" x2="416" y2="123" stroke="#2E4DA0" stroke-width="5"/>
+              <circle cx="416" cy="150" r="22" fill="#EAF1FA" stroke="#2E4DA0" stroke-width="4"/>
+              <text x="416" y="155" text-anchor="middle" font-family="Geist Mono, monospace"
+                    font-size="14" font-weight="700" fill="#009E54">30s</text>
+            </g>
+
+            <!-- transport mode chips: sea / air / road -->
+            <g font-family="Geist Mono, monospace" font-size="10" font-weight="600" fill="#5A6663">
+              <!-- SEA -->
+              <g>
+                <rect x="118" y="350" width="84" height="34" rx="10" fill="#F7F9F8" stroke="#E2E7E5" stroke-width="2"/>
+                <g stroke="#2E4DA0" stroke-width="3" fill="none">
+                  <path d="M134 370 l16 0 -3 7 -10 0 z" fill="#5BA3E0"/>
+                  <line x1="142" y1="362" x2="142" y2="370"/>
+                  <path d="M133 376 q9 5 18 0"/>
+                </g>
+                <text x="162" y="372">SEA</text>
+              </g>
+              <!-- AIR -->
+              <g>
+                <rect x="210" y="350" width="84" height="34" rx="10" fill="#F7F9F8" stroke="#E2E7E5" stroke-width="2"/>
+                <path d="M226 374 l20 -8 -6 8 6 6 -20 -4 5 -3 z" fill="#5BA3E0" stroke="#2E4DA0" stroke-width="2"/>
+                <text x="254" y="372">AIR</text>
+              </g>
+              <!-- ROAD -->
+              <g>
+                <rect x="302" y="350" width="84" height="34" rx="10" fill="#F7F9F8" stroke="#E2E7E5" stroke-width="2"/>
+                <g stroke="#2E4DA0" stroke-width="2.5">
+                  <rect x="316" y="362" width="14" height="11" fill="#5BA3E0"/>
+                  <path d="M330 365 l8 0 5 5 0 3 -13 0 z" fill="#5BA3E0"/>
+                  <circle cx="322" cy="376" r="3" fill="#fff"/>
+                  <circle cx="338" cy="376" r="3" fill="#fff"/>
+                </g>
+                <text x="350" y="372">ROAD</text>
+              </g>
+            </g>
+          </svg>
+        </figure>
+
+        <div class="visual-meta">
+          <div class="meta-row"><span class="k">Channel</span><span class="v">Automated System</span></div>
+          <div class="meta-row"><span class="k">Modes</span><span class="v">Sea · Air · Road</span></div>
+          <div class="meta-row"><span class="k">Turnaround</span><span class="v on">● ~30 seconds</span></div>
+        </div>
+      </section>
+
+      <!-- RIGHT CONTENT -->
+      <section class="content">
+        <h1>Instant <span class="em">quotation</span></h1>
+
+        <p class="lead">
+          The Instant Quotation service lets clients receive shipping cost information
+          <b>instantly</b> through SHOPTRANS' <b>automated system</b>.
+        </p>
+
+        <div class="points">
+          <div class="point">
+            <span class="n">01</span>
+            <div>
+              <div class="lbl">Fast &amp; Automated</div>
+              <div class="body">
+                Get cost information <b>instantly</b> — no waiting, generated by our automated
+                quoting system.
+              </div>
+            </div>
+          </div>
+
+          <div class="point">
+            <span class="n">02</span>
+            <div>
+              <div class="lbl">Quick &amp; Accurate</div>
+              <div class="body">
+                Quickly and <b>accurately</b> obtain quotes for international transportation
+                services.
+              </div>
+            </div>
+          </div>
+
+          <div class="point">
+            <span class="n">03</span>
+            <div>
+              <div class="lbl">All Transport Modes</div>
+              <div class="body">
+                Covers <b>sea freight, air freight, and road transport</b>.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="closing">
+          This service <b>saves time and optimizes the transaction process</b>.
+        </p>
+
+        <div class="actions">
+          <button class="btn btn-ghost" onclick="history.back()">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 12H5M11 18l-6-6 6-6"/>
+            </svg>
+            Go back
+          </button>
+          <a href="#" class="btn btn-primary">
+            Contact us
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14M13 6l6 6-6 6"/>
+            </svg>
+          </a>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,1948 @@
+[
+  {
+    "code": "COM001",
+    "name": "Live horses – pure-bred breeding",
+    "hsCode": "010121",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM002",
+    "name": "Live bovine animals – pure-bred breeding",
+    "hsCode": "010221",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM003",
+    "name": "Beef – carcasses and half-carcasses, fresh/chilled",
+    "hsCode": "020110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM004",
+    "name": "Pork – carcasses, fresh/chilled",
+    "hsCode": "020311",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM005",
+    "name": "Live ornamental freshwater fish",
+    "hsCode": "030110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM006",
+    "name": "Trout – fresh or chilled",
+    "hsCode": "030211",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM007",
+    "name": "Shrimps and prawns – frozen",
+    "hsCode": "030617",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM008",
+    "name": "Milk – not concentrated, fat ≤1%",
+    "hsCode": "040110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM009",
+    "name": "Milk powder – fat ≤1.5%",
+    "hsCode": "040210",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM010",
+    "name": "Birds eggs – in shell, fresh",
+    "hsCode": "040700",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM011",
+    "name": "Bulbs, tubers – dormant (flower bulbs)",
+    "hsCode": "060110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM012",
+    "name": "Potatoes – fresh or chilled",
+    "hsCode": "070190",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM013",
+    "name": "Tomatoes – fresh or chilled",
+    "hsCode": "070200",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM014",
+    "name": "Capsicum peppers – fresh or chilled",
+    "hsCode": "070960",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM015",
+    "name": "Coconuts – fresh or dried",
+    "hsCode": "080110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM016",
+    "name": "Almonds – shelled",
+    "hsCode": "080212",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM017",
+    "name": "Oranges – fresh or dried",
+    "hsCode": "080510",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM018",
+    "name": "Grapes – fresh",
+    "hsCode": "080610",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM019",
+    "name": "Coffee – not roasted, not decaffeinated",
+    "hsCode": "090111",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM020",
+    "name": "Pepper – dried, crushed or ground",
+    "hsCode": "090420",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM021",
+    "name": "Wheat – other than durum",
+    "hsCode": "100190",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM022",
+    "name": "Barley",
+    "hsCode": "100300",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM023",
+    "name": "Maize (corn) – other than seed",
+    "hsCode": "100590",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM024",
+    "name": "Wheat flour",
+    "hsCode": "110100",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM025",
+    "name": "Potato starch",
+    "hsCode": "110813",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM026",
+    "name": "Soybeans – whether or not broken",
+    "hsCode": "120100",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM027",
+    "name": "Gum Arabic",
+    "hsCode": "130120",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM028",
+    "name": "Crude soybean oil",
+    "hsCode": "150710",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM029",
+    "name": "Crude palm oil",
+    "hsCode": "151110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM030",
+    "name": "Turkeys – prepared or preserved",
+    "hsCode": "160231",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM031",
+    "name": "Tunas and skipjack – prepared or preserved",
+    "hsCode": "160414",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM032",
+    "name": "Cane sugar – raw",
+    "hsCode": "170111",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM033",
+    "name": "Refined sugar – white",
+    "hsCode": "170199",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM034",
+    "name": "Cocoa beans – whole or broken, raw",
+    "hsCode": "180100",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM035",
+    "name": "Infant formula (preparations for infant use)",
+    "hsCode": "190110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM036",
+    "name": "Food preparations of flour, starch – NEC",
+    "hsCode": "190190",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM037",
+    "name": "Vegetables and mixtures – prepared/preserved, vinegar",
+    "hsCode": "200199",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM038",
+    "name": "Tomatoes – preserved (canned tomatoes)",
+    "hsCode": "200290",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM039",
+    "name": "Extracts, essences of tea or maté",
+    "hsCode": "210120",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM040",
+    "name": "Mineral waters – not sweetened",
+    "hsCode": "220110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM041",
+    "name": "Waters, flavoured or sweetened",
+    "hsCode": "220210",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM042",
+    "name": "Non-alcoholic beverages – NEC",
+    "hsCode": "220290",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM043",
+    "name": "Beer made from malt",
+    "hsCode": "220300",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM044",
+    "name": "Wine of fresh grapes – in containers ≤2L",
+    "hsCode": "220421",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM045",
+    "name": "Whiskies",
+    "hsCode": "220830",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM046",
+    "name": "Anthracite coal",
+    "hsCode": "270111",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM047",
+    "name": "Bituminous coal",
+    "hsCode": "270112",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM048",
+    "name": "Petroleum oils – crude",
+    "hsCode": "270900",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM049",
+    "name": "Petroleum oils – medium oils, not crude",
+    "hsCode": "271019",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM050",
+    "name": "Electrical energy",
+    "hsCode": "271600",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM051",
+    "name": "Sodium metal",
+    "hsCode": "280511",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM052",
+    "name": "Saturated acyclic hydrocarbons",
+    "hsCode": "290110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM053",
+    "name": "Phenol",
+    "hsCode": "290711",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM054",
+    "name": "Ethyl acetate",
+    "hsCode": "291531",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM055",
+    "name": "Compounds with triazine ring – NEC",
+    "hsCode": "293359",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM056",
+    "name": "Glands and organs – dried, for therapeutic use",
+    "hsCode": "300190",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM057",
+    "name": "Antisera and other blood fractions",
+    "hsCode": "300210",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM058",
+    "name": "Medicaments – mixtures, not elsewhere classified",
+    "hsCode": "300490",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM059",
+    "name": "Urea – anhydrous or in aqueous solution",
+    "hsCode": "310210",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM060",
+    "name": "Quebracho tanning extract",
+    "hsCode": "320110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM061",
+    "name": "Disperse dyes",
+    "hsCode": "320411",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM062",
+    "name": "Essential oils – other than citrus",
+    "hsCode": "330190",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM063",
+    "name": "Perfumes and toilet waters",
+    "hsCode": "330300",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM064",
+    "name": "Soap – for toilet use",
+    "hsCode": "340111",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM065",
+    "name": "Soap – in flakes or powder",
+    "hsCode": "340120",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM066",
+    "name": "Anionic surfactants – organic",
+    "hsCode": "340211",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM067",
+    "name": "Polyethylene – density < 0.94 (LDPE)",
+    "hsCode": "390110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM068",
+    "name": "Polyethylene – density ≥ 0.94 (HDPE)",
+    "hsCode": "390120",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM069",
+    "name": "Polypropylene",
+    "hsCode": "390210",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM070",
+    "name": "Polystyrene – expandable",
+    "hsCode": "390310",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM071",
+    "name": "Polyvinyl chloride (PVC) – not mixed",
+    "hsCode": "390410",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM072",
+    "name": "Poly(ethylene terephthalate) (PET)",
+    "hsCode": "390760",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM073",
+    "name": "Cellulose and its derivatives – NEC",
+    "hsCode": "391290",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM074",
+    "name": "Sacks and bags – of polymers of ethylene",
+    "hsCode": "392321",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM075",
+    "name": "Natural rubber – latex",
+    "hsCode": "400110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM076",
+    "name": "Technically specified natural rubber (TSNR)",
+    "hsCode": "400122",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM077",
+    "name": "Pneumatic tyres – for motor cars",
+    "hsCode": "401110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM078",
+    "name": "Pneumatic tyres – for buses or lorries",
+    "hsCode": "401120",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM079",
+    "name": "Wood in the rough – tropical",
+    "hsCode": "440320",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM080",
+    "name": "Coniferous wood – sawn or chipped",
+    "hsCode": "440710",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM081",
+    "name": "Fibreboard – density > 0.8 g/cm³",
+    "hsCode": "441121",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM082",
+    "name": "Plywood – outer ply coniferous",
+    "hsCode": "441231",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM083",
+    "name": "Mechanical wood pulp",
+    "hsCode": "470100",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM084",
+    "name": "Newsprint – in rolls or sheets",
+    "hsCode": "480100",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM085",
+    "name": "Printing paper – coated",
+    "hsCode": "480256",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM086",
+    "name": "Cartons, boxes – corrugated paper",
+    "hsCode": "481910",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM087",
+    "name": "Silk yarn – not put up for retail sale",
+    "hsCode": "500400",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM088",
+    "name": "Wool – greasy, shorn",
+    "hsCode": "510111",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM089",
+    "name": "Cotton – not carded or combed",
+    "hsCode": "520100",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM090",
+    "name": "Cotton yarn – single, ≥ 714.29 decitex",
+    "hsCode": "520512",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM091",
+    "name": "Cotton woven fabrics – plain weave, unbleached",
+    "hsCode": "520811",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM092",
+    "name": "Sewing thread of synthetic filaments",
+    "hsCode": "540110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM093",
+    "name": "Woven fabrics of synthetic filaments",
+    "hsCode": "540761",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM094",
+    "name": "Yarn of polyester with cotton",
+    "hsCode": "550953",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM095",
+    "name": "Overcoats – mens, of wool, knitted",
+    "hsCode": "610110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM096",
+    "name": "Trousers – mens, of cotton, knitted",
+    "hsCode": "610342",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM097",
+    "name": "Trousers – womens, of cotton, knitted",
+    "hsCode": "610462",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM098",
+    "name": "T-shirts – cotton, knitted",
+    "hsCode": "610910",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM099",
+    "name": "Trousers – mens, of cotton, not knitted",
+    "hsCode": "620342",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM100",
+    "name": "Trousers – womens, of cotton, not knitted",
+    "hsCode": "620462",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM101",
+    "name": "Shirts – mens, of cotton",
+    "hsCode": "620520",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM102",
+    "name": "Blouses – womens, of man-made fibres",
+    "hsCode": "620630",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM103",
+    "name": "Electric blankets",
+    "hsCode": "630120",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM104",
+    "name": "Bed linen – printed, of cotton",
+    "hsCode": "630211",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM105",
+    "name": "Ski-boots",
+    "hsCode": "640311",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM106",
+    "name": "Footwear – outer soles of rubber, NEC",
+    "hsCode": "640419",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM107",
+    "name": "Marble – simply cut, sawn",
+    "hsCode": "680221",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM108",
+    "name": "Ceramic tiles – floor/wall",
+    "hsCode": "690710",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM109",
+    "name": "Cullet and other waste/scrap of glass",
+    "hsCode": "700100",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM110",
+    "name": "Float glass – non-wired",
+    "hsCode": "700519",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM111",
+    "name": "Jewellery – of precious metal NEC",
+    "hsCode": "711319",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM112",
+    "name": "Ferro-silico-manganese",
+    "hsCode": "720230",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM113",
+    "name": "Semi-finished iron/steel – cross-section < 25cm²",
+    "hsCode": "720711",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM114",
+    "name": "Flat-rolled iron/steel – tin-plated",
+    "hsCode": "721011",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM115",
+    "name": "Bars – hot-rolled, with indentations (rebar)",
+    "hsCode": "721310",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM116",
+    "name": "Bars and rods – of free-cutting steel",
+    "hsCode": "721420",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM117",
+    "name": "Sheet piling of iron or steel",
+    "hsCode": "730110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM118",
+    "name": "Cast iron tubes, pipes and hollows",
+    "hsCode": "730300",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM119",
+    "name": "Line pipe – seamless, for oil/gas",
+    "hsCode": "730410",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM120",
+    "name": "Copper – cathodes and sections",
+    "hsCode": "740311",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM121",
+    "name": "Aluminium – unwrought, not alloyed",
+    "hsCode": "760110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM122",
+    "name": "Aluminium plates and sheets – alloy",
+    "hsCode": "760612",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM123",
+    "name": "Nuclear reactors",
+    "hsCode": "840110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM124",
+    "name": "Steam boilers – auxiliary plant",
+    "hsCode": "840290",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM125",
+    "name": "Producer gas or water gas generators",
+    "hsCode": "840510",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM126",
+    "name": "Spark-ignition piston engines – aircraft",
+    "hsCode": "840710",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM127",
+    "name": "Compression-ignition engines – for marine propulsion",
+    "hsCode": "840810",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM128",
+    "name": "Parts for aircraft engines",
+    "hsCode": "840910",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM129",
+    "name": "Hydraulic turbines – ≤1000 kW",
+    "hsCode": "841011",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM130",
+    "name": "Compressors – for refrigerating equipment",
+    "hsCode": "841430",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM131",
+    "name": "Air conditioners – window or wall type",
+    "hsCode": "841510",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM132",
+    "name": "Refrigerators – combined with freezer",
+    "hsCode": "841810",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM133",
+    "name": "Instantaneous gas water heaters",
+    "hsCode": "841910",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM134",
+    "name": "Calendering or rolling machines – for rubber or plastics",
+    "hsCode": "842010",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM135",
+    "name": "Filtering machinery – for water",
+    "hsCode": "842121",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM136",
+    "name": "Fire extinguishers",
+    "hsCode": "842460",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM137",
+    "name": "Pile drivers and pile extractors",
+    "hsCode": "843010",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM138",
+    "name": "Ploughs",
+    "hsCode": "843210",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM139",
+    "name": "Milking machines",
+    "hsCode": "843410",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM140",
+    "name": "Presses for wine, cider, fruit juices",
+    "hsCode": "843510",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM141",
+    "name": "Agricultural machinery – NEC",
+    "hsCode": "843680",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM142",
+    "name": "Paper-making machines",
+    "hsCode": "844011",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM143",
+    "name": "Offset printing machinery – sheet-fed",
+    "hsCode": "844331",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM144",
+    "name": "Parts for printing machines",
+    "hsCode": "844390",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM145",
+    "name": "Fully-automatic household washing machines – ≤10 kg",
+    "hsCode": "845011",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM146",
+    "name": "Sewing machines",
+    "hsCode": "845121",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM147",
+    "name": "Planing machines – for metal",
+    "hsCode": "846011",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM148",
+    "name": "Lathes – for metal",
+    "hsCode": "846110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM149",
+    "name": "Machine tools for working metal – NEC",
+    "hsCode": "846290",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM150",
+    "name": "Laptops and portable computers",
+    "hsCode": "847130",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM151",
+    "name": "Other computers – including servers",
+    "hsCode": "847141",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM152",
+    "name": "Processing units – not combined with peripherals",
+    "hsCode": "847150",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM153",
+    "name": "Input/output units for computers",
+    "hsCode": "847160",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM154",
+    "name": "Storage units for computers",
+    "hsCode": "847170",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM155",
+    "name": "Computer parts and accessories – NEC",
+    "hsCode": "847190",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM156",
+    "name": "Duplicating machines",
+    "hsCode": "847210",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM157",
+    "name": "Parts and accessories for typewriters",
+    "hsCode": "847310",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM158",
+    "name": "Parts and accessories for computers – NEC",
+    "hsCode": "847330",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM159",
+    "name": "Machinery for sorting, screening, mixing minerals – NEC",
+    "hsCode": "847490",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM160",
+    "name": "Injection moulding machines",
+    "hsCode": "847710",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM161",
+    "name": "Industrial machines – NEC",
+    "hsCode": "847989",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM162",
+    "name": "Boxes, cases, crates – for foundry moulds",
+    "hsCode": "848010",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM163",
+    "name": "Taps, cocks, valves – industrial",
+    "hsCode": "848180",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM164",
+    "name": "Gear boxes and speed changers",
+    "hsCode": "848340",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM165",
+    "name": "Clutches and shaft couplings",
+    "hsCode": "848360",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM166",
+    "name": "Parts of machinery – NEC",
+    "hsCode": "848390",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM167",
+    "name": "Ships propellers and blades",
+    "hsCode": "848510",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM168",
+    "name": "Electric motors – output ≤37.5 W",
+    "hsCode": "850110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM169",
+    "name": "AC motors – multi-phase, output ≤750 W",
+    "hsCode": "850151",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM170",
+    "name": "AC generators (alternators) – ≤75 kVA",
+    "hsCode": "850161",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM171",
+    "name": "Electric generating sets – diesel, ≤75 kVA",
+    "hsCode": "850211",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM172",
+    "name": "Parts for electric motors and generators",
+    "hsCode": "850300",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM173",
+    "name": "Ballasts for discharge lamps",
+    "hsCode": "850410",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM174",
+    "name": "Liquid dielectric transformers – ≤650 kVA",
+    "hsCode": "850421",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM175",
+    "name": "Static converters",
+    "hsCode": "850440",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM176",
+    "name": "Inductors",
+    "hsCode": "850450",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM177",
+    "name": "Parts for electric transformers",
+    "hsCode": "850490",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM178",
+    "name": "Manganese dioxide primary cells",
+    "hsCode": "850610",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM179",
+    "name": "Lead-acid accumulators – for starting engines",
+    "hsCode": "850710",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM180",
+    "name": "Lead-acid accumulators – NEC",
+    "hsCode": "850720",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM181",
+    "name": "Lithium-ion batteries",
+    "hsCode": "850760",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM182",
+    "name": "Resistance heated industrial furnaces",
+    "hsCode": "851410",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM183",
+    "name": "Electric smoothing irons",
+    "hsCode": "851640",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM184",
+    "name": "Microwave ovens – household",
+    "hsCode": "851650",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM185",
+    "name": "Coffee or tea makers – electric household",
+    "hsCode": "851671",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM186",
+    "name": "Electrothermic appliances – household NEC",
+    "hsCode": "851679",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM187",
+    "name": "Telephones for cellular networks (smartphones)",
+    "hsCode": "851712",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM188",
+    "name": "Telephone sets – NEC",
+    "hsCode": "851769",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM189",
+    "name": "Electrical apparatus for line telephony – NEC",
+    "hsCode": "851780",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM190",
+    "name": "Loudspeakers – not mounted in enclosures",
+    "hsCode": "851820",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM191",
+    "name": "Headphones and earphones",
+    "hsCode": "851830",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM192",
+    "name": "Audio-frequency electric amplifiers",
+    "hsCode": "851840",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM193",
+    "name": "Sound recording/reproducing apparatus – NEC",
+    "hsCode": "851869",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM194",
+    "name": "Video recording apparatus – NEC",
+    "hsCode": "852190",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM195",
+    "name": "Semiconductors for data storage (flash/SSD)",
+    "hsCode": "852320",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM196",
+    "name": "Solid-state storage devices (SSD)",
+    "hsCode": "852351",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM197",
+    "name": "Television cameras, digital cameras – NEC",
+    "hsCode": "852580",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM198",
+    "name": "Radio navigational aid apparatus",
+    "hsCode": "852691",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM199",
+    "name": "Colour television sets – LCD/LED",
+    "hsCode": "852872",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM200",
+    "name": "Tantalum fixed capacitors",
+    "hsCode": "853221",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM201",
+    "name": "Printed circuits (PCB)",
+    "hsCode": "853400",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM202",
+    "name": "Fuses – electrical",
+    "hsCode": "853510",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM203",
+    "name": "Electrical apparatus – NEC ≤1000V",
+    "hsCode": "853590",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM204",
+    "name": "Fuses for voltage ≤1000V",
+    "hsCode": "853610",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM205",
+    "name": "Electrical switches – NEC ≤1000V",
+    "hsCode": "853690",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM206",
+    "name": "Boards and panels – for electric control ≤1000V",
+    "hsCode": "853710",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM207",
+    "name": "Cathode-ray television picture tubes",
+    "hsCode": "854011",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM208",
+    "name": "Photosensitive semiconductors (solar cells)",
+    "hsCode": "854140",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM209",
+    "name": "Light-emitting diodes (LED)",
+    "hsCode": "854150",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM210",
+    "name": "Piezoelectric crystals – mounted",
+    "hsCode": "854160",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM211",
+    "name": "Electrical machines – NEC",
+    "hsCode": "854389",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM212",
+    "name": "Winding wire – of copper",
+    "hsCode": "854411",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM213",
+    "name": "Coaxial cable and other coaxial electric conductors",
+    "hsCode": "854420",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM214",
+    "name": "Ignition wiring sets – vehicles",
+    "hsCode": "854430",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM215",
+    "name": "Electric conductors – voltage ≤80V, with connectors",
+    "hsCode": "854442",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM216",
+    "name": "Electric conductors – voltage ≤80V, NEC",
+    "hsCode": "854449",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM217",
+    "name": "Electric conductors – voltage 80V–1000V",
+    "hsCode": "854460",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM218",
+    "name": "Optical fibre cables",
+    "hsCode": "854470",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM219",
+    "name": "Road tractors for semi-trailers",
+    "hsCode": "870120",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM220",
+    "name": "Motor vehicles for ≥10 persons – diesel",
+    "hsCode": "870210",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM221",
+    "name": "Vehicles specially designed for snow",
+    "hsCode": "870310",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM222",
+    "name": "Automobiles – cylinder capacity ≤1000 cc",
+    "hsCode": "870321",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM223",
+    "name": "Automobiles – cylinder capacity 1000–1500 cc",
+    "hsCode": "870322",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM224",
+    "name": "Automobiles – cylinder capacity 1500–3000 cc",
+    "hsCode": "870323",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM225",
+    "name": "Automobiles – cylinder capacity > 3000 cc",
+    "hsCode": "870324",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM226",
+    "name": "Electric vehicles – for transport of persons",
+    "hsCode": "870380",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM227",
+    "name": "Dumpers for off-highway use",
+    "hsCode": "870410",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM228",
+    "name": "Motor vehicles for goods – diesel, GVW > 20t",
+    "hsCode": "870422",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM229",
+    "name": "Mobile cranes",
+    "hsCode": "870510",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM230",
+    "name": "Chassis fitted with engines – for motor vehicles",
+    "hsCode": "870600",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM231",
+    "name": "Bodies for motor cars",
+    "hsCode": "870710",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM232",
+    "name": "Bumpers and parts – motor vehicles",
+    "hsCode": "870810",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM233",
+    "name": "Safety seat belts",
+    "hsCode": "870821",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM234",
+    "name": "Parts and accessories for motor vehicle bodies – NEC",
+    "hsCode": "870829",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM235",
+    "name": "Gear boxes and parts – motor vehicles",
+    "hsCode": "870840",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM236",
+    "name": "Drive axles with differential – motor vehicles",
+    "hsCode": "870850",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM237",
+    "name": "Road wheels and parts – motor vehicles",
+    "hsCode": "870870",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM238",
+    "name": "Suspension shock-absorbers – motor vehicles",
+    "hsCode": "870880",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM239",
+    "name": "Radiators – motor vehicles",
+    "hsCode": "870891",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM240",
+    "name": "Other parts and accessories – motor vehicles NEC",
+    "hsCode": "870899",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM241",
+    "name": "Invalid carriages – not mechanically propelled",
+    "hsCode": "871310",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM242",
+    "name": "Frames and forks for bicycles",
+    "hsCode": "871491",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM243",
+    "name": "Wheel rims and spokes for bicycles",
+    "hsCode": "871492",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM244",
+    "name": "Parts of aeroplanes – NEC",
+    "hsCode": "880330",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM245",
+    "name": "Cargo vessels – bulk carriers, container ships",
+    "hsCode": "890190",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM246",
+    "name": "Optical fibres and bundles",
+    "hsCode": "900110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM247",
+    "name": "Contact lenses",
+    "hsCode": "900130",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM248",
+    "name": "Spectacle lenses – of glass",
+    "hsCode": "900140",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM249",
+    "name": "Spectacle lenses – of materials other than glass",
+    "hsCode": "900150",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM250",
+    "name": "Objective lenses – for cameras, projectors",
+    "hsCode": "900211",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM251",
+    "name": "Lenses, prisms, mirrors – NEC",
+    "hsCode": "900290",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM252",
+    "name": "Liquid crystal devices (LCD panels)",
+    "hsCode": "901380",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM253",
+    "name": "CT scanners",
+    "hsCode": "902212",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM254",
+    "name": "Dental X-ray apparatus",
+    "hsCode": "902213",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM255",
+    "name": "Medical X-ray apparatus – NEC",
+    "hsCode": "902214",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM256",
+    "name": "Instruments and apparatus – NEC (analytical)",
+    "hsCode": "902780",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM257",
+    "name": "Instruments, appliances for measuring – NEC",
+    "hsCode": "903180",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM258",
+    "name": "Regulating or controlling instruments – NEC",
+    "hsCode": "903289",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM259",
+    "name": "Seats for aircraft",
+    "hsCode": "940110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM260",
+    "name": "Seats for motor vehicles",
+    "hsCode": "940120",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM261",
+    "name": "Seats upholstered – wooden frame",
+    "hsCode": "940161",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM262",
+    "name": "Seats with wooden frame – NEC",
+    "hsCode": "940169",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM263",
+    "name": "Seats – NEC (non-medical)",
+    "hsCode": "940180",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM264",
+    "name": "Parts of seats",
+    "hsCode": "940190",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM265",
+    "name": "Office furniture – metal",
+    "hsCode": "940310",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM266",
+    "name": "Furniture – metal NEC",
+    "hsCode": "940320",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM267",
+    "name": "Kitchen furniture – wooden",
+    "hsCode": "940340",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM268",
+    "name": "Bedroom furniture – wooden",
+    "hsCode": "940350",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM269",
+    "name": "Wooden furniture – NEC",
+    "hsCode": "940360",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM270",
+    "name": "Plastic furniture",
+    "hsCode": "940370",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM271",
+    "name": "Parts of furniture – NEC",
+    "hsCode": "940390",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM272",
+    "name": "Electric trains and track sets",
+    "hsCode": "950110",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM273",
+    "name": "Tricycles, scooters, toy vehicles – no motor",
+    "hsCode": "950300",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM274",
+    "name": "Video games – console type",
+    "hsCode": "950410",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM275",
+    "name": "Articles for funfair, table or parlour games – NEC",
+    "hsCode": "950490",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM276",
+    "name": "Ball-point pens",
+    "hsCode": "960810",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM277",
+    "name": "Felt-tipped and fibre-tipped pens",
+    "hsCode": "960820",
+    "reefer": false,
+    "dangerous": false
+  },
+  {
+    "code": "COM278",
+    "name": "Propelling or sliding pencils",
+    "hsCode": "960840",
+    "reefer": false,
+    "dangerous": false
+  }
+]

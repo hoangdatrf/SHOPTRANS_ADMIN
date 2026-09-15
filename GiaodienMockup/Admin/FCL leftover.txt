@@ -1,0 +1,27 @@
+FCA FCF , Payment request giao diện còn chưa cập nhật theo template mới
+Các dropdown thể hiện canh giữa text ở các option sổ xuống
+từ các cái dropdown chọn ví dụ EXW+ thì data link ở chỗ chọn phải block hết, không được phép remove
+Chỗ ECD OPS sang sau cột SENT ECD (Sent ICD) chỉ áp dụng cho mỗi GSD, phân tự động theo số lượng record của staff của dept đó sao cho cân bằng của các staff, các trường hợp sinh record thực hiện khi bấm Send to dest.agents thực hiện sent dữ liệu sinh record bên đã chọn và time sinh ra được dựa trên lúc bấm Send to dest agents (đối với trường hợp là bên FCA, FCF, EXW) còn trường hợp DDU, DAP thì khi chọn ở dropdown thì thực hiện sinh luôn
+Trong trường hợp có chọn đầu xuất đầu nhập thì chỗ notice thể hiện view ví dụ OFCD, DFCD,... thể hiện theo số lượng dept của đầu xuất và đầu nhập Oringin, Destination
+Trường hợp link từ đầu xuất sang đầu nhập thì ở ICD Shipper, CNEE, tới Liner link từ đầu xuất sang không cho phép edit, dữ liệu cả HBL No# tới CONT/SEAL INO, PRE-ALERT CONFIRM có các dữ liệu bên trong trong trường hợp link đầu xuất sang đầu nhập ví dụ ở DDU thì dữ liệu đã nhập ở bên đầu xuất các thứ sẽ link vô.
+PRE-ALERT Confirmation trường hợp link từ đầu xuất sang đầu nhập thì MBL Confirm, HBL Confirm link từ đầu xuất sang, không cho phép edit bên kia (Pre-alert sending), clearance link từ CCD sang, fretimme cũng link
+Cont/seal trường hợp link từ xuất nhập cũng vậy, nếu link thì lấy data không thì cho phép nhập chỉnh sửa (bảng grid thể hiện background màu trắng mặc định cho phép nhập chỉnh sửa ở các cột cho phép nhập
+Chỗ nhập xem rà soát các chỗ có booking ví dụ như Delivery detail bị dư phần booking, bỏ đi
+Manifest submit khi tick nó sẽ sinh ra ở TCD, DCD,... lấy time nó link qua
+Arrival notice sending: xem lại các chỗ liên kết chưa link data ở shipper, consinee, dem, det, vessel,... B/L No. nếu có HBL thì lấy HBL No còn vừa MBL và HBL thì lấy MBL No. bỏ tick As per B/L, ẩn luôn cột Delete. Mark & Number khóa khi link data từ xuất nhập cho màu background lại thể hiện nhập được nếu khi không link từ xuất nhập.Charge Name lấy từ refference Data không cho freetext. Contact for cargo Release, lấy link từ destination agent theo destination agent đã chọn nhưng lấy thông tin (Company Name, Tax ID, Address, City, Country, PIC Name, Email, Phone) theo như cấu trúc FullDetail mà có xóa những dòng đầu như note bên FCL EXW. Payment Instruction link từ ngân hàng qua Internal Directory. Mặc định 1 ngân hàng theo đơn vị tiền tệ, cho phép chọn thay đổi ngân hàng, thêm dropdown ở trên textbox ngay label Payment Instruction. Tên ký và Signed -2026/08/21. đưa lên trên trước gạch ngang , print report chỉnh sửa in nguyên trang, chú ý giữ nguyên màu sắc. Send AN (Send arrival notice) Tham khảo template mẫu từ chatgpt gửi mail cho Arrival Notice để send cho consinee, chỉ gửi 1 lần, mở ra khi edit và save và khi save cập nhật những thông tin thay đổi và update trong email gửi tới consignee title là Update Arrival Notice, Nội dung email thể hiện những thay đổi đã chỉnh sửa. KHi send block những nội dung ở trong bấm edit mới mở ra để thay đổi
+ATA thể hiện datepicker để nhập, trường hợp khi link nhập xuất thì ATA link lấy giá trị từ đầu nhập
+Pickup/return status: Mặc định khóa màu nền xám hết, Edit mặc định Enable, Save Disable, Ở chỗ bảng thì khi bảng đang khóa thì click vào dòng thì mặc định tick vào checkbox cho tiện. Pickup Date, Return Date có ở cả đầu xuất nếu trường hợp có link nên trường hợp link nhập xuất thì link data qua lại
+TCD, CCD thêm cột Mode: (AUTO/MANUAL) thể hiện nó là cột tự sinh hay tự Add row (thêm ở cả filter để filter)
+Pre-alert confirmation mở MBL/Confirm và HBL confirm và thể hiện liên kết với các phần liên quan
+Cont/seal CCD DDU...: chỉ thể hiện xem bỏ các nút để chỉnh sửa
+Clearance Detail CCD DDU... xem sửa lại theo note từ FCL EXW.
+Payment Request DDU CCD,TCD còn template cũ
+MBL No# và cả những cột nhập freetext khi rời chuột đi thể hiện kiểu dạng khóa lại bấm nhấp đúp thể hiện modal EDIT confirm mở ra để chỉnh sửa
+VOLUME TCD:block lại thể hiện view không cho chỉnh sửa bỏ các nút để edit, bỏ cả chỗ save thêm
+Bỏ các icon edit chỗ các cái bấm mở modal không nền đi
+ATD, ATA link có đổi màu nếu có thay đổi ngày
+Do Validity đổi thành DO INFO -> Thể hiện nút Add+, khi bấm nút Add hiển thị popup, Thể hiện hình anh Phước gửi và link data. Chọn date picker ở 2 field nó liên kết với nhau không cần chọn 2 ngày ở 2 dòng. Ở ngoài hiện thị là ngày. Bấm vào ngày hiển thị lại popup. Chỉnh sửa lại ở DO validity cũ ở ICD, TCD
+clearance detail bỏ luôn Delivery Order view file bỏ label luôn
+clearnace detail tcd lấy theo ccd link view 
+Truck & Cont SEAL TCD/DCD: export ePOD xem sửa như hình anh Phước gửi, confirm khóa lại và có link ở các cột ePOD Sign, thể hiện icon view dạng mờ khi chưa ký, chỉ enable khi khách hàng ký qua đường link. Xem khóa ẩn các cột chỉ những cột nào chưa có link từ chỗ khác sang, chỉnh sửa lại background bảng,...
+

@@ -1,0 +1,1660 @@
+[
+  {
+    "id": "CN-SHA01",
+    "type": "port",
+    "city": "Shanghai (SHA) – Yangshan Deep Water Port",
+    "region": "China",
+    "country": "China",
+    "countryCode": "CN",
+    "label": "Shanghai (SHA) – Yangshan Deep Water Port",
+    "keywords": [
+      "shanghai",
+      "sha",
+      "yangshan",
+      "deep",
+      "water",
+      "port"
+    ]
+  },
+  {
+    "id": "CN-SHE02",
+    "type": "port",
+    "city": "Shenzhen (SZX) – Yantian International",
+    "region": "China",
+    "country": "China",
+    "countryCode": "CN",
+    "label": "Shenzhen (SZX) – Yantian International",
+    "keywords": [
+      "shenzhen",
+      "szx",
+      "yantian",
+      "international"
+    ]
+  },
+  {
+    "id": "CN-GUA03",
+    "type": "port",
+    "city": "Guangzhou (CAN) – Nansha Port",
+    "region": "China",
+    "country": "China",
+    "countryCode": "CN",
+    "label": "Guangzhou (CAN) – Nansha Port",
+    "keywords": [
+      "guangzhou",
+      "can",
+      "nansha",
+      "port"
+    ]
+  },
+  {
+    "id": "CN-NIN04",
+    "type": "port",
+    "city": "Ningbo-Zhoushan (NGB)",
+    "region": "China",
+    "country": "China",
+    "countryCode": "CN",
+    "label": "Ningbo-Zhoushan (NGB)",
+    "keywords": [
+      "ningbo",
+      "zhoushan",
+      "ngb"
+    ]
+  },
+  {
+    "id": "CN-TIA05",
+    "type": "port",
+    "city": "Tianjin (TSN) – Tianjin Port",
+    "region": "China",
+    "country": "China",
+    "countryCode": "CN",
+    "label": "Tianjin (TSN) – Tianjin Port",
+    "keywords": [
+      "tianjin",
+      "tsn",
+      "tianjin",
+      "port"
+    ]
+  },
+  {
+    "id": "CN-QIN06",
+    "type": "port",
+    "city": "Qingdao (TAO)",
+    "region": "China",
+    "country": "China",
+    "countryCode": "CN",
+    "label": "Qingdao (TAO)",
+    "keywords": [
+      "qingdao",
+      "tao"
+    ]
+  },
+  {
+    "id": "CN-XIA07",
+    "type": "port",
+    "city": "Xiamen (XMN)",
+    "region": "China",
+    "country": "China",
+    "countryCode": "CN",
+    "label": "Xiamen (XMN)",
+    "keywords": [
+      "xiamen",
+      "xmn"
+    ]
+  },
+  {
+    "id": "CN-DAL08",
+    "type": "port",
+    "city": "Dalian (DLC)",
+    "region": "China",
+    "country": "China",
+    "countryCode": "CN",
+    "label": "Dalian (DLC)",
+    "keywords": [
+      "dalian",
+      "dlc"
+    ]
+  },
+  {
+    "id": "CN-SUZ09",
+    "type": "port",
+    "city": "Suzhou (SZV) – Taicang Port",
+    "region": "China",
+    "country": "China",
+    "countryCode": "CN",
+    "label": "Suzhou (SZV) – Taicang Port",
+    "keywords": [
+      "suzhou",
+      "szv",
+      "taicang",
+      "port"
+    ]
+  },
+  {
+    "id": "CN-WUH10",
+    "type": "port",
+    "city": "Wuhan (WUH)",
+    "region": "China",
+    "country": "China",
+    "countryCode": "CN",
+    "label": "Wuhan (WUH)",
+    "keywords": [
+      "wuhan",
+      "wuh"
+    ]
+  },
+  {
+    "id": "CN-CHO11",
+    "type": "port",
+    "city": "Chongqing (CKG)",
+    "region": "China",
+    "country": "China",
+    "countryCode": "CN",
+    "label": "Chongqing (CKG)",
+    "keywords": [
+      "chongqing",
+      "ckg"
+    ]
+  },
+  {
+    "id": "CN-LIA12",
+    "type": "port",
+    "city": "Lianyungang (LYG)",
+    "region": "China",
+    "country": "China",
+    "countryCode": "CN",
+    "label": "Lianyungang (LYG)",
+    "keywords": [
+      "lianyungang",
+      "lyg"
+    ]
+  },
+  {
+    "id": "CN-NAN13",
+    "type": "port",
+    "city": "Nanjing (NKG)",
+    "region": "China",
+    "country": "China",
+    "countryCode": "CN",
+    "label": "Nanjing (NKG)",
+    "keywords": [
+      "nanjing",
+      "nkg"
+    ]
+  },
+  {
+    "id": "CN-ZHO14",
+    "type": "port",
+    "city": "Zhongshan Port",
+    "region": "China",
+    "country": "China",
+    "countryCode": "CN",
+    "label": "Zhongshan Port",
+    "keywords": [
+      "zhongshan",
+      "port"
+    ]
+  },
+  {
+    "id": "CN-ZHU15",
+    "type": "port",
+    "city": "Zhuhai Port",
+    "region": "China",
+    "country": "China",
+    "countryCode": "CN",
+    "label": "Zhuhai Port",
+    "keywords": [
+      "zhuhai",
+      "port"
+    ]
+  },
+  {
+    "id": "CN-FUZ16",
+    "type": "port",
+    "city": "Fuzhou (FOC)",
+    "region": "China",
+    "country": "China",
+    "countryCode": "CN",
+    "label": "Fuzhou (FOC)",
+    "keywords": [
+      "fuzhou",
+      "foc"
+    ]
+  },
+  {
+    "id": "JP-TOK17",
+    "type": "port",
+    "city": "Tokyo (TYO) – Tokyo International Container Terminal",
+    "region": "Japan",
+    "country": "Japan",
+    "countryCode": "JP",
+    "label": "Tokyo (TYO) – Tokyo International Container Terminal",
+    "keywords": [
+      "tokyo",
+      "tyo",
+      "tokyo",
+      "international",
+      "container",
+      "terminal"
+    ]
+  },
+  {
+    "id": "JP-YOK18",
+    "type": "port",
+    "city": "Yokohama (YOK)",
+    "region": "Japan",
+    "country": "Japan",
+    "countryCode": "JP",
+    "label": "Yokohama (YOK)",
+    "keywords": [
+      "yokohama",
+      "yok"
+    ]
+  },
+  {
+    "id": "JP-OSA19",
+    "type": "port",
+    "city": "Osaka (OSA) – Osaka Port",
+    "region": "Japan",
+    "country": "Japan",
+    "countryCode": "JP",
+    "label": "Osaka (OSA) – Osaka Port",
+    "keywords": [
+      "osaka",
+      "osa",
+      "osaka",
+      "port"
+    ]
+  },
+  {
+    "id": "JP-NAG20",
+    "type": "port",
+    "city": "Nagoya (NGO) – Port of Nagoya",
+    "region": "Japan",
+    "country": "Japan",
+    "countryCode": "JP",
+    "label": "Nagoya (NGO) – Port of Nagoya",
+    "keywords": [
+      "nagoya",
+      "ngo",
+      "port",
+      "of",
+      "nagoya"
+    ]
+  },
+  {
+    "id": "JP-KOB21",
+    "type": "port",
+    "city": "Kobe (UKB)",
+    "region": "Japan",
+    "country": "Japan",
+    "countryCode": "JP",
+    "label": "Kobe (UKB)",
+    "keywords": [
+      "kobe",
+      "ukb"
+    ]
+  },
+  {
+    "id": "JP-HAK22",
+    "type": "port",
+    "city": "Hakata (FUK) – Hakata Port",
+    "region": "Japan",
+    "country": "Japan",
+    "countryCode": "JP",
+    "label": "Hakata (FUK) – Hakata Port",
+    "keywords": [
+      "hakata",
+      "fuk",
+      "hakata",
+      "port"
+    ]
+  },
+  {
+    "id": "JP-SHI23",
+    "type": "port",
+    "city": "Shimizu (SHM)",
+    "region": "Japan",
+    "country": "Japan",
+    "countryCode": "JP",
+    "label": "Shimizu (SHM)",
+    "keywords": [
+      "shimizu",
+      "shm"
+    ]
+  },
+  {
+    "id": "JP-KAW24",
+    "type": "port",
+    "city": "Kawasaki Port",
+    "region": "Japan",
+    "country": "Japan",
+    "countryCode": "JP",
+    "label": "Kawasaki Port",
+    "keywords": [
+      "kawasaki",
+      "port"
+    ]
+  },
+  {
+    "id": "JP-CHI25",
+    "type": "port",
+    "city": "Chiba Port",
+    "region": "Japan",
+    "country": "Japan",
+    "countryCode": "JP",
+    "label": "Chiba Port",
+    "keywords": [
+      "chiba",
+      "port"
+    ]
+  },
+  {
+    "id": "VN-HOC26",
+    "type": "port",
+    "city": "Ho Chi Minh City – Cat Lai Terminal (TCT)",
+    "region": "Vietnam",
+    "country": "Vietnam",
+    "countryCode": "VN",
+    "label": "Ho Chi Minh City – Cat Lai Terminal (TCT)",
+    "keywords": [
+      "ho",
+      "chi",
+      "minh",
+      "city",
+      "cat",
+      "lai",
+      "terminal",
+      "tct"
+    ]
+  },
+  {
+    "id": "VN-HOC27",
+    "type": "port",
+    "city": "Ho Chi Minh City – Cai Mep – Thi Vai (CMTV)",
+    "region": "Vietnam",
+    "country": "Vietnam",
+    "countryCode": "VN",
+    "label": "Ho Chi Minh City – Cai Mep – Thi Vai (CMTV)",
+    "keywords": [
+      "ho",
+      "chi",
+      "minh",
+      "city",
+      "cai",
+      "mep",
+      "thi",
+      "vai",
+      "cmtv"
+    ]
+  },
+  {
+    "id": "VN-HAI28",
+    "type": "port",
+    "city": "Hai Phong – TC-HICT Lach Huyen (Berth 1-2)",
+    "region": "Vietnam",
+    "country": "Vietnam",
+    "countryCode": "VN",
+    "label": "Hai Phong – TC-HICT Lach Huyen (Berth 1-2)",
+    "keywords": [
+      "hai",
+      "phong",
+      "tc",
+      "hict",
+      "lach",
+      "huyen",
+      "berth",
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "VN-HAI29",
+    "type": "port",
+    "city": "Hai Phong – TIL Lach Huyen (Berth 3-4)",
+    "region": "Vietnam",
+    "country": "Vietnam",
+    "countryCode": "VN",
+    "label": "Hai Phong – TIL Lach Huyen (Berth 3-4)",
+    "keywords": [
+      "hai",
+      "phong",
+      "til",
+      "lach",
+      "huyen",
+      "berth",
+      "3",
+      "4"
+    ]
+  },
+  {
+    "id": "VN-HAI30",
+    "type": "port",
+    "city": "Hai Phong – Hateco Lach Huyen (Berth 5-6)",
+    "region": "Vietnam",
+    "country": "Vietnam",
+    "countryCode": "VN",
+    "label": "Hai Phong – Hateco Lach Huyen (Berth 5-6)",
+    "keywords": [
+      "hai",
+      "phong",
+      "hateco",
+      "lach",
+      "huyen",
+      "berth",
+      "5",
+      "6"
+    ]
+  },
+  {
+    "id": "VN-HAI31",
+    "type": "port",
+    "city": "Hai Phong – Nam Dinh Vu Port",
+    "region": "Vietnam",
+    "country": "Vietnam",
+    "countryCode": "VN",
+    "label": "Hai Phong – Nam Dinh Vu Port",
+    "keywords": [
+      "hai",
+      "phong",
+      "nam",
+      "dinh",
+      "vu",
+      "port"
+    ]
+  },
+  {
+    "id": "VN-DAN32",
+    "type": "port",
+    "city": "Da Nang – Tien Sa Terminal",
+    "region": "Vietnam",
+    "country": "Vietnam",
+    "countryCode": "VN",
+    "label": "Da Nang – Tien Sa Terminal",
+    "keywords": [
+      "da",
+      "nang",
+      "tien",
+      "sa",
+      "terminal"
+    ]
+  },
+  {
+    "id": "VN-QUY33",
+    "type": "port",
+    "city": "Quy Nhon Port",
+    "region": "Vietnam",
+    "country": "Vietnam",
+    "countryCode": "VN",
+    "label": "Quy Nhon Port",
+    "keywords": [
+      "quy",
+      "nhon",
+      "port"
+    ]
+  },
+  {
+    "id": "VN-VUN34",
+    "type": "port",
+    "city": "Vung Tau – SPCT",
+    "region": "Vietnam",
+    "country": "Vietnam",
+    "countryCode": "VN",
+    "label": "Vung Tau – SPCT",
+    "keywords": [
+      "vung",
+      "tau",
+      "spct"
+    ]
+  },
+  {
+    "id": "VN-CAN35",
+    "type": "port",
+    "city": "Can Tho Port",
+    "region": "Vietnam",
+    "country": "Vietnam",
+    "countryCode": "VN",
+    "label": "Can Tho Port",
+    "keywords": [
+      "can",
+      "tho",
+      "port"
+    ]
+  },
+  {
+    "id": "VN-QUA36",
+    "type": "port",
+    "city": "Quang Ninh – Hon Gai International",
+    "region": "Vietnam",
+    "country": "Vietnam",
+    "countryCode": "VN",
+    "label": "Quang Ninh – Hon Gai International",
+    "keywords": [
+      "quang",
+      "ninh",
+      "hon",
+      "gai",
+      "international"
+    ]
+  },
+  {
+    "id": "ID-JAK37",
+    "type": "port",
+    "city": "Jakarta – Tanjung Priok (JKT)",
+    "region": "Indonesia",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "label": "Jakarta – Tanjung Priok (JKT)",
+    "keywords": [
+      "jakarta",
+      "tanjung",
+      "priok",
+      "jkt"
+    ]
+  },
+  {
+    "id": "ID-SUR38",
+    "type": "port",
+    "city": "Surabaya – Tanjung Perak (SUB)",
+    "region": "Indonesia",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "label": "Surabaya – Tanjung Perak (SUB)",
+    "keywords": [
+      "surabaya",
+      "tanjung",
+      "perak",
+      "sub"
+    ]
+  },
+  {
+    "id": "ID-BEL39",
+    "type": "port",
+    "city": "Belawan – Medan Port (BLW)",
+    "region": "Indonesia",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "label": "Belawan – Medan Port (BLW)",
+    "keywords": [
+      "belawan",
+      "medan",
+      "port",
+      "blw"
+    ]
+  },
+  {
+    "id": "ID-MAK40",
+    "type": "port",
+    "city": "Makassar – Soekarno Hatta Port",
+    "region": "Indonesia",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "label": "Makassar – Soekarno Hatta Port",
+    "keywords": [
+      "makassar",
+      "soekarno",
+      "hatta",
+      "port"
+    ]
+  },
+  {
+    "id": "ID-SEM41",
+    "type": "port",
+    "city": "Semarang – Tanjung Emas",
+    "region": "Indonesia",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "label": "Semarang – Tanjung Emas",
+    "keywords": [
+      "semarang",
+      "tanjung",
+      "emas"
+    ]
+  },
+  {
+    "id": "ID-BAL42",
+    "type": "port",
+    "city": "Balikpapan Port",
+    "region": "Indonesia",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "label": "Balikpapan Port",
+    "keywords": [
+      "balikpapan",
+      "port"
+    ]
+  },
+  {
+    "id": "ID-BAT43",
+    "type": "port",
+    "city": "Batam – Batu Ampar",
+    "region": "Indonesia",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "label": "Batam – Batu Ampar",
+    "keywords": [
+      "batam",
+      "batu",
+      "ampar"
+    ]
+  },
+  {
+    "id": "ID-PAN44",
+    "type": "port",
+    "city": "Panjang Port (Lampung)",
+    "region": "Indonesia",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "label": "Panjang Port (Lampung)",
+    "keywords": [
+      "panjang",
+      "port",
+      "lampung"
+    ]
+  },
+  {
+    "id": "ID-PAL45",
+    "type": "port",
+    "city": "Palembang – Boom Baru",
+    "region": "Indonesia",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "label": "Palembang – Boom Baru",
+    "keywords": [
+      "palembang",
+      "boom",
+      "baru"
+    ]
+  },
+  {
+    "id": "IN-NHA46",
+    "type": "port",
+    "city": "Nhava Sheva – JNPT (Mumbai)",
+    "region": "India",
+    "country": "India",
+    "countryCode": "IN",
+    "label": "Nhava Sheva – JNPT (Mumbai)",
+    "keywords": [
+      "nhava",
+      "sheva",
+      "jnpt",
+      "mumbai"
+    ]
+  },
+  {
+    "id": "IN-MUM47",
+    "type": "port",
+    "city": "Mumbai – Ballard Pier",
+    "region": "India",
+    "country": "India",
+    "countryCode": "IN",
+    "label": "Mumbai – Ballard Pier",
+    "keywords": [
+      "mumbai",
+      "ballard",
+      "pier"
+    ]
+  },
+  {
+    "id": "IN-CHE48",
+    "type": "port",
+    "city": "Chennai (MAA)",
+    "region": "India",
+    "country": "India",
+    "countryCode": "IN",
+    "label": "Chennai (MAA)",
+    "keywords": [
+      "chennai",
+      "maa"
+    ]
+  },
+  {
+    "id": "IN-KOL49",
+    "type": "port",
+    "city": "Kolkata – Syama Prasad Mookerjee Port (CCU)",
+    "region": "India",
+    "country": "India",
+    "countryCode": "IN",
+    "label": "Kolkata – Syama Prasad Mookerjee Port (CCU)",
+    "keywords": [
+      "kolkata",
+      "syama",
+      "prasad",
+      "mookerjee",
+      "port",
+      "ccu"
+    ]
+  },
+  {
+    "id": "IN-MUN50",
+    "type": "port",
+    "city": "Mundra Port (Gujarat)",
+    "region": "India",
+    "country": "India",
+    "countryCode": "IN",
+    "label": "Mundra Port (Gujarat)",
+    "keywords": [
+      "mundra",
+      "port",
+      "gujarat"
+    ]
+  },
+  {
+    "id": "IN-HAZ51",
+    "type": "port",
+    "city": "Hazira Port (Surat)",
+    "region": "India",
+    "country": "India",
+    "countryCode": "IN",
+    "label": "Hazira Port (Surat)",
+    "keywords": [
+      "hazira",
+      "port",
+      "surat"
+    ]
+  },
+  {
+    "id": "IN-VIS52",
+    "type": "port",
+    "city": "Visakhapatnam (VTZ)",
+    "region": "India",
+    "country": "India",
+    "countryCode": "IN",
+    "label": "Visakhapatnam (VTZ)",
+    "keywords": [
+      "visakhapatnam",
+      "vtz"
+    ]
+  },
+  {
+    "id": "IN-COC53",
+    "type": "port",
+    "city": "Cochin (COK)",
+    "region": "India",
+    "country": "India",
+    "countryCode": "IN",
+    "label": "Cochin (COK)",
+    "keywords": [
+      "cochin",
+      "cok"
+    ]
+  },
+  {
+    "id": "IN-TUT54",
+    "type": "port",
+    "city": "Tuticorin – V.O. Chidambaranar Port",
+    "region": "India",
+    "country": "India",
+    "countryCode": "IN",
+    "label": "Tuticorin – V.O. Chidambaranar Port",
+    "keywords": [
+      "tuticorin",
+      "v.o.",
+      "chidambaranar",
+      "port"
+    ]
+  },
+  {
+    "id": "IN-ENN55",
+    "type": "port",
+    "city": "Ennore (Kamarajar Port)",
+    "region": "India",
+    "country": "India",
+    "countryCode": "IN",
+    "label": "Ennore (Kamarajar Port)",
+    "keywords": [
+      "ennore",
+      "kamarajar",
+      "port"
+    ]
+  },
+  {
+    "id": "IN-PIP56",
+    "type": "port",
+    "city": "Pipavav Port",
+    "region": "India",
+    "country": "India",
+    "countryCode": "IN",
+    "label": "Pipavav Port",
+    "keywords": [
+      "pipavav",
+      "port"
+    ]
+  },
+  {
+    "id": "IN-KAN57",
+    "type": "port",
+    "city": "Kandla Port",
+    "region": "India",
+    "country": "India",
+    "countryCode": "IN",
+    "label": "Kandla Port",
+    "keywords": [
+      "kandla",
+      "port"
+    ]
+  },
+  {
+    "id": "TH-BAN58",
+    "type": "port",
+    "city": "Bangkok – Laem Chabang (LCH)",
+    "region": "Thailand",
+    "country": "Thailand",
+    "countryCode": "TH",
+    "label": "Bangkok – Laem Chabang (LCH)",
+    "keywords": [
+      "bangkok",
+      "laem",
+      "chabang",
+      "lch"
+    ]
+  },
+  {
+    "id": "TH-BAN59",
+    "type": "port",
+    "city": "Bangkok – Map Ta Phut Industrial Port",
+    "region": "Thailand",
+    "country": "Thailand",
+    "countryCode": "TH",
+    "label": "Bangkok – Map Ta Phut Industrial Port",
+    "keywords": [
+      "bangkok",
+      "map",
+      "ta",
+      "phut",
+      "industrial",
+      "port"
+    ]
+  },
+  {
+    "id": "TH-BAN60",
+    "type": "port",
+    "city": "Bangkok Port (BKK)",
+    "region": "Thailand",
+    "country": "Thailand",
+    "countryCode": "TH",
+    "label": "Bangkok Port (BKK)",
+    "keywords": [
+      "bangkok",
+      "port",
+      "bkk"
+    ]
+  },
+  {
+    "id": "TH-SON61",
+    "type": "port",
+    "city": "Songkhla Port",
+    "region": "Thailand",
+    "country": "Thailand",
+    "countryCode": "TH",
+    "label": "Songkhla Port",
+    "keywords": [
+      "songkhla",
+      "port"
+    ]
+  },
+  {
+    "id": "TH-RAN62",
+    "type": "port",
+    "city": "Ranong Port",
+    "region": "Thailand",
+    "country": "Thailand",
+    "countryCode": "TH",
+    "label": "Ranong Port",
+    "keywords": [
+      "ranong",
+      "port"
+    ]
+  },
+  {
+    "id": "KR-BUS63",
+    "type": "port",
+    "city": "Busan – Busan New Port (PUS)",
+    "region": "South Korea",
+    "country": "South Korea",
+    "countryCode": "KR",
+    "label": "Busan – Busan New Port (PUS)",
+    "keywords": [
+      "busan",
+      "busan",
+      "new",
+      "port",
+      "pus"
+    ]
+  },
+  {
+    "id": "KR-BUS64",
+    "type": "port",
+    "city": "Busan – North Port Terminal",
+    "region": "South Korea",
+    "country": "South Korea",
+    "countryCode": "KR",
+    "label": "Busan – North Port Terminal",
+    "keywords": [
+      "busan",
+      "north",
+      "port",
+      "terminal"
+    ]
+  },
+  {
+    "id": "KR-INC65",
+    "type": "port",
+    "city": "Incheon (ICN)",
+    "region": "South Korea",
+    "country": "South Korea",
+    "countryCode": "KR",
+    "label": "Incheon (ICN)",
+    "keywords": [
+      "incheon",
+      "icn"
+    ]
+  },
+  {
+    "id": "KR-GWA66",
+    "type": "port",
+    "city": "Gwangyang Port (KWJ)",
+    "region": "South Korea",
+    "country": "South Korea",
+    "countryCode": "KR",
+    "label": "Gwangyang Port (KWJ)",
+    "keywords": [
+      "gwangyang",
+      "port",
+      "kwj"
+    ]
+  },
+  {
+    "id": "KR-PYE67",
+    "type": "port",
+    "city": "Pyeongtaek Port",
+    "region": "South Korea",
+    "country": "South Korea",
+    "countryCode": "KR",
+    "label": "Pyeongtaek Port",
+    "keywords": [
+      "pyeongtaek",
+      "port"
+    ]
+  },
+  {
+    "id": "KR-ULS68",
+    "type": "port",
+    "city": "Ulsan Port",
+    "region": "South Korea",
+    "country": "South Korea",
+    "countryCode": "KR",
+    "label": "Ulsan Port",
+    "keywords": [
+      "ulsan",
+      "port"
+    ]
+  },
+  {
+    "id": "KR-MOK69",
+    "type": "port",
+    "city": "Mokpo Port",
+    "region": "South Korea",
+    "country": "South Korea",
+    "countryCode": "KR",
+    "label": "Mokpo Port",
+    "keywords": [
+      "mokpo",
+      "port"
+    ]
+  },
+  {
+    "id": "MY-POR70",
+    "type": "port",
+    "city": "Port Klang – Westports (KUL)",
+    "region": "Malaysia",
+    "country": "Malaysia",
+    "countryCode": "MY",
+    "label": "Port Klang – Westports (KUL)",
+    "keywords": [
+      "port",
+      "klang",
+      "westports",
+      "kul"
+    ]
+  },
+  {
+    "id": "MY-POR71",
+    "type": "port",
+    "city": "Port Klang – North Port",
+    "region": "Malaysia",
+    "country": "Malaysia",
+    "countryCode": "MY",
+    "label": "Port Klang – North Port",
+    "keywords": [
+      "port",
+      "klang",
+      "north",
+      "port"
+    ]
+  },
+  {
+    "id": "MY-PEN72",
+    "type": "port",
+    "city": "Penang – Butterworth (PEN)",
+    "region": "Malaysia",
+    "country": "Malaysia",
+    "countryCode": "MY",
+    "label": "Penang – Butterworth (PEN)",
+    "keywords": [
+      "penang",
+      "butterworth",
+      "pen"
+    ]
+  },
+  {
+    "id": "MY-JOH73",
+    "type": "port",
+    "city": "Johor – Port of Tanjung Pelepas (PTP)",
+    "region": "Malaysia",
+    "country": "Malaysia",
+    "countryCode": "MY",
+    "label": "Johor – Port of Tanjung Pelepas (PTP)",
+    "keywords": [
+      "johor",
+      "port",
+      "of",
+      "tanjung",
+      "pelepas",
+      "ptp"
+    ]
+  },
+  {
+    "id": "MY-JOH74",
+    "type": "port",
+    "city": "Johor – Pasir Gudang",
+    "region": "Malaysia",
+    "country": "Malaysia",
+    "countryCode": "MY",
+    "label": "Johor – Pasir Gudang",
+    "keywords": [
+      "johor",
+      "pasir",
+      "gudang"
+    ]
+  },
+  {
+    "id": "MY-KUA75",
+    "type": "port",
+    "city": "Kuantan Port",
+    "region": "Malaysia",
+    "country": "Malaysia",
+    "countryCode": "MY",
+    "label": "Kuantan Port",
+    "keywords": [
+      "kuantan",
+      "port"
+    ]
+  },
+  {
+    "id": "MY-BIN76",
+    "type": "port",
+    "city": "Bintulu Port (Sarawak)",
+    "region": "Malaysia",
+    "country": "Malaysia",
+    "countryCode": "MY",
+    "label": "Bintulu Port (Sarawak)",
+    "keywords": [
+      "bintulu",
+      "port",
+      "sarawak"
+    ]
+  },
+  {
+    "id": "MY-KOT77",
+    "type": "port",
+    "city": "Kota Kinabalu (Sabah)",
+    "region": "Malaysia",
+    "country": "Malaysia",
+    "countryCode": "MY",
+    "label": "Kota Kinabalu (Sabah)",
+    "keywords": [
+      "kota",
+      "kinabalu",
+      "sabah"
+    ]
+  },
+  {
+    "id": "BD-CHI78",
+    "type": "port",
+    "city": "Chittagong Port (CGP) – Main Terminal",
+    "region": "Bangladesh",
+    "country": "Bangladesh",
+    "countryCode": "BD",
+    "label": "Chittagong Port (CGP) – Main Terminal",
+    "keywords": [
+      "chittagong",
+      "port",
+      "cgp",
+      "main",
+      "terminal"
+    ]
+  },
+  {
+    "id": "BD-CHI79",
+    "type": "port",
+    "city": "Chittagong – NCT (New Mooring Container Terminal)",
+    "region": "Bangladesh",
+    "country": "Bangladesh",
+    "countryCode": "BD",
+    "label": "Chittagong – NCT (New Mooring Container Terminal)",
+    "keywords": [
+      "chittagong",
+      "nct",
+      "new",
+      "mooring",
+      "container",
+      "terminal"
+    ]
+  },
+  {
+    "id": "BD-MON80",
+    "type": "port",
+    "city": "Mongla Port",
+    "region": "Bangladesh",
+    "country": "Bangladesh",
+    "countryCode": "BD",
+    "label": "Mongla Port",
+    "keywords": [
+      "mongla",
+      "port"
+    ]
+  },
+  {
+    "id": "BD-DHA81",
+    "type": "port",
+    "city": "Dhaka – ICD Dhaka",
+    "region": "Bangladesh",
+    "country": "Bangladesh",
+    "countryCode": "BD",
+    "label": "Dhaka – ICD Dhaka",
+    "keywords": [
+      "dhaka",
+      "icd",
+      "dhaka"
+    ]
+  },
+  {
+    "id": "US-LOS82",
+    "type": "port",
+    "city": "Los Angeles (LAX) – Port of Los Angeles",
+    "region": "United States",
+    "country": "United States",
+    "countryCode": "US",
+    "label": "Los Angeles (LAX) – Port of Los Angeles",
+    "keywords": [
+      "los",
+      "angeles",
+      "lax",
+      "port",
+      "of",
+      "los",
+      "angeles"
+    ]
+  },
+  {
+    "id": "US-LON83",
+    "type": "port",
+    "city": "Long Beach (LGB) – Port of Long Beach",
+    "region": "United States",
+    "country": "United States",
+    "countryCode": "US",
+    "label": "Long Beach (LGB) – Port of Long Beach",
+    "keywords": [
+      "long",
+      "beach",
+      "lgb",
+      "port",
+      "of",
+      "long",
+      "beach"
+    ]
+  },
+  {
+    "id": "US-NEW84",
+    "type": "port",
+    "city": "New York / New Jersey (JFK) – Port Newark",
+    "region": "United States",
+    "country": "United States",
+    "countryCode": "US",
+    "label": "New York / New Jersey (JFK) – Port Newark",
+    "keywords": [
+      "new",
+      "york",
+      "/",
+      "new",
+      "jersey",
+      "jfk",
+      "port",
+      "newark"
+    ]
+  },
+  {
+    "id": "US-SEA85",
+    "type": "port",
+    "city": "Seattle (SEA) – Northwest Seaport Alliance",
+    "region": "United States",
+    "country": "United States",
+    "countryCode": "US",
+    "label": "Seattle (SEA) – Northwest Seaport Alliance",
+    "keywords": [
+      "seattle",
+      "sea",
+      "northwest",
+      "seaport",
+      "alliance"
+    ]
+  },
+  {
+    "id": "US-TAC86",
+    "type": "port",
+    "city": "Tacoma (TAC)",
+    "region": "United States",
+    "country": "United States",
+    "countryCode": "US",
+    "label": "Tacoma (TAC)",
+    "keywords": [
+      "tacoma",
+      "tac"
+    ]
+  },
+  {
+    "id": "US-HOU87",
+    "type": "port",
+    "city": "Houston (HOU) – Port of Houston",
+    "region": "United States",
+    "country": "United States",
+    "countryCode": "US",
+    "label": "Houston (HOU) – Port of Houston",
+    "keywords": [
+      "houston",
+      "hou",
+      "port",
+      "of",
+      "houston"
+    ]
+  },
+  {
+    "id": "US-SAV88",
+    "type": "port",
+    "city": "Savannah (SAV) – Garden City Terminal",
+    "region": "United States",
+    "country": "United States",
+    "countryCode": "US",
+    "label": "Savannah (SAV) – Garden City Terminal",
+    "keywords": [
+      "savannah",
+      "sav",
+      "garden",
+      "city",
+      "terminal"
+    ]
+  },
+  {
+    "id": "US-CHA89",
+    "type": "port",
+    "city": "Charleston (CHS)",
+    "region": "United States",
+    "country": "United States",
+    "countryCode": "US",
+    "label": "Charleston (CHS)",
+    "keywords": [
+      "charleston",
+      "chs"
+    ]
+  },
+  {
+    "id": "US-MIA90",
+    "type": "port",
+    "city": "Miami (MIA) – PortMiami",
+    "region": "United States",
+    "country": "United States",
+    "countryCode": "US",
+    "label": "Miami (MIA) – PortMiami",
+    "keywords": [
+      "miami",
+      "mia",
+      "portmiami"
+    ]
+  },
+  {
+    "id": "US-BAL91",
+    "type": "port",
+    "city": "Baltimore (BAL)",
+    "region": "United States",
+    "country": "United States",
+    "countryCode": "US",
+    "label": "Baltimore (BAL)",
+    "keywords": [
+      "baltimore",
+      "bal"
+    ]
+  },
+  {
+    "id": "US-NOR92",
+    "type": "port",
+    "city": "Norfolk (ORF) – Virginia International Gateway",
+    "region": "United States",
+    "country": "United States",
+    "countryCode": "US",
+    "label": "Norfolk (ORF) – Virginia International Gateway",
+    "keywords": [
+      "norfolk",
+      "orf",
+      "virginia",
+      "international",
+      "gateway"
+    ]
+  },
+  {
+    "id": "US-NEW93",
+    "type": "port",
+    "city": "New Orleans (MSY)",
+    "region": "United States",
+    "country": "United States",
+    "countryCode": "US",
+    "label": "New Orleans (MSY)",
+    "keywords": [
+      "new",
+      "orleans",
+      "msy"
+    ]
+  },
+  {
+    "id": "US-OAK94",
+    "type": "port",
+    "city": "Oakland (OAK) – Port of Oakland",
+    "region": "United States",
+    "country": "United States",
+    "countryCode": "US",
+    "label": "Oakland (OAK) – Port of Oakland",
+    "keywords": [
+      "oakland",
+      "oak",
+      "port",
+      "of",
+      "oakland"
+    ]
+  },
+  {
+    "id": "US-CHI95",
+    "type": "port",
+    "city": "Chicago – ICTF (Rail Inland)",
+    "region": "United States",
+    "country": "United States",
+    "countryCode": "US",
+    "label": "Chicago – ICTF (Rail Inland)",
+    "keywords": [
+      "chicago",
+      "ictf",
+      "rail",
+      "inland"
+    ]
+  },
+  {
+    "id": "TW-KAO96",
+    "type": "port",
+    "city": "Kaohsiung (KHH) – Kaohsiung International Port",
+    "region": "Taiwan (CN)",
+    "country": "Taiwan (CN)",
+    "countryCode": "TW",
+    "label": "Kaohsiung (KHH) – Kaohsiung International Port",
+    "keywords": [
+      "kaohsiung",
+      "khh",
+      "kaohsiung",
+      "international",
+      "port"
+    ]
+  },
+  {
+    "id": "TW-TAI97",
+    "type": "port",
+    "city": "Taipei (TPE) – Keelung Port",
+    "region": "Taiwan (CN)",
+    "country": "Taiwan (CN)",
+    "countryCode": "TW",
+    "label": "Taipei (TPE) – Keelung Port",
+    "keywords": [
+      "taipei",
+      "tpe",
+      "keelung",
+      "port"
+    ]
+  },
+  {
+    "id": "TW-TAI98",
+    "type": "port",
+    "city": "Taichung (TXG) – Taichung Port",
+    "region": "Taiwan (CN)",
+    "country": "Taiwan (CN)",
+    "countryCode": "TW",
+    "label": "Taichung (TXG) – Taichung Port",
+    "keywords": [
+      "taichung",
+      "txg",
+      "taichung",
+      "port"
+    ]
+  },
+  {
+    "id": "TW-HUA99",
+    "type": "port",
+    "city": "Hualien Port",
+    "region": "Taiwan (CN)",
+    "country": "Taiwan (CN)",
+    "countryCode": "TW",
+    "label": "Hualien Port",
+    "keywords": [
+      "hualien",
+      "port"
+    ]
+  },
+  {
+    "id": "HK-KWA100",
+    "type": "port",
+    "city": "Kwai Tsing Container Terminals (HKG)",
+    "region": "Hong Kong (CN)",
+    "country": "Hong Kong (CN)",
+    "countryCode": "HK",
+    "label": "Kwai Tsing Container Terminals (HKG)",
+    "keywords": [
+      "kwai",
+      "tsing",
+      "container",
+      "terminals",
+      "hkg"
+    ]
+  },
+  {
+    "id": "HK-STO101",
+    "type": "port",
+    "city": "Stonecutters Island Terminal",
+    "region": "Hong Kong (CN)",
+    "country": "Hong Kong (CN)",
+    "countryCode": "HK",
+    "label": "Stonecutters Island Terminal",
+    "keywords": [
+      "stonecutters",
+      "island",
+      "terminal"
+    ]
+  },
+  {
+    "id": "HK-HON102",
+    "type": "port",
+    "city": "Hongkong International Terminals (HIT)",
+    "region": "Hong Kong (CN)",
+    "country": "Hong Kong (CN)",
+    "countryCode": "HK",
+    "label": "Hongkong International Terminals (HIT)",
+    "keywords": [
+      "hongkong",
+      "international",
+      "terminals",
+      "hit"
+    ]
+  },
+  {
+    "id": "HK-ASI103",
+    "type": "port",
+    "city": "Asia Container Terminals (ACT)",
+    "region": "Hong Kong (CN)",
+    "country": "Hong Kong (CN)",
+    "countryCode": "HK",
+    "label": "Asia Container Terminals (ACT)",
+    "keywords": [
+      "asia",
+      "container",
+      "terminals",
+      "act"
+    ]
+  },
+  {
+    "id": "HK-MOD104",
+    "type": "port",
+    "city": "Modern Terminals (MTL)",
+    "region": "Hong Kong (CN)",
+    "country": "Hong Kong (CN)",
+    "countryCode": "HK",
+    "label": "Modern Terminals (MTL)",
+    "keywords": [
+      "modern",
+      "terminals",
+      "mtl"
+    ]
+  },
+  {
+    "id": "HK-COS105",
+    "type": "port",
+    "city": "COSCO-HIT Terminals",
+    "region": "Hong Kong (CN)",
+    "country": "Hong Kong (CN)",
+    "countryCode": "HK",
+    "label": "COSCO-HIT Terminals",
+    "keywords": [
+      "cosco",
+      "hit",
+      "terminals"
+    ]
+  },
+  {
+    "id": "MX-MAN106",
+    "type": "port",
+    "city": "Manzanillo (MZT) – Puerto de Manzanillo",
+    "region": "Mexico",
+    "country": "Mexico",
+    "countryCode": "MX",
+    "label": "Manzanillo (MZT) – Puerto de Manzanillo",
+    "keywords": [
+      "manzanillo",
+      "mzt",
+      "puerto",
+      "de",
+      "manzanillo"
+    ]
+  },
+  {
+    "id": "MX-VER107",
+    "type": "port",
+    "city": "Veracruz (VER) – Puerto de Veracruz",
+    "region": "Mexico",
+    "country": "Mexico",
+    "countryCode": "MX",
+    "label": "Veracruz (VER) – Puerto de Veracruz",
+    "keywords": [
+      "veracruz",
+      "ver",
+      "puerto",
+      "de",
+      "veracruz"
+    ]
+  },
+  {
+    "id": "MX-ALT108",
+    "type": "port",
+    "city": "Altamira (TAM) – Puerto Altamira",
+    "region": "Mexico",
+    "country": "Mexico",
+    "countryCode": "MX",
+    "label": "Altamira (TAM) – Puerto Altamira",
+    "keywords": [
+      "altamira",
+      "tam",
+      "puerto",
+      "altamira"
+    ]
+  },
+  {
+    "id": "MX-LZA109",
+    "type": "port",
+    "city": "Lázaro Cárdenas (LZC)",
+    "region": "Mexico",
+    "country": "Mexico",
+    "countryCode": "MX",
+    "label": "Lázaro Cárdenas (LZC)",
+    "keywords": [
+      "lázaro",
+      "cárdenas",
+      "lzc"
+    ]
+  },
+  {
+    "id": "MX-ENS110",
+    "type": "port",
+    "city": "Ensenada (ENS)",
+    "region": "Mexico",
+    "country": "Mexico",
+    "countryCode": "MX",
+    "label": "Ensenada (ENS)",
+    "keywords": [
+      "ensenada",
+      "ens"
+    ]
+  },
+  {
+    "id": "MX-GUA111",
+    "type": "port",
+    "city": "Guaymas Port",
+    "region": "Mexico",
+    "country": "Mexico",
+    "countryCode": "MX",
+    "label": "Guaymas Port",
+    "keywords": [
+      "guaymas",
+      "port"
+    ]
+  },
+  {
+    "id": "MX-SAL112",
+    "type": "port",
+    "city": "Salina Cruz Port",
+    "region": "Mexico",
+    "country": "Mexico",
+    "countryCode": "MX",
+    "label": "Salina Cruz Port",
+    "keywords": [
+      "salina",
+      "cruz",
+      "port"
+    ]
+  },
+  {
+    "id": "MX-PRO113",
+    "type": "port",
+    "city": "Progreso Port (Yucatán)",
+    "region": "Mexico",
+    "country": "Mexico",
+    "countryCode": "MX",
+    "label": "Progreso Port (Yucatán)",
+    "keywords": [
+      "progreso",
+      "port",
+      "yucatán"
+    ]
+  }
+]

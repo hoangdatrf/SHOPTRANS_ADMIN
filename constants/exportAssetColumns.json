@@ -1,0 +1,50 @@
+[
+  {
+    "Field": "OBJ_CODE",
+    "Title": "Mã thiết bị"
+  },
+  {
+    "Field": "OBJ_DESC", 
+    "Title": "Tên thiết bị"
+  },
+  {
+    "Field": "OBJ_CLASS",
+    "Title": "Loại thiết bị"
+  },
+  {
+    "Field": "OBJ_CATEGORY",
+    "Title": "Danh mục"
+  },
+  {
+    "Field": "OBJ_STATUS",
+    "Title": "Trạng thái"
+  },
+  {
+    "Field": "OBJ_COMMISS",
+    "Title": "Ngày đưa vào sử dụng"
+  },
+  {
+    "Field": "OBJ_SERIALNO",
+    "Title": "Số serial"
+  },
+  {
+    "Field": "OBJ_ORG",
+    "Title": "Tổ chức"
+  },
+  {
+    "Field": "OBJ_PARENT",
+    "Title": "Thiết bị cha"
+  },
+  {
+    "Field": "OBJ_MRC",
+    "Title": "Bộ phận"
+  },
+  {
+    "Field": "OBJ_CREATED",
+    "Title": "Ngày tạo"
+  },
+  {
+    "Field": "OBJ_CREATEDBY",
+    "Title": "Tạo bởi"
+  }
+] 

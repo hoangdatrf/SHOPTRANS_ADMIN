@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SHOPTRANS — Terms &amp; Conditions</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --green: #00E676;
+    --green-2: #00B85C;
+    --green-soft: rgba(0,230,118,0.08);
+    --green-line: rgba(0,230,118,0.25);
+    --bg: #ffffff;
+    --bg-2: #f8faf9;
+    --bg-3: #f1f5f3;
+    --border: #e5e7eb;
+    --border-2: #d1d5db;
+    --text: #0F1411;
+    --text-2: #4b5563;
+    --text-3: #6b7280;
+    --text-4: #9ca3af;
+    --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+  body {
+    font-family: var(--sans);
+    color: var(--text);
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(circle at 85% 0%, rgba(0,230,118,0.05) 0%, transparent 45%),
+      radial-gradient(circle at 0% 100%, rgba(0,230,118,0.035) 0%, transparent 45%),
+      radial-gradient(circle at 1px 1px, rgba(15,20,17,0.04) 1px, transparent 0);
+    background-size: auto, auto, 24px 24px;
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: var(--green); color: var(--text); }
+
+  /* === TOP BAR === */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    height: 56px;
+    display: flex; align-items: center;
+    padding: 0 28px;
+    gap: 24px;
+  }
+  .topbar::before {
+    content: '';
+    position: absolute; left: 0; right: 0; bottom: -1px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    opacity: 0.4;
+  }
+  .brand {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .brand .dot {
+    width: 8px; height: 8px; border-radius: 999px;
+    background: var(--green);
+    box-shadow: 0 0 0 3px rgba(0,230,118,0.18);
+  }
+  .brand .slash { color: var(--text-3); }
+  .brand .doc-tag { color: var(--text-2); font-weight: 500; }
+
+  .topbar-meta {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 14px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  .topbar-meta .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 9px;
+    border: 1px solid var(--border-2);
+    border-radius: 999px;
+    color: var(--text-2);
+    background: var(--bg-2);
+  }
+  .topbar-meta .pill.live {
+    border-color: var(--green-line);
+    color: var(--green-2);
+    background: var(--green-soft);
+  }
+  .topbar-meta .pill .pulse {
+    width: 6px; height: 6px; border-radius: 999px;
+    background: var(--green);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(1.4); }
+  }
+  .icon-btn {
+    width: 32px; height: 32px;
+    background: transparent;
+    border: 1px solid var(--border-2);
+    border-radius: 7px;
+    color: var(--text-2);
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .icon-btn:hover { color: var(--green-2); border-color: var(--green); background: var(--green-soft); }
+
+  /* === PROGRESS BAR === */
+  .progress {
+    position: fixed; top: 56px; left: 0; right: 0;
+    height: 2px; z-index: 49;
+    background: transparent;
+  }
+  .progress .fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green-2), var(--green));
+    width: 0%;
+    transition: width 0.1s linear;
+    box-shadow: 0 0 8px rgba(0,230,118,0.5);
+  }
+
+  /* === LAYOUT === */
+  .shell {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 36px 28px 80px;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 48px;
+    align-items: start;
+  }
+
+  /* === TOC === */
+  .toc {
+    position: sticky;
+    top: 80px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    padding-right: 8px;
+    font-size: 13px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-2) transparent;
+  }
+  .toc::-webkit-scrollbar { width: 4px; }
+  .toc::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+  .toc-title {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .toc-title::before {
+    content: ''; width: 6px; height: 6px;
+    background: var(--green); border-radius: 1px;
+  }
+  .toc ol { list-style: none; counter-reset: toc; }
+  .toc li { counter-increment: toc; }
+  .toc-link {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    color: var(--text-2);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: all 0.12s;
+    line-height: 1.4;
+    margin-left: -10px;
+  }
+  .toc-link::before {
+    content: counter(toc, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-4);
+    letter-spacing: 0.06em;
+    padding-top: 1px;
+  }
+  .toc-link:hover { color: var(--text); background: var(--bg-2); }
+  .toc-link.active {
+    color: var(--text);
+    border-left-color: var(--green);
+    background: var(--green-soft);
+  }
+  .toc-link.active::before { color: var(--green-2); }
+
+  /* === CONTENT === */
+  .content {
+    max-width: 760px;
+    min-width: 0;
+  }
+
+  .doc-head {
+    padding-bottom: 32px;
+    margin-bottom: 36px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .doc-head::after {
+    content: '';
+    position: absolute; left: 0; bottom: -1px;
+    width: 60px; height: 1px;
+    background: var(--green);
+  }
+  .kicker {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--green-2);
+    margin-bottom: 14px;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .kicker::before {
+    content: '';
+    width: 18px; height: 1px;
+    background: var(--green);
+  }
+  h1 {
+    font-size: 40px;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+  .lede {
+    font-size: 15.5px;
+    color: var(--text-2);
+    max-width: 640px;
+    line-height: 1.65;
+  }
+  .doc-meta {
+    margin-top: 20px;
+    display: flex; flex-wrap: wrap; gap: 6px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .doc-meta .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-2);
+  }
+  .doc-meta .chip strong {
+    color: var(--text);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+  }
+  .doc-meta .chip.accent {
+    background: var(--green-soft);
+    border-color: var(--green-line);
+    color: var(--green-2);
+  }
+
+  /* === SECTIONS === */
+  section.sec {
+    padding: 36px 0 8px;
+    border-top: 1px dashed var(--border);
+    scroll-margin-top: 80px;
+  }
+  section.sec:first-of-type { border-top: none; padding-top: 8px; }
+
+  .sec-head {
+    margin-bottom: 22px;
+    position: relative;
+  }
+  .sec-num {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--green-2);
+    margin-bottom: 10px;
+  }
+  .sec-num::before {
+    content: '§';
+    color: var(--text-3);
+    font-weight: 400;
+  }
+  h2 {
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+  h2 .anchor {
+    margin-left: 10px;
+    color: var(--text-4);
+    text-decoration: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    font-weight: 400;
+    font-family: var(--mono);
+    font-size: 16px;
+  }
+  .sec-head:hover h2 .anchor { opacity: 1; }
+  h2 .anchor:hover { color: var(--green-2); }
+
+  /* === CLAUSES === */
+  .clause {
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    gap: 14px;
+    padding: 12px 0;
+    align-items: start;
+    line-height: 1.65;
+  }
+  .clause-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--text-3);
+    padding-top: 5px;
+    text-align: right;
+  }
+  .clause-body { color: var(--text); font-size: 14.5px; }
+  .clause-body p + p, .clause-body p + ul, .clause-body ul + p { margin-top: 8px; }
+  .clause-body strong { font-weight: 600; }
+  .clause-body em { font-style: italic; color: var(--text); }
+
+  .lead-in {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text);
+    margin-right: 4px;
+  }
+  .lead-in::after { content: ' · '; color: var(--text-4); font-weight: 400; letter-spacing: 0; }
+
+  /* defined-term inline pill */
+  .term {
+    font-family: var(--mono);
+    font-size: 0.9em;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--bg-3);
+    border-bottom: 1px solid var(--border-2);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  ul.clause-list {
+    list-style: none;
+    margin-top: 6px;
+    padding-left: 0;
+  }
+  ul.clause-list li {
+    position: relative;
+    padding: 5px 0 5px 20px;
+    font-size: 14.5px;
+    line-height: 1.6;
+  }
+  ul.clause-list li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--green-2);
+    font-family: var(--mono);
+    font-weight: 600;
+  }
+
+  /* === DEFINITIONS GRID === */
+  .defs-intro {
+    grid-column: 1 / -1;
+    color: var(--text-2);
+    font-size: 14.5px;
+    margin-bottom: 16px;
+  }
+  .defs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .def {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    position: relative;
+    transition: all 0.18s ease;
+  }
+  .def:hover {
+    border-color: var(--green-line);
+    background: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.04);
+  }
+  .def-term {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--green-2);
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .def-term::before {
+    content: '';
+    width: 4px; height: 4px;
+    background: var(--green);
+    border-radius: 1px;
+  }
+  .def-body { font-size: 13.5px; color: var(--text-2); line-height: 1.55; }
+
+  /* === CALLOUT === */
+  .callout {
+    margin: 18px 0 12px;
+    background: linear-gradient(180deg, var(--green-soft) 0%, rgba(0,230,118,0.02) 100%);
+    border: 1px solid var(--green-line);
+    border-left: 3px solid var(--green);
+    border-radius: 8px;
+    padding: 16px 18px;
+    position: relative;
+  }
+  .callout-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--green-2);
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .callout-label::before {
+    content: '';
+    width: 14px; height: 1px;
+    background: var(--green);
+  }
+  .callout p { font-size: 14px; color: var(--text); line-height: 1.6; }
+  .callout p + p { margin-top: 6px; }
+  .callout strong { color: var(--text); font-weight: 600; }
+
+  /* === FOOTER === */
+  .doc-foot {
+    margin-top: 56px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; gap: 16px;
+    align-items: center; justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  .doc-foot .mono-row { display: flex; gap: 16px; flex-wrap: wrap; }
+  .doc-foot a { color: var(--text-2); text-decoration: none; }
+  .doc-foot a:hover { color: var(--green-2); }
+
+  /* === BACK TO TOP === */
+  .to-top {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    width: 40px; height: 40px;
+    background: var(--text);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+    z-index: 40;
+  }
+  .to-top.show { opacity: 1; pointer-events: auto; }
+  .to-top:hover { background: var(--green-2); transform: translateY(-2px); }
+
+  /* === MOBILE TOC === */
+  .toc-toggle {
+    display: none;
+    width: 32px; height: 32px;
+    background: transparent;
+    border: 1px solid var(--border-2);
+    border-radius: 7px;
+    color: var(--text-2);
+    cursor: pointer;
+    align-items: center; justify-content: center;
+  }
+  .toc-toggle:hover { color: var(--green-2); border-color: var(--green); }
+
+  @media (max-width: 980px) {
+    .shell { grid-template-columns: 1fr; gap: 0; padding: 24px 20px 80px; }
+    .toc {
+      position: fixed;
+      top: 56px;
+      left: -100%;
+      bottom: 0;
+      width: 280px; max-width: 80vw;
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+      padding: 24px 20px;
+      transition: left 0.25s ease;
+      max-height: none;
+      box-shadow: 0 0 40px rgba(0,0,0,0);
+      z-index: 45;
+    }
+    .toc.open { left: 0; box-shadow: 0 0 40px rgba(0,0,0,0.15); }
+    .toc-toggle { display: inline-flex; }
+    .content { max-width: none; }
+    h1 { font-size: 32px; }
+    h2 { font-size: 20px; }
+    .defs-grid { grid-template-columns: 1fr; }
+    .clause { grid-template-columns: 36px 1fr; gap: 10px; }
+    .topbar { padding: 0 18px; gap: 14px; }
+    .topbar-meta .pill:not(.live) { display: none; }
+  }
+  @media (max-width: 520px) {
+    h1 { font-size: 26px; }
+    .lede { font-size: 14.5px; }
+    .clause-body { font-size: 14px; }
+    .topbar .brand .doc-tag { display: none; }
+  }
+
+  @media print {
+    .topbar, .toc, .to-top, .progress, .icon-btn, .toc-toggle { display: none !important; }
+    .shell { display: block; padding: 0; max-width: none; }
+    body { background: #fff; }
+    section.sec { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress"><div class="fill" id="progressFill"></div></div>
+
+<header class="topbar">
+  <button class="toc-toggle" id="tocToggle" title="Open contents" aria-label="Open contents">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <div class="topbar-meta">
+    <button class="icon-btn" onclick="window.print()" title="Print">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="shell">
+
+  <aside class="toc" id="toc">
+    <div class="toc-title">Contents</div>
+    <ol>
+      <li><a class="toc-link" href="#s1">Introduction</a></li>
+      <li><a class="toc-link" href="#s2">Definitions</a></li>
+      <li><a class="toc-link" href="#s3">Nature of Shoptrans</a></li>
+      <li><a class="toc-link" href="#s4">Eligibility &amp; Account</a></li>
+      <li><a class="toc-link" href="#s5">Acceptance</a></li>
+      <li><a class="toc-link" href="#s6">Client Rights &amp; Obligations</a></li>
+      <li><a class="toc-link" href="#s7">Subcontractors &amp; Agents</a></li>
+      <li><a class="toc-link" href="#s8">Fees, Payment &amp; Taxes</a></li>
+      <li><a class="toc-link" href="#s9">Insurance</a></li>
+      <li><a class="toc-link" href="#s10">Cross-Border Payments</a></li>
+      <li><a class="toc-link" href="#s11">Prohibited Goods</a></li>
+      <li><a class="toc-link" href="#s12">Sanctions &amp; Export Control</a></li>
+      <li><a class="toc-link" href="#s13">Intellectual Property</a></li>
+      <li><a class="toc-link" href="#s14">Client Content &amp; Data</a></li>
+      <li><a class="toc-link" href="#s15">Service &amp; Platform</a></li>
+      <li><a class="toc-link" href="#s16">Disclaimers</a></li>
+      <li><a class="toc-link" href="#s17">Limitations of Liability</a></li>
+      <li><a class="toc-link" href="#s18">Indemnification</a></li>
+      <li><a class="toc-link" href="#s19">Suspension &amp; Termination</a></li>
+      <li><a class="toc-link" href="#s20">Force Majeure</a></li>
+      <li><a class="toc-link" href="#s21">Confidentiality</a></li>
+      <li><a class="toc-link" href="#s22">Data Protection</a></li>
+      <li><a class="toc-link" href="#s23">Electronic Communications</a></li>
+      <li><a class="toc-link" href="#s24">Governing Law &amp; Disputes</a></li>
+      <li><a class="toc-link" href="#s25">Notices</a></li>
+      <li><a class="toc-link" href="#s26">Assignment</a></li>
+      <li><a class="toc-link" href="#s27">Survival</a></li>
+      <li><a class="toc-link" href="#s28">Language</a></li>
+      <li><a class="toc-link" href="#s29">General Provisions</a></li>
+    </ol>
+  </aside>
+
+  <article class="content">
+
+    <header class="doc-head">
+      <div class="kicker">Legal · Digital Trade Platform</div>
+      <h1>Terms and Conditions of Service</h1>
+      <p class="lede">The binding agreement governing the use of Shoptrans' international logistics services and digital platform — the channel that transforms traditional trade workflows into a faster, transparent, and optimized operation.</p>
+    </header>
+
+    <!-- §1 -->
+    <section class="sec" id="s1">
+      <div class="sec-head">
+        <div class="sec-num">01 — Introduction</div>
+        <h2>Introduction <a class="anchor" href="#s1">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">1.1</span><div class="clause-body"><p>These Terms and Conditions (<span class="term">Terms</span>) govern your access to and use of the services provided by Shoptrans (<span class="term">Shoptrans</span>, <em>we</em>, <em>us</em>, or <em>our</em>), whether such services are requested, ordered, performed, or delivered through Shoptrans' digital platform (websites, mobile applications, dashboards, APIs, and related digital tools, collectively the <span class="term">Platform</span>) or through Shoptrans' branch network and offline channels.</p></div></div>
+      <div class="clause"><span class="clause-num">1.2</span><div class="clause-body"><p>Shoptrans is an integrated international logistics and trade-services company that provides international transportation, customs clearance, warehousing, cross-border payment support, trade documentation, and related value-added services. Shoptrans delivers these services directly, through its global branch network, and through duly appointed Subcontractors and agents.</p></div></div>
+      <div class="clause"><span class="clause-num">1.3</span><div class="clause-body"><p>The Platform is the digital channel through which Shoptrans modernizes and operates its services. It is not a marketplace intermediary; it is a tool used by Shoptrans to digitize traditional logistics workflows, increase efficiency and speed, improve transparency, and optimize the way Shoptrans and its Clients work together.</p></div></div>
+      <div class="clause"><span class="clause-num">1.4</span><div class="clause-body"><p>By accessing, registering, or using any service of Shoptrans, whether through the Platform or otherwise, you (<span class="term">Client</span>, <span class="term">User</span>, or <em>you</em>) acknowledge that you have read, understood, and accepted these Terms, which shall constitute a legally binding agreement between you and Shoptrans.</p></div></div>
+      <div class="clause"><span class="clause-num">1.5</span><div class="clause-body"><p>If you do not agree to any part of these Terms, you must immediately cease using the Services and the Platform.</p></div></div>
+      <div class="clause"><span class="clause-num">1.6</span><div class="clause-body"><p>These Terms shall be read together with our Privacy Policy, Cookie Policy, Acceptable Use Policy, Fee Schedule, House Bill of Lading conditions (where applicable), Warehouse Receipt conditions (where applicable), and any product-specific or order-specific terms published or notified by Shoptrans. In the event of a conflict, the more specific document shall prevail with respect to the specific matter addressed.</p></div></div>
+    </section>
+
+    <!-- §2 -->
+    <section class="sec" id="s2">
+      <div class="sec-head">
+        <div class="sec-num">02 — Definitions</div>
+        <h2>Definitions <a class="anchor" href="#s2">#</a></h2>
+      </div>
+      <p class="defs-intro">For the purposes of these Terms:</p>
+      <div class="defs-grid">
+        <div class="def"><div class="def-term">Account</div><div class="def-body">The registered user account created by a Client to access and use the Platform.</div></div>
+        <div class="def"><div class="def-term">Services</div><div class="def-body">The international logistics, customs, warehousing, cross-border payment support, trade documentation, advisory, and related value-added services provided by Shoptrans, whether ordered through the Platform or offline.</div></div>
+        <div class="def"><div class="def-term">Platform</div><div class="def-body">Has the meaning given in Section 1.1 — Shoptrans' websites, mobile apps, dashboards, APIs, and related digital tools.</div></div>
+        <div class="def"><div class="def-term">Order</div><div class="def-body">Any booking, request, instruction, or transaction submitted by a Client to Shoptrans, whether through the Platform or otherwise.</div></div>
+        <div class="def"><div class="def-term">Subcontractor</div><div class="def-body">Any third party engaged by Shoptrans to perform all or part of the Services — including ocean carriers, airlines, trucking and rail operators, port and terminal operators, customs brokers (where Shoptrans is not the broker of record), warehouse operators, banks and payment institutions, insurers, surveyors, and inspection agencies.</div></div>
+        <div class="def"><div class="def-term">Goods</div><div class="def-body">Any cargo, shipment, parcel, or item that is the subject of an Order.</div></div>
+        <div class="def"><div class="def-term">Client Content</div><div class="def-body">Any data, information, documents, instructions, images, files, or other materials submitted by the Client to Shoptrans or to the Platform.</div></div>
+        <div class="def"><div class="def-term">SDR</div><div class="def-body">The Special Drawing Right as defined by the International Monetary Fund.</div></div>
+      </div>
+    </section>
+
+    <!-- §3 -->
+    <section class="sec" id="s3">
+      <div class="sec-head">
+        <div class="sec-num">03 — Nature of Shoptrans &amp; the Services</div>
+        <h2>Nature of Shoptrans and the Services <a class="anchor" href="#s3">#</a></h2>
+      </div>
+      <div class="callout">
+        <div class="callout-label">Key positioning</div>
+        <p>Shoptrans provides the Services <strong>directly</strong> as principal, whether performed by Shoptrans itself, by its branch network, or by appointed Subcontractors. The Platform is the <strong>digital operating channel</strong> of Shoptrans — not a marketplace, broker, or matching service.</p>
+      </div>
+      <div class="clause"><span class="clause-num">3.1</span><div class="clause-body"><p><span class="lead-in">Direct Service Provider</span>Shoptrans provides the Services directly to the Client as principal, whether such Services are performed by Shoptrans itself, by any company within Shoptrans' branch network, or by duly appointed Subcontractors. The contract for the Services is formed between the Client and Shoptrans.</p></div></div>
+      <div class="clause"><span class="clause-num">3.2</span><div class="clause-body"><p><span class="lead-in">Digital Channel</span>The Platform is the digital operating channel of Shoptrans. It enables Clients to obtain quotations, place Orders, exchange documents, track shipments, manage cases, communicate with Shoptrans, and access related digital tools. The Platform is provided as part of the Services and is not a separate marketplace, broker, or matching service.</p></div></div>
+      <div class="clause"><span class="clause-num">3.3</span><div class="clause-body"><p><span class="lead-in">Branch Network</span>Where the Services are performed by, through, or with the involvement of any office, branch, affiliate, or group company of Shoptrans, such office, branch, affiliate, or group company is deemed to act under and within these Terms, and all rights, defenses, exclusions, and limitations available to Shoptrans shall extend equally to them.</p></div></div>
+      <div class="clause"><span class="clause-num">3.4</span><div class="clause-body"><p><span class="lead-in">Mode of Performance</span>Unless expressly agreed in writing, Shoptrans is free to determine the means, route, mode of transport, carriers, handling agents, and procedures used to perform the Services, and may consolidate the Goods with other consignments. Quotations, transit times, and routings displayed on the Platform are indicative and may change in response to operational, regulatory, market, or force majeure events.</p></div></div>
+      <div class="clause"><span class="clause-num">3.5</span><div class="clause-body"><p><span class="lead-in">As-Is Information</span>Information displayed on the Platform — including rates, schedules, transit times, port pairs, capacity, exchange rates, ETAs, ETDs, milestones, and tracking updates — is sourced from Shoptrans' systems, partner systems, public databases, and automated feeds. Shoptrans uses commercially reasonable efforts to ensure accuracy but does not warrant that such information is error-free, complete, or available in real time.</p></div></div>
+    </section>
+
+    <!-- §4 -->
+    <section class="sec" id="s4">
+      <div class="sec-head">
+        <div class="sec-num">04 — Eligibility, Registration &amp; Account</div>
+        <h2>Eligibility, Registration, and Account <a class="anchor" href="#s4">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">4.1</span><div class="clause-body"><p><span class="lead-in">Eligibility</span>To use the Services and the Platform, the Client must:</p><ul class="clause-list"><li>be a legally constituted business entity or an individual at least 18 years of age with full legal capacity;</li><li>have the authority to enter into binding contracts under applicable law;</li><li>not be located in, or a resident of, any country or territory subject to comprehensive trade sanctions imposed by the United Nations, the European Union, the United States, the United Kingdom, or Vietnam; and</li><li>not be listed on any applicable sanctions, denied parties, or restricted parties list.</li></ul></div></div>
+      <div class="clause"><span class="clause-num">4.2</span><div class="clause-body"><p><span class="lead-in">Registration &amp; KYC/KYB</span>Clients must complete the registration and verification process truthfully and may be required to provide know-your-customer (KYC) or know-your-business (KYB) documentation, including business licenses, tax codes, beneficial ownership information, and authorized signatory details. Shoptrans may refuse, suspend, or terminate any Account or Service at its sole discretion where verification is incomplete, inaccurate, or unsatisfactory.</p></div></div>
+      <div class="clause"><span class="clause-num">4.3</span><div class="clause-body"><p><span class="lead-in">Account Security</span>The Client is solely responsible for:</p><ul class="clause-list"><li>maintaining the confidentiality of all login credentials, API keys, tokens, and access codes;</li><li>all activities that occur under the Account, whether or not authorized by the Client; and</li><li>notifying Shoptrans immediately of any suspected unauthorized access, security breach, or misuse.</li></ul></div></div>
+      <div class="clause"><span class="clause-num">4.4</span><div class="clause-body"><p><span class="lead-in">One Account Per Entity</span>Unless expressly authorized by Shoptrans, each legal entity may register only one primary Account. Sub-accounts created for employees, branches, or affiliates remain the responsibility of the primary Account holder.</p></div></div>
+      <div class="clause"><span class="clause-num">4.5</span><div class="clause-body"><p><span class="lead-in">Authority of Users</span>Any access to, or use of, the Account, and any instruction, Order, or acceptance received through the Account or from a person held out by the Client as an authorized representative, shall be deemed authorized by and binding on the Client.</p></div></div>
+    </section>
+
+    <!-- §5 -->
+    <section class="sec" id="s5">
+      <div class="sec-head">
+        <div class="sec-num">05 — Acceptance &amp; Binding Nature</div>
+        <h2>Acceptance and Binding Nature <a class="anchor" href="#s5">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">5.1</span><div class="clause-body"><p>These Terms apply to all Users of the Services and the Platform, including registered Clients, authorized representatives, and any individual using credentials issued under a Client Account.</p></div></div>
+      <div class="clause"><span class="clause-num">5.2</span><div class="clause-body"><p>Shoptrans reserves the right, at its sole discretion, to amend, update, supplement, or replace these Terms at any time. Any modifications shall be published on the Platform and shall take effect immediately upon publication unless otherwise specified.</p></div></div>
+      <div class="clause"><span class="clause-num">5.3</span><div class="clause-body"><p>The Client's continued use of the Services or Platform following the publication of revised Terms shall constitute acceptance of those revised Terms. Clients who do not agree to revised Terms must cease use of the Services.</p></div></div>
+      <div class="clause"><span class="clause-num">5.4</span><div class="clause-body"><p>The Client agrees to:</p><ul class="clause-list"><li>provide accurate, truthful, complete, and lawful information;</li><li>not use the Services or Platform for any unlawful purpose, including but not limited to money laundering, terrorism financing, tax evasion, sanctions evasion, fraud, smuggling, or any other prohibited activity;</li><li>comply with all applicable laws and regulations in the Client's jurisdiction, in the jurisdictions of origin, transit, and destination of any shipment, and in the jurisdictions where Shoptrans operates.</li></ul></div></div>
+    </section>
+
+    <!-- §6 -->
+    <section class="sec" id="s6">
+      <div class="sec-head">
+        <div class="sec-num">06 — Client Rights &amp; Obligations</div>
+        <h2>Client Rights and Obligations <a class="anchor" href="#s6">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">6.1</span><div class="clause-body"><p><span class="lead-in">Client Rights</span></p><ul class="clause-list"><li>To access and use the Services and the Platform substantially as described, subject to scheduled maintenance, force majeure, and the Client's compliance with these Terms.</li><li>To have personal and transactional data processed in accordance with our Privacy Policy and applicable data protection laws.</li><li>To receive customer support within Shoptrans' published service levels.</li><li>To request dispute resolution within Shoptrans' scope of responsibility as defined herein.</li></ul></div></div>
+      <div class="clause"><span class="clause-num">6.2</span><div class="clause-body"><p><span class="lead-in">Client Obligations</span></p><ul class="clause-list"><li>To pay all fees, freight, surcharges, taxes, duties, demurrage, detention, storage, and other amounts in full and on time in accordance with the Fee Schedule, applicable contracts, or invoices issued.</li><li>To provide accurate, complete, and timely documents, data, information, and instructions required for booking, customs, payment, and other processes, including correct description, classification, weight, dimensions, value, HS code, dangerous-goods declarations, and shipper/consignee details.</li><li>To ensure that all Goods tendered for the Services are lawful, properly classified, properly packaged, properly marked and labeled, accurately declared, and not subject to any export, import, or transit prohibition.</li><li>To obtain, at the Client's own cost, all licenses, permits, certificates, and authorizations required for the lawful import, export, transit, and handling of the Goods.</li><li>To arrange adequate cargo insurance for the Goods at its own cost (see <a href="#s9">Section 9</a>), unless Shoptrans has expressly agreed in writing to arrange such insurance as the Client's limited agent.</li><li>To take full legal and financial responsibility for any false, incomplete, misleading, or unlawful information submitted to Shoptrans or to authorities through Shoptrans.</li><li>To indemnify Shoptrans against any cost, fine, penalty, or claim arising from the Client's breach of these obligations (see <a href="#s18">Section 18</a>).</li></ul></div></div>
+    </section>
+
+    <!-- §7 -->
+    <section class="sec" id="s7">
+      <div class="sec-head">
+        <div class="sec-num">07 — Subcontractors &amp; Agents</div>
+        <h2>Performance Through Subcontractors and Agents <a class="anchor" href="#s7">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">7.1</span><div class="clause-body"><p><span class="lead-in">Right to Subcontract</span>Shoptrans is entitled to perform the Services itself, through its branch network, or through Subcontractors of its own choice, on such terms as Shoptrans deems appropriate, without prior notice to the Client.</p></div></div>
+      <div class="clause"><span class="clause-num">7.2</span><div class="clause-body"><p><span class="lead-in">Subcontractor Terms</span>Where Shoptrans performs Services through a Subcontractor (for example, ocean carriage, air carriage, road carriage, customs brokerage, or warehousing), the Subcontractor's tariffs, bills of lading, air waybills, warehouse receipts, and applicable international conventions and protocols (including the Hague Rules, Hague-Visby Rules, Hamburg Rules, Rotterdam Rules, Warsaw Convention, Montreal Convention, CMR, COTIF, or similar) shall apply to that segment of the Services as between Shoptrans and the Subcontractor and, to the extent that they impose mandatory limitations, defenses, or time bars, those mandatory provisions shall also apply as between Shoptrans and the Client.</p></div></div>
+      <div class="clause"><span class="clause-num">7.3</span><div class="clause-body"><p><span class="lead-in">Group Company Protection · Himalaya</span>Every right, defense, exclusion, and limitation available to Shoptrans under these Terms or under any applicable convention shall also be available to, and may be invoked by, every branch, affiliate, group company, Subcontractor, employee, officer, director, agent, and contractor of Shoptrans, each of whom shall be deemed a beneficiary of these Terms.</p></div></div>
+      <div class="clause"><span class="clause-num">7.4</span><div class="clause-body"><p><span class="lead-in">Routing and Means</span>Shoptrans is entitled to select, change, or substitute the route, mode of transport, carrier, port of loading, port of discharge, transshipment point, warehouse, or any other operational arrangement, where Shoptrans considers it reasonable, necessary, or beneficial.</p></div></div>
+    </section>
+
+    <!-- §8 -->
+    <section class="sec" id="s8">
+      <div class="sec-head">
+        <div class="sec-num">08 — Quotations, Fees, Payment &amp; Taxes</div>
+        <h2>Quotations, Fees, Payment, and Taxes <a class="anchor" href="#s8">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">8.1</span><div class="clause-body"><p><span class="lead-in">Quotations</span>Quotations provided through the Platform or otherwise are estimates only, based on information supplied by the Client at the time of quotation. Quotations are valid for the period stated and are subject to change due to fluctuations in fuel costs, currency exchange rates, port congestion surcharges, peak season surcharges, security surcharges, regulatory changes, re-measurement of weight or volume, or other factors. Quotations do not include duties, taxes, demurrage, detention, storage, or charges payable to authorities or third parties unless expressly stated.</p></div></div>
+      <div class="clause"><span class="clause-num">8.2</span><div class="clause-body"><p><span class="lead-in">Fees</span>The Client agrees to pay all applicable fees as published in the Fee Schedule or specified in an Order confirmation, including but not limited to freight, surcharges, fuel adjustment factors, terminal handling charges, documentation fees, customs declaration fees, warehousing fees, last-mile delivery fees, Platform subscription fees, transaction fees, payment processing fees, and currency conversion charges.</p></div></div>
+      <div class="clause"><span class="clause-num">8.3</span><div class="clause-body"><p><span class="lead-in">Invoicing &amp; Payment</span>Invoices shall be issued in the currency stated in the Order and shall be paid by the due date specified, without any deduction, set-off, withholding, or counterclaim. Late payments shall bear interest at the rate of <strong>1.5% per month</strong> or the maximum rate permitted by applicable law, whichever is lower, accruing daily until paid in full. The Client shall also reimburse Shoptrans for all costs of collection, including reasonable legal fees.</p></div></div>
+      <div class="clause"><span class="clause-num">8.4</span><div class="clause-body"><p><span class="lead-in">Taxes</span>All fees are exclusive of any applicable value-added tax, goods and services tax, withholding tax, customs duties, or similar taxes, which shall be borne solely by the Client unless the law expressly imposes such liability on Shoptrans.</p></div></div>
+      <div class="clause"><span class="clause-num">8.5</span><div class="clause-body"><p><span class="lead-in">Set-Off, Lien &amp; Retention</span>Shoptrans has a particular and general lien over all Goods, documents, and other property of the Client in Shoptrans' or its Subcontractors' possession, custody, or control, for all sums owed by the Client to Shoptrans at any time, whether or not relating to the Goods detained. After <strong>thirty (30) days'</strong> written notice, Shoptrans may sell or otherwise dispose of such Goods and apply the proceeds against the amounts owed. Shoptrans may also set off any amount payable to the Client against any amount owed by the Client.</p></div></div>
+      <div class="clause"><span class="clause-num">8.6</span><div class="clause-body"><p><span class="lead-in">No Refund Where Earned</span>Fees and processing charges are non-refundable once the corresponding Services have been rendered, unless otherwise required by law.</p></div></div>
+      <div class="clause"><span class="clause-num">8.7</span><div class="clause-body"><p><span class="lead-in">Demurrage, Detention, Storage</span>The Client is responsible for all demurrage, detention, storage, container clean-up, repositioning, re-routing, re-export, abandonment, and similar charges incurred as a result of the Client's acts, omissions, instructions, or inaction, or those of the consignee or any party for whom the Client is responsible.</p></div></div>
+    </section>
+
+    <!-- §9 -->
+    <section class="sec" id="s9">
+      <div class="sec-head">
+        <div class="sec-num">09 — Insurance</div>
+        <h2>Insurance <a class="anchor" href="#s9">#</a></h2>
+      </div>
+      <div class="callout">
+        <div class="callout-label">Important</div>
+        <p>The Goods are <strong>not insured</strong> by Shoptrans by default. Insurance only applies if requested in writing, expressly accepted by Shoptrans, and the premium has been paid.</p>
+      </div>
+      <div class="clause"><span class="clause-num">9.1</span><div class="clause-body"><p>Goods are not insured by Shoptrans unless the Client has requested cargo insurance in writing and Shoptrans has expressly accepted such request in writing and the corresponding premium has been paid.</p></div></div>
+      <div class="clause"><span class="clause-num">9.2</span><div class="clause-body"><p>Where Shoptrans agrees to arrange insurance, Shoptrans acts solely as the Client's limited agent in placing such insurance with a third-party insurer, on the standard terms offered by that insurer. Shoptrans is not the insurer and is not liable as insurer.</p></div></div>
+      <div class="clause"><span class="clause-num">9.3</span><div class="clause-body"><p>Insurance does not cover inherent vice, insufficient packaging, ordinary wear, delay, loss of market, consequential losses, or excluded perils, except as expressly stated in the policy.</p></div></div>
+    </section>
+
+    <!-- §10 -->
+    <section class="sec" id="s10">
+      <div class="sec-head">
+        <div class="sec-num">10 — Cross-Border Payments &amp; Financial Services</div>
+        <h2>Cross-Border Payments and Financial Services <a class="anchor" href="#s10">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">10.1</span><div class="clause-body"><p>Where Shoptrans facilitates cross-border payments or remittances as part of the Services, such transactions are executed through licensed banks, payment institutions, or remittance partners. Shoptrans does not act as a bank, money transmitter, or e-money institution unless it expressly holds the required license for such activity in the relevant jurisdiction.</p></div></div>
+      <div class="clause"><span class="clause-num">10.2</span><div class="clause-body"><p><span class="lead-in">Compliance Screening</span>All payment instructions are subject to AML/CFT screening, sanctions screening, and other compliance checks. Shoptrans and its partners may delay, suspend, refuse, or reverse any payment instruction in order to comply with applicable laws or compliance policies.</p></div></div>
+      <div class="clause"><span class="clause-num">10.3</span><div class="clause-body"><p><span class="lead-in">Currency Risk</span>Currency exchange rates fluctuate and are determined by the executing financial institution at the time of execution. Shoptrans is not liable for any difference between indicative rates displayed on the Platform and actual rates applied at execution.</p></div></div>
+      <div class="clause"><span class="clause-num">10.4</span><div class="clause-body"><p><span class="lead-in">No Financial Advice</span>Nothing on the Platform or in the Services constitutes investment, tax, accounting, or legal advice. The Client is solely responsible for obtaining independent professional advice.</p></div></div>
+    </section>
+
+    <!-- §11 -->
+    <section class="sec" id="s11">
+      <div class="sec-head">
+        <div class="sec-num">11 — Prohibited Goods &amp; Restricted Activities</div>
+        <h2>Prohibited Goods and Restricted Activities <a class="anchor" href="#s11">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">11.1</span><div class="clause-body"><p><span class="lead-in">Prohibited Goods</span>The Client shall not, directly or indirectly, tender or use the Services for Goods that are prohibited under applicable law or by any Subcontractor, including but not limited to: narcotics and controlled substances; weapons, ammunition, and military equipment; counterfeit, pirated, or trademark-infringing goods; endangered species and products thereof (CITES); human remains, human tissue, or human organs (except as expressly permitted); live animals (except as expressly permitted); hazardous materials not properly classified, packaged, marked, labeled, and documented under IMDG / IATA DGR / ADR / RID; currency, bearer instruments, or precious metals (except as expressly permitted); goods subject to embargo or sanctions; and any other goods declared prohibited by the carrier, customs authority, or Shoptrans.</p></div></div>
+      <div class="clause"><span class="clause-num">11.2</span><div class="clause-body"><p><span class="lead-in">Special Cargo</span>Dangerous goods, perishable goods, valuable goods (cash, jewelry, precious metals, artwork, antiques, securities), oversize / out-of-gauge goods, temperature-controlled goods, and live animals must be declared in advance and accepted by Shoptrans in writing. Shoptrans may refuse, abandon, destroy, return, or take any other appropriate action with respect to undeclared or misdeclared special cargo, at the Client's cost and risk, without liability.</p></div></div>
+      <div class="clause"><span class="clause-num">11.3</span><div class="clause-body"><p><span class="lead-in">Restricted Activities on the Platform</span>The Client shall not:</p><ul class="clause-list"><li>reverse engineer, decompile, disassemble, or attempt to derive the source code of the Platform;</li><li>scrape, crawl, harvest, or otherwise extract data from the Platform by automated means without express written consent;</li><li>introduce viruses, malware, or any malicious code into the Platform;</li><li>attempt to gain unauthorized access to the Platform, other Accounts, or any underlying system;</li><li>circumvent or attempt to circumvent any security, rate limit, authentication, or access control mechanism;</li><li>misrepresent shipper, consignee, value, weight, classification, origin, or destination of any cargo;</li><li>use any &ldquo;stand-in,&rdquo; &ldquo;ghost,&rdquo; or &ldquo;front&rdquo; entity to mask the true beneficial party of any shipment or transaction; or</li><li>use the Platform or the Services in any manner that could damage, disable, overburden, or impair their operation.</li></ul></div></div>
+      <div class="clause"><span class="clause-num">11.4</span><div class="clause-body"><p><span class="lead-in">Right to Refuse</span>Shoptrans reserves the right, without liability, to refuse, suspend, abandon, return, dispose of, or cancel any Order, Service, or Account that Shoptrans reasonably believes violates this Section.</p></div></div>
+    </section>
+
+    <!-- §12 -->
+    <section class="sec" id="s12">
+      <div class="sec-head">
+        <div class="sec-num">12 — Sanctions &amp; Export Control</div>
+        <h2>Sanctions and Export Control Compliance <a class="anchor" href="#s12">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">12.1</span><div class="clause-body"><p>The Client represents, warrants, and undertakes that it, its affiliates, beneficial owners, directors, officers, employees, and counterparties:</p><ul class="clause-list"><li>are not subject to any economic or trade sanctions administered by the United Nations, the United States (OFAC), the European Union, the United Kingdom (OFSI), or Vietnam;</li><li>shall not use the Services or Platform in violation of any applicable export control, sanctions, or trade restriction laws; and</li><li>shall not engage in any transaction involving a sanctioned country, sanctioned party, or sanctioned end-use.</li></ul></div></div>
+      <div class="clause"><span class="clause-num">12.2</span><div class="clause-body"><p>Shoptrans may at any time, without prior notice and without liability, freeze, hold, block, delay, reject, return, dispose of, or report any Order, Goods, payment, or Account where compliance concerns arise.</p></div></div>
+    </section>
+
+    <!-- §13 -->
+    <section class="sec" id="s13">
+      <div class="sec-head">
+        <div class="sec-num">13 — Intellectual Property</div>
+        <h2>Intellectual Property <a class="anchor" href="#s13">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">13.1</span><div class="clause-body"><p><span class="lead-in">Platform Ownership</span>All right, title, and interest in and to the Platform and the Services, including all software, source code, object code, designs, layouts, user interfaces, graphics, text, logos, trademarks, trade names, service marks, methodologies, know-how, and all related intellectual property rights, are and shall remain the exclusive property of Shoptrans and its licensors.</p></div></div>
+      <div class="clause"><span class="clause-num">13.2</span><div class="clause-body"><p><span class="lead-in">Limited License</span>Subject to the Client's continued compliance with these Terms, Shoptrans grants the Client a limited, non-exclusive, non-transferable, non-sublicensable, revocable license to access and use the Platform solely for the Client's internal business purposes in connection with the Services.</p></div></div>
+      <div class="clause"><span class="clause-num">13.3</span><div class="clause-body"><p><span class="lead-in">Feedback</span>Any suggestions, ideas, improvements, or feedback provided by the Client may be used by Shoptrans without restriction and without compensation. The Client hereby assigns all rights in such feedback to Shoptrans to the maximum extent permitted by law.</p></div></div>
+      <div class="clause"><span class="clause-num">13.4</span><div class="clause-body"><p><span class="lead-in">No Implied Rights</span>No license, right, or interest in any trademark, logo, or service mark of Shoptrans is granted to the Client except as expressly stated in writing.</p></div></div>
+    </section>
+
+    <!-- §14 -->
+    <section class="sec" id="s14">
+      <div class="sec-head">
+        <div class="sec-num">14 — Client Content &amp; Data License</div>
+        <h2>Client Content and Data License <a class="anchor" href="#s14">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">14.1</span><div class="clause-body"><p><span class="lead-in">Ownership</span>The Client retains all ownership rights in Client Content.</p></div></div>
+      <div class="clause"><span class="clause-num">14.2</span><div class="clause-body"><p><span class="lead-in">License to Shoptrans</span>By submitting Client Content to Shoptrans, the Client grants Shoptrans (and its branches, affiliates, and Subcontractors, to the extent necessary) a worldwide, royalty-free, sublicensable license to host, store, process, transmit, display, copy, modify (for format and technical purposes), and use such Client Content for the purposes of:</p><ul class="clause-list"><li>providing, operating, maintaining, and improving the Services and Platform;</li><li>fulfilling Orders and transmitting necessary data to Subcontractors and authorities;</li><li>performing analytics, security monitoring, fraud prevention, and compliance checks;</li><li>complying with legal and regulatory obligations; and</li><li>creating aggregated, de-identified statistical data that does not identify the Client.</li></ul></div></div>
+      <div class="clause"><span class="clause-num">14.3</span><div class="clause-body"><p><span class="lead-in">Client Warranties</span>The Client represents and warrants that it has all rights necessary to submit Client Content, that the Client Content does not infringe any third-party rights, and that all data subjects whose personal data is included in Client Content have been duly notified and have provided any necessary consents.</p></div></div>
+      <div class="clause"><span class="clause-num">14.4</span><div class="clause-body"><p><span class="lead-in">Retention</span>Shoptrans may retain Client Content for as long as necessary to perform the Services, to comply with legal obligations, to resolve disputes, and to enforce these Terms.</p></div></div>
+    </section>
+
+    <!-- §15 -->
+    <section class="sec" id="s15">
+      <div class="sec-head">
+        <div class="sec-num">15 — Service Obligations &amp; Platform Availability</div>
+        <h2>Shoptrans Service Obligations and Platform Availability <a class="anchor" href="#s15">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">15.1</span><div class="clause-body"><p><span class="lead-in">Service Obligations</span>Shoptrans shall perform the Services with the care and skill reasonably expected of an experienced international logistics service provider, in accordance with the Client's lawful instructions and applicable industry practice.</p></div></div>
+      <div class="clause"><span class="clause-num">15.2</span><div class="clause-body"><p><span class="lead-in">Platform Availability</span>Shoptrans shall use commercially reasonable efforts to make the Platform available substantially in accordance with the service levels published on the Platform (if any). The Platform may from time to time be unavailable due to scheduled maintenance, upgrades, technical issues, or factors beyond Shoptrans' reasonable control.</p></div></div>
+      <div class="clause"><span class="clause-num">15.3</span><div class="clause-body"><p><span class="lead-in">No Other Warranties</span>Except as expressly set out in these Terms, Shoptrans makes no representations or warranties, express or implied, including any implied warranties of merchantability, fitness for a particular purpose, non-infringement, accuracy, or uninterrupted operation, to the maximum extent permitted by applicable law. The Platform is provided &ldquo;as is&rdquo; and &ldquo;as available.&rdquo;</p></div></div>
+      <div class="clause"><span class="clause-num">15.4</span><div class="clause-body"><p><span class="lead-in">Estimates Only</span>Transit times, ETAs, ETDs, milestones, capacity, and rates displayed on the Platform are estimates only and are not guaranteed. Shoptrans is not liable for any failure to meet any estimated time of arrival or departure.</p></div></div>
+      <div class="clause"><span class="clause-num">15.5</span><div class="clause-body"><p><span class="lead-in">Delivery &amp; Notice of Loss / Damage</span>The Goods are deemed delivered in apparent good order and condition when receipted by the consignee or its authorized representative. Any claim for visible loss or damage must be noted on the delivery receipt at the time of delivery. Any claim for concealed loss or damage must be notified to Shoptrans in writing within <strong>fourteen (14) days</strong> of delivery, failing which the Goods shall be deemed delivered in good order and condition.</p></div></div>
+      <div class="clause"><span class="clause-num">15.6</span><div class="clause-body"><p><span class="lead-in">Release of Documents</span>Original transport documents, including any bill of lading or air waybill issued by Shoptrans, shall be released only after Shoptrans has received full payment of all amounts owed by the Client.</p></div></div>
+    </section>
+
+    <!-- §16 -->
+    <section class="sec" id="s16">
+      <div class="sec-head">
+        <div class="sec-num">16 — Disclaimers</div>
+        <h2>Disclaimers <a class="anchor" href="#s16">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">16.1</span><div class="clause-body"><p><span class="lead-in">Service &amp; Platform Interruptions</span>Shoptrans shall not be liable for any interruption, suspension, downtime, slow performance, delay, or failure of the Services or Platform caused by technical issues, scheduled maintenance, network outages, third-party infrastructure failures, cyberattacks, natural disasters, epidemics, pandemics, wars, civil unrest, strikes, labor disputes, government actions, or any other event described in <a href="#s20">Section 20</a> (Force Majeure).</p></div></div>
+      <div class="clause"><span class="clause-num">16.2</span><div class="clause-body"><p><span class="lead-in">Third-Party Information</span>Shoptrans shall not be liable for the accuracy, completeness, timeliness, or reliability of information provided by Subcontractors, public sources, third-party APIs, customs authorities, port authorities, banks, exchanges, or any other third party.</p></div></div>
+      <div class="clause"><span class="clause-num">16.3</span><div class="clause-body"><p><span class="lead-in">International Trade Risks</span>Shoptrans shall not be liable for losses arising from currency fluctuations, foreign exchange controls, capital controls, sanctions, embargoes, tariffs, regulatory changes, port congestion, strikes, lockouts, blockades, additional customs inspections, seizures, demurrage, detention, or storage charges imposed by third parties or authorities.</p></div></div>
+      <div class="clause"><span class="clause-num">16.4</span><div class="clause-body"><p><span class="lead-in">Digital &amp; Cyber Risks</span>Although Shoptrans applies reasonable security measures, the Client acknowledges that no system is completely secure. Shoptrans shall not be liable for any data loss, leakage, corruption, unauthorized access, phishing, social engineering, or cyberattack beyond Shoptrans' reasonable control, nor for any loss caused by the Client's failure to maintain proper credential security.</p></div></div>
+      <div class="clause"><span class="clause-num">16.5</span><div class="clause-body"><p><span class="lead-in">Client Reliance</span>Any decision made by the Client based on information displayed on the Platform — including rates, transit times, capacity, or tracking — is made at the Client's sole risk.</p></div></div>
+    </section>
+
+    <!-- §17 -->
+    <section class="sec" id="s17">
+      <div class="sec-head">
+        <div class="sec-num">17 — Limitations of Liability</div>
+        <h2>Limitations of Liability <a class="anchor" href="#s17">#</a></h2>
+      </div>
+      <div class="callout">
+        <div class="callout-label">Liability caps · Key figures</div>
+        <p><strong>Physical loss / damage to Goods:</strong> max <strong>2 SDR / kg</strong>, capped at <strong>75,000 SDR</strong> per event.</p>
+        <p><strong>Delay, mis-delivery, financial &amp; Platform claims:</strong> lower of <strong>2× the fees</strong> paid for the Order or <strong>75,000 SDR</strong>.</p>
+        <p><strong>Time bar:</strong> claims must be notified within <strong>30 days</strong>; arbitration must be commenced within <strong>9 months</strong>.</p>
+      </div>
+      <div class="clause"><span class="clause-num">17.1</span><div class="clause-body"><p><span class="lead-in">Mandatory Convention Limits</span>Where any segment of the Services is governed by a mandatory international convention or national law (including the Hague-Visby Rules, the Hamburg Rules, the Rotterdam Rules, the Warsaw Convention, the Montreal Convention, CMR, COTIF, or equivalent national legislation), Shoptrans' liability for that segment shall be governed by, and limited in accordance with, such mandatory provisions, and nothing in these Terms shall be construed as imposing on Shoptrans liability greater than that provided under such mandatory provisions, nor as waiving any defenses or limitations available thereunder.</p></div></div>
+      <div class="clause"><span class="clause-num">17.2</span><div class="clause-body"><p><span class="lead-in">Cap on Physical Loss or Damage</span>Where no mandatory convention applies, Shoptrans' liability for physical loss of or damage to the Goods shall in no event exceed <strong>2 SDR per kilogram</strong> of the gross weight of the Goods lost or damaged, with an overall maximum of <strong>75,000 SDR</strong> per event or series of related events.</p></div></div>
+      <div class="clause"><span class="clause-num">17.3</span><div class="clause-body"><p><span class="lead-in">Cap on Non-Physical Loss, Delay &amp; Other Claims</span>Where no mandatory convention applies, Shoptrans' liability for any loss other than physical loss of or damage to the Goods — including delay, misdelivery, consequential loss, financial loss, errors in documentation, customs penalties, or any claim relating to the Platform — shall in no event exceed the lower of (a) two (2) times the fees paid by the Client for the specific Order giving rise to the claim, or (b) 75,000 SDR.</p></div></div>
+      <div class="clause"><span class="clause-num">17.4</span><div class="clause-body"><p><span class="lead-in">Excluded Losses</span>Without prejudice to mandatory law, Shoptrans shall not be liable for any indirect, incidental, special, consequential, exemplary, or punitive damages, including but not limited to:</p><ul class="clause-list"><li>loss of profit, revenue, business, contracts, goodwill, market, or reputation;</li><li>loss of data or content;</li><li>loss of anticipated savings;</li><li>business interruption;</li><li>additional cost of procurement of substitute services;</li><li>damages arising from the Client's misconduct, fraud, negligence, or violation of law;</li><li>damages arising from delays or failures by the Client to provide accurate or timely information; or</li><li>damages caused or contributed to by inherent vice, insufficient packaging, or misdeclaration of the Goods.</li></ul></div></div>
+      <div class="clause"><span class="clause-num">17.5</span><div class="clause-body"><p><span class="lead-in">Time Bar</span>Any claim against Shoptrans must be notified in writing within <strong>thirty (30) days</strong> of the event giving rise to the claim. Any legal action or arbitration must be commenced within <strong>nine (9) months</strong> of (a) the date of delivery of the Goods, or (b) the date when the Goods should have been delivered, or (c) the date when the event giving rise to the claim arose, whichever is earliest. Failing this, the claim shall be permanently barred, subject only to any shorter time bar applicable under a mandatory convention.</p></div></div>
+      <div class="clause"><span class="clause-num">17.6</span><div class="clause-body"><p><span class="lead-in">Allocation of Risk</span>The limitations in this Section reflect the allocation of risk agreed between the parties and form an essential basis of the bargain. They apply even if any limited remedy is found to have failed of its essential purpose, and they apply whether the claim is in contract, tort (including negligence), breach of statutory duty, or otherwise.</p></div></div>
+    </section>
+
+    <!-- §18 -->
+    <section class="sec" id="s18">
+      <div class="sec-head">
+        <div class="sec-num">18 — Indemnification</div>
+        <h2>Indemnification <a class="anchor" href="#s18">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">18.1</span><div class="clause-body"><p>The Client shall defend, indemnify, and hold harmless Shoptrans, its branches, affiliates, Subcontractors, and their respective directors, officers, employees, agents, and contractors from and against any and all claims, demands, suits, proceedings, losses, damages, fines, penalties, costs, and expenses (including reasonable legal fees) arising out of or related to:</p><ul class="clause-list"><li>the Client's breach of these Terms;</li><li>the Client's breach of any applicable law or regulation;</li><li>the Client's misdeclaration, misclassification, mispackaging, or mishandling of any Goods;</li><li>any sanctions, export control, customs, tax, or AML violation attributable to the Client;</li><li>damage caused by the Goods to any other property, person, or environment;</li><li>any third-party claim arising from Client Content or the Client's use of the Services or Platform;</li><li>any claim by a Subcontractor relating to unpaid charges, demurrage, detention, or damage caused by the Client or the Goods; or</li><li>any misuse of the Platform by anyone using the Client's Account.</li></ul></div></div>
+    </section>
+
+    <!-- §19 -->
+    <section class="sec" id="s19">
+      <div class="sec-head">
+        <div class="sec-num">19 — Suspension &amp; Termination</div>
+        <h2>Suspension and Termination <a class="anchor" href="#s19">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">19.1</span><div class="clause-body"><p><span class="lead-in">By Shoptrans</span>Shoptrans may suspend or terminate the Client's Account, Services, or access to the Platform, in whole or in part, at any time and without prior notice, where:</p><ul class="clause-list"><li>the Client breaches these Terms or any applicable law;</li><li>payment is overdue;</li><li>KYC/KYB or compliance concerns arise;</li><li>continued provision of the Services or Platform poses a legal, financial, reputational, or security risk to Shoptrans;</li><li>Shoptrans is required to do so by a regulator, court, or competent authority; or</li><li>the Client engages in activity that Shoptrans reasonably believes is fraudulent, abusive, harmful, or in bad faith.</li></ul></div></div>
+      <div class="clause"><span class="clause-num">19.2</span><div class="clause-body"><p><span class="lead-in">By Client</span>The Client may close its Account at any time, provided that all outstanding amounts have been settled and all open Orders have been completed or properly cancelled.</p></div></div>
+      <div class="clause"><span class="clause-num">19.3</span><div class="clause-body"><p><span class="lead-in">Effects of Termination</span>Upon termination:</p><ul class="clause-list"><li>the Client's right to access the Platform and to receive further Services ceases immediately;</li><li>all outstanding amounts become immediately due and payable;</li><li>Shoptrans may retain Client Content as required to comply with legal obligations and to resolve outstanding matters;</li><li>Shoptrans may continue to exercise its lien and retention rights under <a href="#s8">Section 8.5</a>; and</li><li>Sections that by their nature should survive termination (including Sections 13, 14, 16, 17, 18, 21, 24, and 27) shall survive.</li></ul></div></div>
+    </section>
+
+    <!-- §20 -->
+    <section class="sec" id="s20">
+      <div class="sec-head">
+        <div class="sec-num">20 — Force Majeure</div>
+        <h2>Force Majeure <a class="anchor" href="#s20">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">20.1</span><div class="clause-body"><p>Shoptrans shall not be liable for any failure or delay in performing its obligations under these Terms where such failure or delay results from any event beyond Shoptrans' reasonable control, including but not limited to acts of God, natural disasters, fires, floods, earthquakes, storms, pandemics, epidemics, wars, terrorism, civil disturbances, riots, strikes, lockouts, labor disputes, embargoes, sanctions, government actions, court orders, changes in law, cyberattacks, internet or telecommunications failures, power outages, port closures, carrier failures, or failures of third-party infrastructure or services.</p></div></div>
+    </section>
+
+    <!-- §21 -->
+    <section class="sec" id="s21">
+      <div class="sec-head">
+        <div class="sec-num">21 — Confidentiality</div>
+        <h2>Confidentiality <a class="anchor" href="#s21">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">21.1</span><div class="clause-body"><p>Each party shall keep confidential, and shall not disclose to any third party, any non-public information disclosed by the other party in connection with the Services or Platform, except where disclosure is required by law, by a court, or by a competent regulator, or to Shoptrans' branches, affiliates, Subcontractors, advisors, and insurers under equivalent confidentiality obligations. This obligation shall survive termination of these Terms.</p></div></div>
+    </section>
+
+    <!-- §22 -->
+    <section class="sec" id="s22">
+      <div class="sec-head">
+        <div class="sec-num">22 — Data Protection &amp; Privacy</div>
+        <h2>Data Protection and Privacy <a class="anchor" href="#s22">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">22.1</span><div class="clause-body"><p>Processing of personal data in connection with the Services and Platform is governed by our Privacy Policy, which forms an integral part of these Terms. The Client warrants that any personal data it provides has been collected and may be processed by Shoptrans for the purposes set out in the Privacy Policy.</p></div></div>
+    </section>
+
+    <!-- §23 -->
+    <section class="sec" id="s23">
+      <div class="sec-head">
+        <div class="sec-num">23 — Electronic Communications &amp; Signatures</div>
+        <h2>Electronic Communications, Records, and Signatures <a class="anchor" href="#s23">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">23.1</span><div class="clause-body"><p>The Client agrees that all communications, agreements, notices, disclosures, transport documents (including electronic bills of lading and electronic air waybills, where applicable), and other documents may be provided electronically through the Platform, by email, or by other electronic means, and that such electronic communications satisfy any legal requirement that such communications be in writing.</p></div></div>
+      <div class="clause"><span class="clause-num">23.2</span><div class="clause-body"><p>The Client agrees that electronic signatures, click-through acceptance, and digital records generated by the Platform are valid, binding, and admissible as evidence to the same extent as a handwritten signature on paper.</p></div></div>
+      <div class="clause"><span class="clause-num">23.3</span><div class="clause-body"><p>Platform records, including audit logs, timestamps, IP addresses, transaction records, and message logs, shall constitute prima facie evidence of the events recorded therein.</p></div></div>
+    </section>
+
+    <!-- §24 -->
+    <section class="sec" id="s24">
+      <div class="sec-head">
+        <div class="sec-num">24 — Governing Law &amp; Dispute Resolution</div>
+        <h2>Governing Law and Dispute Resolution <a class="anchor" href="#s24">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">24.1</span><div class="clause-body"><p>These Terms shall be governed by and construed in accordance with the laws of <strong>Vietnam</strong>, without regard to its conflict of laws principles, save where a mandatory international convention or foreign law applies to a particular segment of the Services.</p></div></div>
+      <div class="clause"><span class="clause-num">24.2</span><div class="clause-body"><p>The parties shall first attempt to resolve any dispute through good-faith negotiation for a period of thirty (30) days.</p></div></div>
+      <div class="clause"><span class="clause-num">24.3</span><div class="clause-body"><p>If unresolved, the dispute shall be finally settled by arbitration at the <strong>Vietnam International Arbitration Centre (VIAC)</strong> in accordance with its Rules of Arbitration in force at the time of submission. The seat of arbitration shall be Ho Chi Minh City, Vietnam. The language of arbitration shall be English. The arbitral award shall be final and binding on both parties.</p></div></div>
+      <div class="clause"><span class="clause-num">24.4</span><div class="clause-body"><p>Notwithstanding the foregoing, Shoptrans shall have the right to seek interim, injunctive, or equitable relief from any court of competent jurisdiction to protect its intellectual property, confidential information, possession of Goods, lien rights, or to recover unpaid amounts.</p></div></div>
+      <div class="clause"><span class="clause-num">24.5</span><div class="clause-body"><p><span class="lead-in">No Class Actions</span>To the maximum extent permitted by law, the Client agrees that any dispute shall be resolved on an individual basis and waives any right to participate in any class, collective, or representative action.</p></div></div>
+    </section>
+
+    <!-- §25 -->
+    <section class="sec" id="s25">
+      <div class="sec-head">
+        <div class="sec-num">25 — Notices</div>
+        <h2>Notices <a class="anchor" href="#s25">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">25.1</span><div class="clause-body"><p>Official communications from Shoptrans shall be made by email to the address registered in the Client's Account, by in-Platform notification, or by posting on the Platform.</p></div></div>
+      <div class="clause"><span class="clause-num">25.2</span><div class="clause-body"><p>Notices to Shoptrans shall be sent by email to <a href="mailto:consult@shoptrans.com">consult@shoptrans.com</a> or to such other address as Shoptrans may designate in writing.</p></div></div>
+      <div class="clause"><span class="clause-num">25.3</span><div class="clause-body"><p>Notices shall be deemed received on the date of sending for email and in-Platform notifications, and on the date of posting for Platform notices.</p></div></div>
+    </section>
+
+    <!-- §26 -->
+    <section class="sec" id="s26">
+      <div class="sec-head">
+        <div class="sec-num">26 — Assignment</div>
+        <h2>Assignment <a class="anchor" href="#s26">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">26.1</span><div class="clause-body"><p>The Client may not assign, transfer, or sublicense any of its rights or obligations under these Terms without Shoptrans' prior written consent. Any attempted assignment in violation of this provision shall be void.</p></div></div>
+      <div class="clause"><span class="clause-num">26.2</span><div class="clause-body"><p>Shoptrans may freely assign or transfer these Terms, in whole or in part, to any branch, affiliate, group company, or successor in connection with a merger, acquisition, corporate reorganization, or sale of all or substantially all of its assets, without the Client's consent.</p></div></div>
+    </section>
+
+    <!-- §27 -->
+    <section class="sec" id="s27">
+      <div class="sec-head">
+        <div class="sec-num">27 — Survival</div>
+        <h2>Survival <a class="anchor" href="#s27">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">27.1</span><div class="clause-body"><p>All provisions of these Terms that by their nature should survive termination shall survive, including without limitation provisions relating to ownership, intellectual property, indemnification, disclaimers, limitations of liability, lien and retention, confidentiality, governing law, and dispute resolution.</p></div></div>
+    </section>
+
+    <!-- §28 -->
+    <section class="sec" id="s28">
+      <div class="sec-head">
+        <div class="sec-num">28 — Language</div>
+        <h2>Language <a class="anchor" href="#s28">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">28.1</span><div class="clause-body"><p>These Terms may be made available in multiple languages. In the event of any conflict or inconsistency between language versions, the English version shall prevail, except where Vietnamese law mandates that the Vietnamese version controls in respect of consumers or other protected parties.</p></div></div>
+    </section>
+
+    <!-- §29 -->
+    <section class="sec" id="s29">
+      <div class="sec-head">
+        <div class="sec-num">29 — General Provisions</div>
+        <h2>General Provisions <a class="anchor" href="#s29">#</a></h2>
+      </div>
+      <div class="clause"><span class="clause-num">29.1</span><div class="clause-body"><p><span class="lead-in">Severability</span>If any provision of these Terms is held to be invalid, illegal, or unenforceable, such provision shall be modified to the minimum extent necessary to make it enforceable, or, if such modification is not possible, severed from these Terms, and the remaining provisions shall continue in full force and effect.</p></div></div>
+      <div class="clause"><span class="clause-num">29.2</span><div class="clause-body"><p><span class="lead-in">No Waiver</span>Any failure or delay by Shoptrans in exercising any right shall not constitute a waiver of that right, nor shall any single or partial exercise preclude any further exercise.</p></div></div>
+      <div class="clause"><span class="clause-num">29.3</span><div class="clause-body"><p><span class="lead-in">Entire Agreement</span>These Terms, together with the Privacy Policy and any documents expressly incorporated by reference, constitute the entire agreement between the parties concerning the subject matter and supersede all prior or contemporaneous understandings, agreements, representations, and warranties.</p></div></div>
+      <div class="clause"><span class="clause-num">29.4</span><div class="clause-body"><p><span class="lead-in">No Third-Party Beneficiaries</span>Except for the Himalaya protection granted in <a href="#s7">Section 7.3</a>, these Terms do not create any rights in favor of any third party.</p></div></div>
+      <div class="clause"><span class="clause-num">29.5</span><div class="clause-body"><p><span class="lead-in">Headings</span>Section headings are for convenience only and shall not affect the interpretation of these Terms.</p></div></div>
+      <div class="clause"><span class="clause-num">29.6</span><div class="clause-body"><p><span class="lead-in">Independent Contractors</span>The parties are independent contractors. Nothing in these Terms shall be construed to create a partnership, joint venture, employment, or fiduciary relationship.</p></div></div>
+      <div class="clause"><span class="clause-num">29.7</span><div class="clause-body"><p><span class="lead-in">Contact</span>For any questions regarding these Terms, please contact: <a href="mailto:consult@shoptrans.com">consult@shoptrans.com</a>.</p></div></div>
+    </section>
+
+    <footer class="doc-foot">
+      <div class="mono-row">
+        <span>© SHOPTRANS 2026</span>
+        <span>·</span>
+        <span>DOC ID · TC-2026-05-19</span>
+      </div>
+      <div class="mono-row">
+        <a href="mailto:consult@shoptrans.com">consult@shoptrans.com</a>
+      </div>
+    </footer>
+
+  </article>
+
+</div>
+
+<button class="to-top" id="toTop" title="Back to top" aria-label="Back to top">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+</button>
+
+<script>
+  // === Progress bar ===
+  const fill = document.getElementById('progressFill');
+  function updateProgress() {
+    const h = document.documentElement;
+    const scrolled = h.scrollTop;
+    const max = h.scrollHeight - h.clientHeight;
+    const pct = max > 0 ? (scrolled / max) * 100 : 0;
+    fill.style.width = pct + '%';
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+  // === TOC active highlight via IntersectionObserver ===
+  const links = document.querySelectorAll('.toc-link');
+  const sections = document.querySelectorAll('section.sec');
+  const linkMap = {};
+  links.forEach(l => { linkMap[l.getAttribute('href').slice(1)] = l; });
+
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      const link = linkMap[e.target.id];
+      if (!link) return;
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => obs.observe(s));
+
+  // === Mobile TOC toggle ===
+  const toc = document.getElementById('toc');
+  const toggle = document.getElementById('tocToggle');
+  toggle.addEventListener('click', () => toc.classList.toggle('open'));
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth > 980) return;
+    if (!toc.contains(e.target) && e.target !== toggle && !toggle.contains(e.target)) {
+      toc.classList.remove('open');
+    }
+  });
+  toc.addEventListener('click', (e) => {
+    if (e.target.tagName === 'A' && window.innerWidth <= 980) toc.classList.remove('open');
+  });
+
+  // === Back to top ===
+  const toTop = document.getElementById('toTop');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 600) toTop.classList.add('show');
+    else toTop.classList.remove('show');
+  }, { passive: true });
+  toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+</script>
+
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shoptrans - Address Book</title><link rel="stylesheet" href="styles.css"></head><body><div class="shell">
+<aside class="sidebar">
+  <div class="brand"><div class="logo">ST</div><div><h1>SHOPTRANS</h1><span>Logistics Portal</span></div></div>
+  <nav class="nav">
+    <a class="" href="my-account.html"><img src="assets/icons/account.svg">My Account</a>
+    <a class="" href="my-profile.html"><img src="assets/icons/profile.svg">My Profile</a>
+    <a class=" active" href="address-book.html"><img src="assets/icons/address.svg">Address Book</a>
+  </nav>
+  <div class="help"><b>Need Help?</b><p>Our support team is ready to help with booking, tracking and documents 24/7.</p><button class="btn" data-toast="Contact support clicked">Contact Support</button></div>
+  <div class="logout">↪ Logout</div>
+</aside>
+
+<main class="main">
+  <div class="breadcrumb">My Account › Address Book</div>
+  <section class="page-title"><div><h2>Address Book</h2><p>Manage and organize your shippers, consignees and notify parties.</p></div><div><button class="btn primary" data-toast="Add shipper clicked">＋ Add Shipper</button> <button class="btn" data-toast="Add consignee clicked">＋ Add Consignee</button> <button class="btn" data-toast="Import contacts clicked">Import Contacts</button></div></section>
+  <div class="tabs"><button class="active">All Contacts</button><button>Shippers</button><button>Consignees</button><button>Notify Parties</button></div>
+  <section class="grid stats">
+    <div class="card stat"><div class="iconbubble green"><img src="assets/icons/shipper.svg"></div><div><small>Total Shippers</small><strong>24</strong><span class="badge">↑ 12% vs 30 days</span></div></div>
+    <div class="card stat"><div class="iconbubble purple"><img src="assets/icons/consignee.svg"></div><div><small>Total Consignees</small><strong>18</strong><span class="badge">↑ 8% vs 30 days</span></div></div>
+    <div class="card stat"><div class="iconbubble orange"><img src="assets/icons/address.svg"></div><div><small>Recent Additions</small><strong>7</strong><span class="badge">New this month</span></div></div>
+    <div class="card stat"><div class="iconbubble"><img src="assets/icons/security.svg"></div><div><small>Default Addresses</small><strong>6</strong><span class="badge">Set as default</span></div></div>
+  </section>
+  <section class="grid" style="grid-template-columns:1fr 330px;align-items:start">
+    <div class="card table-card">
+      <div class="table-tools" style="padding:16px 16px 0"><input class="search" placeholder="Search by company, contact, city or email..."><select class="select"><option>Type: All</option></select><select class="select"><option>Country: All</option></select><button class="btn" data-toast="Filters opened">Filters</button></div>
+      <table class="data-table"><thead><tr><th>Company Name</th><th>Contact Person</th><th>City / Country</th><th>Type</th><th>Default</th><th>Recent Usage</th><th>Actions</th></tr></thead><tbody>
+        <tr class="selected"><td><b>Oceanic Freight Ltd.</b><br><span style="color:var(--muted)">Shipper</span></td><td><b>Johnathan Miller</b><br><span style="color:var(--muted)">john.miller@oceanic.com</span></td><td>Los Angeles, CA<br><span style="color:var(--muted)">🇺🇸 United States</span></td><td><span class="pill green">Shipper</span></td><td><span class="pill green">Default</span></td><td>2 days ago<br><span class="link">Booking #BK-78214</span></td><td><div class="actions"><button class="square">👁</button><button class="square">⋮</button></div></td></tr>
+        <tr><td><b>Global Textiles Inc.</b><br><span style="color:var(--muted)">Consignee</span></td><td><b>Priya Patel</b><br><span style="color:var(--muted)">priya@globaltextiles.in</span></td><td>Mumbai, MH<br><span style="color:var(--muted)">🇮🇳 India</span></td><td><span class="pill purple">Consignee</span></td><td>—</td><td>5 days ago<br><span class="link">Shipment #SHP-99121</span></td><td><div class="actions"><button class="square">👁</button><button class="square">⋮</button></div></td></tr>
+        <tr><td><b>Euro Steel Solutions</b><br><span style="color:var(--muted)">Shipper</span></td><td><b>Lukas Schneider</b><br><span style="color:var(--muted)">l.schneider@eurosteel.de</span></td><td>Hamburg<br><span style="color:var(--muted)">🇩🇪 Germany</span></td><td><span class="pill green">Shipper</span></td><td>—</td><td>1 week ago<br><span class="link">Booking #BK-77102</span></td><td><div class="actions"><button class="square">👁</button><button class="square">⋮</button></div></td></tr>
+        <tr><td><b>Bright Star Retailers</b><br><span style="color:var(--muted)">Consignee</span></td><td><b>Emily Johnson</b><br><span style="color:var(--muted)">emily@brightstar.co.uk</span></td><td>London<br><span style="color:var(--muted)">🇬🇧 United Kingdom</span></td><td><span class="pill purple">Consignee</span></td><td><span class="pill green">Default</span></td><td>1 week ago<br><span class="link">Shipment #SHP-98110</span></td><td><div class="actions"><button class="square">👁</button><button class="square">⋮</button></div></td></tr>
+        <tr><td><b>TransAsia Logistics</b><br><span style="color:var(--muted)">Notify Party</span></td><td><b>Kenji Sato</b><br><span style="color:var(--muted)">kenji.sato@transasia.jp</span></td><td>Tokyo<br><span style="color:var(--muted)">🇯🇵 Japan</span></td><td><span class="pill orange">Notify Party</span></td><td>—</td><td>2 weeks ago<br><span class="link">Shipment #SHP-96330</span></td><td><div class="actions"><button class="square">👁</button><button class="square">⋮</button></div></td></tr>
+      </tbody></table>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px;color:var(--muted)"><span>Showing 1 to 5 of 42 contacts</span><span><button class="square">‹</button> <button class="square" style="background:#16a34a;color:#fff">1</button> <button class="square">2</button> <button class="square">›</button></span></div>
+    </div>
+    <aside class="card detail-card">
+      <div class="contact-title"><div class="iconbubble green"><img src="assets/icons/shipper.svg"></div><div><h3 style="margin:0">Oceanic Freight Ltd.</h3><span class="pill green">Shipper</span></div></div>
+      <div class="security-list">
+        <div class="security-row"><div><span class="label">Contact Person</span><b>Johnathan Miller</b><p style="margin:5px 0 0;color:var(--muted)">john.miller@oceanic.com<br>+1 213-555-0182</p></div></div>
+        <div class="security-row"><div><span class="label">Address</span><b>123 Ocean Drive, Suite 400</b><p style="margin:5px 0 0;color:var(--muted)">Los Angeles, CA 90013<br>United States 🇺🇸</p></div></div>
+        <div class="security-row"><div><span class="label">Additional Details</span><p style="margin:5px 0 0;color:var(--muted)"><b>Tax ID:</b> 98-7654321<br><b>DUNS:</b> 12-345-6789<br>Primary shipper for West Coast operations.</p></div></div>
+      </div>
+      <div class="mini-stat"><div><span class="label">Total Shipments</span><b>18</b></div><div><span class="label">Last Used</span><b>2 days ago</b></div></div>
+      <button class="btn primary" style="width:100%;justify-content:center;margin-top:18px" data-toast="Set as default">☆ Set as Default</button>
+      <button class="btn" style="width:100%;justify-content:center;margin-top:10px" data-toast="Edit contact opened"><img src="assets/icons/edit.svg">Edit Contact</button>
+    </aside>
+  </section>
+</main></div><script src="app.js"></script></body></html>

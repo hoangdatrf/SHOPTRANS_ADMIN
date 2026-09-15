@@ -1,0 +1,70 @@
+GSD FCL
+- Sửa lại Nút Icon X
+- Khi đã đọc thông báo ở phần Notice, sửa lại thông báo đã đọc và thêm nút Unread để mở lại
+- Sent ECD sửa lại canh giữa checkbox đều cả không check và chưa check, nút edit dịch sang phải check box nằm giữa
+- Sent ECD tick không cần hiển thông báo ở dưới, khi tick thì khóa không cho phép sửa, chỉ mở khi bấm Edit, chỉ Link qua ECD, không cho toàn bộ dept,
+ khi khóa dòng thì các nút vẫn bấm vào xem được
+Khi filter status cancel, các status chọn color màu chữ bị đổi thành màu trắng.
+- Payment Request modal, checkbox đầu bị stick khi scroll sang ngang
+- Payment Request: + Charge liên kết với phần charge
++ Pay At, Currency nó link với nguồn dữ liệu ở Reference Data,
++ Bỏ border textbox, full width ô
++ Total lấy số đến chữ thập phân thứ 2 áp dụng toàn bộ, thời gian lấy theo của trình duyệt client
++ Upload, cho phép upload 1 file nên upload rồi hiển thị nút View thay vì Upload
++ Từ cột đầu tới Note to FCD là required, , khi nhập thiếu border đỏ lên, không ràng buộc Upload và Note to FCD
++RefLastBiz: Tham chiếu từ JOB No cũ popup cho phép tìm kiếm
++các chỗ kia cũng link ví dụ Ngân hàng Bank,...
++ Send Request chuyển dữ liệu sang kế toán (FCD)
++ Sales: lấy từ người tạo
+
+Những nút Client, Shipper, CNEE,.. Click Edit đang bị khóa. Dữ liệu Reference tới chỗ Traders link theo chỗ checkbox tick theo roles.
+
+Origin agent, destination agents link với reference Agents
+link linner vs Ocean Carrier theo FCL, LCL (AIR linner thì là Airlines)
+
+Booking Details Upload rồi thể hiện lại cho rõ file đã upload rồi
+Những nút đã có dữ liệu rồi bỏ viền đi, thể hiện không nền với nút icon edit
+REF# lấy giống số JOB NO# nhưng cho phép edit
+Route refference từ Bên Route của Reference data
+Vessel Ref tới tab vessels, hiển thị gợi ý ở Search Vessel:,Vessel delay đổi màu chữ sang cam, cột ETD và ETA đổi màu cam luôn, Apply all thì apply luôn cho theo Vessel
+ mã giống nhau Mã Vessel + Voyage cho các thằng khác
+BC SENT tick mới bắt đầu link tới các dept và gửi mail cho client và shipper theo mẫu ảnh chụp, khi edit vẫn gửi mail lại và chỉ khi có sự thay đổi ở Liner, BC No, ETD, ETA, CUT OFF, VOLUMNE, ROUTE, VESSEL/VOYALE (title thể hiện rõ update thông tin gì)
+PICKUP DETAILS, chỗ BC Attach link từ BC No file
+ECD TRUCK DETAIL THAM CHIẾU QUA TCD VIEW TỪ TCD: + TCD link từ VOLUMNE ECD thể hiện mặc định số dòng theo số dòng volumn không cho add hoặc remove
+                                                 + ECD link dữ liệu từ TCD sang chỉnh sửa lại width cho chuẩn
+
+Bill detail, ECD sửa lại khóa chỉ cho phép xem file và nút Export B/L and Export FCR chỉ cho phép view file ẩn các nút edit và không cho phép edit trên file, disable Company, ẩn các nút chỉ hiện chỗ Compay và nút Export PDF (Enable), Ẩn  nút Edit và Send B/L to Shipper canh lại lề cho đều ở modal
+Attach Dest.Clearance DOCS, sửa lại Edit, Clear, Save (Nút edit khi chưa bấm thì enable (Clear, Save enable đi khi bấm edit, chưa bấm edit thì disable), Destination Agent khi link bỏ cảnh báo từ nhập Destination Agents
+Pre-alert sending, Send to Dest.Agent Sent Tạo link tới chọn ở EXW+ link record dữ liệu và gửi mail
+Bill detail xem lại chỗ lưu dữ liệu, 
+Payment detail mặc định cho phép edit sẵn, collect later, collection deadline nó lưu vô approvallist ở phần deadlinedate (Payment Detail disable Release B/L to shipper). Edit ở ECD chỉ enable Payment detail, disable Bill release
+
+CCD
+BC NO# hiển thị link nút, view không edit
+không có HBL thì không thể hiện ở bill detail( HBL Yes no chọn Yes mới enable lên ở những chỗ HBL)
+
+Trường hợp tự tạo hiện nút Add cho user tự điền (Chỉ CCD, TCD) các dept ngoài gsd ẩn nút Add row
+Clearance details: Bỏ giá trị cho phép lưu, chỉnh sửa width cột Declearation nhỏ lại, Detail nút màu cam có dấu ! , áp dụng cho các nút có nút DETAIL
+
+
+Ẩn Provinces/City, thêm cột Zip code thể hiện cấu trúc dạng cây
+
+Pickup detail hiển thị zip code, return port theo ref nguồn, Send to shipper gửi mail cho Shipper, Status đổi thành Sent to shipper
+Truck & con/seal details, sửa lại màu nền cho biết được phép edit cell, truck comp không cho phép gõ free text, lấy dữ nguồn và ra từ nguồn, nút Cancel chưa hoạt động, nút Edit chưa có, chưa bấm edit thì nút Save disable
+Add driver: Đổi nền thể hiện cho phép nhập, Active nên để màu nền xanh lá, Driver info chọn xong hiển thị dạng link bấm vào popup driver (driver nằm trong phạm vy của truck comp)
+Thêm nút Send to Shipper ở Truck & con/seal details
+SI Submit: Shipper thêm checkbox copy from shipper, consignee cũng vậy
+
+
+Traders, sửa icon X ở chỗ Full DETAIL, bỏ hiển thị ở FUll Detail từ GSD tới Namecode
+
+SI Submit: booking no, vessel/voyage link data qua, depart ture lấy etd, port of load, discharge lấy từ Route nhưng theo kiểu (Shanghai,China không lấy theo code)
+
+container & seal link data từ các dept cũ qua,cột cuối bị dư bỏ đi
+
+Export PDF bỏ trang review dư
+
+DCD Bill detail: ECD trước bắt buộc nhập và link trước chỗ tick vì payment detail chỉ enable bên ECD, ở dưới chỉ enable khi tick ở dcd
+
+
+

@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  ⚠️  LEGAL NOTICE — READ BEFORE DEPLOYING TO PRODUCTION
+  ============================================================
+  This page displays partner & customer names (Microsoft, Marubeni, Sunny,
+  Maersk, COSCO, MSC, ONE, Cathay Pacific Cargo, AWS, HSBC, LG, Samsung, Sony).
+
+  Displaying these names/logos PUBLICLY without written agreements may:
+  - Constitute trademark misuse (C&D letters, lawsuits)
+  - Be classified as false advertising under EU / US law
+  - Damage SHOPTRANS credibility if a prospect verifies and finds no agreement
+
+  BEFORE PUBLISHING THIS PAGE, ENSURE:
+  1. Each named entity has signed a partnership/customer agreement
+  2. Logo usage rights are granted in writing
+  3. OR — replace specific names with anonymous descriptors
+     (e.g., "Fortune 500 tech leader", "Top sogo shosha in Japan")
+
+  REPLACE the .wordmark text spans with <img src="..." alt="..."/> ONLY
+  after partnership consent is obtained.
+  ============================================================
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Partners — SHOPTRANS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-soft: #fafbfa;
+    --line: #e5e7eb;
+    --line-2: #d1d5db;
+    --text: #0f172a;
+    --text-2: #1f2937;
+    --muted: #6b7280;
+    --dim: #9ca3af;
+    --green: #16A34A;
+    --green-dark: #15803d;
+    --green-soft: #dcfce7;
+    --green-tint: #f0fdf4;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Geist', -apple-system, sans-serif;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .mono {
+    font-family: 'Geist Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .container { max-width: 1120px; margin: 0 auto; padding: 0 32px; }
+
+  main { padding: 72px 0 96px; }
+
+  /* ============ TITLE ============ */
+  .title-block { text-align: center; margin-bottom: 56px; }
+  .title-eyebrow {
+    color: var(--green);
+    margin-bottom: 14px;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .title-eyebrow::before,
+  .title-eyebrow::after {
+    content: ""; width: 24px; height: 1px; background: var(--green);
+  }
+  h1 {
+    font-size: clamp(34px, 4.6vw, 50px);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+    color: var(--text);
+    max-width: 820px;
+    margin: 0 auto;
+  }
+  h1 em {
+    color: var(--green);
+    font-style: italic;
+    font-weight: 500;
+  }
+  .title-sub {
+    margin-top: 22px;
+    font-size: 16px;
+    color: var(--muted);
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ============ HERO STATS ============ */
+  .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    margin: 48px 0;
+    padding: 28px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .stat {
+    padding: 0 12px;
+    border-right: 1px solid var(--line);
+    text-align: center;
+    position: relative;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .stat.show { opacity: 1; transform: translateY(0); }
+  .stat:nth-child(1).show { transition-delay: 0s; }
+  .stat:nth-child(2).show { transition-delay: 0.12s; }
+  .stat:nth-child(3).show { transition-delay: 0.24s; }
+  .stat:nth-child(4).show { transition-delay: 0.36s; }
+  .stat:last-child { border-right: none; }
+  .stat-num {
+    font-size: 36px;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1;
+    margin-bottom: 12px;
+    display: inline-block;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .stat.counted .stat-num { transform: scale(1.04); }
+  .stat.counted .stat-num { animation: stat-bounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+  @keyframes stat-bounce {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+    100% { transform: scale(1); }
+  }
+  .stat-num .unit {
+    color: var(--green);
+    font-size: 22px;
+    margin-left: 2px;
+    opacity: 0;
+    transition: opacity 0.4s ease 0.2s;
+  }
+  .stat.counted .stat-num .unit { opacity: 1; }
+  .stat-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    font-weight: 500;
+    position: relative;
+    display: inline-block;
+    padding-bottom: 6px;
+    white-space: nowrap;
+  }
+  .stat-label::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 0;
+    height: 2px;
+    background: var(--green);
+    transform: translateX(-50%);
+    transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.4s;
+  }
+  .stat.counted .stat-label::after { width: 32px; }
+
+  /* ============ SECTION HEADERS ============ */
+  .sec-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin: 64px 0 24px;
+    gap: 24px;
+  }
+  .sec-header h2 {
+    font-size: clamp(22px, 2.6vw, 28px);
+    font-weight: 600;
+    letter-spacing: -0.018em;
+    color: var(--text);
+  }
+  .sec-header h2 .count {
+    color: var(--green);
+    font-family: 'Geist Mono', monospace;
+    font-size: 14px;
+    margin-left: 8px;
+    font-weight: 500;
+    vertical-align: middle;
+  }
+  .sec-header .sub { color: var(--muted); font-size: 13px; }
+
+  /* ============ PARTNER GRID ============ */
+  .partner-grid {
+    display: grid;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .partner-grid.col-5 { grid-template-columns: repeat(5, 1fr); }
+  .partner-grid.col-3 { grid-template-columns: repeat(3, 1fr); }
+
+  .partner-cell {
+    background: white;
+    padding: 28px 20px;
+    min-height: 130px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: all 0.25s;
+    position: relative;
+  }
+  .partner-cell:hover { background: var(--green-tint); }
+  .partner-cell:hover .wordmark { color: var(--green-dark); }
+  .partner-cell:hover .partner-role { color: var(--green-dark); }
+
+  /*
+    The .wordmark below renders the partner name as styled text.
+    REPLACE with <img class="partner-logo" src="..." /> when logo rights are granted.
+    Example: <img class="partner-logo" src="/img/partners/microsoft.svg" alt="Microsoft" />
+  */
+  .wordmark {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 8px;
+    transition: color 0.25s;
+  }
+  .partner-role {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    font-weight: 500;
+    transition: color 0.25s;
+  }
+  .partner-logo {
+    max-width: 100%;
+    max-height: 40px;
+    object-fit: contain;
+    filter: grayscale(100%);
+    opacity: 0.7;
+    transition: all 0.25s;
+  }
+  .partner-cell:hover .partner-logo { filter: grayscale(0); opacity: 1; }
+
+  /* ============ CARRIER MARQUEE ============ */
+  .carrier-section { margin-top: 24px; }
+  .carrier-section + .carrier-section { margin-top: 32px; }
+
+  .carrier-sub-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+    padding: 0 4px;
+  }
+  .carrier-sub-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: var(--green-soft);
+    color: var(--green-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .carrier-sub-icon svg { width: 18px; height: 18px; }
+  .carrier-sub-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .carrier-sub-count {
+    margin-left: auto;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .marquee {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--bg-soft);
+    padding: 16px 0;
+    -webkit-mask-image: linear-gradient(90deg, transparent, black 60px, black calc(100% - 60px), transparent);
+    mask-image: linear-gradient(90deg, transparent, black 60px, black calc(100% - 60px), transparent);
+  }
+  .marquee-track {
+    display: flex;
+    gap: 12px;
+    width: max-content;
+    animation: scroll-left 40s linear infinite;
+  }
+  .marquee.reverse .marquee-track {
+    animation: scroll-right 40s linear infinite;
+  }
+  .marquee:hover .marquee-track { animation-play-state: paused; }
+
+  @keyframes scroll-left {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes scroll-right {
+    from { transform: translateX(-50%); }
+    to { transform: translateX(0); }
+  }
+
+  .carrier-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.25s;
+    cursor: default;
+  }
+  .carrier-item:hover {
+    border-color: var(--green);
+    background: var(--green-tint);
+    transform: translateY(-1px);
+  }
+  .carrier-item:hover .carrier-icon { background: var(--green); color: white; }
+  .carrier-icon {
+    width: 36px; height: 36px;
+    border-radius: 6px;
+    background: var(--green-soft);
+    color: var(--green-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.25s;
+  }
+  .carrier-icon svg { width: 20px; height: 20px; }
+  .carrier-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.005em;
+    line-height: 1.2;
+  }
+  .carrier-meta {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  /* ============ FEATURED SPOTLIGHTS ============ */
+  .spotlights {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+  .spotlight {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.25s;
+  }
+  .spotlight:hover {
+    border-color: var(--green);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px -20px rgba(22,163,74,0.25);
+  }
+  .spotlight-head {
+    padding: 28px 28px 22px;
+    background: var(--bg-soft);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .spotlight-mark {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--text);
+    line-height: 1;
+  }
+  .spotlight-tag {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--green-dark);
+    background: var(--green-soft);
+    padding: 5px 10px;
+    border-radius: 100px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .spotlight-body {
+    padding: 24px 28px 28px;
+  }
+  .spotlight-role {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--green);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .spotlight-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.35;
+    letter-spacing: -0.012em;
+    margin-bottom: 12px;
+  }
+  .spotlight-desc {
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+  .spotlight-points {
+    list-style: none;
+    border-top: 1px solid var(--line);
+    padding-top: 14px;
+  }
+  .spotlight-points li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 6px 0;
+    font-size: 12.5px;
+    color: var(--text-2);
+    line-height: 1.5;
+  }
+  .spotlight-points li svg {
+    flex-shrink: 0;
+    width: 14px; height: 14px;
+    color: var(--green);
+    margin-top: 3px;
+  }
+
+  /* ============ BECOME PARTNER CTA ============ */
+  .cta {
+    margin-top: 64px;
+    padding: 48px;
+    background: var(--text);
+    color: white;
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+  .cta::before {
+    content: "";
+    position: absolute;
+    top: -120px; right: -120px;
+    width: 440px; height: 440px;
+    background: radial-gradient(circle, rgba(22,163,74,0.28) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .cta-eyebrow {
+    color: var(--green);
+    margin-bottom: 14px;
+    display: inline-flex; align-items: center; gap: 10px;
+    position: relative;
+  }
+  .cta-eyebrow::before { content: ""; width: 24px; height: 1px; background: var(--green); }
+  .cta h2 {
+    font-size: clamp(24px, 2.8vw, 32px);
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.018em;
+    position: relative;
+  }
+  .cta h2 em { color: var(--green); font-style: italic; }
+  .cta p {
+    margin-top: 12px;
+    color: rgba(255,255,255,0.7);
+    font-size: 14.5px;
+    line-height: 1.6;
+    position: relative;
+  }
+  .cta-actions {
+    display: flex; flex-direction: column; gap: 10px;
+    position: relative;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 13px 22px;
+    border-radius: 8px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: all 0.2s;
+    font-weight: 600;
+    cursor: pointer; border: none;
+    justify-content: center;
+  }
+  .btn-primary { background: var(--green); color: white; }
+  .btn-primary:hover {
+    background: #22c55e;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 30px -10px rgba(22,163,74,0.6);
+  }
+  .btn-ghost {
+    background: transparent; color: white;
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+  .btn-ghost:hover { border-color: var(--green); color: var(--green); }
+
+  /* Stacked marquee rows (LCL section) */
+  .marquee + .marquee { margin-top: 10px; }
+
+  /* ============ AIR PILLS ============ */
+  .air-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .air-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px 10px 8px;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 100px;
+    transition: all 0.2s;
+    cursor: default;
+  }
+  .air-pill:hover {
+    border-color: var(--green);
+    background: var(--green-tint);
+    transform: translateY(-1px);
+  }
+  .air-pill:hover .air-pill-icon { background: var(--green); color: white; }
+  .air-pill-icon {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--green-soft);
+    color: var(--green-dark);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .air-pill-icon svg { width: 14px; height: 14px; }
+  .air-pill-name {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .air-pill-country {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    font-weight: 500;
+    padding-left: 8px;
+    border-left: 1px solid var(--line);
+  }
+
+  /* ============ CUSTOMER WALL ============ */
+  .customers {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .customer-cell {
+    background: white;
+    padding: 26px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: all 0.25s;
+    min-height: 120px;
+  }
+  .customer-cell:hover { background: var(--green-tint); }
+  .customer-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.012em;
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+  .customer-tag {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  /* ============ PARTNERSHIP OPPORTUNITIES ============ */
+  .opps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+  .opp {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 28px 26px 24px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.25s;
+  }
+  .opp:hover {
+    border-color: var(--green);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px -20px rgba(22,163,74,0.25);
+  }
+  .opp:hover .opp-icon { background: var(--green); color: white; }
+  .opp-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: var(--green-soft);
+    color: var(--green-dark);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+    transition: all 0.25s;
+  }
+  .opp-icon svg { width: 24px; height: 24px; }
+  .opp-tag {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--green);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .opp-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.012em;
+    line-height: 1.25;
+    margin-bottom: 12px;
+  }
+  .opp-desc {
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+  .opp-benefits {
+    list-style: none;
+    margin-bottom: 20px;
+  }
+  .opp-benefits li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 5px 0;
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.5;
+  }
+  .opp-benefits svg {
+    flex-shrink: 0;
+    width: 14px; height: 14px;
+    color: var(--green);
+    margin-top: 3px;
+  }
+  .opp-link {
+    margin-top: auto;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    color: var(--green-dark);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    transition: gap 0.2s, color 0.2s;
+  }
+  .opp-link:hover { gap: 10px; color: var(--green); }
+
+  /* ============ Reveal ============ */
+  .reveal { opacity: 0; transform: translateY(12px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .reveal.show { opacity: 1; transform: translateY(0); }
+
+  /* ============ Responsive ============ */
+  @media (max-width: 960px) {
+    .partner-grid.col-5 { grid-template-columns: repeat(3, 1fr); }
+    .partner-grid.col-3 { grid-template-columns: repeat(3, 1fr); }
+    .spotlights { grid-template-columns: 1fr; }
+    .cta { grid-template-columns: 1fr; padding: 36px 28px; }
+    .customers { grid-template-columns: repeat(3, 1fr); }
+    .opps { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .hero-stats { grid-template-columns: repeat(2, 1fr); gap: 20px 0; }
+    .stat { padding: 12px; border-right: none; }
+    .stat:nth-child(odd) { border-right: 1px solid var(--line); }
+    .partner-grid.col-5 { grid-template-columns: repeat(2, 1fr); }
+    .partner-grid.col-3 { grid-template-columns: repeat(2, 1fr); }
+    .sec-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .customers { grid-template-columns: repeat(2, 1fr); }
+    .air-pills { gap: 8px; }
+    .air-pill { padding: 8px 14px 8px 6px; }
+    .air-pill-icon { width: 24px; height: 24px; }
+    .air-pill-icon svg { width: 12px; height: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<main>
+  <div class="container">
+
+    <!-- ============ TITLE ============ -->
+    <div class="title-block">
+      <h1>Powered by the world's leading <em>carriers, technology platforms, and shippers</em>.</h1>
+      <p class="title-sub">
+        SHOPTRANS connects with major shipping lines, cloud platforms, and financial institutions —
+        and is trusted by global manufacturers and trading houses to move cargo at scale.
+      </p>
+    </div>
+
+    <!-- ============ HERO STATS ============ -->
+    <div class="hero-stats">
+      <div class="stat reveal">
+        <div class="stat-num"><span data-target="50">0</span><span class="unit">+</span></div>
+        <div class="stat-label">Carrier integrations</div>
+      </div>
+      <div class="stat reveal">
+        <div class="stat-num"><span data-target="500">0</span><span class="unit">+</span></div>
+        <div class="stat-label">Enterprise shippers</div>
+      </div>
+      <div class="stat reveal">
+        <div class="stat-num"><span data-target="14">0</span></div>
+        <div class="stat-label">Countries connected</div>
+      </div>
+      <div class="stat reveal">
+        <div class="stat-num"><span data-target="1241">0</span></div>
+        <div class="stat-label">Live trade routes</div>
+      </div>
+    </div>
+
+    <!-- ============ CARRIER PARTNERS ============ -->
+    <div class="sec-header">
+      <h2>Carrier network</h2>
+      <span class="sub">Ocean shipping lines, LCL consolidators and airline cargo partners across global trade lanes</span>
+    </div>
+
+    <!-- SEA CARRIERS -->
+    <div class="carrier-section">
+      <div class="carrier-sub-header">
+        <div class="carrier-sub-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 18l3-1.5L9 18l3-1.5 3 1.5 3-1.5 3 1.5"/>
+            <path d="M5 14l-2-5h18l-2 5"/>
+            <path d="M12 9V3M9 3h6"/>
+          </svg>
+        </div>
+        <div class="carrier-sub-title">Ocean Carriers</div>
+        <span class="carrier-sub-count">8 lines · Sea Freight</span>
+      </div>
+
+      <div class="marquee">
+        <div class="marquee-track">
+          <!-- First set -->
+          <div class="carrier-item">
+            <div class="carrier-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3-1.5L9 18l3-1.5 3 1.5 3-1.5 3 1.5"/><path d="M5 14l-2-5h18l-2 5"/><path d="M12 9V3M9 3h6"/></svg>
+            </div>
+            <div>
+              <div class="carrier-name" style="letter-spacing:-0.03em">MAERSK</div>
+              <div class="carrier-meta">Denmark</div>
+            </div>
+          </div>
+          <div class="carrier-item">
+            <div class="carrier-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3-1.5L9 18l3-1.5 3 1.5 3-1.5 3 1.5"/><path d="M5 14l-2-5h18l-2 5"/><path d="M12 9V3M9 3h6"/></svg>
+            </div>
+            <div>
+              <div class="carrier-name" style="font-weight:700;letter-spacing:0.02em">MSC</div>
+              <div class="carrier-meta">Switzerland</div>
+            </div>
+          </div>
+          <div class="carrier-item">
+            <div class="carrier-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3-1.5L9 18l3-1.5 3 1.5 3-1.5 3 1.5"/><path d="M5 14l-2-5h18l-2 5"/><path d="M12 9V3M9 3h6"/></svg>
+            </div>
+            <div>
+              <div class="carrier-name">CMA CGM</div>
+              <div class="carrier-meta">France</div>
+            </div>
+          </div>
+          <div class="carrier-item">
+            <div class="carrier-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3-1.5L9 18l3-1.5 3 1.5 3-1.5 3 1.5"/><path d="M5 14l-2-5h18l-2 5"/><path d="M12 9V3M9 3h6"/></svg>
+            </div>
+            <div>
+              <div class="carrier-name">COSCO</div>
+              <div class="carrier-meta">China</div>
+            </div>
+          </div>
+          <div class="carrier-item">
+            <div class="carrier-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3-1.5L9 18l3-1.5 3 1.5 3-1.5 3 1.5"/><path d="M5 14l-2-5h18l-2 5"/><path d="M12 9V3M9 3h6"/></svg>
+            </div>
+            <div>
+              <div class="carrier-name" style="font-weight:700">ONE</div>
+              <div class="carrier-meta">Japan / Singapore</div>
+            </div>
+          </div>
+          <div class="carrier-item">
+            <div class="carrier-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3-1.5L9 18l3-1.5 3 1.5 3-1.5 3 1.5"/><path d="M5 14l-2-5h18l-2 5"/><path d="M12 9V3M9 3h6"/></svg>
+            </div>
+            <div>
+              <div class="carrier-name">Evergreen</div>
+              <div class="carrier-meta">Taiwan, China</div>
+            </div>
+          </div>
+          <div class="carrier-item">
+            <div class="carrier-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3-1.5L9 18l3-1.5 3 1.5 3-1.5 3 1.5"/><path d="M5 14l-2-5h18l-2 5"/><path d="M12 9V3M9 3h6"/></svg>
+            </div>
+            <div>
+              <div class="carrier-name" style="font-weight:700">ZIM</div>
+              <div class="carrier-meta">Israel</div>
+            </div>
+          </div>
+          <div class="carrier-item">
+            <div class="carrier-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3-1.5L9 18l3-1.5 3 1.5 3-1.5 3 1.5"/><path d="M5 14l-2-5h18l-2 5"/><path d="M12 9V3M9 3h6"/></svg>
+            </div>
+            <div>
+              <div class="carrier-name">Hapag-Lloyd</div>
+              <div class="carrier-meta">Germany</div>
+            </div>
+          </div>
+
+          <!-- Duplicate set for seamless infinite loop -->
+          <div class="carrier-item" aria-hidden="true">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3-1.5L9 18l3-1.5 3 1.5 3-1.5 3 1.5"/><path d="M5 14l-2-5h18l-2 5"/><path d="M12 9V3M9 3h6"/></svg></div>
+            <div><div class="carrier-name" style="letter-spacing:-0.03em">MAERSK</div><div class="carrier-meta">Denmark</div></div>
+          </div>
+          <div class="carrier-item" aria-hidden="true">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3-1.5L9 18l3-1.5 3 1.5 3-1.5 3 1.5"/><path d="M5 14l-2-5h18l-2 5"/><path d="M12 9V3M9 3h6"/></svg></div>
+            <div><div class="carrier-name" style="font-weight:700;letter-spacing:0.02em">MSC</div><div class="carrier-meta">Switzerland</div></div>
+          </div>
+          <div class="carrier-item" aria-hidden="true">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3-1.5L9 18l3-1.5 3 1.5 3-1.5 3 1.5"/><path d="M5 14l-2-5h18l-2 5"/><path d="M12 9V3M9 3h6"/></svg></div>
+            <div><div class="carrier-name">CMA CGM</div><div class="carrier-meta">France</div></div>
+          </div>
+          <div class="carrier-item" aria-hidden="true">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3-1.5L9 18l3-1.5 3 1.5 3-1.5 3 1.5"/><path d="M5 14l-2-5h18l-2 5"/><path d="M12 9V3M9 3h6"/></svg></div>
+            <div><div class="carrier-name">COSCO</div><div class="carrier-meta">China</div></div>
+          </div>
+          <div class="carrier-item" aria-hidden="true">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3-1.5L9 18l3-1.5 3 1.5 3-1.5 3 1.5"/><path d="M5 14l-2-5h18l-2 5"/><path d="M12 9V3M9 3h6"/></svg></div>
+            <div><div class="carrier-name" style="font-weight:700">ONE</div><div class="carrier-meta">Japan / Singapore</div></div>
+          </div>
+          <div class="carrier-item" aria-hidden="true">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3-1.5L9 18l3-1.5 3 1.5 3-1.5 3 1.5"/><path d="M5 14l-2-5h18l-2 5"/><path d="M12 9V3M9 3h6"/></svg></div>
+            <div><div class="carrier-name">Evergreen</div><div class="carrier-meta">Taiwan, China</div></div>
+          </div>
+          <div class="carrier-item" aria-hidden="true">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3-1.5L9 18l3-1.5 3 1.5 3-1.5 3 1.5"/><path d="M5 14l-2-5h18l-2 5"/><path d="M12 9V3M9 3h6"/></svg></div>
+            <div><div class="carrier-name" style="font-weight:700">ZIM</div><div class="carrier-meta">Israel</div></div>
+          </div>
+          <div class="carrier-item" aria-hidden="true">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3-1.5L9 18l3-1.5 3 1.5 3-1.5 3 1.5"/><path d="M5 14l-2-5h18l-2 5"/><path d="M12 9V3M9 3h6"/></svg></div>
+            <div><div class="carrier-name">Hapag-Lloyd</div><div class="carrier-meta">Germany</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LCL CONSOLIDATORS -->
+    <div class="carrier-section">
+      <div class="carrier-sub-header">
+        <div class="carrier-sub-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="13" width="8" height="8" rx="1"/>
+            <rect x="13" y="13" width="8" height="8" rx="1"/>
+            <rect x="8" y="3" width="8" height="8" rx="1"/>
+          </svg>
+        </div>
+        <div class="carrier-sub-title">LCL Consolidators</div>
+        <span class="carrier-sub-count">6 partners · Less-than-Container Load</span>
+      </div>
+
+      <div class="marquee">
+        <div class="marquee-track">
+          <!-- Row 1 — 6 unique items -->
+          <div class="carrier-item">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="8" y="3" width="8" height="8" rx="1"/></svg></div>
+            <div><div class="carrier-name">SHIPCO</div><div class="carrier-meta">USA</div></div>
+          </div>
+          <div class="carrier-item">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="8" y="3" width="8" height="8" rx="1"/></svg></div>
+            <div><div class="carrier-name">ECU LINE</div><div class="carrier-meta">Belgium</div></div>
+          </div>
+          <div class="carrier-item">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="8" y="3" width="8" height="8" rx="1"/></svg></div>
+            <div><div class="carrier-name">Vanguard Logistics</div><div class="carrier-meta">USA</div></div>
+          </div>
+          <div class="carrier-item">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="8" y="3" width="8" height="8" rx="1"/></svg></div>
+            <div><div class="carrier-name">CaroTrans</div><div class="carrier-meta">USA</div></div>
+          </div>
+          <div class="carrier-item">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="8" y="3" width="8" height="8" rx="1"/></svg></div>
+            <div><div class="carrier-name">OEC Group</div><div class="carrier-meta">Taiwan, China</div></div>
+          </div>
+          <div class="carrier-item">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="8" y="3" width="8" height="8" rx="1"/></svg></div>
+            <div><div class="carrier-name">Cargo-Partner</div><div class="carrier-meta">Austria</div></div>
+          </div>
+
+          <!-- Duplicates for seamless loop -->
+          <div class="carrier-item" aria-hidden="true">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="8" y="3" width="8" height="8" rx="1"/></svg></div>
+            <div><div class="carrier-name">SHIPCO</div><div class="carrier-meta">USA</div></div>
+          </div>
+          <div class="carrier-item" aria-hidden="true">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="8" y="3" width="8" height="8" rx="1"/></svg></div>
+            <div><div class="carrier-name">ECU LINE</div><div class="carrier-meta">Belgium</div></div>
+          </div>
+          <div class="carrier-item" aria-hidden="true">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="8" y="3" width="8" height="8" rx="1"/></svg></div>
+            <div><div class="carrier-name">Vanguard Logistics</div><div class="carrier-meta">USA</div></div>
+          </div>
+          <div class="carrier-item" aria-hidden="true">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="8" y="3" width="8" height="8" rx="1"/></svg></div>
+            <div><div class="carrier-name">CaroTrans</div><div class="carrier-meta">USA</div></div>
+          </div>
+          <div class="carrier-item" aria-hidden="true">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="8" y="3" width="8" height="8" rx="1"/></svg></div>
+            <div><div class="carrier-name">OEC Group</div><div class="carrier-meta">Taiwan, China</div></div>
+          </div>
+          <div class="carrier-item" aria-hidden="true">
+            <div class="carrier-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="8" y="3" width="8" height="8" rx="1"/></svg></div>
+            <div><div class="carrier-name">Cargo-Partner</div><div class="carrier-meta">Austria</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AIR CARRIERS -->
+    <div class="carrier-section">
+      <div class="carrier-sub-header">
+        <div class="carrier-sub-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 12l-4-1-7 7-2-1 3-7-4-1-2 2-2-1 3-3 3 1 4-4 2 1-1 4 7 3z"/>
+          </svg>
+        </div>
+        <div class="carrier-sub-title">Air Carriers</div>
+        <span class="carrier-sub-count">7 airlines · Air Freight</span>
+      </div>
+
+      <div class="air-pills">
+        <div class="air-pill">
+          <div class="air-pill-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12l-4-1-7 7-2-1 3-7-4-1-2 2-2-1 3-3 3 1 4-4 2 1-1 4 7 3z"/></svg></div>
+          <span class="air-pill-name">Vietnam Airlines</span>
+          <span class="air-pill-country">VN</span>
+        </div>
+        <div class="air-pill">
+          <div class="air-pill-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12l-4-1-7 7-2-1 3-7-4-1-2 2-2-1 3-3 3 1 4-4 2 1-1 4 7 3z"/></svg></div>
+          <span class="air-pill-name">China Southern</span>
+          <span class="air-pill-country">CN</span>
+        </div>
+        <div class="air-pill">
+          <div class="air-pill-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12l-4-1-7 7-2-1 3-7-4-1-2 2-2-1 3-3 3 1 4-4 2 1-1 4 7 3z"/></svg></div>
+          <span class="air-pill-name">Cathay Pacific</span>
+          <span class="air-pill-country">HK</span>
+        </div>
+        <div class="air-pill">
+          <div class="air-pill-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12l-4-1-7 7-2-1 3-7-4-1-2 2-2-1 3-3 3 1 4-4 2 1-1 4 7 3z"/></svg></div>
+          <span class="air-pill-name">Singapore Airlines</span>
+          <span class="air-pill-country">SG</span>
+        </div>
+        <div class="air-pill">
+          <div class="air-pill-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12l-4-1-7 7-2-1 3-7-4-1-2 2-2-1 3-3 3 1 4-4 2 1-1 4 7 3z"/></svg></div>
+          <span class="air-pill-name">Air China</span>
+          <span class="air-pill-country">CN</span>
+        </div>
+        <div class="air-pill">
+          <div class="air-pill-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12l-4-1-7 7-2-1 3-7-4-1-2 2-2-1 3-3 3 1 4-4 2 1-1 4 7 3z"/></svg></div>
+          <span class="air-pill-name">Korean Air Cargo</span>
+          <span class="air-pill-country">KR</span>
+        </div>
+        <div class="air-pill">
+          <div class="air-pill-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12l-4-1-7 7-2-1 3-7-4-1-2 2-2-1 3-3 3 1 4-4 2 1-1 4 7 3z"/></svg></div>
+          <span class="air-pill-name">EVA Air</span>
+          <span class="air-pill-country">TW</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ OUR CUSTOMERS ============ -->
+    <div class="sec-header">
+      <h2>Our customers</h2>
+      <span class="sub">Shippers and cargo owners who trust SHOPTRANS with their freight operations</span>
+    </div>
+
+    <div class="customers">
+      <div class="customer-cell">
+        <div class="customer-name">Sunny Worldwide</div>
+        <div class="customer-tag">Logistics · China</div>
+      </div>
+      <div class="customer-cell">
+        <div class="customer-name">An Khai</div>
+        <div class="customer-tag">Cargo · Vietnam</div>
+      </div>
+      <div class="customer-cell">
+        <div class="customer-name">Walton</div>
+        <div class="customer-tag">Manufacturer · Bangladesh</div>
+      </div>
+      <div class="customer-cell">
+        <div class="customer-name">Faar Logistics</div>
+        <div class="customer-tag">Logistics · Vietnam</div>
+      </div>
+      <div class="customer-cell">
+        <div class="customer-name">Platinium</div>
+        <div class="customer-tag">Cargo · Global</div>
+      </div>
+      <div class="customer-cell">
+        <div class="customer-name">Tan Long Group</div>
+        <div class="customer-tag">Trader · Vietnam</div>
+      </div>
+      <div class="customer-cell">
+        <div class="customer-name">Yuanda Industrial</div>
+        <div class="customer-tag">Manufacturer · China</div>
+      </div>
+      <div class="customer-cell">
+        <div class="customer-name">Pacific Sourcing</div>
+        <div class="customer-tag">Sourcing · Asia</div>
+      </div>
+      <div class="customer-cell">
+        <div class="customer-name">Saigon Tradehouse</div>
+        <div class="customer-tag">Trader · Vietnam</div>
+      </div>
+      <div class="customer-cell">
+        <div class="customer-name">Eastern Cargo</div>
+        <div class="customer-tag">Cargo · Singapore</div>
+      </div>
+    </div>
+
+    <!-- ============ PARTNERSHIP OPPORTUNITIES ============ -->
+    <div class="sec-header">
+      <h2>Partnership opportunities</h2>
+      <span class="sub">Tailored programs for carriers, shippers, and solution providers</span>
+    </div>
+
+    <div class="opps">
+
+      <!-- For Carriers -->
+      <div class="opp">
+        <div class="opp-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="6" cy="12" r="2.5"/>
+            <circle cx="18" cy="6" r="2.5"/>
+            <circle cx="18" cy="18" r="2.5"/>
+            <path d="M8.5 11l7-3.5M8.5 13l7 3.5"/>
+          </svg>
+        </div>
+        <div class="opp-tag">— For Carriers & Forwarders</div>
+        <div class="opp-title">Expand your booking volume</div>
+        <p class="opp-desc">
+          Integrate your services into the SHOPTRANS platform to reach enterprise shippers, manage rates dynamically, and grow utilization across your routes.
+        </p>
+        <ul class="opp-benefits">
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Real-time rate management & dynamic pricing</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Direct API integration for instant booking</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Access to a network of verified shippers</span>
+          </li>
+        </ul>
+        <a href="#" class="opp-link">Partner with us →</a>
+      </div>
+
+      <!-- For Cargo Owners -->
+      <div class="opp">
+        <div class="opp-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+            <path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/>
+          </svg>
+        </div>
+        <div class="opp-tag">— For Cargo Owners & Shippers</div>
+        <div class="opp-title">Streamline your supply chain</div>
+        <p class="opp-desc">
+          Join enterprise customers using SHOPTRANS to reduce freight costs, gain end-to-end visibility, and scale operations without adding ops headcount.
+        </p>
+        <ul class="opp-benefits">
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Volume-based rate discounts & priority booking</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Dedicated account management</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Custom workflow & ERP integrations</span>
+          </li>
+        </ul>
+        <a href="#" class="opp-link">Talk to sales →</a>
+      </div>
+
+      <!-- For Solution Providers -->
+      <div class="opp">
+        <div class="opp-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 4l4 4-4 4M10 20l-4-4 4-4M16 8H8M8 16h8"/>
+          </svg>
+        </div>
+        <div class="opp-tag">— For Solution Providers</div>
+        <div class="opp-title">Build with SHOPTRANS</div>
+        <p class="opp-desc">
+          Connect your service or platform to the SHOPTRANS ecosystem — from customs brokers and warehouses to fintech, IoT, and data providers.
+        </p>
+        <ul class="opp-benefits">
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Marketplace listing & co-marketing</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Public API & developer support</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Joint go-to-market programs</span>
+          </li>
+        </ul>
+        <a href="#" class="opp-link">Join the ecosystem →</a>
+      </div>
+
+    </div>
+
+    <!-- ============ BECOME A PARTNER CTA ============ -->
+    <div class="cta">
+      <div>
+        <div class="cta-eyebrow mono">— Partnership Program</div>
+        <h2>Become a <em>SHOPTRANS partner</em>.</h2>
+        <p>
+          Are you a carrier, technology provider, financial institution, or freight forwarder
+          looking to integrate with SHOPTRANS? Let's talk — we'd love to explore how we can
+          grow together.
+        </p>
+      </div>
+      <div class="cta-actions">
+        <a class="btn btn-primary" href="#">📧 Partner With Us →</a>
+        <a class="btn btn-ghost" href="#">Download Partner Deck</a>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('show');
+        if (e.target.classList.contains('stat')) animateCount(e.target);
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.2 });
+  document.querySelectorAll('.reveal, .stat').forEach(el => io.observe(el));
+
+  function animateCount(el) {
+    const target = el.querySelector('[data-target]');
+    if (!target) return;
+    const t = +target.dataset.target;
+    const dur = 1800;
+    // Delay count to sync with stagger fade-in
+    const idx = Array.from(el.parentNode.children).indexOf(el);
+    const startDelay = idx * 120;
+    setTimeout(() => {
+      const t0 = performance.now();
+      function tick(now) {
+        const p = Math.min(1, (now - t0) / dur);
+        // easeOutExpo for a strong start, smooth landing
+        const ease = p === 1 ? 1 : 1 - Math.pow(2, -10 * p);
+        target.textContent = Math.round(t * ease).toLocaleString('en-US');
+        if (p < 1) {
+          requestAnimationFrame(tick);
+        } else {
+          el.classList.add('counted');
+        }
+      }
+      requestAnimationFrame(tick);
+    }, startDelay);
+  }
+</script>
+</body>
+</html>

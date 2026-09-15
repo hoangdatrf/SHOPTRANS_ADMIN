@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Customs Clearance — SHOPTRANS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-soft: #fafbfa;
+    --line: #e5e7eb;
+    --line-2: #d1d5db;
+    --text: #0f172a;
+    --text-2: #1f2937;
+    --muted: #6b7280;
+    --dim: #9ca3af;
+    --green: #16A34A;
+    --green-dark: #15803d;
+    --green-soft: #dcfce7;
+    --green-tint: #f0fdf4;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Geist', -apple-system, sans-serif;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .mono {
+    font-family: 'Geist Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .container { max-width: 1120px; margin: 0 auto; padding: 0 32px; }
+
+  main { padding: 72px 0 96px; }
+
+  /* ============ SECTION HEADER ============ */
+  .sec-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin: 0 0 24px;
+    gap: 24px;
+  }
+  .sec-header h2 {
+    font-size: clamp(22px, 2.6vw, 28px);
+    font-weight: 600;
+    letter-spacing: -0.018em;
+    color: var(--text);
+  }
+  .sec-header .sub { color: var(--muted); font-size: 13px; }
+
+  /* ============ CUSTOMS CLEARANCE ============ */
+  .customs-modes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .mode-card {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 30px 28px 26px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.25s;
+  }
+  .mode-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .mode-card:hover {
+    border-color: var(--green);
+    transform: translateY(-3px);
+    box-shadow: 0 20px 40px -22px rgba(22,163,74,0.22);
+  }
+  .mode-card:hover::before { opacity: 1; }
+
+  .mode-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .mode-tag {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--green-dark);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mode-tag::before {
+    content: "";
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 0 rgba(22,163,74,0.6);
+    animation: mode-pulse 2.2s ease-out infinite;
+  }
+  @keyframes mode-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(22,163,74,0.5); }
+    70% { box-shadow: 0 0 0 8px rgba(22,163,74,0); }
+    100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+  }
+  .mode-id {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--dim);
+    font-weight: 500;
+  }
+  .mode-title {
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: -0.018em;
+    color: var(--text);
+    line-height: 1.25;
+    margin-bottom: 10px;
+  }
+  .mode-desc {
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 6px;
+  }
+
+  /* Mini-flow inside each card */
+  .flow-mini {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 18px 0;
+    margin: 18px 0 14px;
+    border-top: 1px dashed var(--line);
+    border-bottom: 1px dashed var(--line);
+    background-image: radial-gradient(circle, var(--line) 1px, transparent 1px);
+    background-size: 12px 12px;
+    background-position: center;
+    position: relative;
+  }
+  .flow-chip {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+    z-index: 1;
+  }
+  .flow-chip-icon {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    background: white;
+    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-2);
+    transition: all 0.25s;
+  }
+  .flow-chip-icon svg { width: 16px; height: 16px; }
+  .flow-chip.primary .flow-chip-icon {
+    background: var(--green);
+    color: white;
+    border-color: var(--green);
+    box-shadow: 0 4px 12px -4px rgba(22,163,74,0.5);
+  }
+  .flow-chip-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .flow-chip.primary .flow-chip-label {
+    color: var(--green-dark);
+    font-weight: 600;
+  }
+  .flow-line {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 1px;
+    border-top: 1.5px dashed var(--line-2);
+    position: relative;
+    margin-bottom: 14px;
+  }
+  .flow-line::after {
+    content: "▸";
+    position: absolute;
+    right: -3px;
+    top: -10px;
+    color: var(--green);
+    font-size: 11px;
+    font-weight: bold;
+  }
+
+  .mode-points {
+    list-style: none;
+  }
+  .mode-points li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 5px 0;
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.5;
+  }
+  .mode-points li svg {
+    flex-shrink: 0;
+    width: 14px; height: 14px;
+    color: var(--green);
+    margin-top: 3px;
+  }
+
+  /* Dark capability stats bar */
+  .customs-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: var(--text);
+    color: white;
+    border-radius: 14px;
+    margin-top: 18px;
+    overflow: hidden;
+    position: relative;
+  }
+  .customs-stats::before {
+    content: "";
+    position: absolute;
+    top: -120px; right: -120px;
+    width: 360px; height: 360px;
+    background: radial-gradient(circle, rgba(22,163,74,0.22) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .customs-stats::after {
+    content: "● LIVE";
+    position: absolute;
+    top: 14px; right: 18px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.18em;
+    color: var(--green);
+    font-weight: 600;
+  }
+  .cstat {
+    padding: 26px 24px;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    position: relative;
+    z-index: 1;
+  }
+  .cstat:last-child { border-right: none; }
+  .cstat-num {
+    font-family: 'Geist Mono', monospace;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--green);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .cstat-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: rgba(255,255,255,0.65);
+    font-weight: 500;
+  }
+
+  /* ============ Responsive ============ */
+  @media (max-width: 960px) {
+    .customs-modes { grid-template-columns: 1fr; }
+    .customs-stats { grid-template-columns: repeat(2, 1fr); }
+    .cstat:nth-child(2) { border-right: none; }
+    .sec-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+  }
+  @media (max-width: 600px) {
+    .customs-stats { grid-template-columns: 1fr; }
+    .cstat { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .cstat:last-child { border-bottom: none; }
+    .flow-chip-label { font-size: 8px; }
+    .flow-line { width: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<main>
+  <div class="container">
+
+    <!-- ============ CUSTOMS CLEARANCE ============ -->
+    <div class="sec-header">
+      <h2>Customs clearance</h2>
+      <span class="sub">Two execution modes — one unified workflow, single point of accountability</span>
+    </div>
+
+    <div class="customs-modes">
+
+      <!-- MODE 01 — Direct -->
+      <div class="mode-card">
+        <div class="mode-head">
+          <span class="mode-tag">Mode 01 · Direct Brokerage</span>
+          <span class="mode-id">SHPT-CB-01</span>
+        </div>
+        <div class="mode-title">SHOPTRANS as licensed customs broker</div>
+        <p class="mode-desc">
+          SHOPTRANS is a licensed customs agent in Vietnam, filing import/export declarations directly on behalf of the cargo owner — single contract, single invoice, single accountability.
+        </p>
+
+        <div class="flow-mini">
+          <div class="flow-chip">
+            <div class="flow-chip-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>
+            </div>
+            <span class="flow-chip-label">Cargo + Docs</span>
+          </div>
+          <div class="flow-line"></div>
+          <div class="flow-chip primary">
+            <div class="flow-chip-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9v.01M9 12v.01M9 15v.01M9 18v.01M15 9v.01M15 12v.01M15 15v.01M15 18v.01"/></svg>
+            </div>
+            <span class="flow-chip-label">SHOPTRANS</span>
+          </div>
+          <div class="flow-line"></div>
+          <div class="flow-chip">
+            <div class="flow-chip-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 4v6c0 5-4 9-9 10-5-1-9-5-9-10V6l9-4z"/><path d="M9 12l2 2 4-4"/></svg>
+            </div>
+            <span class="flow-chip-label">Customs</span>
+          </div>
+          <div class="flow-line"></div>
+          <div class="flow-chip">
+            <div class="flow-chip-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <span class="flow-chip-label">Released</span>
+          </div>
+        </div>
+
+        <ul class="mode-points">
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Licensed customs broker — direct filing rights at all major VN ports</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>e-Customs integrated (VNACCS / VCIS) — paperless declarations</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Direct customer contract — one invoice, one point of accountability</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Real-time declaration status tracked in the SHOPTRANS platform</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- MODE 02 — Partner Network -->
+      <div class="mode-card">
+        <div class="mode-head">
+          <span class="mode-tag">Mode 02 · Partner Network</span>
+          <span class="mode-id">SHPT-CB-02</span>
+        </div>
+        <div class="mode-title">Through vetted partner agents</div>
+        <p class="mode-desc">
+          For ports outside SHOPTRANS's direct coverage, customs procedures are executed by vetted local brokers under unified pricing and service-level agreements — orchestrated by SHOPTRANS end-to-end.
+        </p>
+
+        <div class="flow-mini">
+          <div class="flow-chip">
+            <div class="flow-chip-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>
+            </div>
+            <span class="flow-chip-label">Cargo + Docs</span>
+          </div>
+          <div class="flow-line"></div>
+          <div class="flow-chip primary">
+            <div class="flow-chip-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9v.01M9 12v.01M9 15v.01M9 18v.01M15 9v.01M15 12v.01M15 15v.01M15 18v.01"/></svg>
+            </div>
+            <span class="flow-chip-label">SHOPTRANS</span>
+          </div>
+          <div class="flow-line"></div>
+          <div class="flow-chip">
+            <div class="flow-chip-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 11l7-3.5M8.5 13l7 3.5"/></svg>
+            </div>
+            <span class="flow-chip-label">Partner</span>
+          </div>
+          <div class="flow-line"></div>
+          <div class="flow-chip">
+            <div class="flow-chip-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 4v6c0 5-4 9-9 10-5-1-9-5-9-10V6l9-4z"/><path d="M9 12l2 2 4-4"/></svg>
+            </div>
+            <span class="flow-chip-label">Customs</span>
+          </div>
+        </div>
+
+        <ul class="mode-points">
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Vetted partner brokers — capability, license & SLA pre-audited</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Unified pricing & service-level agreement across the network</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Single point of contact via SHOPTRANS — no third-party negotiation</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Consolidated tracking & documentation in one unified dashboard</span>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="customs-stats">
+      <div class="cstat">
+        <div class="cstat-num">VNACCS</div>
+        <div class="cstat-label">e-Customs ready</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat-num">20+</div>
+        <div class="cstat-label">Ports covered</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat-num">04</div>
+        <div class="cstat-label">Declaration types</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat-num">24/7</div>
+        <div class="cstat-label">Status monitoring</div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+</body>
+</html>

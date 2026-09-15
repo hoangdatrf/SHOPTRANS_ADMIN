@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Service · Inspection &amp; Quality Control — SHOPTRANS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F6F5;
+    --panel:#FFFFFF;
+    --panel-2:#F7F9F8;
+    --line:#E2E7E5;
+    --line-soft:#EDF1EF;
+    --green:#00E676;
+    --green-text:#009E54;
+    --green-dim:#E4FAEE;
+    --green-glow:rgba(0,230,118,.16);
+    --txt:#0E1513;
+    --txt-2:#5A6663;
+    --txt-3:#94A09C;
+    --mono:'Geist Mono',ui-monospace,monospace;
+    --sans:'Geist',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--sans);
+    background:var(--bg);
+    color:var(--txt);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.6;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px 24px;
+    background-image:
+      radial-gradient(circle at center, rgba(0,0,0,.045) 1px, transparent 1px),
+      radial-gradient(1200px 600px at 80% -10%, var(--green-glow), transparent 70%);
+    background-size:22px 22px, 100% 100%;
+  }
+
+  .service{
+    width:100%;
+    max-width:1180px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 30px 70px -36px rgba(20,40,32,.28);
+    position:relative;
+  }
+  .topbar{
+    display:flex;align-items:center;gap:14px;
+    padding:14px 22px;
+    border-bottom:1px solid var(--line-soft);
+    background:var(--panel-2);
+    font-family:var(--mono);font-size:11px;
+    color:var(--txt-3);letter-spacing:.14em;text-transform:uppercase;
+  }
+  .topbar .right{margin-left:auto;color:var(--txt-3)}
+
+  .grid{
+    display:grid;
+    grid-template-columns:460px 1fr;
+    align-items:stretch;
+  }
+
+  /* ---- LEFT : illustration ---- */
+  .visual{
+    position:relative;
+    border-right:1px solid var(--line-soft);
+    padding:36px 26px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:24px;
+    background:
+      radial-gradient(circle at 50% 42%, var(--green-glow), transparent 62%),
+      radial-gradient(circle at center, rgba(0,0,0,.04) 1px, transparent 1px);
+    background-size:100% 100%, 18px 18px;
+    overflow:hidden;
+  }
+  .visual::before{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg,transparent 70%,rgba(0,0,0,.03));
+    pointer-events:none;
+  }
+  .hero-photo{
+    position:relative;
+    width:100%;
+    margin:0 auto;
+    border-radius:14px;
+    border:1px solid var(--line);
+    box-shadow:0 18px 40px -18px rgba(20,40,32,.4);
+    display:block;
+    background:#fff;
+  }
+  .hero-illus svg{width:100%;height:auto;display:block;border-radius:13px;padding:14px;background:#fff}
+
+  .visual-meta{position:relative}
+  .meta-row{
+    display:flex;justify-content:space-between;
+    padding:11px 0;
+    border-top:1px solid var(--line-soft);
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;
+  }
+  .meta-row .k{color:var(--txt-3);text-transform:uppercase}
+  .meta-row .v{color:var(--txt-2)}
+  .meta-row .v.on{color:var(--green-text)}
+
+  /* ---- RIGHT : content ---- */
+  .content{padding:40px 48px;display:flex;flex-direction:column;justify-content:center}
+
+  h1{
+    font-size:25px;line-height:1.24;font-weight:600;
+    letter-spacing:-.01em;margin:0 0 14px 0;max-width:54ch;
+    text-wrap:balance;
+  }
+  h1 .em{color:var(--green-text)}
+
+  .lead{
+    font-size:15px;color:var(--txt-2);max-width:64ch;line-height:1.5;
+    padding-bottom:16px;
+  }
+  .lead b{color:var(--txt);font-weight:500}
+
+  .points{margin-top:6px;display:flex;flex-direction:column;gap:2px}
+  .point{
+    display:grid;grid-template-columns:auto 1fr;gap:16px;
+    padding:12px 0;
+  }
+  .point .n{
+    font-family:var(--mono);font-size:12px;font-weight:600;
+    color:var(--green-text);padding-top:3px;
+  }
+  .point .lbl{
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--txt-3);margin-bottom:5px;
+  }
+  .point .body{font-size:14px;color:var(--txt-2);max-width:62ch;line-height:1.5}
+  .point .body b{color:var(--txt);font-weight:500}
+
+  .closing{margin-top:16px;font-size:14px;color:var(--txt-2);line-height:1.5;max-width:64ch}
+  .closing b{color:var(--txt);font-weight:500}
+
+  /* ---- footer actions ---- */
+  .actions{
+    margin-top:22px;padding-top:18px;
+    display:flex;align-items:center;justify-content:flex-end;gap:13px;
+  }
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;
+    font-family:var(--sans);font-size:13.5px;font-weight:600;
+    text-decoration:none;cursor:pointer;
+    padding:12px 22px;border-radius:11px;
+    border:1px solid transparent;
+    transition:all .2s ease;white-space:nowrap;
+  }
+  .btn svg{width:16px;height:16px;flex-shrink:0}
+  .btn-ghost{background:#fff;color:var(--txt);border-color:var(--line)}
+  .btn-ghost:hover{border-color:var(--txt-3);background:#FBFCFC;transform:translateX(-2px)}
+  .btn-primary{background:var(--green);color:#fff}
+  .btn-primary:hover{background:#00B85F;transform:translateY(-1px);box-shadow:0 8px 20px -8px rgba(0,197,102,.7)}
+  .btn-primary:active,.btn-ghost:active{transform:none}
+
+  .service{animation:rise .5s ease both}
+  .content > *{animation:fade .5s ease both}
+  .content > *:nth-child(1){animation-delay:.05s}
+  .content > *:nth-child(2){animation-delay:.10s}
+  .content > *:nth-child(3){animation-delay:.15s}
+  .content > *:nth-child(4){animation-delay:.20s}
+  .content > *:nth-child(5){animation-delay:.25s}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  @media(max-width:860px){
+    body{padding:0}
+    .service{border-radius:0;border:none;min-height:100vh}
+    .grid{grid-template-columns:1fr}
+    .visual{border-right:none;border-bottom:1px solid var(--line-soft);padding:36px 28px}
+    .hero-photo{max-width:380px;margin:0 auto}
+    .content{padding:36px 28px}
+    h1{font-size:22px}
+    .actions{flex-wrap:wrap;gap:12px}
+    .btn{flex:1;justify-content:center;min-width:140px}
+  }
+</style>
+</head>
+<body>
+  <main class="service">
+    <div class="topbar">
+      <span class="right"></span>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT VISUAL -->
+      <section class="visual">
+        <figure class="hero-photo hero-illus">
+          <svg viewBox="0 0 520 430" fill="none"
+               stroke-linecap="round" stroke-linejoin="round" role="img"
+               aria-label="Inspection and quality control — quality shield, certification medal and inspection checklist">
+            <!-- backdrop -->
+            <circle cx="240" cy="218" r="152" fill="#EAF1FA"/>
+            <circle cx="240" cy="218" r="152" fill="none" stroke="#D7E5F4" stroke-width="3" stroke-dasharray="2 10"/>
+
+            <!-- inspection checklist card (top-left) -->
+            <g>
+              <rect x="56" y="92" width="156" height="100" rx="12" fill="#fff" stroke="#E2E7E5" stroke-width="3"/>
+              <rect x="56" y="92" width="156" height="8" rx="4" fill="#2E4DA0"/>
+              <g>
+                <circle cx="80" cy="124" r="9" fill="#00C566"/>
+                <path d="M76 124 l3 3 5 -6" stroke="#fff" stroke-width="2.5"/>
+                <line x1="98" y1="124" x2="196" y2="124" stroke="#C9D4E8" stroke-width="5"/>
+              </g>
+              <g>
+                <circle cx="80" cy="148" r="9" fill="#00C566"/>
+                <path d="M76 148 l3 3 5 -6" stroke="#fff" stroke-width="2.5"/>
+                <line x1="98" y1="148" x2="184" y2="148" stroke="#C9D4E8" stroke-width="5"/>
+              </g>
+              <g>
+                <circle cx="80" cy="172" r="9" fill="#00C566"/>
+                <path d="M76 172 l3 3 5 -6" stroke="#fff" stroke-width="2.5"/>
+                <line x1="98" y1="172" x2="192" y2="172" stroke="#C9D4E8" stroke-width="5"/>
+              </g>
+            </g>
+
+            <!-- certificate with medal (right) -->
+            <g>
+              <rect x="318" y="120" width="146" height="158" rx="12" fill="#fff" stroke="#2E4DA0" stroke-width="4"/>
+              <rect x="338" y="142" width="88" height="12" rx="6" fill="#FFC928"/>
+              <line x1="338" y1="168" x2="446" y2="168" stroke="#C9D4E8" stroke-width="5"/>
+              <line x1="338" y1="184" x2="430" y2="184" stroke="#C9D4E8" stroke-width="5"/>
+              <line x1="338" y1="200" x2="440" y2="200" stroke="#C9D4E8" stroke-width="5"/>
+              <!-- medal -->
+              <g>
+                <path d="M381 240 l-7 30 14 -9 z" fill="#5BA3E0" stroke="#2E4DA0" stroke-width="2"/>
+                <path d="M403 240 l7 30 -14 -9 z" fill="#00C566" stroke="#2E4DA0" stroke-width="2"/>
+                <circle cx="392" cy="232" r="22" fill="#FFC928" stroke="#E0A100" stroke-width="4"/>
+                <path d="M381 232 l7 8 14 -17" stroke="#7A5A00" stroke-width="4" fill="none"/>
+              </g>
+            </g>
+
+            <!-- quality shield (hero, center-left) -->
+            <g>
+              <path d="M214 150 L286 178 V252 C286 306 254 342 214 360 C174 342 142 306 142 252 V178 Z"
+                    fill="#00C566" stroke="#009E54" stroke-width="6"/>
+              <path d="M214 150 L286 178 V252 C286 290 268 318 244 338 C226 300 224 230 214 150z"
+                    fill="#00B05E" opacity=".45"/>
+              <path d="M182 252 l20 24 42 -52" stroke="#fff" stroke-width="13" fill="none"/>
+            </g>
+
+            <!-- green location pin (bottom) -->
+            <g>
+              <path d="M316 300 a18 18 0 0 1 18 18 c0 13 -18 30 -18 30 c0 0 -18 -17 -18 -30 a18 18 0 0 1 18 -18z"
+                    fill="#00C566" stroke="#009E54" stroke-width="4"/>
+              <circle cx="316" cy="318" r="7" fill="#fff"/>
+            </g>
+          </svg>
+        </figure>
+
+        <div class="visual-meta">
+          <div class="meta-row"><span class="k">Service</span><span class="v">Inspection &amp; QC</span></div>
+          <div class="meta-row"><span class="k">Discipline</span><span class="v">QA · QC</span></div>
+          <div class="meta-row"><span class="k">Outcome</span><span class="v on">● Standards Verified</span></div>
+        </div>
+      </section>
+
+      <!-- RIGHT CONTENT -->
+      <section class="content">
+        <h1>Inspection &amp; <span class="em">quality control</span> services</h1>
+
+        <p class="lead">
+          Inspection and quality control services ensure that goods <b>meet all required standards
+          and specifications</b>. The services include:
+        </p>
+
+        <div class="points">
+          <div class="point">
+            <span class="n">01</span>
+            <div>
+              <div class="lbl">Quality Inspection</div>
+              <div class="body">
+                Assessing and verifying the <b>quantity, quality, and specifications</b> of goods
+                according to the contract.
+              </div>
+            </div>
+          </div>
+
+          <div class="point">
+            <span class="n">02</span>
+            <div>
+              <div class="lbl">Goods Certification</div>
+              <div class="body">
+                Checking the condition, <b>technical specifications</b>, and compliance with
+                <b>international standards</b>.
+              </div>
+            </div>
+          </div>
+
+          <div class="point">
+            <span class="n">03</span>
+            <div>
+              <div class="lbl">Quality Certification</div>
+              <div class="body">
+                Assisting clients in obtaining necessary certificates such as <b>CQ, CO</b>, and
+                other required documents.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="closing">
+          These services help businesses <b>manage risks, enhance reputation, and ensure quality</b>
+          throughout the supply chain.
+        </p>
+
+        <div class="actions">
+          <button class="btn btn-ghost" onclick="history.back()">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 12H5M11 18l-6-6 6-6"/>
+            </svg>
+            Go back
+          </button>
+          <a href="#" class="btn btn-primary">
+            Contact us
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14M13 6l6 6-6 6"/>
+            </svg>
+          </a>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

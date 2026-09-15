@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shipment Details</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#16a34a; --green-dk:#15803d; --green-lt:#f0fdf4; --green-100:#dcfce7; --green-200:#bbf7d0;
+  --blue:#1d6fce; --blue-tab:#1976d2; --blue-lt:#e3f0fb;
+  --amber:#d97706; --amber-lt:#fffbeb;
+  --red:#dc2626; --red-lt:#fef2f2;
+  --dark:#1a1a2e; --text:#222; --sub:#555; --gray:#888; --graylt:#bbb;
+  --border:#e0e0e0; --border2:#d0d0d0;
+  --bg:#f5f6f8; --white:#fff;
+  --r:6px;
+  --sh:0 1px 3px rgba(0,0,0,.08);
+  --sh2:0 2px 10px rgba(0,0,0,.1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;}
+
+/* ─── TOP BAR ─── */
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:10px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--sh);}
+.topbar-inner{display:flex;align-items:center;justify-content:space-between;padding:10px 0 4px;}
+.page-title{font-size:20px;font-weight:800;color:var(--text);text-decoration:underline;text-underline-offset:3px;}
+.search-box{display:flex;border:1px solid var(--border2);border-radius:4px;overflow:hidden;}
+.search-box input{border:none;outline:none;padding:7px 14px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);width:340px;background:#fff;}
+.search-box input::placeholder{color:var(--graylt);}
+.search-box button{background:var(--blue-tab);border:none;padding:7px 16px;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;}
+.search-box button:hover{background:var(--blue);}
+
+/* ─── PAGE ─── */
+.pw{max-width:1500px;margin:0 auto;padding:18px 28px;display:flex;flex-direction:column;gap:14px;}
+
+/* ─── ROUTE CARD ─── */
+.route-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);padding:12px 20px 16px;}
+.ref-line{font-size:13px;font-weight:600;color:var(--text);margin-bottom:18px;padding-left:44px;}
+.ref-link{color:var(--blue-tab);font-weight:700;text-decoration:underline;cursor:pointer;font-family:'DM Mono',monospace;}
+
+/* ── wrapper ── */
+.route-inner{
+  display:flex;align-items:flex-start;gap:0;
+  width:100%;
+  position:relative;
+}
+
+/* ── stop node ── */
+.rs{display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0;width:110px;}
+.rc{flex:1;display:flex;flex-direction:column;align-items:center;gap:0;position:relative;z-index:1;}
+
+/* ROW 1 — dot / vehicle icon — fixed 31px */
+.rs-track{
+  height:31px;width:100%;
+  display:flex;align-items:center;justify-content:center;
+}
+/* non-terminal nodes include half-segs → override justify */
+.rs-track.with-seg{justify-content:unset;}
+
+.rc-track{
+  height:31px;
+  display:flex;align-items:center;justify-content:center;
+  width:100%;position:relative;z-index:2;
+}
+/* full-width line behind the icon in rc-track */
+.rc-track::before{
+  content:'';position:absolute;
+  top:50%;transform:translateY(-50%);
+  left:-55px;right:-55px;height:2px;z-index:0;
+}
+.rc-track.done::before  {background:var(--green-dk);}
+.rc-track.pending::before{
+  background:repeating-linear-gradient(90deg,var(--green) 0,var(--green) 6px,transparent 6px,transparent 12px);
+  background-size:18px 2px;
+  animation:flow .9s linear infinite;
+}
+@keyframes flow{0%{background-position:0 0}100%{background-position:18px 0}}
+.rc-icon-wrap{position:relative;z-index:2;}
+/* stop pending line at icon center */
+.rc-track.pending.rc-end::before{left:-55px;right:50%;}
+
+/* half-seg lines inside rs-track (extend from/to dot to edge of .rs) */
+.rs-half{flex:1;height:2px;}
+.rs-half.done   {background:none;}
+.rs-half.pending{background:none;animation:none;}
+.rs-half.none   {flex:1;} /* invisible spacer for origin left / dest right */
+
+/* dot — same filled style for all nodes */
+@keyframes dot-pulse{0%,100%{box-shadow:0 0 0 0 rgba(22,163,74,.5)}50%{box-shadow:0 0 0 8px rgba(22,163,74,0)}}
+.rs-dot{width:15px;height:15px;border-radius:50%;flex-shrink:0;position:relative;z-index:2;background:var(--green-dk);border:2.5px solid var(--green-dk);animation:dot-pulse 2s ease-in-out infinite;}
+.rs-dot.dest{animation-delay:.6s;}
+.rs-dot.mid {animation-delay:.3s;}
+
+/* vehicle icon */
+.rc-icon-wrap{
+  width:31px;height:31px;border-radius:50%;
+  background:#fff;border:2px solid var(--green-200);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;flex-shrink:0;position:relative;z-index:3;
+}
+.flip{display:inline-block;transform:scaleX(-1);}
+
+/* flag image */
+.rs-flag-img{width:15px;height:auto;border-radius:2px;border:1px solid #e0e0e0;vertical-align:middle;margin-right:3px;}
+
+/* ROW 2 — country */
+.rs-country,.rc-mode{
+  min-height:16px;
+  display:flex;align-items:center;justify-content:center;
+  margin-top:7px;
+  font-size:9.5px;font-weight:700;
+  text-align:center;line-height:1.2;
+}
+.rs-country{color:var(--green-dk);gap:4px;}
+.rc-mode{color:var(--green-dk);letter-spacing:.05em;text-transform:uppercase;}
+
+/* ROW 3 — city */
+.rs-city{min-height:16px;display:flex;align-items:center;justify-content:center;margin-top:2px;font-size:10.5px;font-weight:700;color:var(--text);text-align:center;line-height:1.2;white-space:nowrap;}
+.rc-spacer-city{min-height:16px;margin-top:2px;}
+
+/* ROW 4 — address */
+.rs-addr{min-height:14px;display:flex;align-items:center;justify-content:center;margin-top:1px;font-size:9px;color:var(--sub);text-align:center;line-height:1.2;white-space:nowrap;}
+.rc-spacer-addr{min-height:14px;margin-top:1px;}
+
+/* ROW 5 — label */
+.rs-lbl{min-height:14px;display:flex;align-items:center;justify-content:center;margin-top:2px;font-size:9px;color:var(--gray);text-align:center;line-height:1.2;white-space:nowrap;}
+.rc-spacer-lbl{min-height:14px;margin-top:2px;}
+
+/* ROW 6 — date */
+.rs-date{min-height:14px;display:flex;align-items:center;justify-content:center;margin-top:4px;font-size:9.5px;font-weight:700;color:var(--green-dk);text-align:center;font-family:'DM Mono',monospace;white-space:nowrap;}
+.rc-spacer-date{min-height:14px;margin-top:4px;}
+
+
+@keyframes ring-pulse{0%,100%{box-shadow:0 0 0 0 rgba(22,163,74,.45)}50%{box-shadow:0 0 0 5px rgba(22,163,74,0)}}
+.svc-icon-ring{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:50%;
+  background:var(--green-lt);border:2px solid var(--green-200);
+  font-size:14px;vertical-align:middle;
+  animation:ring-pulse 2s ease-in-out infinite;
+  flex-shrink:0;
+}
+.svc-note{
+  display:inline-flex;align-items:flex-start;gap:8px;
+  padding:6px 10px;border-radius:6px;
+  cursor:pointer;
+  border:1.5px solid transparent;
+  transition:background .15s, border-color .15s;
+  user-select:none;
+  font-size:11.5px;color:var(--green-dk);font-weight:600;
+}
+.svc-note:hover{background:var(--green-lt);border-color:var(--green-200);}
+.svc-note-text{display:flex;flex-direction:column;gap:2px;}
+/* ─── MERGED PANEL TWO-COL ─── */
+.panel-merged{display:flex;align-items:stretch;gap:0;background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);}
+.panel-left{flex:1;padding:14px 20px 16px;min-width:0;}
+.panel-divider{width:1px;background:var(--border);flex-shrink:0;margin:12px 0;}
+.panel-right{width:280px;flex-shrink:0;padding:14px 18px 16px;display:flex;flex-direction:column;justify-content:center;}
+
+.phase-tabs{display:grid;grid-template-columns:1fr 1fr 1fr;border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);}
+.phase-tab{padding:13px 20px;text-align:center;font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .15s;color:#fff;border-right:1px solid rgba(255,255,255,.2);}
+.phase-tab:last-child{border-right:none;}
+.phase-tab.on{background:var(--green-dk);}
+.phase-tab:not(.on){background:#a8bfb0;color:rgba(255,255,255,.9);}
+.phase-tab:not(.on):hover{background:#7fa98c;color:#fff;}
+
+/* ─── PANEL BODY (below tabs) ─── */
+.panel-body{background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);padding:12px 18px 14px;}
+.panel-tag{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--green-dk);margin-bottom:6px;}
+.panel-tag svg{flex-shrink:0;}
+.svc-note{font-size:11.5px;color:var(--green-dk);font-weight:600;}
+
+/* ─── SUMMARY ROW ─── */
+.summary-row{background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);}
+.sr-head{display:grid;grid-template-columns:repeat(12,1fr);border-bottom:1.5px solid var(--border2);background:#f7f8fa;}
+.sr-head th{padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);text-align:center;border-right:1px solid var(--border);white-space:nowrap;}
+.sr-head th.tl{text-align:left;}
+.sr-head th:last-child{border-right:none;}
+.sr-body{display:grid;grid-template-columns:repeat(12,1fr);}
+.sr-body td{padding:10px 10px;font-size:11.5px;text-align:center;vertical-align:middle;border-right:1px solid var(--border);color:var(--text);}
+.sr-body td.tl{text-align:left;}
+.sr-body td:last-child{border-right:none;}
+.mono{font-family:'DM Mono',monospace;font-size:11px;color:var(--green-dk);}
+.blue-link{color:var(--blue-tab);font-weight:600;text-decoration:underline;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;}
+
+/* ─── TWO-PANEL LAYOUT ─── */
+.layout-left-right{display:grid;grid-template-columns:1fr;gap:14px;align-items:start;}
+
+/* ─── BASIC INFO PANEL ─── */
+.info-panel{background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);}
+.ip-section{padding:10px 16px;border-bottom:1px solid var(--border);}
+.ip-section:last-child{border-bottom:none;}
+.ip-row{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;gap:8px;font-size:11.5px;}
+.ip-label{color:var(--sub);white-space:nowrap;flex-shrink:0;}
+.ip-val{font-weight:600;color:var(--text);text-align:right;}
+.ip-val.lnk{color:var(--blue-tab);text-decoration:underline;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;}
+.ip-val.warn{color:var(--amber);font-weight:700;}
+.ip-val.grn{color:var(--green-dk);font-weight:700;}
+.doc-area{padding:12px 16px;}
+.doc-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);margin-bottom:10px;border:1px solid var(--border);border-radius:4px;padding:4px 10px;display:inline-block;}
+.doc-icons{display:flex;gap:16px;flex-wrap:wrap;}
+.doc-item{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;}
+.doc-icon-box{width:48px;height:56px;border-radius:6px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:26px;background:#fff;transition:.15s;}
+.doc-item:hover .doc-icon-box{border-color:var(--green);background:var(--green-lt);}
+.doc-item-lbl{font-size:9.5px;font-weight:700;color:var(--sub);text-transform:uppercase;text-align:center;line-height:1.2;}
+
+/* ─── CONTAINER TABLE ─── */
+.ctable-wrap{background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;}
+.ctable-scroll{overflow-x:auto;}
+table.ct{width:100%;border-collapse:collapse;font-size:11px;}
+table.ct thead tr.group th{padding:7px 10px;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;border-right:2px solid #fff;border-bottom:1px solid var(--border);}
+table.ct thead tr.cols th{padding:8px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gray);background:#f7f8fa;border-right:1px solid var(--border);border-bottom:1.5px solid var(--border2);white-space:nowrap;text-align:center;}
+table.ct thead tr.cols th.tl{text-align:left;}
+table.ct tbody tr{border-bottom:1px solid #f0f0f0;}
+table.ct tbody tr:last-child{border-bottom:none;}
+table.ct tbody tr:hover{background:#fafafa;}
+table.ct td{padding:9px 10px;text-align:center;vertical-align:middle;border-right:1px solid #f0f0f0;font-size:11px;color:var(--text);}
+table.ct td:last-child{border-right:none;}
+table.ct td.tl{text-align:left;}
+
+/* group colors - muted, not shouting */
+.gh-cntr{background:#e8f4fd;color:#1565c0;}
+.gh-truck{background:#fff8e1;color:#e65100;}
+.gh-stuff{background:#e8f5e9;color:#2e7d32;}
+.gh-cust{background:#fce4ec;color:#c62828;}
+
+/* ─── THUMBS ─── */
+.thumbs{display:flex;gap:3px;justify-content:center;}
+.th{width:24px;height:24px;border-radius:3px;background:var(--green-lt);border:1.5px solid var(--green-200);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.12s;color:var(--green-dk);}
+.th:hover{background:var(--green-100);border-color:var(--green);box-shadow:0 1px 4px rgba(22,163,74,.2);}
+.th.ok{background:var(--green-lt);border-color:var(--green-200);color:var(--green-dk);}
+.th.pend{background:var(--green-lt);border-color:var(--green-200);color:var(--green-dk);}
+
+.event-note{font-size:9.5px;color:var(--sub);margin-top:2px;line-height:1.3;}
+.event-time{font-size:9.5px;color:var(--green-dk);font-weight:600;}
+.pbar{height:4px;background:#e0e0e0;border-radius:2px;margin-top:4px;overflow:hidden;width:80px;margin-left:auto;margin-right:auto;}
+.pfill{height:100%;border-radius:2px;background:var(--green);}
+
+/* ─── BADGES ─── */
+.bdg{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap;}
+.bdg-g{background:var(--green-100);color:var(--green-dk);}
+.bdg-a{background:#fff3e0;color:#e65100;}
+.bdg-s{background:#f5f5f5;color:#666;}
+.bdg-dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+
+/* track */
+.track-btn{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:var(--green-dk);border:1px solid var(--green-200);background:var(--green-lt);padding:2px 8px;border-radius:20px;cursor:pointer;text-decoration:none;transition:.12s;white-space:nowrap;}
+.track-btn:hover{background:var(--green-100);border-color:var(--green);}
+
+/* cell sub text */
+.csub{font-size:9.5px;color:var(--sub);line-height:1.35;margin-top:1px;}
+.csub-g{font-size:9.5px;color:var(--green-dk);font-weight:600;}
+.csub-a{font-size:9.5px;color:var(--amber);font-weight:600;}
+
+/* ─── DECLARATION RESULT ANIMATIONS ─── */
+@keyframes pulse-green{0%,100%{box-shadow:0 0 0 0 rgba(22,163,74,.6)}60%{box-shadow:0 0 0 7px rgba(22,163,74,0)}}
+@keyframes pulse-red{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.6)}60%{box-shadow:0 0 0 7px rgba(220,38,38,0)}}
+@keyframes pulse-yellow{0%,100%{box-shadow:0 0 0 0 rgba(217,119,6,.6)}60%{box-shadow:0 0 0 7px rgba(217,119,6,0)}}
+.decl-dot{display:inline-block;width:11px;height:11px;border-radius:50%;flex-shrink:0;vertical-align:middle;}
+.decl-dot.green {background:#16a34a;animation:pulse-green 1.8s ease-in-out infinite;}
+.decl-dot.red   {background:#dc2626;animation:pulse-red   1.8s ease-in-out infinite;}
+.decl-dot.yellow{background:#d97706;animation:pulse-yellow 1.8s ease-in-out infinite;}
+
+/* ─── CUSTOMS STATUS ANIMATIONS ─── */
+@keyframes bdg-cleared{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.85;transform:scale(1.03)}}
+@keyframes bdg-progress-bg{0%{background-position:0 0}100%{background-position:30px 0}}
+@keyframes spin-dots{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.bdg-anim-g{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;
+  font-size:10px;font-weight:700;white-space:nowrap;
+  background:linear-gradient(90deg,#bbf7d0,#d1fae5,#bbf7d0);background-size:60px 100%;
+  color:#15803d;animation:bdg-progress-bg 2s linear infinite;
+}
+.bdg-anim-g::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:#16a34a;animation:pulse-green 1.5s ease-in-out infinite;}
+.bdg-anim-a{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;
+  font-size:10px;font-weight:700;white-space:nowrap;
+  background:#fff3e0;color:#e65100;
+}
+.bdg-anim-a .prog-ring{
+  width:9px;height:9px;border:2px solid #fca261;border-top-color:#e65100;
+  border-radius:50%;animation:spin-dots .8s linear infinite;flex-shrink:0;
+}
+
+/* ─── CDS DETAIL POPUP ─── */
+.cdspop-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);align-items:center;justify-content:center;}
+.cdspop-overlay.open{display:flex;}
+.cdspop-box{background:#fff;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.25);width:500px;max-width:95vw;padding:20px 22px 18px;position:relative;font-family:'DM Sans',sans-serif;}
+.cdspop-close{position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;background:#dc2626;border:none;color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;}
+.cdspop-title{font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.cdspop-status{font-size:12px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+/* timeline */
+.cds-timeline{display:flex;align-items:flex-start;gap:0;margin-bottom:16px;position:relative;}
+.cds-tl-node{display:flex;flex-direction:column;align-items:center;flex:1;}
+.cds-tl-dot{width:14px;height:14px;border-radius:50%;background:#16a34a;flex-shrink:0;position:relative;z-index:2;}
+.cds-tl-dot.green{animation:pulse-green 1.8s ease-in-out infinite;}
+.cds-tl-dot.pending{background:#ccc;}
+.cds-tl-label{font-size:10px;font-weight:700;color:var(--sub);margin-top:5px;text-align:center;}
+.cds-tl-date{font-size:10px;color:var(--text);font-weight:600;text-align:center;line-height:1.3;margin-top:2px;}
+.cds-tl-seg{flex:1;height:2px;margin-top:7px;background:var(--green-dk);}
+.cds-tl-seg.dashed{background:repeating-linear-gradient(90deg,#bbb 0,#bbb 5px,transparent 5px,transparent 10px);}
+/* inspection photos */
+.insp-section{margin-bottom:14px;}
+.insp-head{display:flex;align-items:center;gap:14px;margin-bottom:8px;}
+.insp-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--text);text-align:center;line-height:1.3;white-space:nowrap;}
+.insp-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;}
+.insp-photo{border-radius:5px;background:linear-gradient(135deg,#67e8f9,#22d3ee,#06b6d4);position:relative;aspect-ratio:1.1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;transition:.15s;}
+.insp-photo:hover{transform:scale(1.05);box-shadow:0 3px 10px rgba(6,182,212,.4);}
+.insp-photo span{position:absolute;top:3px;left:4px;font-size:9px;font-weight:700;color:#fff;}
+.insp-photo svg{opacity:.5;}
+/* docs to return */
+.docs-section{border-top:1px solid var(--border);padding-top:12px;margin-bottom:14px;}
+.docs-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--text);text-align:center;margin-bottom:10px;}
+.docs-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;}
+.doc-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--text);}
+.doc-up-btn{width:26px;height:26px;background:var(--blue-tab);border:none;border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:.12s;}
+.doc-up-btn:hover{background:var(--blue);}
+/* email row */
+.email-row{display:flex;align-items:center;gap:8px;border-top:1px solid var(--border);padding-top:12px;}
+.email-row label{font-size:11px;color:var(--text);white-space:nowrap;font-weight:500;}
+.email-row input{flex:1;border:1px solid var(--border2);border-radius:4px;padding:6px 10px;font-family:'DM Sans',sans-serif;font-size:11.5px;outline:none;}
+.email-row input:focus{border-color:var(--blue-tab);}
+.email-send-btn{background:var(--blue-tab);color:#fff;border:none;border-radius:4px;padding:6px 16px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+.email-send-btn:hover{background:var(--blue);}
+/* ─── BULB ANIMATION ─── */
+@keyframes bulb-glow{0%,100%{filter:drop-shadow(0 0 3px var(--bc));opacity:1}50%{filter:drop-shadow(0 0 9px var(--bc));opacity:.75}}
+.bulb-wrap{display:inline-flex;align-items:center;vertical-align:middle;animation:bulb-glow 1.4s ease-in-out infinite;}
+
+/* ─── TIMELINE dashed animation ─── */
+.cds-tl-seg.dashed{
+  background:repeating-linear-gradient(90deg,#bbb 0,#bbb 5px,transparent 5px,transparent 10px);
+  background-size:20px 2px;
+  animation:flow .9s linear infinite;
+}
+
+table.ct td.loc{width:130px;min-width:130px;max-width:130px;overflow:hidden;text-align:center;word-break:break-word;}
+font-size:11px;font-weight:700;color:var(--text);padding:8px 18px;background:#f7f8fa;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+</style>
+</head>
+<body>
+
+<div id="mainPage">
+<div class="pw">
+
+  <!-- ─── HEADER inside container ─── -->
+  <div class="topbar-inner">
+    <div class="page-title">Shipment details</div>
+    <div class="search-box">
+      <input type="text" placeholder="Shoptrans reference number, B/L number, Freight booking number">
+      <button>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Search
+      </button>
+    </div>
+  </div>
+
+  <!-- PHASE TABS — above the info card -->
+  <div class="phase-tabs" style="border-radius:var(--r);box-shadow:var(--sh);">
+    <div class="phase-tab on" onclick="setPhase(this)">AT ORIGIN</div>
+    <div class="phase-tab" onclick="setPhase(this)">SEA FREIGHT</div>
+    <div class="phase-tab" onclick="setPhase(this)">AT DESTINATION</div>
+  </div>
+
+  <!-- FCA DETAILED TIMELINE (toggled by the FCA service note) -->
+  <style>
+    #exwTimeline{background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);margin-top:10px;padding:13px 16px 11px;}
+    .exw-head{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
+    .exw-head .exw-ttl{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--green-dk);}
+    .exw-head .exw-tag{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--green-dk);background:var(--green-lt);border:1px solid var(--green-200);border-radius:99px;padding:2px 9px;}
+    .exw-head .exw-leg{margin-left:auto;display:flex;gap:13px;font-size:9.5px;font-weight:600;color:var(--sub);}
+    .exw-head .exw-leg i{display:inline-block;width:8px;height:8px;border-radius:99px;margin-right:4px;vertical-align:middle;}
+    .exw-track{display:flex;overflow-x:auto;padding:4px 2px 2px;scrollbar-width:thin;}
+    .exw-step:first-child{margin-left:auto;}
+    .exw-step:last-child{margin-right:auto;}
+    .exw-step{position:relative;flex:0 0 auto;width:92px;text-align:center;}
+    .exw-step::before{content:'';position:absolute;top:18px;left:-50%;width:100%;height:3px;background:#e3e7e4;z-index:0;}
+    .exw-step:first-child::before{display:none;}
+    .exw-step.reached::before{background:var(--green);}
+    .exw-step.todo::before{
+      background:repeating-linear-gradient(90deg,var(--green-200) 0,var(--green-200) 6px,transparent 6px,transparent 12px);
+      background-size:18px 3px;animation:flow .9s linear infinite;
+    }
+    .exw-bub{position:relative;z-index:1;width:37px;height:37px;margin:0 auto;border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:17px;background:#eef1ef;border:2px solid #e3e7e4;}
+    .exw-step.done .exw-bub{background:var(--green-lt);border-color:var(--green);}
+    .exw-step.current .exw-bub{background:#fff;border-color:var(--green-dk);box-shadow:0 0 0 4px rgba(22,163,74,.16);animation:exwPulse 1.8s ease-in-out infinite;}
+    .exw-step.current .exw-bub::after{content:'';position:absolute;inset:-6px;border-radius:50%;border:2px solid transparent;border-top-color:var(--green-dk);border-right-color:var(--green-dk);animation:exwSpin .9s linear infinite;}
+    @keyframes exwSpin{to{transform:rotate(360deg);}}
+    .exw-step.todo .exw-bub{animation:exwBreath 1.8s ease-in-out infinite;}
+    @keyframes exwBreath{0%,100%{opacity:.6;}50%{opacity:1;}}
+    @keyframes exwPulse{0%,100%{box-shadow:0 0 0 4px rgba(22,163,74,.16);}50%{box-shadow:0 0 0 7px rgba(22,163,74,.05);}}
+    .exw-lbl{margin-top:6px;font-family:'DM Sans',sans-serif;font-size:9.7px;font-weight:700;line-height:1.2;color:var(--text);padding:0 3px;}
+    .exw-step.todo .exw-lbl{color:#9aa6a0;font-weight:600;}
+    .exw-dt{margin-top:2px;font-family:'DM Mono',monospace;font-size:9.5px;font-weight:500;color:var(--green-dk);}
+    .exw-step.todo .exw-dt{color:#bcc6c0;}
+  </style>
+  <div id="exwTimeline">
+    <div class="exw-head">
+      <span class="exw-ttl">FCA progress</span>
+      <span class="exw-tag">At origin</span>
+      <span class="exw-leg"><span><i style="background:var(--green);"></i>Completed</span><span><i style="background:var(--green-dk);"></i>In progress</span><span><i style="background:#cfd6d1;"></i>Pending</span></span>
+    </div>
+    <div class="exw-track">
+      <div class="exw-step done reached"><div class="exw-bub">📋</div><div class="exw-lbl">Booking Receipt</div><div class="exw-dt">01 Mar 2025</div></div>
+      <div class="exw-step done reached"><div class="exw-bub">📦</div><div class="exw-lbl">Stuffing Confirmation</div><div class="exw-dt">05 Mar 2025</div></div>
+      <div class="exw-step done reached"><div class="exw-bub">🚛</div><div class="exw-lbl">Empty Pickup</div><div class="exw-dt">08 Mar 2025</div></div>
+      <div class="exw-step done reached"><div class="exw-bub">📦</div><div class="exw-lbl">Stuffing Completion</div><div class="exw-dt">10 Mar 2025</div></div>
+      <div class="exw-step done reached"><div class="exw-bub">🔒</div><div class="exw-lbl">Container Gate-in</div><div class="exw-dt">12 Mar 2025</div></div>
+      <div class="exw-step current reached"><div class="exw-bub">🟢</div><div class="exw-lbl">Clearance Completion</div><div class="exw-dt">—</div></div>
+      <div class="exw-step todo"><div class="exw-bub">⚓</div><div class="exw-lbl">Loading Readiness</div><div class="exw-dt">—</div></div>
+      <div class="exw-step todo"><div class="exw-bub">🛳️</div><div class="exw-lbl">Vessel Departure</div><div class="exw-dt">—</div></div>
+    </div>
+  </div>
+
+  <!-- ─── COMBINED INFO CARD ─── -->
+  <div style="background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);display:grid;grid-template-columns:1fr 1fr 1fr;overflow:hidden;">
+
+    <!-- COL 1: ref + description + services -->
+    <div style="padding:16px 20px;display:flex;flex-direction:column;justify-content:center;gap:6px;border-right:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;">Reference number: <span class="ref-link">123456789</span></div>
+      <div style="font-size:10.5px;color:var(--sub);line-height:1.4;">View and follow up your shipments and bookings in detail</div>
+      <div style="margin-top:4px;"><div class="svc-note svc-active" id="svcEXW" onclick="switchSvc('EXW')" style="border-color:var(--green-200);background:var(--green-lt);">
+        <span class="svc-icon-ring">🚛</span>
+        <div class="svc-note-text">
+          <span><strong>Full FCA service</strong></span>
+          <span style="font-weight:400;color:var(--sub);font-size:8.1px;">From shipper's warehouse to container yard / port (customs clearance excluded)</span>
+        </div>
+      </div></div>
+      <div><div class="svc-note" id="svcCollect" onclick="switchSvc('COLLECT')" style="cursor:pointer;align-items:center;">
+        <span class="svc-icon-ring">💰</span>
+        <div class="svc-note-text" style="display:flex;align-items:center;">
+          <span><strong>Collect charges as nominated</strong></span>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- COL 2: shipment info -->
+    <div style="padding:16px 20px;display:flex;flex-direction:column;justify-content:center;gap:0;border-right:1px solid var(--border);">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);margin-bottom:3px;">Booking Number</div>
+          <div style="font-size:13px;font-weight:700;color:var(--blue-tab);text-decoration:underline;cursor:pointer;font-family:'DM Mono',monospace;">COAU12345678</div>
+        </div>
+        <div>
+          <div style="font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);margin-bottom:3px;">Shipping Line</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);">MAERSK</div>
+        </div>
+        <div>
+          <div style="font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);margin-bottom:3px;">Exporter</div>
+          <div style="font-size:12.5px;font-weight:700;color:var(--text);">ABCD VN CO., LTD</div>
+        </div>
+        <div>
+          <div style="font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);margin-bottom:3px;">Importer</div>
+          <div style="font-size:12.5px;font-weight:700;color:var(--text);">DEFG USA CO., LTD</div>
+        </div>
+        <div>
+          <div style="font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);margin-bottom:3px;">Vessel / Voyage</div>
+          <div style="font-size:12.5px;font-weight:700;color:var(--text);">KMTC SOTRANS 123S</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 16px;padding-top:12px;">
+        <div>
+          <div style="font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);margin-bottom:3px;">Volume</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);">4 × 20GP</div>
+        </div>
+        <div>
+          <div style="font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);margin-bottom:3px;">Total Weight</div>
+          <div style="font-size:12.5px;font-weight:700;color:var(--text);">35.000,00 KGS</div>
+        </div>
+        <div>
+          <div style="font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);margin-bottom:3px;">Total Mea.</div>
+          <div style="font-size:12.5px;font-weight:700;color:var(--text);">80.00 CBM</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COL 3: route -->
+    <div style="padding:16px 24px;display:flex;align-items:center;border-left:none;">
+      <div class="route-inner" style="max-width:100%;width:100%;">
+
+        <div class="rs">
+          <div class="rs-track with-seg">
+            <div class="rs-half none"></div>
+            <div class="rs-dot origin"></div>
+            <div class="rs-half done"></div>
+          </div>
+          <div class="rs-country"><img class="rs-flag-img" src="https://flagcdn.com/w40/th.png" alt="TH"> Thailand</div>
+          <div class="rs-city">Samutprakan</div>
+          <div class="rs-addr">Bangkok, TH</div>
+          <div class="rs-lbl">Cargo Pickup</div>
+          <div class="rs-date">21 Oct 2024</div>
+        </div>
+
+        <div class="rc">
+          <div class="rc-track done"><div class="rc-icon-wrap"><span class="flip">🚛</span></div></div>
+          <div class="rc-mode">Road</div>
+          <div class="rc-spacer-city"></div>
+          <div class="rc-spacer-addr"></div>
+          <div class="rc-spacer-lbl"></div>
+          <div class="rc-spacer-date"></div>
+        </div>
+
+        <div class="rs">
+          <div class="rs-track with-seg">
+            <div class="rs-half done"></div>
+            <div class="rs-dot mid"></div>
+            <div class="rs-half pending"></div>
+          </div>
+          <div class="rs-country"><img class="rs-flag-img" src="https://flagcdn.com/w40/th.png" alt="TH"> Thailand</div>
+          <div class="rs-city">Bangkok</div>
+          <div class="rs-addr">Bangkok, TH</div>
+          <div class="rs-lbl">Vessel Departure</div>
+          <div class="rs-date">22 Oct 2024</div>
+        </div>
+
+        <div class="rc" style="flex:0 0 70px;">
+          <div class="rc-track pending rc-end"><div class="rc-icon-wrap">🚢</div></div>
+          <div class="rc-mode">Sea</div>
+          <div class="rc-spacer-city"></div>
+          <div class="rc-spacer-addr"></div>
+          <div class="rc-spacer-lbl"></div>
+          <div class="rc-spacer-date"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─── SERVICE CONTENT AREA ─── -->
+  <div id="svcContent">
+
+  <!-- ─── MAIN LAYOUT ─── -->
+  <div class="layout-left-right">
+
+    <!-- LEFT: removed -->
+
+    <!-- RIGHT: Container detail table -->
+    <div class="ctable-wrap">
+      <div class="sec-hd" style="display:flex;justify-content:space-between;align-items:center;padding-left:26px;padding-right:26px;min-height:52px;">
+        <span style="font-weight:700;">Containers information · Trucking information · Stuffing process</span>
+        <span style="font-size:11px;color:var(--gray);font-weight:700;">4 containers</span>
+      </div>
+      <div class="ctable-scroll">
+        <table class="ct">
+          <thead>
+            <tr class="group">
+              <th class="gh-cntr" colspan="5">Containers information</th>
+              <th class="gh-truck" colspan="4">Trucking information</th>
+              <th class="gh-stuff" colspan="5">Stuffing process</th>
+            </tr>
+            <tr class="cols">
+              <th>Container /<br>Tare</th>
+              <th>Type</th>
+              <th>Seal</th>
+              <th>Cargo wt.</th>
+              <th style="white-space:nowrap;width:1%;">MEA<br><span style="font-size:8px;font-weight:600;letter-spacing:.04em;">(CBM)</span></th>
+              <th>Truck ID</th>
+              <th>Driver name</th>
+              <th>Driver ID</th>
+              <th>Phone</th>
+              <th style="width:130px;white-space:normal;">Empty pickup location</th>
+              <th style="width:130px;white-space:normal;">Stuffing location</th>
+              <th style="width:130px;white-space:normal;">Full drop-off<br>location</th>
+              <th style="width:68px;">Photos</th>
+              <th>Latest event</th>
+              
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Container 1 — DONE -->
+            <tr>
+              <td style="text-align:center;"><span style="font-size:11px;font-weight:600;color:var(--text);">BASU1234567</span><br><span style="font-size:9.5px;color:var(--sub);">3,260 KGS</span></td>
+              <td>20GP</td>
+              <td><span class="mono" style="font-size:10px;">ML-CM231564</span></td>
+              <td>12,500 KGS</td>
+              <td>40.00</td>
+              <td style="font-size:10.5px;">84-50VA<br>12345</td>
+              <td style="font-size:11px;">Nguyen Van A</td>
+              <td><span class="mono" style="font-size:10px;">084093006566</span></td>
+              <td><span class="mono" style="font-size:10px;">0515373322</span></td>
+              <td class="loc"><div style="font-size:11px;font-weight:600;">ICD Phuoc Long III</div><div class="csub">Xa Lo Ha Noi, HCMC</div><div class="csub-g">10:00 · 26 Oct 2024</div></td>
+              <td class="loc"><div style="font-size:11px;font-weight:600;">SIGMA Vietnam Co., Ltd</div><div class="csub">08 Đường Số 8, Thu Duc, HCMC</div><div class="csub-g">15:00 · 28 Oct 2024</div></td>
+              <td class="loc"><div style="font-size:11px;font-weight:600;">Cat Lai Terminal</div><div class="csub">240 Nguyen Thi Dinh</div><div class="csub-g">22:00 · 28 Oct 2024</div></td>
+              <td style="text-align:center;"><div style="display:inline-flex;flex-direction:column;gap:3px;align-items:center;"><div style="display:flex;gap:3px;"><div class="th ok" onclick="openTablePhoto('BASU1234567','empty_1')" title="Empty 1"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="th ok" onclick="openTablePhoto('BASU1234567','empty_2')" title="Empty 2"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="th ok" onclick="openTablePhoto('BASU1234567','stuff_1')" title="Stuffing 1"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div></div><div style="display:flex;gap:3px;"><div class="th ok" onclick="openTablePhoto('BASU1234567','stuff_2')" title="Stuffing 2"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="th ok" onclick="openTablePhoto('BASU1234567','gate_1')" title="Gate-in 1"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="th ok" onclick="openTablePhoto('BASU1234567','gate_2')" title="Gate-in 2"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div></div></div></td>
+              <td><div class="event-note">Container<br>gate-in</div><div class="event-time">18:00 · 28 Oct</div></td>
+            </tr>
+
+            <!-- Container 2 — IN PROGRESS -->
+            <tr>
+              <td style="text-align:center;"><span style="font-size:11px;font-weight:600;color:var(--text);">BASU1234568</span><br><span style="font-size:9.5px;color:var(--sub);">3,260 KGS</span></td>
+              <td>20GP</td>
+              <td><span class="mono" style="font-size:10px;">ML-CM231562</span></td>
+              <td>12,500 KGS</td>
+              <td>40.00</td>
+              <td style="font-size:10.5px;">84-50VA<br>12345</td>
+              <td style="font-size:11px;">Nguyen Van A</td>
+              <td><span class="mono" style="font-size:10px;">084093006566</span></td>
+              <td><span class="mono" style="font-size:10px;">0515373322</span></td>
+              <td class="loc"><div style="font-size:11px;font-weight:600;">ICD Phuoc Long III</div><div class="csub">Xa Lo Ha Noi, HCMC</div><div class="csub-g">10:00 · 26 Oct 2024</div></td>
+              <td class="loc"><div style="font-size:11px;font-weight:600;">SIGMA Vietnam Co., Ltd</div><div class="csub">08 Đường Số 8, Thu Duc, HCMC</div><div class="csub-g">15:00 · 28 Oct 2024</div></td>
+              <td class="loc"><div style="font-size:11px;font-weight:600;">Cat Lai Terminal</div><div class="csub">240 Nguyen Thi Dinh</div><div class="csub-g">22:00 · 28 Oct 2024</div></td>
+              <td style="text-align:center;"><div style="display:inline-flex;flex-direction:column;gap:3px;align-items:center;"><div style="display:flex;gap:3px;"><div class="th ok" onclick="openTablePhoto('BASU1234568','empty_1')" title="Empty 1"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="th ok" onclick="openTablePhoto('BASU1234568','empty_2')" title="Empty 2"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="th ok" onclick="openTablePhoto('BASU1234568','stuff_1')" title="Stuffing 1"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div></div><div style="display:flex;gap:3px;"><div class="th ok" onclick="openTablePhoto('BASU1234568','stuff_2')" title="Stuffing 2"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="th ok" onclick="openTablePhoto('BASU1234568','gate_1')" title="Gate-in 1"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="th ok" onclick="openTablePhoto('BASU1234568','gate_2')" title="Gate-in 2"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div></div></div></td>
+              <td><div class="event-note">Stuffing in progress</div><div class="csub-a">60% complete</div></td>
+            </tr>
+
+            <!-- Container 3 — DONE -->
+            <tr>
+              <td style="text-align:center;"><span style="font-size:11px;font-weight:600;color:var(--text);">BASU1234569</span><br><span style="font-size:9.5px;color:var(--sub);">3,260 KGS</span></td>
+              <td>20GP</td>
+              <td><span class="mono" style="font-size:10px;">ML-CM231560</span></td>
+              <td>12,500 KGS</td>
+              <td>40.00</td>
+              <td style="font-size:10.5px;">84-50VA<br>12345</td>
+              <td style="font-size:11px;">Nguyen Van A</td>
+              <td><span class="mono" style="font-size:10px;">084093006566</span></td>
+              <td><span class="mono" style="font-size:10px;">0515373322</span></td>
+              <td class="loc"><div style="font-size:11px;font-weight:600;">ICD Phuoc Long III</div><div class="csub">Xa Lo Ha Noi, HCMC</div><div class="csub-g">10:00 · 26 Oct 2024</div></td>
+              <td class="loc"><div style="font-size:11px;font-weight:600;">SIGMA Vietnam Co., Ltd</div><div class="csub">08 Đường Số 8, Thu Duc, HCMC</div><div class="csub-g">15:00 · 28 Oct 2024</div></td>
+              <td class="loc"><div style="font-size:11px;font-weight:600;">Cat Lai Terminal</div><div class="csub">240 Nguyen Thi Dinh</div><div class="csub-g">22:00 · 28 Oct 2024</div></td>
+              <td style="text-align:center;"><div style="display:inline-flex;flex-direction:column;gap:3px;align-items:center;"><div style="display:flex;gap:3px;"><div class="th ok" onclick="openTablePhoto('BASU1234569','empty_1')" title="Empty 1"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="th ok" onclick="openTablePhoto('BASU1234569','empty_2')" title="Empty 2"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="th ok" onclick="openTablePhoto('BASU1234569','stuff_1')" title="Stuffing 1"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div></div><div style="display:flex;gap:3px;"><div class="th ok" onclick="openTablePhoto('BASU1234569','stuff_2')" title="Stuffing 2"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="th ok" onclick="openTablePhoto('BASU1234569','gate_1')" title="Gate-in 1"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="th ok" onclick="openTablePhoto('BASU1234569','gate_2')" title="Gate-in 2"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div></div></div></td>
+              <td><div class="event-note">Container<br>gate-in</div><div class="event-time">18:00 · 28 Oct</div></td>
+            </tr>
+
+            <!-- Container 4 — IN PROGRESS -->
+            <tr>
+              <td style="text-align:center;"><span style="font-size:11px;font-weight:600;color:var(--text);">BASU1234570</span><br><span style="font-size:9.5px;color:var(--sub);">3,260 KGS</span></td>
+              <td>20GP</td>
+              <td><span class="mono" style="font-size:10px;">ML-CM231558</span></td>
+              <td>12,500 KGS</td>
+              <td>40.00</td>
+              <td style="font-size:10.5px;">84-50VA<br>12345</td>
+              <td style="font-size:11px;">Nguyen Van A</td>
+              <td><span class="mono" style="font-size:10px;">084093006566</span></td>
+              <td><span class="mono" style="font-size:10px;">0515373322</span></td>
+              <td class="loc"><div style="font-size:11px;font-weight:600;">ICD Phuoc Long III</div><div class="csub">Xa Lo Ha Noi, HCMC</div><div class="csub-g">10:00 · 26 Oct 2024</div></td>
+              <td class="loc"><div style="font-size:11px;font-weight:600;">SIGMA Vietnam Co., Ltd</div><div class="csub">08 Đường Số 8, Thu Duc, HCMC</div><div class="csub-g">15:00 · 28 Oct 2024</div></td>
+              <td class="loc"><div style="font-size:11px;font-weight:600;">Cat Lai Terminal</div><div class="csub">240 Nguyen Thi Dinh</div><div class="csub-g">22:00 · 28 Oct 2024</div></td>
+              <td style="text-align:center;"><div style="display:inline-flex;flex-direction:column;gap:3px;align-items:center;"><div style="display:flex;gap:3px;"><div class="th ok" onclick="openTablePhoto('BASU1234570','empty_1')" title="Empty 1"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="th ok" onclick="openTablePhoto('BASU1234570','empty_2')" title="Empty 2"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="th ok" onclick="openTablePhoto('BASU1234570','stuff_1')" title="Stuffing 1"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div></div><div style="display:flex;gap:3px;"><div class="th ok" onclick="openTablePhoto('BASU1234570','stuff_2')" title="Stuffing 2"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="th ok" onclick="openTablePhoto('BASU1234570','gate_1')" title="Gate-in 1"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="th ok" onclick="openTablePhoto('BASU1234570','gate_2')" title="Gate-in 2"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div></div></div></td>
+              <td><div class="event-note">Stuffing in progress</div><div class="csub-a">30% complete</div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- end svcContent -->
+  </div><!-- end layout-left-right -->
+
+</div><!-- end .pw -->
+</div><!-- end mainPage -->
+
+<!-- ─── CDS DETAIL PAGE (hidden by default) ─── -->
+<div id="cdsPage" style="display:none;">
+  <div class="pw" id="cdsPw">
+    <!-- topbar-inner: search only -->
+    <div class="topbar-inner" style="padding-bottom:0;">
+      <span style="font-size:13px;color:var(--sub);">Customs clearance · CDS <span id="cdsPageNum" style="font-family:'DM Mono',monospace;color:var(--blue-tab);font-weight:700;"></span></span>
+      <div class="search-box">
+        <input type="text" placeholder="Shoptrans reference number, B/L number, Freight booking number">
+        <button>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Search
+        </button>
+      </div>
+    </div>
+
+    <!-- Phase tabs (read-only display) -->
+    <div class="phase-tabs" style="border-radius:var(--r);box-shadow:var(--sh);">
+      <div class="phase-tab on" style="cursor:default;">AT ORIGIN</div>
+      <div class="phase-tab" style="cursor:default;">SEA FREIGHT</div>
+      <div class="phase-tab" style="cursor:default;">AT DESTINATION</div>
+    </div>
+
+    <!-- Summary row (same as main page) -->
+    <div class="summary-row">
+      <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+        <colgroup>
+          <col style="width:6%"><col style="width:9%"><col style="width:7%"><col style="width:10%">
+          <col style="width:10%"><col style="width:8%"><col style="width:8%"><col style="width:7%">
+          <col style="width:7%"><col style="width:9%"><col style="width:5%"><col style="width:5%">
+          <col style="width:5%"><col style="width:7%"><col style="width:7%">
+        </colgroup>
+        <thead>
+          <tr style="background:#f7f8fa;border-bottom:1.5px solid var(--border2);">
+            <th style="padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);text-align:center;border-right:1px solid var(--border);">Shipping line</th>
+            <th style="padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);text-align:center;border-right:1px solid var(--border);">Booking number</th>
+            <th style="padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);text-align:center;border-right:1px solid var(--border);">Ref No#</th>
+            <th style="padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);text-align:center;border-right:1px solid var(--border);">Exporter</th>
+            <th style="padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);text-align:center;border-right:1px solid var(--border);">Importer</th>
+            <th style="padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);text-align:center;border-right:1px solid var(--border);">From</th>
+            <th style="padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);text-align:center;border-right:1px solid var(--border);">To</th>
+            <th style="padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);text-align:center;border-right:1px solid var(--border);">ETD</th>
+            <th style="padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);text-align:center;border-right:1px solid var(--border);">ETA</th>
+            <th style="padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);text-align:center;border-right:1px solid var(--border);">Vessel name</th>
+            <th style="padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);text-align:center;border-right:1px solid var(--border);">Voyage</th>
+            <th style="padding:8px 0;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);text-align:center;vertical-align:middle;border-right:1px solid var(--border);">Quantity</th>
+            <th style="padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);text-align:center;border-right:1px solid var(--border);">Type</th>
+            <th style="padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);text-align:center;border-right:1px solid var(--border);">Total Weight (KGS)</th>
+            <th style="padding:8px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);text-align:center;white-space:nowrap;">Total Mea.</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:10px;font-size:12px;font-weight:700;color:var(--text);text-align:center;border-right:1px solid #f0f0f0;">MAERSK</td>
+            <td style="padding:10px;text-align:center;border-right:1px solid #f0f0f0;"><span class="blue-link">COAU12345678</span></td>
+            <td style="padding:10px;text-align:center;border-right:1px solid #f0f0f0;"><span class="blue-link">123456789</span></td>
+            <td style="padding:10px;font-size:11.5px;text-align:center;border-right:1px solid #f0f0f0;">ABCD VN CO., LTD</td>
+            <td style="padding:10px;font-size:11.5px;text-align:center;border-right:1px solid #f0f0f0;">DEFG USA CO., LTD</td>
+            <td style="padding:10px;font-size:11.5px;text-align:center;border-right:1px solid #f0f0f0;">Hai Phong,<br>Viet Nam</td>
+            <td style="padding:10px;font-size:11.5px;text-align:center;border-right:1px solid #f0f0f0;">Shanghai,<br>China</td>
+            <td style="padding:10px;text-align:center;font-size:11.5px;border-right:1px solid #f0f0f0;">10 Oct 2025<br>@ 08:00 AM</td>
+            <td style="padding:10px;text-align:center;font-size:11.5px;border-right:1px solid #f0f0f0;">16 Oct 2025<br>@ 08:00 AM</td>
+            <td style="padding:10px;text-align:center;font-size:11.5px;border-right:1px solid #f0f0f0;"><span class="blue-link">KMTC SOTRANS</span></td>
+            <td style="padding:10px;text-align:center;font-size:11.5px;border-right:1px solid #f0f0f0;">123S</td>
+            <td style="padding:10px 0;text-align:center;vertical-align:middle;font-size:11.5px;font-weight:600;border-right:1px solid #f0f0f0;">2</td>
+            <td style="padding:10px;text-align:center;font-size:11.5px;border-right:1px solid #f0f0f0;">20GP</td>
+            <td style="padding:10px;text-align:center;font-size:11.5px;border-right:1px solid #f0f0f0;">35,000</td>
+            <td style="padding:10px;text-align:center;font-size:11.5px;">20.00 CBM</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Customs clearance table -->
+    <div class="ctable-wrap">
+      <div class="sec-hd" style="display:flex;justify-content:space-between;align-items:center;padding-left:26px;padding-right:26px;">
+        <span style="font-weight:700;">Customs clearance</span>
+      </div>
+      <div class="ctable-scroll">
+        <table class="ct">
+          <thead>
+            <tr class="cols">
+              <th class="tl" style="width:100px;">CDS number</th>
+              <th>Container</th>
+              <th>Size</th>
+              <th style="width:80px;white-space:nowrap;">CDS date</th>
+              <th style="width:42px;">Export<br>type</th>
+              <th style="width:50px;">Customs<br>Bureau</th>
+              <th style="width:220px;">Name</th>
+              <th>No. of<br>package</th>
+              <th>Type</th>
+              <th>Gross WT</th>
+              <th>Invoice number</th>
+              <th>Invoice date</th>
+              <th>Invoice<br>Term</th>
+              <th>Invoice<br>Value</th>
+              <th>Currency</th>
+              <th style="white-space:nowrap;">Declaration<br>Result</th>
+              <th>Latest status</th>
+            </tr>
+          </thead>
+          <tbody id="cdsPageBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Back button bottom right -->
+    <div style="display:flex;justify-content:flex-end;padding-bottom:8px;">
+      <button onclick="closeCDS()" style="display:inline-flex;align-items:center;gap:6px;background:var(--blue-tab);border:none;border-radius:5px;padding:8px 18px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;color:#fff;cursor:pointer;transition:.15s;" onmouseover="this.style.background='var(--blue)'" onmouseout="this.style.background='var(--blue-tab)'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to Shipment details
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ─── CDS DETAIL POPUP ─── -->
+<div id="cdsPop" class="cdspop-overlay">
+  <div class="cdspop-box">
+    <button class="cdspop-close" onclick="closeCdsPop()">✕</button>
+    <div class="cdspop-title">CDS number: <span id="popCdsNum" style="color:var(--blue-tab);font-family:'DM Mono',monospace;font-weight:700;text-decoration:underline;"></span></div>
+    <div class="cdspop-status">Status: <span id="popStatus"></span></div>
+    <div class="cds-timeline" id="popTimeline"></div>
+    <div class="insp-section">
+      <div class="insp-head">
+        <div class="insp-lbl">INSPECTION<br>PHOTOS</div>
+        <div class="insp-grid" style="flex:1;" id="popPhotos"></div>
+      </div>
+    </div>
+    <div class="docs-section">
+      <div class="docs-title">DOCS TO RETURN</div>
+      <div class="docs-grid">
+        <div class="doc-row"><span>Customs declaration sheet</span><button class="doc-up-btn" onclick="simulateDownload(this,'customs_decl.pdf')" title="Download"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div>
+        <div class="doc-row"><span>Sales contract</span><button class="doc-up-btn" onclick="simulateDownload(this,'sales_contract.pdf')" title="Download"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div>
+        <div class="doc-row"><span>Commercial Invoice</span><button class="doc-up-btn" onclick="simulateDownload(this,'commercial_invoice_1.pdf')" title="Download"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div>
+        <div class="doc-row"><span>Commercial Invoice</span><button class="doc-up-btn" onclick="simulateDownload(this,'commercial_invoice_2.pdf')" title="Download"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div>
+        <div class="doc-row"><span>Packing list</span><button class="doc-up-btn" onclick="simulateDownload(this,'packing_list.pdf')" title="Download"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div>
+        <div class="doc-row"><span>Others</span><button class="doc-up-btn" onclick="simulateDownload(this,'others.pdf')" title="Download"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div>
+      </div>
+    </div>
+    <div class="email-row">
+      <label>Send customs clearance documents to email:</label>
+      <input type="text" id="popEmail" placeholder="email@example.com, ...">
+      <button class="email-send-btn" id="popSendBtn" onclick="sendEmail()">Send</button>
+    </div>
+    <div id="popEmailErr" style="font-size:10.5px;color:#dc2626;margin-top:4px;display:none;text-align:right;"></div>
+    <div id="popEmailOk"  style="font-size:10.5px;color:#16a34a;margin-top:4px;display:none;text-align:right;"></div>
+  </div>
+</div>
+
+<!-- ─── PHOTO VIEWER OVERLAY ─── -->
+<div id="photoViewer" style="display:none;position:fixed;inset:0;z-index:10999;background:rgba(0,0,0,.82);align-items:center;justify-content:center;flex-direction:column;">
+  <div style="position:relative;max-width:520px;width:92vw;">
+    <img id="viewerImg" src="" style="width:100%;border-radius:8px;display:block;box-shadow:0 8px 40px rgba(0,0,0,.5);">
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:14px;">
+      <button id="viewerDlBtn" onclick="viewerDownload()" style="display:inline-flex;align-items:center;gap:6px;background:var(--blue-tab);border:none;border-radius:5px;padding:8px 18px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;color:#fff;cursor:pointer;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download
+      </button>
+      <button onclick="closeViewer()" style="display:inline-flex;align-items:center;gap:6px;background:#555;border:none;border-radius:5px;padding:8px 18px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;color:#fff;cursor:pointer;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+function setPhase(el){
+  document.querySelectorAll('.phase-tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function switchSvc(mode){
+  const exw     = document.getElementById('svcEXW');
+  const collect = document.getElementById('svcCollect');
+  const content = document.getElementById('svcContent');
+  const timeline= document.getElementById('exwTimeline');
+  if(mode==='EXW'){
+    exw.style.borderColor='var(--green-200)'; exw.style.background='var(--green-lt)';
+    collect.style.borderColor='transparent';  collect.style.background='';
+    content.style.display='flex'; content.style.flexDirection='column'; content.style.gap='14px';
+    if(timeline)timeline.style.display='block';
+  } else {
+    collect.style.borderColor='var(--green-200)'; collect.style.background='var(--green-lt)';
+    exw.style.borderColor='transparent';      exw.style.background='';
+    content.style.display='none';
+    if(timeline)timeline.style.display='none';
+  }
+}
+
+/* ── CDS data ── */
+const cdsData = {
+  '123456789012': {container:'BASU1234567', seal:'ML-CM231564', status:'DONE',        result:'green'},
+  '123456789013': {container:'BASU1234568', seal:'ML-CM231562', status:'IN PROGRESS', result:'red'},
+  '123456789014': {container:'BASU1234569', seal:'ML-CM231560', status:'DONE',        result:'yellow'},
+  '123456789015': {container:'BASU1234570', seal:'ML-CM231558', status:'IN PROGRESS', result:'red'},
+};
+
+/* 1. Animated lightbulb icon for status */
+const resultCfg = {
+  green:  {label:'Green light',  color:'#16a34a', bulb:'green'},
+  red:    {label:'Red light',    color:'#dc2626', bulb:'red'},
+  yellow: {label:'Yellow light', color:'#d97706', bulb:'yellow'},
+};
+
+function bulbSVG(color){
+  const c = color==='green'?'#16a34a':color==='red'?'#dc2626':'#d97706';
+  const glow = color==='green'?'rgba(22,163,74,.5)':color==='red'?'rgba(220,38,38,.5)':'rgba(217,119,6,.5)';
+  return `<span class="bulb-wrap" style="--bc:${c};--bg:${glow};">
+    <svg width="18" height="22" viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2C7.58 2 4 5.58 4 10c0 2.97 1.57 5.56 3.93 7.06L8.5 20h7l.57-2.94C18.43 15.56 20 12.97 20 10c0-4.42-3.58-8-8-8z" fill="${c}" opacity="0.9"/>
+      <rect x="8.5" y="20" width="7" height="1.5" rx="0.75" fill="${c}"/>
+      <rect x="9" y="22" width="6" height="1.5" rx="0.75" fill="${c}"/>
+      <rect x="10" y="24" width="4" height="1.5" rx="0.75" fill="${c}"/>
+      <line x1="12" y1="6" x2="12" y2="10" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+      <line x1="10" y1="8" x2="14" y2="8" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+    </svg>
+  </span>`;
+}
+
+/* 2. Timeline */
+const timelineCfg = {
+  green:  [{lbl:'Declaration',date:'10 Jan 2025',time:'@ 10.00am',dot:'done'},{lbl:'Submission',date:'10 Jan 2025',time:'@ 13.50 pm',dot:'done',seg:'done'},{lbl:'Completion',date:'10 Jan 2025',time:'@ 16.50 pm',dot:'done',seg:'done'}],
+  yellow: [{lbl:'Declaration',date:'10 Jan 2025',time:'@ 10.00am',dot:'done'},{lbl:'Submission',date:'10 Jan 2025',time:'@ 13.50 pm',dot:'done',seg:'done'},{lbl:'Completion',date:'',time:'',dot:'pending',seg:'dashed'}],
+  red:    [{lbl:'Declaration',date:'10 Jan 2025',time:'@ 10.00am',dot:'done'},{lbl:'Submission',date:'',time:'',dot:'pending',seg:'dashed'},{lbl:'Completion',date:'',time:'',dot:'pending',seg:'dashed'}],
+};
+
+function buildTimeline(result){
+  const nodes = timelineCfg[result]||timelineCfg.green;
+  return nodes.map((n,i)=>{
+    const seg = i>0 ? `<div class="cds-tl-seg ${n.seg||'done'}"></div>` : '';
+    const dotCls = n.dot==='done' ? 'cds-tl-dot green' : 'cds-tl-dot pending';
+    return `${seg}<div class="cds-tl-node">
+      <div class="${dotCls}"></div>
+      <div class="cds-tl-label">${n.lbl}</div>
+      <div class="cds-tl-date">${n.date}${n.time?'<br>'+n.time:''}</div>
+    </div>`;
+  }).join('');
+}
+
+/* 3. Photos — click to open viewer */
+let _viewerFile = '';
+function buildPhotos(cdsNum){
+  let html='';
+  for(let i=1;i<=12;i++){
+    html+=`<div class="insp-photo" onclick="openViewer(${i},'${cdsNum}')" title="View photo ${i}">
+      <span>${i}</span>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    </div>`;
+  }
+  return html;
+}
+
+function openViewer(num, cdsNum){
+  _viewerFile = `photo_${cdsNum}_${num}.jpg`;
+  /* generate a placeholder SVG as data URL */
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="520" height="340">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#67e8f9"/><stop offset="100%" stop-color="#0891b2"/></linearGradient></defs>
+    <rect width="520" height="340" fill="url(#g)" rx="8"/>
+    <text x="260" y="155" font-family="sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">Inspection Photo ${num}</text>
+    <text x="260" y="185" font-family="sans-serif" font-size="13" fill="rgba(255,255,255,.8)" text-anchor="middle">CDS: ${cdsNum}</text>
+    <rect x="200" y="210" width="120" height="80" rx="6" fill="rgba(255,255,255,.15)"/>
+    <polyline points="215,265 235,245 260,260 285,235 310,255" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="220" cy="230" r="7" fill="rgba(255,255,255,.5)"/>
+  </svg>`;
+  const b64 = 'data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(svg)));
+  document.getElementById('viewerImg').src = b64;
+  const v = document.getElementById('photoViewer');
+  v.style.display='flex';
+}
+
+function closeViewer(){
+  document.getElementById('photoViewer').style.display='none';
+}
+
+function viewerDownload(){
+  const btn = document.getElementById('viewerDlBtn');
+  btn.textContent='Downloading…'; btn.disabled=true;
+  setTimeout(()=>{
+    const img = document.getElementById('viewerImg');
+    const a = document.createElement('a');
+    a.href = img.src; a.download = _viewerFile; a.click();
+    btn.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Downloaded`;
+    btn.style.background='#16a34a';
+    setTimeout(()=>{ btn.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download`; btn.style.background='var(--blue-tab)'; btn.disabled=false; }, 2000);
+  },800);
+}
+
+document.getElementById('photoViewer').addEventListener('click',function(e){if(e.target===this)closeViewer();});
+
+/* 4. Doc download simulation */
+function simulateDownload(btn, filename){
+  const orig = btn.innerHTML;
+  btn.style.background='#16a34a';
+  btn.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+  setTimeout(()=>{ btn.innerHTML=orig; btn.style.background='var(--blue-tab)'; },1500);
+}
+
+/* 5. Email validation + Send */
+function isValidEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim()); }
+function sendEmail(){
+  const raw = document.getElementById('popEmail').value.trim();
+  const errEl = document.getElementById('popEmailErr');
+  const okEl  = document.getElementById('popEmailOk');
+  errEl.style.display='none'; okEl.style.display='none';
+  if(!raw){ errEl.textContent='Please enter at least one email address.'; errEl.style.display='block'; return; }
+  const emails = raw.split(',').map(e=>e.trim()).filter(Boolean);
+  const invalid = emails.filter(e=>!isValidEmail(e));
+  if(invalid.length){ errEl.textContent='Invalid address: '+invalid.join(', '); errEl.style.display='block'; return; }
+  const btn = document.getElementById('popSendBtn');
+  btn.textContent='Sending…'; btn.disabled=true;
+  setTimeout(()=>{
+    okEl.textContent='Sent successfully to: '+emails.join(', ');
+    okEl.style.display='block';
+    document.getElementById('popEmail').value='';
+    btn.textContent='Send'; btn.disabled=false;
+  },1000);
+}
+document.getElementById('popEmail').addEventListener('keydown',e=>{ if(e.key==='Enter') sendEmail(); });
+
+/* ── Open CDS popup ── */
+function openCdsPop(cdsNum){
+  const d = cdsData[cdsNum]; if(!d) return;
+  const r = resultCfg[d.result];
+  document.getElementById('popCdsNum').textContent = cdsNum;
+  document.getElementById('popStatus').innerHTML =
+    `<span style="font-weight:700;color:${r.color};">${r.label}</span> ${bulbSVG(d.result)}`;
+  document.getElementById('popTimeline').innerHTML = buildTimeline(d.result);
+  document.getElementById('popPhotos').innerHTML = buildPhotos(cdsNum);
+  document.getElementById('popEmailErr').style.display='none';
+  document.getElementById('popEmailOk').style.display='none';
+  document.getElementById('popEmail').value='';
+  document.getElementById('cdsPop').classList.add('open');
+}
+function closeCdsPop(){
+  document.getElementById('cdsPop').classList.remove('open');
+}
+document.getElementById('cdsPop').addEventListener('click',function(e){ if(e.target===this) closeCdsPop(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeCdsPop(); closeViewer(); }});
+
+/* ── Build CDS page rows ── */
+function buildCDSRows(activeCds){
+  const statusCfg={
+    'DONE':        {text:'Cleared',          sub:'11:00 · 26 Oct 2024', bdg:'anim-g'},
+    'IN PROGRESS': {text:'Under Inspection', sub:'11:00 · 26 Oct 2024', bdg:'anim-a'},
+  };
+  return Object.keys(cdsData).map(num=>{
+    const d=cdsData[num], r=resultCfg[d.result], s=statusCfg[d.status]||statusCfg['DONE'];
+    const isActive=num===activeCds;
+    const rowBg=isActive?'background:#f0fdf4;':'';
+    const statusHtml=s.bdg==='anim-g'
+      ?`<span class="bdg-anim-g">DONE</span><div style="margin-top:3px;font-size:9.5px;color:var(--sub);">${s.text}<br>${s.sub}</div>`
+      :`<span class="bdg-anim-a"><span class="prog-ring"></span>IN PROGRESS</span><div style="margin-top:3px;font-size:9.5px;color:var(--sub);">${s.text}<br>${s.sub}</div>`;
+    const declHtml=`<span class="decl-dot ${d.result}"></span> <span style="color:${r.color};font-weight:700;font-size:11px;">${r.label}</span>`;
+    return `<tr style="border-bottom:1px solid #f0f0f0;${rowBg}">
+      <td class="tl" style="padding:9px 10px;border-right:1px solid #f0f0f0;">
+        <span class="blue-link" style="font-size:10.5px;" onclick="openCdsPop('${num}')">${num}</span>
+        ${isActive?'<span style="margin-left:4px;font-size:9px;background:#dcfce7;color:#15803d;border-radius:3px;padding:1px 4px;font-weight:700;">NOW</span>':''}
+      </td>
+      <td style="padding:9px 10px;text-align:center;border-right:1px solid #f0f0f0;"><span style="font-size:10.5px;color:var(--text);font-weight:700;">${d.container}</span></td>
+      <td style="padding:9px 10px;text-align:center;border-right:1px solid #f0f0f0;">20GP</td>
+      <td style="padding:9px 10px;text-align:center;border-right:1px solid #f0f0f0;white-space:nowrap;">21 Oct 2025</td>
+      <td style="padding:9px 10px;text-align:center;border-right:1px solid #f0f0f0;">B11</td>
+      <td style="padding:9px 10px;text-align:center;border-right:1px solid #f0f0f0;">02CI</td>
+      <td style="padding:9px 10px;text-align:center;border-right:1px solid #f0f0f0;font-size:10.5px;">CCHQ CK CSG KVI</td>
+      <td style="padding:9px 10px;text-align:center;border-right:1px solid #f0f0f0;">25</td>
+      <td style="padding:9px 10px;text-align:center;border-right:1px solid #f0f0f0;">CTN</td>
+      <td style="padding:9px 10px;text-align:center;border-right:1px solid #f0f0f0;">15,000 <span style="font-size:9.5px;color:var(--sub);font-weight:600;">KGS</span></td>
+      <td style="padding:9px 10px;text-align:center;border-right:1px solid #f0f0f0;"><span class="blue-link" style="font-family:'DM Mono',monospace;font-size:10.5px;" onclick="openCdsPop('${num}')">INV123456</span></td>
+      <td style="padding:9px 10px;text-align:center;border-right:1px solid #f0f0f0;">10 Oct 2025</td>
+      <td style="padding:9px 10px;text-align:center;border-right:1px solid #f0f0f0;">CIF</td>
+      <td style="padding:9px 10px;text-align:center;border-right:1px solid #f0f0f0;font-weight:600;">25,000</td>
+      <td style="padding:9px 10px;text-align:center;border-right:1px solid #f0f0f0;">USD</td>
+      <td style="padding:9px 10px;text-align:center;border-right:1px solid #f0f0f0;white-space:nowrap;">${declHtml}</td>
+      <td style="padding:9px 10px;text-align:center;">${statusHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+function showCDS(cdsNum){
+  document.getElementById('cdsPageNum').textContent=cdsNum;
+  document.getElementById('cdsPageBody').innerHTML=buildCDSRows(cdsNum);
+  document.getElementById('cdsPage').style.display='block';
+  document.getElementById('mainPage').style.display='none';
+  window.scrollTo(0,0);
+}
+function closeCDS(){
+  document.getElementById('cdsPage').style.display='none';
+  document.getElementById('mainPage').style.display='block';
+  // restore svcContent in case it was hidden
+  const sc = document.getElementById('svcContent');
+  if(sc && sc.style.display==='none'){ /* leave as-is, user chose that */ }
+}
+
+/* ── Main table photo viewer ── */
+function openTablePhoto(container, photoKey){
+  const label = photoKey.replace(/_/g,' ');
+  _viewerFile = container + '_' + photoKey + '.jpg';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="340">
+    <defs><linearGradient id="tg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#bbf7d0"/><stop offset="100%" stop-color="#16a34a"/></linearGradient></defs>
+    <rect width="520" height="340" fill="url(#tg)" rx="8"/>
+    <text x="260" y="150" font-family="sans-serif" font-size="17" fill="white" text-anchor="middle" font-weight="bold">${container}</text>
+    <text x="260" y="180" font-family="sans-serif" font-size="13" fill="rgba(255,255,255,.85)" text-anchor="middle">${label}</text>
+    <rect x="190" y="205" width="140" height="90" rx="6" fill="rgba(255,255,255,.18)"/>
+    <polyline points="205,270 228,248 255,263 283,238 315,260" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="212" cy="228" r="8" fill="rgba(255,255,255,.45)"/>
+  </svg>`;
+  const b64 = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+  const btn = document.getElementById('viewerDlBtn');
+  btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download`;
+  btn.style.background = 'var(--blue-tab)';
+  btn.disabled = false;
+  document.getElementById('viewerImg').src = b64;
+  document.getElementById('photoViewer').style.display = 'flex';
+}
+
+/* ── Main table photo download (legacy, kept for reference) ── */
+function downloadPhoto(container, photoKey){
+  openTablePhoto(container, photoKey);
+}
+</script>
+</body>
+</html>

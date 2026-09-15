@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHOPTRANS — Smart Logistics Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff;
+    --bg-2:#f3f7f4;
+    --panel:#ffffff;
+    --panel-2:#f7faf8;
+    --line:rgba(15,40,28,.12);
+    --line-soft:rgba(15,40,28,.07);
+    --green:#00E676;          /* fill / brand */
+    --green-ink:#008F4C;      /* text & icons on white */
+    --green-deep:#06673a;
+    --green-soft:#e6f9ef;
+    --green-glow:rgba(0,143,76,.22);
+    --ink:#0d1f17;
+    --text:#15241c;
+    --text-2:#4d6258;
+    --text-3:#8aa097;
+    --shadow:0 18px 50px rgba(13,31,23,.10);
+    --shadow-lg:0 30px 70px rgba(13,31,23,.14);
+    --sans:'Geist',sans-serif;
+    --mono:'Geist Mono',monospace;
+    --maxw:1280px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:var(--sans);
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.6;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* faint dot-grid only at the top atmosphere */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:radial-gradient(rgba(0,143,76,.07) 1px,transparent 1px);
+    background-size:32px 32px;
+    mask-image:radial-gradient(ellipse 80% 55% at 70% 0%,#000 30%,transparent 100%);
+  }
+  ::selection{background:var(--green);color:#04110a}
+  ::-webkit-scrollbar{width:11px}
+  ::-webkit-scrollbar-track{background:var(--bg-2)}
+  ::-webkit-scrollbar-thumb{background:#cfe3d8;border-radius:0;border:3px solid var(--bg)}
+  ::-webkit-scrollbar-thumb:hover{background:#a9d2bf}
+  a{color:inherit;text-decoration:none}
+  img{display:block;max-width:100%}
+
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px;position:relative;z-index:1}
+  .mono{font-family:var(--mono)}
+  .kicker{
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.32em;text-transform:uppercase;
+    color:var(--green-ink);display:inline-flex;align-items:center;gap:10px;
+  }
+  .kicker::before{content:"";width:26px;height:1px;background:var(--green-ink);opacity:.5}
+
+  /* ===== HERO ===== */
+  .hero{position:relative;min-height:90vh;display:flex;align-items:center;overflow:hidden;padding:80px 0 60px;
+    background:linear-gradient(180deg,var(--bg) 0%,var(--bg-2) 100%)}
+  .hero-bg{position:absolute;inset:0;z-index:0}
+  .hero-bg .ship{
+    position:absolute;inset:0;
+    background-image:
+      linear-gradient(90deg,#fff 6%,rgba(255,255,255,.85) 38%,rgba(255,255,255,.25) 70%,transparent 100%),
+      linear-gradient(0deg,var(--bg-2) 0%,transparent 30%),
+      url("https://images.unsplash.com/photo-1605792657660-596af9009e82?q=80&w=1800&auto=format&fit=crop");
+    background-size:cover;background-position:center right;
+    filter:saturate(1.02) brightness(1.03);
+  }
+  .hero-bg .tint{position:absolute;inset:0;background:
+    radial-gradient(55% 65% at 80% 35%,rgba(0,230,118,.10),transparent 60%)}
+  #net{position:absolute;inset:0;z-index:1;opacity:.5}
+  .hero .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;width:100%}
+  @media(max-width:1000px){.hero .wrap{grid-template-columns:1fr;gap:36px}}
+
+  .h-left .kicker{margin-bottom:22px}
+  .h-title{font-size:clamp(34px,5.2vw,66px);line-height:1.02;font-weight:700;letter-spacing:-.02em;color:var(--ink)}
+  .h-title b{color:var(--green-ink);font-weight:700}
+  .h-title .cursor{display:inline-block;width:.5ch;height:1.05em;background:var(--green-ink);
+    transform:translateY(.14em);margin-left:6px;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .h-sub{margin-top:22px;font-size:16px;color:var(--text-2);max-width:480px}
+  .h-actions{margin-top:34px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .btn-primary{
+    display:inline-flex;align-items:center;gap:12px;background:var(--green-ink);color:#fff;
+    font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    padding:15px 26px;transition:.2s;box-shadow:0 10px 26px rgba(0,143,76,.25)}
+  .btn-primary:hover{background:var(--green-deep);box-shadow:0 14px 36px rgba(0,143,76,.32);transform:translateY(-2px)}
+  .btn-primary svg{width:16px;height:16px}
+  .btn-ghost{font-family:var(--mono);font-size:13px;letter-spacing:.08em;color:var(--text-2);
+    display:inline-flex;align-items:center;gap:11px;transition:.2s;
+    border:1px solid var(--line);background:#fff;padding:8px 20px 8px 9px;border-radius:40px;
+    box-shadow:0 4px 14px rgba(13,31,23,.05)}
+  .btn-ghost:hover{color:var(--green-ink);border-color:var(--green-ink);box-shadow:0 8px 22px rgba(0,143,76,.14)}
+  .btn-ghost .play{width:30px;height:30px;border:1px solid var(--green-ink);border-radius:50%;display:grid;place-items:center;background:var(--green-soft);color:var(--green-ink)}
+
+  /* hero data ribbon */
+  .ribbon{margin-top:46px;display:flex;gap:34px;flex-wrap:wrap;border-top:1px solid var(--line-soft);padding-top:24px}
+  .ribbon .stat .n{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--ink)}
+  .ribbon .stat .n b{color:var(--green-ink);font-weight:600}
+  .ribbon .stat .l{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-3)}
+
+  /* tracking widget */
+  .track-card{background:#fff;border:1px solid var(--line);box-shadow:var(--shadow-lg);position:relative;border-radius:16px;overflow:hidden}
+  .track-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;
+    background:linear-gradient(90deg,var(--green-ink),var(--green))}
+  .tc-head{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--line-soft)}
+  .tc-head .live{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;color:var(--text-3);display:flex;align-items:center;gap:8px}
+  .dot-live{width:7px;height:7px;border-radius:50%;background:var(--green-ink);box-shadow:0 0 0 0 var(--green-glow);animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 var(--green-glow)}70%{box-shadow:0 0 0 9px rgba(0,143,76,0)}100%{box-shadow:0 0 0 0 rgba(0,143,76,0)}}
+  .tc-tabs{display:flex;gap:4px;padding:14px 18px 0}
+  .tc-tab{flex:1;text-align:center;font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--text-3);padding:11px 6px;cursor:pointer;border-bottom:2px solid transparent;transition:.2s;display:flex;align-items:center;justify-content:center;gap:7px}
+  .tc-tab svg{width:14px;height:14px}
+  .tc-tab:hover{color:var(--text-2)}
+  .tc-tab.on{color:var(--green-ink);border-bottom-color:var(--green-ink)}
+  .tc-body{padding:22px}
+  .tc-pane{display:none;animation:fade .3s}
+  .tc-pane.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .field{display:flex;align-items:center;gap:10px;background:var(--panel-2);border:1px solid var(--line);
+    padding:0 14px;transition:.2s;border-radius:10px}
+  .field:focus-within{border-color:var(--green-ink);background:#fff;box-shadow:0 0 0 3px rgba(0,143,76,.08)}
+  .field svg{width:16px;height:16px;color:var(--green-ink);flex:none}
+  .field input{flex:1;background:none;border:none;outline:none;color:var(--ink);
+    font-family:var(--mono);font-size:13.5px;padding:15px 0;letter-spacing:.02em}
+  .field input::placeholder{color:var(--text-3)}
+  .tc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:16px;gap:14px}
+  .tc-hint{font-size:11.5px;color:var(--text-3);max-width:230px;line-height:1.45;display:flex;gap:8px}
+  .tc-hint svg{width:14px;height:14px;flex:none;color:var(--text-3);margin-top:2px}
+  .track-btn{background:var(--green-ink);color:#fff;font-family:var(--mono);font-size:12.5px;font-weight:600;
+    letter-spacing:.08em;text-transform:uppercase;padding:14px 22px;display:inline-flex;align-items:center;gap:9px;
+    transition:.2s;white-space:nowrap;border-radius:10px}
+  .track-btn:hover{background:var(--green-deep);box-shadow:0 8px 22px rgba(0,143,76,.25)}
+  .track-btn svg{width:15px;height:15px}
+  .quick{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .quick span{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--text-3);
+    border:1px solid var(--line-soft);padding:5px 9px;cursor:pointer;transition:.2s;border-radius:7px}
+  .quick span:hover{border-color:var(--green-ink);color:var(--green-ink);background:var(--green-soft)}
+
+  /* ===== SECTION SHELL ===== */
+  section{position:relative;z-index:1}
+  .sec{padding:110px 0;position:relative}
+  .sec .wrap{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+  @media(max-width:920px){.sec .wrap{grid-template-columns:1fr;gap:40px}.sec{padding:72px 0}}
+  .sec.reverse .wrap{direction:rtl}
+  .sec.reverse .wrap>*{direction:ltr}
+  .sec h2{font-size:clamp(28px,3.6vw,42px);line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:18px 0 20px;color:var(--ink)}
+  .sec p{color:var(--text-2);font-size:15.5px;margin-bottom:14px}
+  .sec p b{color:var(--ink);font-weight:600}
+  .learn{display:inline-flex;align-items:center;gap:11px;font-family:var(--mono);font-size:12px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--green-ink);margin-top:14px;transition:.2s}
+  .learn .ln{width:30px;height:1px;background:var(--green-ink);transition:.25s}
+  .learn:hover .ln{width:48px}
+
+  /* digital framed media */
+  .media{position:relative}
+  .media .frame{position:relative;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow-lg)}
+  .media .frame img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .8s ease}
+  .media:hover .frame img{transform:scale(1.05)}
+  .media .frame::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(160deg,rgba(0,143,76,.06),transparent 45%);pointer-events:none}
+  .scan{position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,var(--green),transparent);
+    opacity:.85;animation:scanmove 4s linear infinite;z-index:3}
+  @keyframes scanmove{0%{top:0}100%{top:100%}}
+  .corner{position:absolute;width:18px;height:18px;border:2px solid var(--green-ink);z-index:4}
+  .corner.tl{top:-1px;left:-1px;border-right:none;border-bottom:none}
+  .corner.tr{top:-1px;right:-1px;border-left:none;border-bottom:none}
+  .corner.bl{bottom:-1px;left:-1px;border-right:none;border-top:none}
+  .corner.br{bottom:-1px;right:-1px;border-left:none;border-top:none}
+  .media .tag{position:absolute;z-index:5;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;
+    background:rgba(255,255,255,.92);border:1px solid var(--line);color:var(--green-ink);padding:7px 11px;backdrop-filter:blur(4px)}
+  .media .tag.t1{top:16px;left:16px}
+  .media .tag.t2{bottom:16px;right:16px;color:var(--text-2)}
+
+  /* incoterm chips */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 6px}
+  .chip{font-family:var(--mono);font-size:12px;letter-spacing:.08em;border:1px solid var(--line);
+    color:var(--text-2);padding:7px 12px;transition:.2s;cursor:default;background:#fff}
+  .chip:hover{border-color:var(--green-ink);color:var(--green-ink);background:var(--green-soft)}
+  .feat{list-style:none;margin:22px 0 6px;display:grid;gap:12px}
+  .feat li{display:flex;align-items:flex-start;gap:12px;font-size:14.5px;color:var(--text-2)}
+  .feat li svg{width:17px;height:17px;color:var(--green-ink);flex:none;margin-top:3px}
+
+  /* multimodal mode strip */
+  .modes{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:26px 0 4px}
+  .mode{border:1px solid var(--line-soft);background:#fff;padding:18px 14px;text-align:center;transition:.25s;cursor:default;box-shadow:0 4px 14px rgba(13,31,23,.04)}
+  .mode:hover{border-color:var(--green-ink);transform:translateY(-4px);box-shadow:var(--shadow)}
+  .mode svg{width:26px;height:26px;color:var(--green-ink);margin-bottom:10px}
+  .mode .mt{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+  .mode .ms{font-size:11px;color:var(--text-3);margin-top:3px}
+
+  /* world map / network section */
+  .map-wrap{position:relative;border:1px solid var(--line);background:
+    radial-gradient(70% 80% at 50% 25%,var(--green-soft),transparent 70%),#fff;
+    padding:30px;overflow:hidden;box-shadow:var(--shadow)}
+  .map-wrap svg{width:100%;height:auto;display:block}
+  .node{fill:var(--green-ink)}
+  .node.hub{filter:drop-shadow(0 0 4px rgba(0,143,76,.5))}
+  .pulse-c{fill:none;stroke:var(--green-ink);stroke-width:1;opacity:0;transform-origin:center;
+    animation:ping 3s ease-out infinite}
+  @keyframes ping{0%{r:3;opacity:.7}100%{r:26;opacity:0}}
+  .net-label{font-family:var(--mono);font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--text-3);margin-bottom:14px}
+  .spoke{stroke-dasharray:3 6;stroke-width:1.2;fill:none;opacity:.5;animation:flow 9s linear infinite}
+  @keyframes flow{to{stroke-dashoffset:-180}}
+  .n-dot{stroke:#fff;stroke-width:1.5}
+  .n-label{font-family:var(--sans);font-size:11px;font-weight:500;fill:var(--text-2)}
+  .hq-label{font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.14em;fill:var(--green-deep)}
+  .legend{display:flex;flex-wrap:wrap;gap:12px 18px;margin-top:18px;padding-top:18px;border-top:1px solid var(--line-soft)}
+  .lg{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text-2)}
+  .lg i{width:9px;height:9px;border-radius:50%;flex:none}
+  .countries{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+  .cc{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-3);
+    border:1px solid var(--line-soft);padding:5px 9px;transition:.2s;background:#fff}
+  .cc:hover{color:var(--green-ink);border-color:var(--green-ink)}
+  .cc.hq{color:var(--green-ink);border-color:var(--green-ink);background:var(--green-soft)}
+  .support-badge{display:inline-flex;align-items:center;gap:12px;border:1px solid var(--line);
+    background:#fff;padding:14px 18px;margin-top:24px;box-shadow:0 4px 14px rgba(13,31,23,.05)}
+  .support-badge .ic{width:38px;height:38px;border:1px solid var(--line);display:grid;place-items:center;color:var(--green-ink);background:var(--green-soft)}
+  .support-badge .ic svg{width:18px;height:18px}
+  .support-badge .st{font-family:var(--mono);font-size:13px;color:var(--ink)}
+  .support-badge .ss{font-size:11.5px;color:var(--text-3)}
+
+  /* reveal */
+  .reveal{opacity:0;transform:translateY(28px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}
+  .reveal.in{opacity:1;transform:none}
+  .reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}
+
+  .divider{height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent);max-width:var(--maxw);margin:0 auto}
+
+
+  @media(max-width:560px){
+    .modes{grid-template-columns:repeat(2,1fr)}
+    .ribbon{gap:22px}
+    .tc-tab{font-size:10px;gap:5px}
+    .tc-tab svg{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg">
+    <div class="ship"></div>
+    <div class="tint"></div>
+  </div>
+  <canvas id="net"></canvas>
+  <div class="wrap">
+    <div class="h-left">
+      <span class="kicker">One platform · End-to-end visibility</span>
+      <h1 class="h-title">Transporting your goods has never been <b>easier</b>—just one click<span class="cursor"></span></h1>
+      <p class="h-sub">Quote, book and track shipments across sea, air, road and rail — on a single intelligent platform built for modern freight forwarding.</p>
+      <div class="h-actions">
+        <a href="#" class="btn-primary">
+          Discover a new era
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a href="#" class="btn-ghost"><span class="play"><svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M8 5v14l11-7z"/></svg></span> Watch how it works</a>
+      </div>
+      <div class="ribbon">
+        <div class="stat"><div class="n" data-count="184">0</div><div class="l">Ports connected</div></div>
+        <div class="stat"><div class="n" data-count="13">0</div><div class="l">Global offices</div></div>
+        <div class="stat"><div class="n"><b data-count="99.6" data-dec="1">0</b>%</div><div class="l">On-time visibility</div></div>
+      </div>
+    </div>
+
+    <!-- TRACKING WIDGET -->
+    <div class="track-card reveal">
+      <div class="tc-head">
+        <span class="mono" style="font-size:11px;letter-spacing:.18em;color:var(--text-2)">QUICK ACCESS</span>
+        <span class="live"><span class="dot-live"></span> LIVE · REAL-TIME</span>
+      </div>
+      <div class="tc-tabs">
+        <div class="tc-tab on" data-tab="track">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Tracking
+        </div>
+        <div class="tc-tab" data-tab="sched">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Schedules
+        </div>
+        <div class="tc-tab" data-tab="local">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/></svg>Local info
+        </div>
+      </div>
+      <div class="tc-body">
+        <div class="tc-pane on" data-pane="track">
+          <div class="field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <input type="text" placeholder="Shoptrans reference / B/L number">
+          </div>
+          <div class="tc-foot">
+            <div class="tc-hint">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+              Enter your reference or B/L number to see real-time shipment status.
+            </div>
+            <button class="track-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              Track
+            </button>
+          </div>
+        </div>
+        <div class="tc-pane" data-pane="sched">
+          <div class="field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <input type="text" placeholder="Origin port — e.g. VNSGN">
+          </div>
+          <div class="field" style="margin-top:10px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <input type="text" placeholder="Destination port — e.g. USLAX">
+          </div>
+          <div class="tc-foot">
+            <div class="tc-hint">Find sailing schedules & transit times across our carrier network.</div>
+            <button class="track-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              Search
+            </button>
+          </div>
+        </div>
+        <div class="tc-pane" data-pane="local">
+          <div class="field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/></svg>
+            <input type="text" placeholder="Country or city — customs, fees, regulations">
+          </div>
+          <div class="tc-foot">
+            <div class="tc-hint">Local import-export rules, duties & lead times from native experts.</div>
+            <button class="track-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              Explore
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- SECTION 1 : A PRODUCT OF TECHNOLOGY -->
+<section class="sec" id="tech">
+  <div class="wrap">
+    <div class="media reveal">
+      <div class="frame">
+        <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+        <span class="scan"></span>
+        <span class="tag t1">● VESSEL · UNDER WAY</span>
+        <span class="tag t2">VNSGN → DEHAM</span>
+        <img src="https://images.unsplash.com/photo-1494412519320-aa613dfb7738?q=80&w=1400&auto=format&fit=crop" alt="Container vessel at sea" loading="lazy"
+          onerror="this.style.display='none'">
+      </div>
+    </div>
+    <div>
+      <span class="kicker reveal">01 — The platform</span>
+      <h2 class="reveal d1">A product of <span style="color:var(--green-ink)">technology</span></h2>
+      <p class="reveal d1">Shoptrans gives you a <b>professional, comprehensive</b> transportation platform. Instantly check pricing across every service route and transport term — then book online and watch your cargo move in real time.</p>
+      <div class="chips reveal d2">
+        <span class="chip">EXW</span><span class="chip">FCA</span><span class="chip">FOB</span>
+        <span class="chip">CIF</span><span class="chip">DAP</span><span class="chip">DDU</span><span class="chip">DDP</span>
+      </div>
+      <ul class="feat reveal d2">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg> Instant multi-term rate comparison across all routes</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg> One-click online booking — confirmation in minutes</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg> Real-time shipment tracking with milestone alerts</li>
+      </ul>
+      <a href="#" class="learn reveal d3">Learn more <span class="ln"></span></a>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2 : LOGISTICS SOLUTIONS -->
+<section class="sec reverse" id="solutions" style="background:var(--bg-2)">
+  <div class="wrap">
+    <div class="media reveal">
+      <div class="frame">
+        <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+        <span class="scan" style="animation-delay:1.5s"></span>
+        <span class="tag t1">● MULTIMODAL</span>
+        <span class="tag t2">SEA · AIR · ROAD · RAIL</span>
+        <img src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?q=80&w=1400&auto=format&fit=crop" alt="Truck and container logistics" loading="lazy"
+          onerror="this.style.display='none'">
+      </div>
+    </div>
+    <div>
+      <span class="kicker reveal">02 — End-to-end</span>
+      <h2 class="reveal d1">Logistics solutions</h2>
+      <p class="reveal d1">Shoptrans understands the pain points of overseas logistics. We deliver <b>comprehensive global services</b> using high-tech solutions that integrate the entire value chain into one reality.</p>
+      <div class="modes reveal d2">
+        <div class="mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17l9-3 9 3M5 17v-5h14v5M9 12V7h6v5"/><path d="M2 21h20"/></svg>
+          <div class="mt">Sea</div><div class="ms">FCL · LCL</div>
+        </div>
+        <div class="mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12l20-7-7 20-3-8-10-5z"/></svg>
+          <div class="mt">Air</div><div class="ms">Express</div>
+        </div>
+        <div class="mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 9h11v8H1zM12 11h6l4 3v3h-10z"/><circle cx="5" cy="18" r="1.6"/><circle cx="18" cy="18" r="1.6"/></svg>
+          <div class="mt">Road</div><div class="ms">FTL · LTL</div>
+        </div>
+        <div class="mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="13" rx="2"/><path d="M5 9h14M7 20l-2 2M17 20l2 2"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/></svg>
+          <div class="mt">Rail</div><div class="ms">Intermodal</div>
+        </div>
+      </div>
+      <a href="#" class="learn reveal d3">Learn more <span class="ln"></span></a>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3 : BRANCH NETWORK -->
+<section class="sec" id="network">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="map-wrap">
+        <div class="net-label">Global network</div>
+        <svg viewBox="0 0 800 360" preserveAspectRatio="xMidYMid meet">
+          <!-- spokes from HQ (China @ 440,185) -->
+          <g>
+            <path class="spoke" stroke="#2f7fd0" d="M440 185 L645 95"/>
+            <path class="spoke" stroke="#2f7fd0" d="M440 185 L700 138" style="animation-delay:-1s"/>
+            <path class="spoke" stroke="#2f7fd0" d="M440 185 L665 182" style="animation-delay:-2s"/>
+            <path class="spoke" stroke="#2f7fd0" d="M440 185 L560 148" style="animation-delay:-3s"/>
+            <path class="spoke" stroke="#8b7fd4" d="M440 185 L480 270" style="animation-delay:-1.5s"/>
+            <path class="spoke" stroke="#8b7fd4" d="M440 185 L380 292" style="animation-delay:-2.5s"/>
+            <path class="spoke" stroke="#8b7fd4" d="M440 185 L545 296" style="animation-delay:-3.5s"/>
+            <path class="spoke" stroke="#8b7fd4" d="M440 185 L622 240" style="animation-delay:-0.5s"/>
+            <path class="spoke" stroke="#d9543c" d="M440 185 L285 250" style="animation-delay:-5s"/>
+            <path class="spoke" stroke="#d9543c" d="M440 185 L372 212" style="animation-delay:-4s"/>
+            <path class="spoke" stroke="#e6a23c" d="M440 185 L150 148" style="animation-delay:-6s"/>
+            <path class="spoke" stroke="#e6a23c" d="M440 185 L96 216" style="animation-delay:-7s"/>
+          </g>
+
+          <!-- HQ : CHINA -->
+          <circle class="pulse-c" cx="440" cy="185"></circle>
+          <circle cx="440" cy="185" r="14" fill="none" stroke="var(--green-deep)" stroke-width="1.4" opacity=".5"/>
+          <circle cx="440" cy="185" r="8.5" fill="var(--green-deep)" stroke="#fff" stroke-width="2"/>
+          <text class="hq-label" x="440" y="217" text-anchor="middle">CHINA</text>
+
+          <!-- East Asia (blue) -->
+          <circle class="n-dot" cx="645" cy="95"  r="6" fill="#2f7fd0"/><text class="n-label" x="659" y="99" text-anchor="start">Japan</text>
+          <circle class="n-dot" cx="700" cy="138" r="6" fill="#2f7fd0"/><text class="n-label" x="714" y="142" text-anchor="start">S. Korea</text>
+          <circle class="n-dot" cx="665" cy="182" r="6" fill="#2f7fd0"/><text class="n-label" x="679" y="186" text-anchor="start">Taiwan</text>
+          <circle class="n-dot" cx="560" cy="148" r="6" fill="#2f7fd0"/><text class="n-label" x="560" y="134" text-anchor="middle">Hong Kong</text>
+
+          <!-- SE Asia (purple) -->
+          <circle class="n-dot" cx="480" cy="270" r="6" fill="#8b7fd4"/><text class="n-label" x="480" y="288" text-anchor="middle">Vietnam</text>
+          <circle class="n-dot" cx="380" cy="292" r="6" fill="#8b7fd4"/><text class="n-label" x="380" y="310" text-anchor="middle">Thailand</text>
+          <circle class="n-dot" cx="545" cy="296" r="6" fill="#8b7fd4"/><text class="n-label" x="545" y="314" text-anchor="middle">Malaysia</text>
+          <circle class="n-dot" cx="622" cy="240" r="6" fill="#8b7fd4"/><text class="n-label" x="636" y="244" text-anchor="start">Indonesia</text>
+
+          <!-- South Asia (red) -->
+          <circle class="n-dot" cx="285" cy="250" r="6" fill="#d9543c"/><text class="n-label" x="285" y="236" text-anchor="middle">India</text>
+          <circle class="n-dot" cx="372" cy="212" r="6" fill="#d9543c"/><text class="n-label" x="372" y="198" text-anchor="middle">Bangladesh</text>
+
+          <!-- Americas (amber) -->
+          <circle class="n-dot" cx="150" cy="148" r="6" fill="#e6a23c"/><text class="n-label" x="150" y="134" text-anchor="middle">USA</text>
+          <circle class="n-dot" cx="96"  cy="216" r="6" fill="#e6a23c"/><text class="n-label" x="96" y="234" text-anchor="middle">Mexico</text>
+        </svg>
+        <div class="legend">
+          <span class="lg"><i style="background:#2f7fd0"></i>East Asia</span>
+          <span class="lg"><i style="background:#8b7fd4"></i>SE Asia</span>
+          <span class="lg"><i style="background:#d9543c"></i>South Asia</span>
+          <span class="lg"><i style="background:#e6a23c"></i>Americas</span>
+          <span class="lg"><i style="background:var(--green-deep)"></i>Headquarters</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <span class="kicker reveal">03 — Global reach</span>
+      <h2 class="reveal d1">A comprehensive <span style="color:var(--green-ink)">branch network</span></h2>
+      <p class="reveal d1">No matter where you are, if you need transportation through Shoptrans, we provide <b>immediate support</b>. Our local services are backed by native professionals fluent in import-export procedures and regulations.</p>
+      <p class="reveal d1" style="color:var(--text-3);font-size:14.5px">We aim to be the connecting bridge for our global customers. Whenever you need us, Shoptrans is always here for you.</p>
+      <div class="countries reveal d2">
+        <span class="cc hq">CN · HQ</span><span class="cc">JP</span><span class="cc">KR</span><span class="cc">TW</span>
+        <span class="cc">HK</span><span class="cc">VN</span><span class="cc">TH</span><span class="cc">MY</span>
+        <span class="cc">ID</span><span class="cc">IN</span><span class="cc">BD</span><span class="cc">US</span><span class="cc">MX</span>
+      </div>
+      <a href="#" class="learn reveal d3">Learn more <span class="ln"></span></a>
+    </div>
+  </div>
+</section>
+
+<script>
+/* ---- Tabs ---- */
+document.querySelectorAll('.tc-tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tc-tab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.tc-pane').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    document.querySelector('.tc-pane[data-pane="'+t.dataset.tab+'"]').classList.add('on');
+  });
+});
+document.querySelectorAll('.quick span').forEach(s=>{
+  s.addEventListener('click',()=>{document.querySelector('.tc-pane.on input').value=s.textContent;});
+});
+
+/* ---- Scroll reveal ---- */
+const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.16});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+/* ---- Count up ---- */
+function countUp(el){
+  const target=parseFloat(el.dataset.count), dec=parseInt(el.dataset.dec||'0');
+  let start=null, dur=1400;
+  function step(ts){ if(!start)start=ts; const p=Math.min((ts-start)/dur,1);
+    const eased=1-Math.pow(1-p,3);
+    el.textContent=(target*eased).toFixed(dec); if(p<1)requestAnimationFrame(step); else el.textContent=target.toFixed(dec);}
+  requestAnimationFrame(step);
+}
+const ioc=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){countUp(e.target);ioc.unobserve(e.target);}});},{threshold:.5});
+document.querySelectorAll('[data-count]').forEach(el=>ioc.observe(el));
+
+/* ---- Hero network particles ---- */
+(function(){
+  const c=document.getElementById('net'); if(!c)return; const ctx=c.getContext('2d');
+  let w,h,pts; const N=58;
+  function resize(){w=c.width=c.offsetWidth;h=c.height=c.offsetHeight;
+    pts=Array.from({length:N},()=>({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3}));}
+  function draw(){
+    ctx.clearRect(0,0,w,h);
+    for(const p of pts){p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0||p.x>w)p.vx*=-1; if(p.y<0||p.y>h)p.vy*=-1;}
+    for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){
+      const a=pts[i],b=pts[j],dx=a.x-b.x,dy=a.y-b.y,d=Math.hypot(dx,dy);
+      if(d<120){ctx.strokeStyle='rgba(0,143,76,'+(0.16*(1-d/120))+')';ctx.lineWidth=.6;
+        ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+    }
+    for(const p of pts){ctx.fillStyle='rgba(0,143,76,.45)';ctx.beginPath();ctx.arc(p.x,p.y,1.4,0,7);ctx.fill();}
+    requestAnimationFrame(draw);
+  }
+  resize();draw();window.addEventListener('resize',resize);
+})();
+</script>
+</body>
+</html>

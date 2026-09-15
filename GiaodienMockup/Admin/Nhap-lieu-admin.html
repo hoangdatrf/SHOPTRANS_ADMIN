@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHOPTRANS · Pricing Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --g0:#ffffff; --g50:#f7f8f7; --g75:#eef1ee; --g100:#e4e8e4; --g150:#d6dcd6;
+  --g200:#c3ccc4; --g300:#9aa69c; --g400:#6f7d72; --g500:#4a564d; --g600:#323b35; --g700:#1c2420;
+  --green:#00C566; --green-d:#16A34A; --green-dd:#0f7a37; --green-l:#e7f9ef; --green-ll:#f1fcf6;
+  --amber:#d97706; --amber-l:#fef3e2; --red:#dc2626; --red-l:#fde8e8; --blue:#2563eb; --blue-l:#e8f0fe;
+  --shadow-sm:0 1px 2px rgba(28,36,32,.05),0 1px 3px rgba(28,36,32,.07);
+  --shadow:0 4px 6px -1px rgba(28,36,32,.07),0 2px 4px -2px rgba(28,36,32,.06);
+  --shadow-lg:0 20px 40px -12px rgba(28,36,32,.22),0 8px 16px -8px rgba(28,36,32,.12);
+  --r:11px; --r-sm:8px; --r-lg:18px;
+  --sans:'Geist',system-ui,sans-serif; --mono:'Geist Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,select,textarea{font-family:inherit;font-size:14px;color:var(--g700)}
+body{font-family:var(--sans);color:var(--g700);background:var(--g50);background-image:radial-gradient(var(--g150) 1px,transparent 1px);background-size:22px 22px;background-attachment:fixed;font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+::selection{background:var(--green);color:#fff}
+.mono{font-family:var(--mono)}
+
+.topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--g100);display:flex;align-items:center;gap:18px;padding:0 24px;height:62px}
+.brand{display:flex;align-items:center;gap:11px;flex-shrink:0}
+.brand-mark{width:34px;height:34px;border-radius:9px;flex-shrink:0;background:linear-gradient(135deg,var(--green),var(--green-d));display:grid;place-items:center;color:#fff;font-weight:800;font-size:17px;box-shadow:0 4px 12px rgba(0,197,102,.35)}
+.brand-name{font-weight:800;font-size:16px;letter-spacing:-.02em}
+.brand-name span{color:var(--green-d)}
+.brand-sub{font-size:10.5px;color:var(--g400);font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.topbar .spacer{flex:1}
+.tb-label{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--g400)}
+
+/* country dropdown */
+.country-dd{position:relative}
+.cdd-btn{display:flex;align-items:center;gap:9px;padding:9px 14px;border:1px solid var(--g150);border-radius:11px;background:#fff;font-size:13.5px;font-weight:600;min-width:190px;box-shadow:var(--shadow-sm);transition:.14s}
+.cdd-btn:hover{border-color:var(--green);box-shadow:0 0 0 3px var(--green-l)}
+.cdd-btn img{width:22px;height:15px;object-fit:cover;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.cdd-btn span{flex:1;text-align:left}
+.cdd-btn .chev{width:16px;height:16px;color:var(--g300);transition:.2s}
+.country-dd.open .cdd-btn .chev{transform:rotate(90deg)}
+.cdd-menu{position:absolute;top:calc(100% + 6px);right:0;width:240px;background:#fff;border:1px solid var(--g100);border-radius:13px;box-shadow:var(--shadow-lg);padding:6px;max-height:360px;overflow-y:auto;display:none;z-index:60}
+.cdd-menu.show{display:block;animation:pop .16s ease}
+.cdd-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 11px;border-radius:9px;font-size:13.5px;font-weight:500;color:var(--g600);text-align:left;transition:.1s}
+.cdd-item img{width:22px;height:15px;object-fit:cover;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.cdd-item svg{width:15px;height:15px;margin-left:auto;color:var(--green-d)}
+.cdd-item:hover{background:var(--g50)}
+.cdd-item.on{background:var(--green-l);color:var(--green-dd);font-weight:600}
+
+.shell{display:flex;min-height:calc(100vh - 62px)}
+.sidebar{width:262px;flex-shrink:0;border-right:1px solid var(--g100);background:rgba(255,255,255,.5);padding:16px 12px;position:sticky;top:62px;height:calc(100vh - 62px);overflow-y:auto}
+.sidebar::-webkit-scrollbar{width:6px}.sidebar::-webkit-scrollbar-thumb{background:var(--g150);border-radius:6px}
+.nav-group{margin-bottom:6px}
+.nav-head{display:flex;align-items:center;gap:9px;width:100%;padding:9px 11px;border-radius:8px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--g400);transition:.12s;box-shadow:inset 0 0 0 0 var(--green)}
+.nav-head:hover{background:var(--green-ll);color:var(--green-dd);box-shadow:inset 3px 0 0 0 var(--green-d)}
+.nav-head:hover .ni{color:var(--green-d)}
+.nav-head .ni{width:16px;height:16px;flex-shrink:0;color:var(--g300)}
+.nav-head .chev{margin-left:auto;width:13px;height:13px;flex-shrink:0;transition:.2s;color:var(--g300)}
+.nav-group.open .chev{transform:rotate(90deg)}
+.nav-items{display:none;padding:3px 0 6px 0}.nav-group.open .nav-items{display:block}
+.nav-item{display:flex;align-items:center;gap:8px;width:100%;padding:8px 11px 8px 36px;border-radius:7px;font-size:13px;color:var(--g500);font-weight:500;text-align:left;transition:.12s;position:relative}
+.nav-item:hover:not(.active){background:var(--green-ll);color:var(--green-dd);box-shadow:inset 3px 0 0 0 var(--green-d)}
+.nav-item.active{background:var(--green-l);color:var(--green-dd);font-weight:600}
+.nav-item.active::before{content:"";position:absolute;left:18px;top:50%;transform:translateY(-50%);width:5px;height:5px;border-radius:50%;background:var(--green-d)}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:600;color:var(--g400);background:var(--g75);padding:1px 7px;border-radius:20px;font-family:var(--mono)}
+.nav-item.active .nav-badge{background:var(--g0);color:var(--green-dd)}
+
+/* editable menu controls */
+.side-top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 6px 10px;margin-bottom:6px;border-bottom:1px solid var(--g75)}
+.side-top-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g300)}
+.edit-toggle{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;color:var(--g500);border:1px solid var(--g150);background:#fff;transition:.12s}
+.edit-toggle svg{width:13px;height:13px}
+.edit-toggle:hover{border-color:var(--green);color:var(--green-dd)}
+.edit-toggle.on{background:var(--green-d);color:#fff;border-color:var(--green-d);box-shadow:0 3px 10px rgba(22,163,74,.28)}
+.nav-head{cursor:pointer}
+.nav-head .nh-label{flex:1;text-align:left}
+.nh-actions,.ni-actions{display:inline-flex;gap:2px;margin-left:auto}
+.nh-act,.ni-act{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;color:var(--g400);transition:.12s;flex-shrink:0}
+.nh-act svg,.ni-act svg{width:13px;height:13px}
+.nh-act:hover,.ni-act:hover{background:var(--g100);color:var(--g700)}
+.nh-act.del:hover,.ni-act.del:hover{background:var(--red-l);color:var(--red)}
+.nh-lock{display:inline-grid;place-items:center;width:24px;height:24px;margin-left:auto;color:var(--g300);flex-shrink:0}
+.nh-lock svg{width:13px;height:13px}
+.nav-item-row{display:flex;align-items:center;gap:2px;padding-right:6px}
+.nav-item-row .nav-item{flex:1;min-width:0}
+.sidebar.edit .nav-item{padding-left:30px}
+.sidebar.edit .nav-item.active::before{left:12px}
+.ni-actions{opacity:0;transition:.12s}
+.nav-item-row:hover .ni-actions,.sidebar.edit .ni-actions{opacity:1}
+.nav-add{display:flex;align-items:center;gap:6px;width:calc(100% - 30px);margin:4px 0 6px 30px;padding:7px 10px;border-radius:7px;font-size:12px;font-weight:600;color:var(--green-dd);background:var(--green-ll);border:1px dashed #bfe9cf;transition:.12s}
+.nav-add svg{width:13px;height:13px}
+.nav-add:hover{background:var(--green-l)}
+.nav-add-group{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:12px;padding:11px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--g500);background:#fff;border:1px dashed var(--g200);transition:.12s}
+.nav-add-group svg{width:14px;height:14px}
+.nav-add-group:hover{border-color:var(--green);color:var(--green-dd);background:var(--green-ll)}
+.nav-dust{display:flex;align-items:center;gap:9px;width:100%;margin-top:14px;padding:10px 11px;border-radius:9px;font-size:13px;font-weight:600;color:var(--g500);background:#fff;border:1px solid var(--g100);transition:.12s}
+.nav-dust svg{width:16px;height:16px;color:var(--g400);flex-shrink:0}
+.nav-dust span{flex:1;text-align:left}
+.nav-dust:hover{border-color:transparent;background:var(--green-ll);color:var(--green-dd);box-shadow:inset 3px 0 0 0 var(--green-d)}
+.nav-dust:hover svg{color:var(--green-d)}
+.nav-dust.active{background:var(--green-l);color:var(--green-dd);border-color:transparent}
+.nav-dust.active svg{color:var(--green-d)}
+.dust-badge{font-size:10.5px;font-weight:700;font-family:var(--mono);color:#fff;background:var(--g400);padding:1px 8px;border-radius:20px}
+.nav-dust.active .dust-badge{background:var(--green-d)}
+.btn-sm{padding:6px 11px;font-size:12px}
+.btn-sm svg{width:13px;height:13px}
+.m-select{padding:12px 14px;border:1px solid var(--g150);border-radius:11px;background:#fff;outline:none;transition:.14s;width:100%;font-size:14px;cursor:pointer}
+.m-select:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-l)}
+.m-select:disabled{background:var(--g50);color:var(--g400);cursor:not-allowed}
+
+.main{flex:1;padding:26px 30px 60px;min-width:0;max-width:1560px}
+.crumb{font-size:11.5px;color:var(--g400);margin-bottom:6px;font-weight:500}
+.crumb b{color:var(--green-d)}
+.page-head{display:flex;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap;min-height:50px}
+.page-head>div:first-child{flex:1 1 auto;min-width:0}
+.page-title{font-size:23px;font-weight:800;letter-spacing:-.03em;line-height:1.2}
+.page-desc{font-size:13px;color:var(--g400);margin-top:3px;max-width:760px}
+.page-head .spacer{flex:1}
+.page-head .scope-pill{flex-shrink:0;align-self:center}
+.scope-pill{display:flex;align-items:center;gap:8px;padding:7px 13px;background:#fff;border:1px solid var(--g100);border-radius:30px;box-shadow:var(--shadow-sm);font-size:12.5px;font-weight:600}
+.scope-pill img{width:22px;height:15px;object-fit:cover;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.scope-pill small{color:var(--g400);font-weight:500}
+
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.search{position:relative;flex:1;min-width:200px;max-width:340px}
+.search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--g300);width:15px;height:15px}
+.search input{width:100%;padding:9px 12px 9px 33px;border:1px solid var(--g100);border-radius:10px;background:#fff;outline:none;transition:.15s}
+.search input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-l)}
+.seg{display:inline-flex;background:var(--g75);border-radius:10px;padding:3px}
+.seg button{padding:6px 14px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--g400);transition:.12s}
+.seg button.on{background:#fff;color:var(--green-dd);box-shadow:var(--shadow-sm)}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:10px;font-size:13px;font-weight:600;transition:.14s;border:1px solid transparent}
+.btn svg{width:15px;height:15px}
+.btn-primary{background:var(--green-d);color:#fff;box-shadow:0 4px 12px rgba(22,163,74,.28)}
+.btn-primary:hover{background:var(--green-dd);transform:translateY(-1px);box-shadow:0 6px 16px rgba(22,163,74,.34)}
+.btn-ghost{background:#fff;border-color:var(--g100);color:var(--g600)}
+.btn-ghost:hover{border-color:var(--g200);background:var(--g50)}
+.btn-danger{background:var(--red);color:#fff;box-shadow:0 4px 12px rgba(220,38,38,.26)}
+.btn-danger:hover{background:#b91c1c;transform:translateY(-1px);box-shadow:0 6px 16px rgba(220,38,38,.32)}
+.modal-confirm{max-width:460px}
+.confirm-msg{font-size:14px;color:var(--g600);line-height:1.55}
+
+.card{background:#fff;border:1px solid var(--g100);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);overflow:hidden}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--g400);padding:10px 16px;background:var(--g50);border-bottom:1px solid var(--g100);white-space:nowrap}
+tbody td{padding:10px 16px;border-bottom:1px solid var(--g75);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr{transition:background .1s}
+tbody tr:hover{background:var(--green-ll)}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.tag-fcl{background:var(--blue-l);color:var(--blue)}
+.tag-lcl{background:var(--amber-l);color:var(--amber)}
+.tag-flat{background:var(--g75);color:var(--g500)}
+.tag-type{background:var(--green-l);color:var(--green-dd)}
+.rates{display:flex;flex-wrap:wrap;gap:5px}
+.rate-chip{font-family:var(--mono);font-size:11.5px;background:var(--g50);border:1px solid var(--g100);border-radius:6px;padding:2px 7px;white-space:nowrap}
+.rate-chip b{color:var(--green-dd);font-weight:600}
+.valid{font-size:11.5px;color:var(--g400);white-space:nowrap}
+.valid b{color:var(--g600);font-weight:600}
+.code-cell{font-family:var(--mono);font-weight:600;color:var(--green-dd)}
+.row-actions{display:flex;gap:4px;justify-content:flex-end}
+.icon-btn{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;color:var(--g400);transition:.12s}
+.icon-btn svg{width:15px;height:15px}
+.icon-btn:hover{background:var(--g75);color:var(--g700)}
+.icon-btn.del:hover{background:var(--red-l);color:var(--red)}
+.note-text{font-size:12px;color:var(--g400);max-width:200px}
+.empty{padding:60px 20px;text-align:center;color:var(--g300)}
+.empty svg{width:42px;height:42px;margin-bottom:12px;opacity:.5}
+.empty p{font-size:14px;font-weight:500;color:var(--g400)}
+.empty span{font-size:12.5px}
+.tbl-foot{padding:9px 16px;border-top:1px solid var(--g75);display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--g400);gap:14px;flex-wrap:wrap}
+.tbl-foot .pager{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tbl-foot .psel{display:flex;align-items:center;gap:7px}
+.tbl-foot .psel select{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--g600);border:1px solid var(--g150);border-radius:8px;padding:4px 8px;background:#fff;outline:none;cursor:pointer;transition:.14s}
+.tbl-foot .psel select:hover{border-color:var(--green)}
+.tbl-foot .psel select:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-l)}
+.pg-info{font-family:var(--mono);font-size:11.5px;color:var(--g400)}
+.pg-nav{display:flex;gap:4px}
+.pg-btn{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;border:1px solid var(--g150);background:#fff;color:var(--g500);transition:.12s}
+.pg-btn:hover:not(:disabled){border-color:var(--green);color:var(--green-dd);background:var(--green-ll)}
+.pg-btn:disabled{opacity:.4;cursor:not-allowed}
+.pg-btn svg{width:14px;height:14px}
+.callout{display:flex;gap:10px;align-items:flex-start;background:var(--amber-l);border:1px solid #f4dca8;border-radius:11px;padding:9px 13px;margin-bottom:10px;font-size:12.5px;color:#8a5a06;line-height:1.45}
+.callout svg{width:17px;height:17px;flex-shrink:0;margin-top:1px;color:var(--amber)}
+.callout.green{background:var(--green-ll);border-color:#bfe9cf;color:var(--green-dd)}
+.callout.green svg{color:var(--green-d)}
+.sel-col{width:38px;text-align:center;padding-left:14px!important}
+table input.rsel,.sel-all input{width:16px;height:16px;cursor:pointer;accent-color:var(--green-d);margin:0;vertical-align:middle}
+tr.row-sel{background:var(--green-ll)}
+.bulk-tools{display:contents}
+.btn[disabled],.btn:disabled{opacity:.45;cursor:not-allowed}
+.th-sort{all:unset;display:inline-flex;align-items:center;gap:4px;cursor:pointer;font:inherit;color:inherit;letter-spacing:inherit;text-transform:inherit;user-select:none;border-radius:6px;padding:1px 3px;transition:.12s}
+.th-sort:hover{color:var(--green-d)}
+.th-sort.on{color:var(--green-dd)}
+.th-ar{font-size:9px;line-height:1;color:var(--green-d)}
+.th-idle{color:var(--g300);font-size:11px;font-weight:700;transition:.12s}
+.th-sort:hover .th-idle{color:var(--green)}
+.th-sort{position:relative}
+.th-clock svg{width:13px;height:13px;vertical-align:middle}
+.th-clock{color:var(--g300)}
+.th-clock.on{color:var(--green-dd)}
+.entered-cell{white-space:nowrap;font-family:var(--mono)}
+.ts-date{display:block;font-size:12px;color:var(--g600);font-weight:600}
+.ts-time{display:block;font-size:11px;color:var(--g400)}
+.ts-na{color:var(--g300)}
+.sort-status{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--green-dd);background:var(--green-l);border:1px solid #bfe9cf;border-radius:99px;padding:4px 6px 4px 12px;font-weight:600}
+.sort-status b{font-weight:700}
+.sort-clear{all:unset;display:inline-flex;align-items:center;gap:3px;cursor:pointer;font-size:11px;font-weight:600;color:var(--green-d);background:#fff;border:1px solid #bfe9cf;border-radius:99px;padding:2px 9px 2px 7px}
+.sort-clear:hover{background:var(--green-ll)}
+.sort-clear svg{width:11px;height:11px}
+.sort-hint{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--g400);font-weight:600;letter-spacing:.01em}
+.bb-count{font-weight:700;font-size:13px;color:var(--green-dd);display:inline-flex;align-items:center;padding:0 4px 0 2px}
+.btn.bb-del{background:#fdecec;color:#c0392b;border:1px solid #f3c4c0}
+.btn.bb-del:hover{background:#f9dada}
+.fx-rate{font-family:var(--mono);font-weight:600;color:var(--g700)}
+.fx-base{font-size:10.5px;font-weight:700;letter-spacing:.04em;color:var(--green-dd);background:var(--green-l);border:1px solid #bfe9cf;padding:2px 8px;border-radius:99px}
+.fx-sym{font-size:15px;font-weight:700;color:var(--g600)}
+.fx-meta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--g400)}
+.fx-dot{width:7px;height:7px;border-radius:99px;background:var(--green);display:inline-block}
+.fx-datepick{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--g500);font-weight:600;background:#fff;border:1px solid var(--g150);border-radius:11px;padding:7px 12px}
+.fx-datepick svg{width:15px;height:15px;color:var(--green-d)}
+.fx-date{border:none;background:transparent;font-family:var(--mono);font-weight:600;font-size:12.5px;color:var(--g700);outline:none;cursor:pointer}
+.fx-bar{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--g150);border-radius:12px;padding:8px 10px 8px 14px;margin-bottom:12px}
+.fx-bar-label{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--green-d);white-space:nowrap}
+.fx-bar-label svg{width:14px;height:14px}
+.fx-bar input{flex:1;min-width:0;border:none;outline:none;background:transparent;font-family:var(--mono);font-size:13px;color:var(--g700)}
+.fx-bar input::placeholder{color:var(--g300)}
+
+.overlay{position:fixed;inset:0;background:rgba(20,28,24,.42);backdrop-filter:blur(4px);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto}
+.overlay.show{display:flex}
+#modalHost{display:contents}
+.modal{background:#fff;border-radius:var(--r-lg);box-shadow:var(--shadow-lg);width:100%;max-width:680px;margin:auto;animation:pop .22s cubic-bezier(.2,.9,.3,1.2)}
+.modal.wide{max-width:960px}
+@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.modal-head{padding:15px 28px 12px;border-bottom:1px solid var(--g100);display:flex;align-items:flex-start;gap:12px}
+.modal-head h3{font-size:18px;font-weight:700;letter-spacing:-.02em}
+.modal-head p{font-size:12.5px;color:var(--g400);margin-top:2px}
+.modal-head .x{margin-left:auto;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:var(--g400)}
+.modal-head .x:hover{background:var(--g75);color:var(--g700)}
+.modal-body{padding:15px 28px;max-height:80vh;overflow-y:auto}
+.modal-foot{padding:12px 28px;border-top:1px solid var(--g100);display:flex;gap:10px;justify-content:flex-end;background:var(--g50);border-radius:0 0 var(--r-lg) var(--r-lg)}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px 16px}
+.fgrid.three{grid-template-columns:1fr 1fr 1fr}
+.fgrid.four{grid-template-columns:1fr 1fr 1fr 1fr}
+.field{display:flex;flex-direction:column;gap:4px}
+.field.full{grid-column:1/-1}
+.field.span2{grid-column:span 2}
+.field label{font-size:11.5px;font-weight:600;color:var(--g500);letter-spacing:.01em}
+.field label .req{color:var(--red);margin-left:3px}
+.field input,.field select,.field textarea{padding:9px 13px;border:1px solid var(--g150);border-radius:11px;background:#fff;outline:none;transition:.14s;width:100%;font-size:14px}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-l)}
+.field textarea{resize:vertical;min-height:46px}
+.field .hint{font-size:10.5px;color:var(--g400)}
+.field input[type=date]{cursor:pointer}
+.field input[type=date]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.55;width:18px}
+/* ===== custom date picker (English / Gregorian, locale-independent) ===== */
+.dp{position:relative}
+.dp .dp-input{cursor:pointer;padding-right:40px;font-family:var(--mono);letter-spacing:.02em}
+.dp .dp-input.editing{cursor:text;background:#fff;border-color:var(--green);box-shadow:0 0 0 3px var(--green-l)}
+.dp-ico{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--g400);display:grid;place-items:center;cursor:pointer}
+.dp-ico svg{width:18px;height:18px;display:block}
+.dp .dp-input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-l)}
+.dp-pop{position:absolute;z-index:140;bottom:calc(100% + 6px);left:0;width:272px;background:#fff;border:1px solid var(--g150);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:12px;display:none}
+.dp-pop.show{display:block}
+.dp-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:10px}
+.dp-title{font-weight:700;font-size:13.5px;color:var(--g700);font-family:var(--sans);padding:6px 12px;border-radius:8px;transition:.12s}
+.dp-title:hover{background:var(--green-ll);color:var(--green-dd)}
+.dp-grid-my{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:2px}
+.dp-my-cell{height:46px;border-radius:9px;display:grid;place-items:center;font-size:13px;font-weight:500;color:var(--g600);background:#fff;border:1px solid var(--g75);transition:.12s;font-family:var(--sans);cursor:pointer}
+.dp-my-cell:hover{background:var(--green-l);color:var(--green-dd);border-color:transparent}
+.dp-my-cell.sel{background:var(--green-d);color:#fff;font-weight:600;border-color:transparent}
+.dp-my-cell.sel:hover{background:var(--green-dd);color:#fff}
+.dp-my-cell.today{box-shadow:inset 0 0 0 1.5px var(--green)}
+.dp-nav{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--g500);border:1px solid var(--g100);background:#fff;transition:.14s}
+.dp-nav:hover{border-color:var(--green);color:var(--green-dd);background:var(--green-ll)}
+.dp-nav svg{width:15px;height:15px}
+.dp-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px}
+.dp-dow span{text-align:center;font-size:10px;font-weight:600;color:var(--g400);font-family:var(--mono);padding:4px 0;text-transform:uppercase;letter-spacing:.03em}
+.dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;align-content:start;grid-auto-rows:32px}
+.dp-cell{height:32px;border-radius:8px;display:grid;place-items:center;font-size:12.5px;color:var(--g600);background:#fff;transition:.12s;font-family:var(--mono);cursor:pointer}
+.dp-cell:hover{background:var(--green-l);color:var(--green-dd)}
+.dp-cell.sel{background:var(--green-d);color:#fff;font-weight:600}
+.dp-cell.sel:hover{background:var(--green-dd);color:#fff}
+.dp-cell.today{box-shadow:inset 0 0 0 1.5px var(--green)}
+.dp-cell.empty{visibility:hidden;pointer-events:none}
+.dp-cell.off{color:var(--g200);background:var(--g50);cursor:not-allowed;pointer-events:none;opacity:.55;text-decoration:line-through;text-decoration-thickness:1px}
+.dp-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--g75)}
+.dp-foot button{font-size:11.5px;font-weight:600;padding:6px 10px;border-radius:8px;font-family:var(--sans);transition:.12s}
+.dp-clear{color:var(--g500)}.dp-clear:hover{color:var(--red);background:var(--red-l)}
+.dp-now{color:var(--green-dd)}.dp-now:hover{background:var(--green-l)}
+.modal-section{margin-top:13px;padding-top:12px;border-top:1px dashed var(--g100)}
+.modal-section:first-child{margin-top:0;padding-top:0;border-top:none}
+.modal-section h4{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--green-d);margin-bottom:9px;display:flex;align-items:center;gap:7px}
+.modal-section h4 svg{width:14px;height:14px}
+.rate-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.rate-input{display:flex;flex-direction:column;gap:4px}
+.rate-input label{font-size:11px;font-weight:600;color:var(--g400);font-family:var(--mono)}
+.rate-input .wrap{position:relative}
+.rate-input .cur{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--g300);font-family:var(--mono);font-weight:600}
+.rate-input input{padding:9px 13px 9px 34px;border:1px solid var(--g150);border-radius:11px;background:#fff;outline:none;font-family:var(--mono);font-weight:500;width:100%;transition:.14s}
+.rate-input input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-l)}
+.mode-toggle{display:inline-flex;background:var(--g75);border-radius:10px;padding:3px;margin-bottom:10px}
+.tick-group{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.tick-opt{display:flex;align-items:center;gap:11px;flex:1;min-width:210px;padding:9px 13px;border:1.5px solid var(--g150);border-radius:11px;background:#fff;cursor:pointer;transition:.14s;text-align:left}
+.tick-opt:hover{border-color:var(--green);background:var(--green-ll)}
+.tick-opt.on{border-color:var(--green-d);background:var(--green-l);box-shadow:0 0 0 3px var(--green-l)}
+.tick-box{width:20px;height:20px;border-radius:6px;border:2px solid var(--g200);display:grid;place-items:center;flex-shrink:0;transition:.14s;color:#fff}
+.tick-opt.on .tick-box{background:var(--green-d);border-color:var(--green-d)}
+.tick-box svg{width:12px;height:12px;opacity:0;transition:.12s}
+.tick-opt.on .tick-box svg{opacity:1}
+.tk-txt{display:flex;flex-direction:column;gap:1px;min-width:0}
+.tk-title{font-size:13px;font-weight:600;color:var(--g700)}
+.tk-sub{font-size:11px;color:var(--g400)}
+.mode-toggle button{padding:7px 20px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--g400)}
+.mode-toggle button.on{background:#fff;box-shadow:var(--shadow-sm)}
+.mode-toggle button.on[data-m=FCL]{color:var(--blue)}
+.mode-toggle button.on[data-m=LCL]{color:var(--amber)}
+
+.ac{position:relative}
+.ac-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--g150);border-radius:11px;box-shadow:var(--shadow-lg);max-height:240px;overflow-y:auto;z-index:10;display:none}
+.ac-list.show{display:block}
+.ac-item{padding:8px 13px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--g75)}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover{background:var(--green-l)}
+.ac-item .ac-zip{font-family:var(--mono);font-weight:600;color:var(--green-dd);font-size:12.5px}
+.ac-item .ac-name{font-size:12px;color:var(--g500);text-align:right}
+.ac-empty{padding:12px;font-size:12px;color:var(--g300);text-align:center}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--g700);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);z-index:200;opacity:0;transition:.3s;display:flex;align-items:center;gap:9px;max-width:90vw}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast svg{width:17px;height:17px;color:var(--green);flex-shrink:0}
+.toast.warn svg{color:#fbbf24}
+
+@media(max-width:920px){.sidebar{display:none}.main{padding:20px 16px}.rate-grid{grid-template-columns:repeat(2,1fr)}.fgrid,.fgrid.three,.fgrid.four{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">S</div>
+    <div><div class="brand-name">SHOP<span>TRANS</span></div><div class="brand-sub">Pricing Console</div></div>
+  </div>
+  <div class="spacer"></div>
+  <span class="tb-label">Country</span>
+  <div class="country-dd" id="countryDD"></div>
+</div>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main" id="main"></main>
+</div>
+
+<input type="file" id="xlsxFile" accept=".xlsx,.xls,.csv" style="display:none">
+<div class="overlay" id="overlay"><div id="modalHost"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== ICONS ===== */
+const I={
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  chev:'<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>',
+  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8 12 3 3 8v8l9 5 9-5Z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>',
+  db:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg>',
+  ship:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 20a3 3 0 0 0 2.5-1 3 3 0 0 1 5 0 3 3 0 0 0 5 0 3 3 0 0 1 5 0 3 3 0 0 0 2.5 1"/><path d="M4 18 2.5 9.5 12 6l9.5 3.5L20 18"/><path d="M12 6V3M8 8.5l8 0"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+  layers:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/></svg>',
+  truck:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 6h13v10H1zM14 9h4l3 3v4h-7"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>',
+  tag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 13.5 13.5 20a2 2 0 0 1-2.8 0L3 12.3V3h9.3L20 10.7a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>',
+  cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>',
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>',
+  empty:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2Z"/></svg>',
+  upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>',
+  download:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>',
+  copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>',
+  coin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a2.5 2 0 0 0-2.5-1.5c-1.4 0-2.5.7-2.5 1.8 0 2.4 5 1.2 5 3.6 0 1.1-1.1 1.8-2.5 1.8a2.5 2 0 0 1-2.5-1.5M12 6.5v11"/></svg>',
+};
+
+/* HK & TW use China flag per project convention */
+const COUNTRIES=[
+  {id:'CN',name:'China',flag:'cn',cur:'USD'},{id:'JP',name:'Japan',flag:'jp',cur:'USD'},
+  {id:'VN',name:'Vietnam',flag:'vn',cur:'USD'},{id:'ID',name:'Indonesia',flag:'id',cur:'USD'},
+  {id:'IN',name:'India',flag:'in',cur:'USD'},{id:'TH',name:'Thailand',flag:'th',cur:'USD'},
+  {id:'KR',name:'South Korea',flag:'kr',cur:'USD'},{id:'MY',name:'Malaysia',flag:'my',cur:'USD'},
+  {id:'BD',name:'Bangladesh',flag:'bd',cur:'USD'},{id:'US',name:'USA',flag:'us',cur:'USD'},
+  {id:'TW',name:'Taiwan',flag:'cn',cur:'USD'},{id:'HK',name:'Hong Kong',flag:'cn',cur:'USD'},
+  {id:'MX',name:'Mexico',flag:'mx',cur:'USD'},
+];
+const flagURL=c=>`https://flagcdn.com/w40/${c}.png`;
+const CONTAINERS=['20GP','40GP','40HC','45HC'];
+const DEFAULT_CURRENCIES=[
+  {code:'USD',name:'US Dollar',sym:'$',rate:1,base:true},
+  {code:'EUR',name:'Euro',sym:'€',rate:0.92},
+  {code:'CNY',name:'Chinese Yuan',sym:'¥',rate:7.15},
+  {code:'JPY',name:'Japanese Yen',sym:'¥',rate:156},
+  {code:'VND',name:'Vietnamese Dong',sym:'₫',rate:25400},
+];
+const TRUCKS=[['1T','1 ton'],['2.5T','2.5 ton'],['5T','5 ton'],['8T','8 ton'],['10T','10 ton'],['15T','15 ton'],['18T','18 ton']];
+
+const DEFAULT_NAV=[
+  {id:'master',label:'Base Data',icon:'db',items:[
+    {id:'ports',label:'International Seaports'},{id:'cfs',label:'CFS Warehouses'},{id:'admin',label:'Postal Code'},{id:'fx',label:'Ex.Rate'}]},
+  {id:'origin',label:'At Origin',icon:'pin',items:[
+    {id:'o_customs',label:'Customs Fee'},{id:'o_inspect',label:'Inspection Fee'},{id:'o_truck',label:'Trucking Fee'},
+    {id:'o_demur',label:'Demurrage Fee'},{id:'o_lift',label:'Lift On/Off Fee'},{id:'o_infra',label:'Port Infrastructure Fee'}]},
+  {id:'sea',label:'Sea Freight',icon:'ship',items:[
+    {id:'ocean',label:'Ocean Freight (OFR)'},{id:'surcharge',label:'Freight Surcharges'},
+    {id:'lc_origin',label:'Local Charge — Origin'},{id:'lc_dest',label:'Local Charge — Destination'}]},
+  {id:'dest',label:'At Destination',icon:'layers',items:[
+    {id:'d_handling',label:'Handling Fee'},{id:'d_customs',label:'Customs Fee'},{id:'d_inspect',label:'Inspection Fee'},
+    {id:'d_truck',label:'Trucking Fee'},{id:'d_demur',label:'Demurrage Fee'},{id:'d_lift',label:'Lift On/Off Fee'},
+    {id:'d_infra',label:'Port Infrastructure Fee'}]},
+];
+
+const LC_ORIGIN=[
+  {v:'THC',label:'THC',fcl:true,lclUnit:'W/M'},{v:'B/L',label:'B/L Fee',flatUnit:'SET'},
+  {v:'Seal',label:'Seal',fcl:true,lclUnit:null},{v:'Telex',label:'Telex Release',flatUnit:'SET'},
+  {v:'Other',label:'Other fee…',fcl:true,lclUnit:'SET',free:true},
+];
+const LC_DEST=[
+  {v:'THC',label:'THC',fcl:true,lclUnit:'W/M'},{v:'D/O',label:'D/O Fee',flatUnit:'SET'},
+  {v:'Cleaning',label:'Cleaning Fee',fcl:true,lclUnit:'W/M'},{v:'EMC',label:'EMC (Equip. Mgmt)',fcl:true,lclUnit:null},
+  {v:'CFS',label:'CFS Fee',fcl:false,lclUnit:'W/M'},{v:'Other',label:'Other fee…',fcl:true,lclUnit:'W/M',free:true},
+];
+
+const DEFAULT_PAGES={
+  ports:{kind:'master-ports',title:'International Seaports',group:'master',desc:'Seaport catalog (UN/LOCODE) used as base data for trucking fees and transport lanes.'},
+  cfs:{kind:'master-cfs',title:'CFS Warehouses',group:'master',desc:'CFS consolidation warehouse catalog per country.'},
+  admin:{kind:'master-admin',title:'Postal Code',group:'master',desc:'Province / District / Ward and international-standard postal codes — the suggestion source for the trucking-fee input.'},
+  fx:{kind:'master-fx',title:'Exchange Rates',group:'master',desc:'Currency catalog and exchange rates (base USD). Add / edit / delete currencies and refresh rates live from the web. Rates here drive the currency options across all fee inputs.'},
+  o_customs:{kind:'fee',title:'Customs Fee — At Origin',group:'origin',fcl:true,lclUnit:'set',scope:'port',validity:true,desc:'Fixed fee. FCL charged per container; LCL per set.'},
+  o_inspect:{kind:'fee',title:'Inspection Fee — At Origin',group:'origin',fcl:true,lclUnit:'set',scope:'port',validity:true,inspect:true,desc:'Fixed fee. Additional costs arising from actual inspection: per invoice.'},
+  o_truck:{kind:'trucking',title:'Trucking Fee — At Origin',group:'origin',validity:true,desc:'Select a port/CFS + postal code (suggested with administrative unit). FCL per container; LCL per truck type (tonnage).'},
+  o_demur:{kind:'fee',title:'Demurrage Fee — At Origin',group:'origin',fcl:true,lclUnit:'truck/night',scope:'port',validity:true,desc:'Fixed fee. FCL per container; LCL per truck/night.'},
+  o_lift:{kind:'fee',title:'Lift On/Off Fee — At Origin',group:'origin',fcl:true,lclUnit:null,scope:'port',validity:true,desc:'Fixed fee. FCL per container. Not applicable to LCL.'},
+  o_infra:{kind:'fee',title:'Port Infrastructure Fee — At Origin',group:'origin',fcl:true,lclUnit:'tons',scope:'port',validity:true,desc:'Fixed fee. FCL per container; LCL per ton.'},
+  ocean:{kind:'ocean',title:'Ocean Freight',group:'sea',validity:true,desc:'FCL per container; LCL per set. Includes sailing schedule (ETD/ETA), transit time, via, freetime at origin & destination.'},
+  surcharge:{kind:'fee',title:'Freight Surcharges',group:'sea',feeTypes:['BAF','YAS','RR'],fcl:true,lclUnit:'W/M',validity:true,desc:'BAF / YAS / RR… FCL per container; LCL per W/M.'},
+  lc_origin:{kind:'localcharge',title:'Local Charge — At Origin',group:'sea',lcset:LC_ORIGIN,validity:true,desc:'THC, B/L, Seal, Telex and other fees. Unit is auto-set by fee type.'},
+  lc_dest:{kind:'localcharge',title:'Local Charge — At Destination',group:'sea',lcset:LC_DEST,validity:true,desc:'THC, D/O, Cleaning, EMC, CFS and other fees. Unit is auto-set by fee type.'},
+  d_handling:{kind:'flat',title:'Handling Fee — At Destination',group:'dest',flatUnit:'B/L',validity:true,desc:'Charged per B/L for both FCL and LCL.'},
+  d_customs:{kind:'fee',title:'Customs Fee — At Destination',group:'dest',fcl:true,lclUnit:'set',scope:'port',validity:true,desc:'Fixed fee. FCL per container; LCL per set.'},
+  d_inspect:{kind:'fee',title:'Inspection Fee — At Destination',group:'dest',fcl:true,lclUnit:'set',scope:'port',validity:true,inspect:true,desc:'Fixed fee. Additional costs from actual inspection: per invoice.'},
+  d_truck:{kind:'trucking',title:'Trucking Fee — At Destination',group:'dest',validity:true,desc:'Same structure as At Origin trucking: port/CFS + postal code, FCL per container / LCL per truck type.'},
+  d_demur:{kind:'fee',title:'Demurrage Fee — At Destination',group:'dest',fcl:true,lclUnit:'truck/night',scope:'port',validity:true,desc:'Fixed fee. FCL per container; LCL per truck/night.'},
+  d_lift:{kind:'fee',title:'Lift On/Off Fee — At Destination',group:'dest',fcl:true,lclUnit:null,scope:'port',validity:true,desc:'Fixed fee. FCL per container. Not applicable to LCL.'},
+  d_infra:{kind:'fee',title:'Port Infrastructure Fee — At Destination',group:'dest',fcl:true,lclUnit:'tons',scope:'port',validity:true,desc:'Fixed fee. FCL per container; LCL per ton.'},
+};
+
+/* ===== EDITABLE MENU (categories + items) ===== */
+let META={},NAV,PAGES;
+const META_KEY='shoptrans_pricing_meta_v1';
+const LOCKED_GROUPS=['master','origin','sea','dest'];
+function groupLocked(id){return LOCKED_GROUPS.includes(id);}
+const LOCK_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+function seedMeta(){return {nav:JSON.parse(JSON.stringify(DEFAULT_NAV)),pages:JSON.parse(JSON.stringify(DEFAULT_PAGES))};}
+function loadMeta(){let m=null;try{const r=localStorage.getItem(META_KEY);if(r)m=JSON.parse(r);}catch(e){}
+  if(!m||!Array.isArray(m.nav)||!m.pages)m=seedMeta();
+  META=m;NAV=META.nav;PAGES=META.pages;migrateMeta();}
+function migrateMeta(){
+  if(!Array.isArray(META.currencies)||!META.currencies.length)META.currencies=JSON.parse(JSON.stringify(DEFAULT_CURRENCIES));
+  if(!META.currencies.some(c=>c.code==='USD'))META.currencies.unshift({code:'USD',name:'US Dollar',sym:'$',rate:1,base:true});
+  if(!PAGES.fx)PAGES.fx={kind:'master-fx',title:'Exchange Rates',group:'master',desc:'Currency catalog and exchange rates (base USD). Add / edit / delete currencies and refresh rates live from the web. Rates here drive the currency options across all fee inputs.'};
+  const mg=NAV.find(g=>g.id==='master');if(mg&&!mg.items.some(i=>i.id==='fx'))mg.items.push({id:'fx',label:'Ex.Rate'});
+  if(!META.fxSource)META.fxSource='https://open.er-api.com/v6/latest/USD';
+  if(!META.fxHistory||typeof META.fxHistory!=='object')META.fxHistory={};
+}
+function persistMeta(){try{localStorage.setItem(META_KEY,JSON.stringify(META));}catch(e){}}
+function resetMenu(){confirmModal({title:'Reset menu to default?',message:'The whole menu (categories &amp; items) returns to the default structure. Your entered rate data and currencies are kept.',confirmLabel:'Reset menu',onConfirm:()=>{
+  const cur=(META.currencies&&META.currencies.length)?JSON.parse(JSON.stringify(META.currencies)):JSON.parse(JSON.stringify(DEFAULT_CURRENCIES));
+  META=seedMeta();META.currencies=cur;NAV=META.nav;PAGES=META.pages;migrateMeta();ensureDB();persistMeta();persist();state.page=firstPage();state.editMenu=false;renderAll();toast('Menu reset to default');}});}
+function findNavItem(pid){for(const g of NAV){const it=g.items.find(x=>x.id===pid);if(it)return it;}return null;}
+function removeNavItem(pid){for(const g of NAV){const i=g.items.findIndex(x=>x.id===pid);if(i>=0)return g.items.splice(i,1)[0];}return null;}
+function firstPage(){for(const g of NAV){if(g.items.length)return g.items[0].id;}return null;}
+function ensureDB(){COUNTRIES.forEach(c=>{if(!DB[c.id])DB[c.id]={};Object.keys(PAGES).forEach(p=>{if(!DB[c.id][p])DB[c.id][p]=[];});});}
+
+/* ===== DUSTBIN (soft-delete store) ===== */
+let TRASH=[];
+const TRASH_KEY='shoptrans_pricing_trash_v1';
+function loadTrash(){try{const r=localStorage.getItem(TRASH_KEY);TRASH=r?JSON.parse(r):[];}catch(e){TRASH=[];}if(!Array.isArray(TRASH))TRASH=[];}
+function persistTrash(){try{localStorage.setItem(TRASH_KEY,JSON.stringify(TRASH));}catch(e){}}
+function clone(o){return JSON.parse(JSON.stringify(o));}
+function pushTrash(entry){entry.tid='t'+uid().slice(1);entry.deletedAt=new Date().toISOString();TRASH.unshift(entry);persistTrash();}
+function recLabel(r){
+  if(!r)return 'record';
+  if(r.code)return r.code+(r.name?' · '+r.name:'');
+  if(r.zip&&r.prov)return r.zip+' · '+r.prov;
+  if(r.pol)return r.pol+' → '+(r.pod||'');
+  if(r.port)return r.port+(r.zip?' · '+r.zip:'');
+  if(r.feeType)return r.feeType+(r.mode?' · '+r.mode:'');
+  if(r.scope)return r.scope+(r.mode?' · '+r.mode:'');
+  return (r.mode||'rate')+(r.unit?' /'+r.unit:'');
+}
+function fmtWhen(iso){try{const d=new Date(iso);return d.toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});}catch(e){return iso;}}
+
+function restoreTrash(tid){
+  const i=TRASH.findIndex(t=>t.tid===tid);if(i<0)return;const e=TRASH[i];
+  if(e.type==='record'){
+    if(!PAGES[e.page]){toast('Parent item no longer exists — restore it first',true);return;}
+    if(!DB[e.country])DB[e.country]={};if(!DB[e.country][e.page])DB[e.country][e.page]=[];
+    DB[e.country][e.page].push(clone(e.payload));persist();
+  }else if(e.type==='item'){
+    const pid=e.page;PAGES[pid]=clone(e.config);
+    let g=NAV.find(x=>x.id===e.group)||NAV[0];if(!g){toast('No category to restore into',true);return;}
+    if(!findNavItem(pid))g.items.push({id:pid,label:e.label});
+    COUNTRIES.forEach(c=>{if(!DB[c.id])DB[c.id]={};DB[c.id][pid]=clone((e.data&&e.data[c.id])||[]);});
+    persistMeta();persist();
+  }else if(e.type==='group'){
+    const G=clone(e.group);
+    if(!NAV.find(x=>x.id===G.id))NAV.push(G);else NAV.find(x=>x.id===G.id).items=G.items;
+    Object.keys(e.pages).forEach(pid=>PAGES[pid]=clone(e.pages[pid]));
+    COUNTRIES.forEach(c=>{if(!DB[c.id])DB[c.id]={};Object.keys((e.data&&e.data[c.id])||{}).forEach(pid=>DB[c.id][pid]=clone(e.data[c.id][pid]));});
+    persistMeta();persist();
+  }
+  TRASH.splice(i,1);persistTrash();renderAll();toast('Restored');
+}
+function purgeTrash(tid){const i=TRASH.findIndex(t=>t.tid===tid);if(i<0)return;const e=TRASH[i];
+  confirmModal({title:'Delete permanently?',message:`“${esc(e.label||'this entry')}” will be permanently removed from the Dustbin. This cannot be undone.`,confirmLabel:'Delete forever',onConfirm:()=>{
+    const j=TRASH.findIndex(t=>t.tid===tid);if(j>=0)TRASH.splice(j,1);persistTrash();renderAll();toast('Permanently deleted',true);}});}
+function emptyTrash(){if(!TRASH.length)return;
+  confirmModal({title:'Empty the Dustbin?',message:`All ${TRASH.length} item(s) in the Dustbin will be permanently deleted. This cannot be undone.`,confirmLabel:'Empty dustbin',onConfirm:()=>{
+    TRASH=[];persistTrash();renderAll();toast('Dustbin emptied',true);}});}
+function openTrash(){state.view='trash';renderAll();}
+function closeTrash(){state.view='data';renderAll();}
+
+/* ===== STATE + STORAGE ===== */
+let DB={};
+const STORE_KEY='shoptrans_pricing_v2';
+function loadDB(){try{const r=localStorage.getItem(STORE_KEY);if(r){DB=JSON.parse(r);ensureDB();return;}}catch(e){}DB=seedDB();persist();}
+function persist(){try{localStorage.setItem(STORE_KEY,JSON.stringify(DB));}catch(e){}}
+let state={country:'VN',page:'ports',search:'',modeFilter:'ALL',pageSize:25,pageIndex:0,editMenu:false,view:'data',selected:new Set(),fxDate:null,sort:{col:null,dir:1}};
+function uid(){return 'r'+Math.random().toString(36).slice(2,9)}
+let _seq=0;function nowTs(){return Date.now()+(++_seq)/1e6;}
+function rec(o){return Object.assign({id:uid()},o)}
+const fee=rec,truck=rec,ocean=rec,lc=rec,flat=rec;
+
+
+function seedDB(){
+  const d={};COUNTRIES.forEach(c=>{d[c.id]={};Object.keys(PAGES).forEach(p=>d[c.id][p]=[]);});
+  d.VN.ports=[{id:uid(),code:'VNSGN',name:'Cat Lai',city:'Ho Chi Minh City'},{id:uid(),code:'VNHPH',name:'Hai Phong Port',city:'Hai Phong'},{id:uid(),code:'VNCMT',name:'Cai Mep — Thi Vai',city:'Ba Ria–Vung Tau'}];
+  d.VN.cfs=[{id:uid(),code:'VN-CFS-SNP',name:'Tan Cang CFS — Cat Lai',addr:'Nguyen Thi Dinh, HCMC',port:'VNSGN'},{id:uid(),code:'VN-CFS-HPH',name:'Green Logistics CFS',addr:'Dinh Vu, Hai Phong',port:'VNHPH'}];
+  d.VN.admin=[{id:uid(),prov:'Ho Chi Minh City',dist:'District 7',ward:'Tan Thuan Dong',zip:'72915'},{id:uid(),prov:'Ho Chi Minh City',dist:'Thu Duc City',ward:'Linh Trung',zip:'71308'},{id:uid(),prov:'Binh Duong',dist:'Di An',ward:'Tan Dong Hiep',zip:'75358'},{id:uid(),prov:'Hai Phong',dist:'Hai An',ward:'Dong Hai 2',zip:'04211'},{id:uid(),prov:'Dong Nai',dist:'Bien Hoa',ward:'Long Binh',zip:'76105'}];
+  d.VN.o_customs=[fee({scope:'VNSGN',mode:'FCL',r:{'20GP':35,'40GP':50,'40HC':50,'45HC':55},cur:'USD'}),fee({scope:'VNSGN',mode:'LCL',r:{val:25},unit:'set',cur:'USD'})];
+  d.VN.o_inspect=[fee({scope:'VNSGN',mode:'FCL',r:{'20GP':60,'40GP':90,'40HC':90,'45HC':95},cur:'USD',note:'Extra inspection costs: per actual invoice'})];
+  d.VN.o_truck=[truck({port:'VNSGN',zip:'75358',adm:'Tan Dong Hiep, Di An, Binh Duong',mode:'FCL',r:{'20GP':120,'40GP':165,'40HC':165,'45HC':190},cur:'USD'}),truck({port:'VN-CFS-SNP',zip:'76105',adm:'Long Binh, Bien Hoa, Dong Nai',mode:'LCL',r:{'1T':45,'2.5T':70,'5T':110,'8T':160,'10T':195,'15T':260,'18T':310},cur:'USD'})];
+  d.VN.o_demur=[fee({scope:'VNSGN',mode:'FCL',r:{'20GP':40,'40GP':55,'40HC':55,'45HC':60},cur:'USD'})];
+  d.VN.o_lift=[fee({scope:'VNSGN',mode:'FCL',r:{'20GP':28,'40GP':42,'40HC':42,'45HC':48},cur:'USD'})];
+  d.VN.o_infra=[fee({scope:'VNSGN',mode:'FCL',r:{'20GP':15,'40GP':30,'40HC':30,'45HC':35},cur:'USD'}),fee({scope:'VNSGN',mode:'LCL',r:{val:2.5},unit:'tons',cur:'USD'})];
+  d.VN.ocean=[ocean({pol:'VNSGN',pod:'USLAX',carrier:'ONE',mode:'FCL',r:{'20GP':2100,'40GP':2650,'40HC':2700,'45HC':2900},etd:'Mon/Thu',transit:'18',via:'Direct',ftO:'7',ftD:'14',cur:'USD'})];
+  d.VN.surcharge=[fee({feeType:'BAF',scope:'',mode:'FCL',r:{'20GP':120,'40GP':240,'40HC':240,'45HC':260},cur:'USD'})];
+  d.VN.lc_origin=[lc({feeType:'THC',mode:'FCL',r:{'20GP':125,'40GP':190,'40HC':190,'45HC':210},unit:'',cur:'USD'}),lc({feeType:'B/L',mode:'FLAT',r:{val:40},unit:'SET',cur:'USD'}),lc({feeType:'Telex',mode:'FLAT',r:{val:35},unit:'SET',cur:'USD'})];
+  d.VN.lc_dest=[lc({feeType:'D/O',mode:'FLAT',r:{val:45},unit:'SET',cur:'USD'})];
+  d.VN.d_handling=[flat({mode:'FLAT',r:{val:30},unit:'B/L',cur:'USD'})];
+  d.CN.ports=[{id:uid(),code:'CNSHA',name:'Shanghai Yangshan',city:'Shanghai'},{id:uid(),code:'CNNGB',name:'Ningbo-Zhoushan',city:'Ningbo'}];
+  d.CN.cfs=[{id:uid(),code:'CN-CFS-SHA',name:'Pudong Bonded CFS',addr:'Waigaoqiao, Shanghai',port:'CNSHA'}];
+  d.CN.admin=[{id:uid(),prov:'Shanghai',dist:'Pudong New Area',ward:'Waigaoqiao',zip:'200131'},{id:uid(),prov:'Zhejiang',dist:'Beilun',ward:'Xiaogang',zip:'315800'}];
+  d.CN.o_customs=[fee({scope:'CNSHA',mode:'FCL',r:{'20GP':40,'40GP':55,'40HC':55,'45HC':60},cur:'USD'})];
+  d.CN.ocean=[ocean({pol:'CNSHA',pod:'VNSGN',carrier:'COSCO',mode:'FCL',r:{'20GP':380,'40GP':560,'40HC':560,'45HC':620},etd:'Wed/Sat',transit:'5',via:'Direct',ftO:'5',ftD:'7',cur:'USD'})];
+  return d;
+}
+const cc=()=>COUNTRIES.find(c=>c.id===state.country);
+const masterPorts=()=>DB[state.country].ports;
+const masterCFS=()=>DB[state.country].cfs;
+const masterAdmin=()=>DB[state.country].admin;
+const rows=()=>DB[state.country][state.page];
+
+/* ===== country dropdown + sidebar ===== */
+function renderCountryDropdown(){
+  const c=cc();
+  document.getElementById('countryDD').innerHTML=`
+   <button class="cdd-btn" onclick="toggleCountryDD(event)"><img src="${flagURL(c.flag)}"><span>${c.name}</span>${I.chev}</button>
+   <div class="cdd-menu" id="cddMenu">${COUNTRIES.map(x=>`<button class="cdd-item ${x.id===state.country?'on':''}" onclick="setCountry('${x.id}')">
+      <img src="${flagURL(x.flag)}">${x.name}${x.id===state.country?I.check:''}</button>`).join('')}</div>`;
+}
+function toggleCountryDD(e){e&&e.stopPropagation();
+  document.getElementById('countryDD').classList.toggle('open');
+  document.getElementById('cddMenu').classList.toggle('show');}
+document.addEventListener('click',e=>{if(!e.target.closest('#countryDD')){
+  const dd=document.getElementById('countryDD');if(dd){dd.classList.remove('open');const m=document.getElementById('cddMenu');if(m)m.classList.remove('show');}}});
+function setCountry(id){state.country=id;state.search='';state.modeFilter='ALL';state.pageIndex=0;renderAll();toast(`Switched to <b>${cc().name}</b>`);}
+
+function renderSidebar(){
+  const ed=state.editMenu;const sb=document.getElementById('sidebar');
+  const top=`<div class="side-top">
+    <span class="side-top-label">Menu</span>
+    <div style="display:flex;gap:6px;align-items:center">
+      ${ed?`<button class="edit-toggle" onclick="resetMenu()" title="Reset to default">${I.db}</button>`:''}
+      <button class="edit-toggle ${ed?'on':''}" onclick="toggleEditMenu()" title="Add / edit / delete menu items">${I.edit}<span>${ed?'Done':'Edit'}</span></button>
+    </div>
+  </div>`;
+  const groups=NAV.map(g=>{
+    const open=ed||(PAGES[state.page]&&PAGES[state.page].group===g.id);
+    const items=g.items.map(it=>{
+      const acts=ed?`<span class="ni-actions">
+        <button class="ni-act" title="Rename / edit" onclick="event.stopPropagation();itemModal(null,'${it.id}')">${I.edit}</button>
+        <button class="ni-act del" title="Delete" onclick="event.stopPropagation();delItem('${it.id}')">${I.trash}</button></span>`:'';
+      return `<div class="nav-item-row"><button class="nav-item ${state.view==='data'&&it.id===state.page?'active':''}" onclick="setPage('${it.id}')">${esc(it.label)}</button>${acts}</div>`;}).join('');
+    const addItemBtn=ed?`<button class="nav-add" onclick="itemModal('${g.id}',null)">${I.plus} Add item</button>`:'';
+    const locked=groupLocked(g.id);
+    const gacts=!ed?'':(locked
+      ?`<span class="nh-lock" title="Core category — locked">${LOCK_SVG}</span>`
+      :`<span class="nh-actions">
+      <button class="nh-act" title="Rename category" onclick="event.stopPropagation();groupModal('${g.id}')">${I.edit}</button>
+      <button class="nh-act del" title="Delete category" onclick="event.stopPropagation();delGroup('${g.id}')">${I.trash}</button></span>`);
+    return `<div class="nav-group ${open?'open':''}"><div class="nav-head" ${ed?'':`onclick="toggleGroup('${g.id}')"`}><span class="ni">${I[g.icon]||I.tag}</span><span class="nh-label">${esc(g.label)}</span>${ed?gacts:I.chev}</div><div class="nav-items">${items}${addItemBtn}</div></div>`;
+  }).join('');
+  const addGroupBtn=ed?`<button class="nav-add-group" onclick="groupModal(null)">${I.plus} Add category</button>`:'';
+  const dust=`<button class="nav-dust ${state.view==='trash'?'active':''}" onclick="openTrash()">${I.trash}<span>Dustbin</span>${TRASH.length?`<span class="dust-badge">${TRASH.length}</span>`:''}</button>`;
+  sb.classList.toggle('edit',ed);
+  sb.innerHTML=top+groups+addGroupBtn+dust;
+}
+function toggleEditMenu(){state.editMenu=!state.editMenu;renderSidebar();}
+function toggleGroup(gid){const g=NAV.find(x=>x.id===gid);if(!g)return;const cur=PAGES[state.page];if(state.view!=='data'||!cur||cur.group!==gid){if(g.items.length)setPage(g.items[0].id);else renderAll();return;}renderAll();}
+function setPage(p){state.page=p;state.search='';state.modeFilter='ALL';state.pageIndex=0;state.view='data';renderAll();}
+function groupLabel(g){const x=NAV.find(n=>n.id===g);return x?x.label:'—'}
+
+/* ===== main ===== */
+function renderMain(){
+  state.selected.clear();state.sort={col:null,dir:1};
+  if(state.view==='trash'){renderTrash();return;}
+  const def=PAGES[state.page];const c=cc();
+  if(def&&def.kind==='master-fx'){renderFxPage(def);return;}
+  if(!def){document.getElementById('main').innerHTML=`<div class="page-head"><div><div class="page-title">No items</div><div class="page-desc">The menu is empty. Turn on <b>Edit</b> in the sidebar and add a category or item to start.</div></div></div><div class="card"><div class="empty">${I.empty}<p>Nothing to show</p><span>Use the sidebar “Edit” button to create your first item.</span></div></div>`;return;}
+  const inspectCallout=def.inspect?`<div class="callout">${I.info}<div><b>Inspection note:</b> Additional costs arising from inspection are billed <b>per actual invoice</b>, not fixed in this rate table.</div></div>`:'';
+  const truckNote=def.kind==='trucking'?`<div class="callout green">${I.info}<div>Select the origin <b>port / CFS</b>, then type a <b>postal code</b> — suggestions show the administrative unit name for precise selection. Enter FCL per container, LCL per truck type (tonnage).</div></div>`:'';
+  document.getElementById('main').innerHTML=`
+    <div class="crumb">${groupLabel(def.group)} <b>›</b> ${def.title.split('—')[0].trim()}</div>
+    <div class="page-head">
+      <div><div class="page-title">${def.title}</div><div class="page-desc">${def.desc}</div></div>
+      <div class="spacer"></div>
+      <div class="scope-pill"><img src="${flagURL(c.flag)}"> ${c.name} <small>· ${c.cur}</small></div>
+    </div>
+    ${inspectCallout}${truckNote}
+    <div class="toolbar">
+      <div class="search">${I.search}<input id="searchBox" placeholder="Search…" value="${esc(state.search)}" oninput="onSearch(this.value)"></div>
+      ${modeFilterHTML(def)}
+      <div style="flex:1"></div>
+      <span id="bulkTools" class="bulk-tools"></span>
+      <button class="btn btn-ghost" onclick="downloadTemplate()">${I.download} Template</button>
+      <button class="btn btn-ghost" onclick="triggerImport()">${I.upload} Import Excel</button>
+      <button class="btn btn-primary" onclick="openForm()">${I.plus} Add new</button>
+    </div>
+    <div class="card">${renderTable(def)}</div>`;
+  renderBulkTools();
+}
+function trashTypeTag(t){const m={record:['Record','tag-fcl'],item:['Item','tag-type'],group:['Category','tag-lcl']};const[l,cl]=m[t]||['—','tag-flat'];return `<span class="tag ${cl}">${l}</span>`;}
+function trashContext(e){
+  if(e.type==='record'){const cn=(COUNTRIES.find(c=>c.id===e.country)||{}).name||e.country;return `${esc(e.pageTitle||e.page)} · ${esc(cn)}`;}
+  if(e.type==='item'){const g=NAV.find(x=>x.id===e.group);return `Item${g?' in '+esc(g.label):''} · all countries`;}
+  if(e.type==='group'){const n=e.group&&e.group.items?e.group.items.length:0;return `Category · ${n} item(s) · all countries`;}
+  return '';
+}
+function renderTrash(){
+  const rowsHtml=TRASH.map(e=>`<tr>
+      <td>${trashTypeTag(e.type)}</td>
+      <td><b>${esc(e.label||'—')}</b></td>
+      <td class="note-text" style="max-width:280px">${trashContext(e)}</td>
+      <td class="valid">${fmtWhen(e.deletedAt)}</td>
+      <td><div class="row-actions">
+        <button class="btn btn-ghost btn-sm" onclick="restoreTrash('${e.tid}')">${I.upload} Restore</button>
+        <button class="icon-btn del" title="Delete permanently" onclick="purgeTrash('${e.tid}')">${I.trash}</button>
+      </div></td>
+    </tr>`).join('');
+  const table=TRASH.length
+    ? `<div class="tbl-wrap"><table><thead><tr><th>Type</th><th>Name</th><th>Origin</th><th>Deleted</th><th></th></tr></thead><tbody>${rowsHtml}</tbody></table></div>
+       <div class="tbl-foot"><span>${TRASH.length} item(s) in Dustbin</span><span>Restored items return to their original place</span></div>`
+    : `<div class="empty">${I.trash}<p>Dustbin is empty</p><span>Deleted records, items and categories are kept here so you can restore them.</span></div>`;
+  document.getElementById('main').innerHTML=`
+    <div class="crumb">Menu <b>›</b> Dustbin</div>
+    <div class="page-head">
+      <div><div class="page-title">Dustbin</div><div class="page-desc">Anything you delete — a single rate, a whole fee item, or a category — is kept here and can be restored or removed permanently.</div></div>
+      <div class="spacer"></div>
+      <button class="btn btn-ghost" onclick="closeTrash()">${I.chev} Back to data</button>
+    </div>
+    <div class="toolbar">
+      <div style="flex:1"></div>
+      <button class="btn ${TRASH.length?'btn-ghost':''}" ${TRASH.length?'':'disabled style="opacity:.4;cursor:not-allowed"'} onclick="emptyTrash()">${I.trash} Empty dustbin</button>
+    </div>
+    <div class="card">${table}</div>`;
+}
+function modeFilterHTML(def){
+  if(!['fee','trucking','ocean'].includes(def.kind))return'';
+  if(def.kind==='fee'&&def.lclUnit===null)return'';
+  const mk=(v,l)=>`<button class="${state.modeFilter===v?'on':''}" onclick="setMode('${v}')">${l}</button>`;
+  return `<div class="seg">${mk('ALL','All')}${mk('FCL','FCL')}${mk('LCL','LCL')}</div>`;
+}
+function setMode(m){state.modeFilter=m;state.pageIndex=0;renderMain();}
+function onSearch(v){state.search=v;state.pageIndex=0;renderTableOnly();}
+function setPageSize(v){state.pageSize=v==='all'?'all':Number(v);state.pageIndex=0;renderTableOnly();}
+function gotoPage(i){state.pageIndex=i;renderTableOnly();const w=document.querySelector('.tbl-wrap');if(w)w.scrollIntoView({block:'nearest'});}
+function renderTableOnly(){document.querySelector('.card').innerHTML=renderTable(PAGES[state.page]);}
+
+/* ===== multi-select + bulk actions ===== */
+const SELECTABLE=['fee','trucking','ocean','localcharge','flat','master-ports','master-cfs','master-admin'];
+function isSelectable(){const d=PAGES[state.page];return d&&SELECTABLE.includes(d.kind);}
+function selCell(id){const on=state.selected.has(id);return `<td class="sel-col"><input type="checkbox" class="rsel" ${on?'checked':''} onclick="toggleSel('${id}')"></td>`;}
+function selAllInner(){const ids=filtered().map(x=>x.id);const on=ids.length&&ids.every(i=>state.selected.has(i));return `<span class="sel-all"><input type="checkbox" ${on?'checked':''} onclick="toggleSelAll()"></span>`;}
+function toggleSel(id){if(state.selected.has(id))state.selected.delete(id);else state.selected.add(id);renderTableOnly();renderBulkTools();}
+function toggleSelAll(){const ids=filtered().map(x=>x.id);const allOn=ids.length&&ids.every(i=>state.selected.has(i));if(allOn)ids.forEach(i=>state.selected.delete(i));else ids.forEach(i=>state.selected.add(i));renderTableOnly();renderBulkTools();}
+function clearSel(){state.selected.clear();renderTableOnly();renderBulkTools();}
+function bulkToolsHTML(){if(!isSelectable())return'';const n=state.selected.size;const dis=n?'':'disabled';
+  return `${n?`<span class="bb-count">${n} selected</span>`:''}
+    <button class="btn btn-ghost" ${dis} onclick="bulkCopy()">${I.copy} Copy</button>
+    <button class="btn bb-del" ${dis} onclick="bulkDelete()">${I.trash} Delete</button>
+    <button class="btn btn-ghost" ${dis} onclick="clearSel()">${I.x} Clear</button>`;}
+function renderBulkTools(){const el=document.getElementById('bulkTools');if(el)el.innerHTML=bulkToolsHTML();}
+function selectedRows(){const set=state.selected;return rows().filter(r=>set.has(r.id));}
+function bulkCopy(){const sel=selectedRows();if(!sel.length)return;const list=rows();
+  const copies=sel.map(r=>{const c=clone(r);c.id=uid();c.ts=nowTs();return c;});
+  list.unshift(...copies);
+  persist();state.selected.clear();state.pageIndex=0;renderAll();toast(`${sel.length} record(s) copied to top`);}
+function bulkDelete(){const sel=selectedRows();if(!sel.length)return;const def=PAGES[state.page];
+  confirmModal({title:`Move ${sel.length} record(s) to Dustbin?`,message:`The selected ${sel.length} record(s) will be moved to the Dustbin. You can restore them later.`,confirmLabel:'Move to Dustbin',onConfirm:()=>{
+    const ids=new Set(state.selected);
+    rows().filter(r=>ids.has(r.id)).forEach(r=>pushTrash({type:'record',country:state.country,page:state.page,pageTitle:def?def.title:state.page,label:recLabel(r),payload:clone(r)}));
+    DB[state.country][state.page]=rows().filter(r=>!ids.has(r.id));
+    state.selected.clear();persist();renderAll();toast(`${ids.size} record(s) moved to Dustbin`);}});}
+
+/* ===== Exchange Rates page ===== */
+function fxToday(){return new Date().toISOString().slice(0,10);}
+function fxDatesList(){const h=META.fxHistory||{};const s=new Set(Object.keys(h));s.add(fxToday());return [...s].sort().reverse();}
+function snapshotFx(){const snap={};(META.currencies||[]).forEach(c=>snap[c.code]=c.base?1:c.rate);META.fxHistory=META.fxHistory||{};META.fxHistory[fxToday()]=snap;}
+function setFxDate(d){state.fxDate=d;renderFxPage(PAGES.fx);}
+function copyFxSource(){const v=(document.getElementById('fxSrc')||{}).value||META.fxSource||'';
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(v).then(()=>toast('Source link copied')).catch(()=>toast('Copy failed — select & copy manually',true));}
+  else{const i=document.getElementById('fxSrc');if(i){i.removeAttribute('readonly');i.select();try{document.execCommand('copy');toast('Source link copied');}catch(e){toast('Copy failed',true);}i.setAttribute('readonly','');}}}
+function saveFxSource(v){META.fxSource=(v||'').trim();persistMeta();}
+function renderFxPage(def){
+  const list=META.currencies||[];
+  const today=fxToday();
+  const dates=fxDatesList();
+  if(!state.fxDate||(state.fxDate!==today&&!(META.fxHistory||{})[state.fxDate]))state.fxDate=today;
+  const live=state.fxDate===today;
+  const snap=live?null:(META.fxHistory||{})[state.fxDate]||{};
+  const rateOf=c=>c.base?1:(live?c.rate:(snap[c.code]!=null?snap[c.code]:null));
+  const dateOpts=dates.map(d=>`<option value="${d}" ${d===state.fxDate?'selected':''}>${d}${d===today?' · today (live)':''}</option>`).join('');
+  const body=list.map(c=>{const rt=rateOf(c);const has=rt!=null;return `<tr>
+      <td class="code-cell">${esc(c.code)}</td>
+      <td>${esc(c.name||'')}</td>
+      <td class="fx-sym">${esc(c.sym||'')}</td>
+      <td class="fx-rate">${c.base?'1.000000':(has?fmt6(rt):'<span style="color:var(--g300)">—</span>')}</td>
+      <td>${c.base?'<span class="fx-base">BASE</span>':(has?'<span class="note-text">1 USD = '+fmt6(rt)+' '+esc(c.code)+'</span>':'<span class="note-text" style="color:var(--g300)">no rate on this date</span>')}</td>
+      ${live?`<td><div class="row-actions"><button class="icon-btn" title="Edit" onclick="openFxForm('${esc(c.code)}')">${I.edit}</button>${c.base?'':`<button class="icon-btn del" title="Delete" onclick="delFx('${esc(c.code)}')">${I.trash}</button>`}</div></td>`:'<td><span class="note-text" style="color:var(--g300)">read-only</span></td>'}
+    </tr>`;}).join('');
+  const table=list.length?`<div class="tbl-wrap"><table><thead><tr><th>Code</th><th>Currency</th><th>Symbol</th><th>Rate (1 USD =)</th><th>Note</th><th></th></tr></thead><tbody>${body}</tbody></table></div>
+     <div class="tbl-foot"><span>${list.length} currency(ies) · base USD</span><span class="fx-meta">${live?(META.fxUpdated?'<span class="fx-dot"></span>Last fetch '+fmtWhen(META.fxUpdated):'Live / manual rates'):'Historical snapshot · '+state.fxDate}</span></div>`
+    :`<div class="empty">${I.coin}<p>No currencies</p><span>Add a currency to start.</span></div>`;
+  const histNote=live?'':`<div class="callout">${I.info}<div>Viewing the saved snapshot for <b>${state.fxDate}</b>. Switch back to <b>today</b> to edit, add or delete currencies.</div></div>`;
+  document.getElementById('main').innerHTML=`
+    <div class="crumb">${groupLabel(def.group)} <b>›</b> ${def.title}</div>
+    <div class="page-head">
+      <div><div class="page-title">${def.title}</div></div>
+      <div class="spacer"></div>
+      <div class="fx-datepick">${I.cal}<span>Rates as of</span><select class="fx-date" onchange="setFxDate(this.value)">${dateOpts}</select></div>
+    </div>
+    <div class="fx-bar">
+      <span class="fx-bar-label">${I.refresh} Source</span>
+      <input id="fxSrc" type="text" value="${esc(META.fxSource||'')}" placeholder="https://… (JSON with a “rates” object, base USD)" spellcheck="false" onchange="saveFxSource(this.value)">
+      <button class="btn btn-ghost" onclick="copyFxSource()">${I.copy} Copy link</button>
+    </div>
+    ${histNote}
+    <div class="toolbar">
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost" id="fxFetchBtn" ${live?'':'disabled'} onclick="fetchRates()">${I.refresh} Fetch &amp; save today</button>
+      <button class="btn btn-primary" ${live?'':'disabled'} onclick="openFxForm()">${I.plus} Add currency</button>
+    </div>
+    <div class="card">${table}</div>`;
+}
+function fmt6(v){const n=Number(v);if(!isFinite(n))return'—';return n>=100?n.toLocaleString('en-US',{maximumFractionDigits:2}):n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:6});}
+function openFxForm(code){
+  const c=code?(META.currencies.find(x=>x.code===code)||null):null;editFxCode=code||null;
+  const base=c&&c.base;
+  const b=`<div class="fgrid">
+      <div class="field"><label>Currency code<span class="req">*</span></label><input id="x_code" value="${c?esc(c.code):''}" placeholder="EUR / CNY / JPY…" maxlength="6" ${base?'disabled style="background:var(--g50)"':''}></div>
+      <div class="field"><label>Symbol<span class="req">*</span></label><input id="x_sym" value="${c?esc(c.sym):''}" placeholder="€ / ¥ / ₫" maxlength="4"></div>
+    </div>
+    <div class="fgrid">
+      <div class="field"><label>Currency name</label><input id="x_name" value="${c?esc(c.name||''):''}" placeholder="Euro / Chinese Yuan…"></div>
+      <div class="field"><label>Rate — 1 USD =${base?' (base)':''}<span class="req">*</span></label><input id="x_rate" type="number" step="0.000001" min="0" inputmode="decimal" data-num="money" value="${c?c.rate:''}" placeholder="0.00" ${base?'disabled style="background:var(--g50)"':''}></div>
+    </div>
+    ${base?'<div class="callout green" style="margin-top:6px">'+I.info+'<div>USD is the base currency. Its code and rate are fixed at 1.</div></div>':''}`;
+  document.getElementById('modalHost').innerHTML=modalShell((c?'Edit':'Add')+' currency','Exchange rates · base USD',b,true,'saveFx()');
+  document.getElementById('overlay').classList.add('show');
+  setTimeout(()=>{const f=document.querySelector('.modal input:not([disabled])');if(f)f.focus();},50);
+}
+let editFxCode=null;
+function saveFx(){
+  const list=META.currencies;const editing=editFxCode?list.find(x=>x.code===editFxCode):null;
+  if(editing&&editing.base){const sym=gv('x_sym');if(sym)editing.sym=sym;editing.name=gv('x_name')||editing.name;snapshotFx();persistMeta();closeForm();renderAll();toast('Base currency updated');return;}
+  const code=gv('x_code').toUpperCase();const sym=gv('x_sym');const rate=gnum('x_rate');
+  if(!code){toast('Enter a currency code',true);return;}
+  if(!sym){toast('Enter a symbol',true);return;}
+  if(rate==null||!(rate>0)){toast('Enter a rate greater than 0',true);return;}
+  const dup=list.find(x=>x.code===code&&x.code!==editFxCode);
+  if(dup){toast('That currency code already exists',true);return;}
+  if(editing){editing.code=code;editing.sym=sym;editing.name=gv('x_name');editing.rate=rate;toast('Currency updated');}
+  else{list.push({code,sym,name:gv('x_name'),rate});toast('Currency added');}
+  snapshotFx();persistMeta();closeForm();renderAll();
+}
+function delFx(code){const c=META.currencies.find(x=>x.code===code);if(!c||c.base)return;
+  const used=fxUsageCount(code);
+  confirmModal({title:'Delete currency?',message:`“${esc(code)}” will be removed from the currency list.${used?` It is currently used by <b>${used}</b> rate record(s); those keep their stored code but it will no longer appear as an option.`:''}`,confirmLabel:'Delete currency',onConfirm:()=>{
+    META.currencies=META.currencies.filter(x=>x.code!==code);persistMeta();renderAll();toast('Currency deleted',true);}});}
+function fxUsageCount(code){let n=0;Object.keys(DB).forEach(cn=>Object.keys(DB[cn]||{}).forEach(p=>{(DB[cn][p]||[]).forEach(r=>{if(r&&r.cur===code)n++;});}));return n;}
+function parseFxJson(d){
+  if(!d||typeof d!=='object')return null;
+  let rates=d.rates||d.conversion_rates||d.data||d.quotes||null;
+  if(!rates||typeof rates!=='object')return null;
+  const out={};Object.keys(rates).forEach(k=>{const code=k.length===6&&k.slice(0,3)==='USD'?k.slice(3):k;const v=Number(rates[k]);if(isFinite(v))out[code]=v;});
+  if(out.USD&&out.USD!==1){const u=out.USD;Object.keys(out).forEach(k=>out[k]=out[k]/u);}
+  return out;
+}
+function fetchRates(){
+  const url=(META.fxSource||'').trim();
+  if(!url){toast('Enter a source link first',true);return;}
+  if(!/^https?:\/\//i.test(url)){toast('Source must be a valid http(s) link',true);return;}
+  const btn=document.getElementById('fxFetchBtn');if(btn){btn.disabled=true;btn.style.opacity='.6';btn.innerHTML=I.refresh+' Fetching…';}
+  fetch(url).then(r=>r.json()).then(d=>{
+    const rates=parseFxJson(d);if(!rates||!Object.keys(rates).length)throw new Error('bad');
+    let upd=0,miss=[];META.currencies.forEach(c=>{if(c.base){c.rate=1;return;}const v=rates[c.code];if(v!=null&&isFinite(v)){c.rate=v;upd++;}else miss.push(c.code);});
+    META.fxUpdated=new Date().toISOString();state.fxDate=fxToday();snapshotFx();persistMeta();renderAll();
+    toast(`Rates saved for ${fxToday()} · ${upd} updated${miss.length?' · no data for '+miss.join(', '):''}`);
+  }).catch(()=>{
+    if(btn){btn.disabled=false;btn.style.opacity='';btn.innerHTML=I.refresh+' Fetch &amp; save today';}
+    toast('Could not fetch from that source — check the link/connection, or edit rates manually',true);
+  });
+}
+function filtered(){let r=rows().slice();const q=state.search.trim().toLowerCase();
+  if(q)r=r.filter(x=>JSON.stringify(x).toLowerCase().includes(q));
+  if(state.modeFilter!=='ALL'&&PAGES[state.page].kind!=='localcharge'&&PAGES[state.page].kind!=='flat')r=r.filter(x=>x.mode===state.modeFilter);
+  return r;}
+
+/* ===== table ===== */
+const curSym=c=>{const m=(META.currencies||[]).find(x=>x.code===c);return m?m.sym:(c?c+' ':'')};
+function fmt(v){return Number(v).toLocaleString('en-US',{maximumFractionDigits:2})}
+function ratesChips(r){
+  if(r.mode==='FLAT'||!r.mode)return `<div class="rates"><span class="rate-chip">${curSym(r.cur)}<b>${fmt(r.r.val)}</b> /${r.unit}</span></div>`;
+  if(r.mode==='FCL')return `<div class="rates">${CONTAINERS.map(k=>r.r[k]!=null?`<span class="rate-chip">${k} <b>${curSym(r.cur)}${fmt(r.r[k])}</b></span>`:'').join('')}</div>`;
+  if(r.r&&r.r.val!=null)return `<div class="rates"><span class="rate-chip">${curSym(r.cur)}<b>${fmt(r.r.val)}</b> /${r.unit}</span></div>`;
+  return `<div class="rates">${TRUCKS.map(([k])=>r.r[k]!=null?`<span class="rate-chip">${k} <b>${curSym(r.cur)}${fmt(r.r[k])}</b></span>`:'').join('')}</div>`;
+}
+function modeTag(m){if(m==='FLAT'||!m)return`<span class="tag tag-flat">FLAT</span>`;return `<span class="tag tag-${m.toLowerCase()}">${m}</span>`}
+function validCell(r){if(!r.from&&!r.to)return'<span class="valid">—</span>';return `<span class="valid"><b>${r.from||'…'}</b> → <b>${r.to||'…'}</b></span>`}
+function scopeName(code){const p=masterPorts().find(x=>x.code===code);if(p)return p.name+` <small style="color:var(--g300)">(${code})</small>`;
+  const f=masterCFS().find(x=>x.code===code);if(f)return f.name+` <small style="color:var(--g300)">(CFS)</small>`;
+  return code||'<span style="color:var(--green-dd);font-weight:600">All ports</span>';}
+function actions(id){return `<div class="row-actions"><button class="icon-btn" title="Edit" onclick="openForm('${id}')">${I.edit}</button><button class="icon-btn del" title="Delete" onclick="delRow('${id}')">${I.trash}</button></div>`}
+function emptyState(){return `<div class="empty">${I.empty}<p>No data yet</p><span>Click “Add new” or “Import Excel” to start entering data for ${cc().name}.</span></div>`}
+
+/* ===== sorting ===== */
+const _txt=get=>({num:false,get});
+const _num=get=>({num:true,get});
+function _numv(x){const v=parseFloat(x);return isFinite(v)?v:null;}
+function scopeSortKey(code){if(!code)return '';const p=masterPorts().find(x=>x.code===code);if(p)return p.name;const f=masterCFS().find(x=>x.code===code);if(f)return f.name;return code;}
+function rateSortVal(r){if(!r||!r.r)return null;if(r.r.val!=null)return Number(r.r.val);const vs=Object.values(r.r).map(Number).filter(isFinite);return vs.length?Math.min(...vs):null;}
+function sortDefs(def){switch(def.kind){
+  case 'master-ports':return [_txt(r=>r.code),_txt(r=>r.name),_txt(r=>r.city)];
+  case 'master-cfs':return [_txt(r=>r.code),_txt(r=>r.name),_txt(r=>r.addr),_txt(r=>r.port)];
+  case 'master-admin':return [_txt(r=>r.zip),_txt(r=>r.prov),_txt(r=>r.dist),_txt(r=>r.ward)];
+  case 'fee':{const a=[];if(def.feeTypes)a.push(_txt(r=>r.feeType));if(def.scope)a.push(_txt(r=>scopeSortKey(r.scope)));a.push(_txt(r=>r.mode));a.push(_num(r=>rateSortVal(r)));a.push(_txt(r=>r.from||''));if(def.inspect)a.push(_txt(r=>r.note));return a;}
+  case 'trucking':return [_txt(r=>scopeSortKey(r.port)),_txt(r=>r.zip),_txt(r=>r.mode),_num(r=>rateSortVal(r)),_txt(r=>r.from||'')];
+  case 'ocean':return [_txt(r=>(r.pol||'')+'→'+(r.pod||'')),_txt(r=>r.carrier),_txt(r=>r.mode),_num(r=>rateSortVal(r)),_num(r=>_numv(r.transit)),_num(r=>_numv(r.ftO)),_txt(r=>r.from||'')];
+  case 'localcharge':return [_txt(r=>r.feeType),_txt(r=>r.mode),_num(r=>rateSortVal(r)),_txt(r=>r.from||'')];
+  case 'flat':return [_txt(r=>r.unit),_num(r=>rateSortVal(r)),_txt(r=>r.from||'')];
+}return [];}
+function sortRows(arr,def){const s=state.sort;if(!s||s.col==null)return arr;
+  const order=new Map(rows().map((r,i)=>[r.id,i]));let getter,num;
+  if(s.col==='ts'){getter=r=>(r.ts!=null?r.ts:order.get(r.id));num=true;}
+  else{const d=sortDefs(def)[s.col];if(!d)return arr;getter=d.get;num=d.num;}
+  const dir=s.dir;return arr.slice().sort((x,y)=>{
+    let vx=getter(x),vy=getter(y);const ex=(vx==null||vx===''),ey=(vy==null||vy==='');
+    if(ex&&ey)return order.get(x.id)-order.get(y.id);
+    if(ex)return 1;if(ey)return -1;
+    let c=num?(Number(vx)-Number(vy)):String(vx).localeCompare(String(vy),undefined,{numeric:true,sensitivity:'base'});
+    if(c===0)return order.get(x.id)-order.get(y.id);
+    return dir*c;});}
+function sortArrow(col){const s=state.sort;const on=s&&s.col===col;
+  if(!on)return '<span class="th-ar th-idle">⇅</span>';
+  return s.dir>0?'<span class="th-ar">▲</span>':'<span class="th-ar">▼</span>';}
+function thSort(label,col,num){const on=state.sort&&state.sort.col===col;
+  return `<button type="button" class="th-sort${on?' on':''}" title="Sort ${num?'numerically':'A–Z'} (ascending / descending)" onclick="sortBy(${col})">${label}${sortArrow(col)}</button>`;}
+function clockTh(){const on=state.sort&&state.sort.col==='ts';
+  return `<button type="button" class="th-sort th-clock${on?' on':''}" title="Sort by entry time (newest / oldest)" onclick="sortBy('ts')">${I.cal}${sortArrow('ts')}</button>`;}
+function sortBy(col){const s=state.sort;
+  if(s.col===col){if(s.dir===1)s.dir=-1;else{s.col=null;s.dir=1;}}
+  else{s.col=col;s.dir=1;}
+  state.pageIndex=0;renderTableOnly();}
+function clearSort(){state.sort={col:null,dir:1};renderTableOnly();}
+function fmtTs(ts){const d=new Date(ts);if(isNaN(d))return '—';
+  const date=d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const tm=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  return `<span class="ts-date">${date}</span><span class="ts-time">${tm}</span>`;}
+function enteredCell(r){return `<td class="entered-cell">${r&&r.ts?fmtTs(r.ts):'<span class="ts-na">—</span>'}</td>`;}
+
+function renderTable(def){
+  const all=sortRows(filtered(),def);const total=all.length;
+  const ps=state.pageSize;
+  const pageCount=ps==='all'?1:Math.max(1,Math.ceil(total/ps));
+  if(state.pageIndex>=pageCount)state.pageIndex=pageCount-1;
+  if(state.pageIndex<0)state.pageIndex=0;
+  const start=ps==='all'?0:state.pageIndex*ps;
+  const end=ps==='all'?total:Math.min(start+ps,total);
+  const view=all.slice(start,end);
+  let head,body;
+  switch(def.kind){
+    case 'master-ports':head=['UN/LOCODE','Port Name','City',''];
+      body=view.map(r=>`<tr><td class="code-cell">${esc(r.code)}</td><td>${esc(r.name)}</td><td>${esc(r.city)}</td><td>${actions(r.id)}</td></tr>`);break;
+    case 'master-cfs':head=['CFS Code','Warehouse Name','Address','Linked Port',''];
+      body=view.map(r=>`<tr><td class="code-cell">${esc(r.code)}</td><td>${esc(r.name)}</td><td class="note-text">${esc(r.addr)}</td><td class="mono" style="font-size:12px">${esc(r.port||'—')}</td><td>${actions(r.id)}</td></tr>`);break;
+    case 'master-admin':head=['Postal Code','Province','District','Ward',''];
+      body=view.map(r=>`<tr><td class="code-cell">${esc(r.zip)}</td><td>${esc(r.prov)}</td><td>${esc(r.dist)}</td><td>${esc(r.ward)}</td><td>${actions(r.id)}</td></tr>`);break;
+    case 'fee':head=[def.feeTypes?'Fee Type':null,def.scope?'Port / Scope':null,'Mode','Rate Table','Validity',def.inspect?'Notes':null,''].filter(x=>x!==null);
+      body=view.map(r=>`<tr>${def.feeTypes?`<td><span class="tag tag-type">${esc(r.feeType||'—')}</span></td>`:''}${def.scope?`<td>${scopeName(r.scope)}</td>`:''}<td>${modeTag(r.mode)}</td><td>${ratesChips(r)}</td><td>${validCell(r)}</td>${def.inspect?`<td class="note-text">${esc(r.note||'')}</td>`:''}<td>${actions(r.id)}</td></tr>`);break;
+    case 'trucking':head=['Port / CFS','Postal Code','Mode','Rate Table','Validity',''];
+      body=view.map(r=>`<tr><td>${scopeName(r.port)}</td><td><span class="code-cell">${esc(r.zip||'—')}</span><div class="note-text">${esc(r.adm||'')}</div></td><td>${modeTag(r.mode)}</td><td>${ratesChips(r)}</td><td>${validCell(r)}</td><td>${actions(r.id)}</td></tr>`);break;
+    case 'ocean':head=['POL → POD','Carrier','Mode','Freight','Schedule / Transit','Freetime O/D','Validity',''];
+      body=view.map(r=>`<tr><td><span class="code-cell">${esc(r.pol)}</span> → <span class="code-cell">${esc(r.pod)}</span></td><td>${esc(r.carrier||'—')}</td><td>${modeTag(r.mode)}</td><td>${ratesChips(r)}</td><td><span class="valid">ETD <b>${esc(r.etd||'—')}</b> · ${esc(r.transit||'?')}d · via ${esc(r.via||'Direct')}</span></td><td><span class="valid"><b>${esc(r.ftO||'-')}</b> / <b>${esc(r.ftD||'-')}</b> days</span></td><td>${validCell(r)}</td><td>${actions(r.id)}</td></tr>`);break;
+    case 'localcharge':head=['Fee Type','Mode','Rate Table','Validity',''];
+      body=view.map(r=>`<tr><td><span class="tag tag-type">${esc(r.feeType)}</span></td><td>${modeTag(r.mode)}</td><td>${ratesChips(r)}</td><td>${validCell(r)}</td><td>${actions(r.id)}</td></tr>`);break;
+    case 'flat':head=['Unit','Rate Table','Validity',''];
+      body=view.map(r=>`<tr><td><span class="tag tag-flat">/ ${esc(r.unit)}</span></td><td>${ratesChips(r)}</td><td>${validCell(r)}</td><td>${actions(r.id)}</td></tr>`);break;
+  }
+  let sortStatus='';
+  if(isSelectable()){
+    const defs=sortDefs(def);const nc=head.length-1;const labels=head.slice(0,nc);
+    const cols=[];for(let i=0;i<nc;i++)cols.push(thSort(head[i],i,defs[i]&&defs[i].num));
+    const enteredTh=`<button type="button" class="th-sort${state.sort.col==='ts'?' on':''}" title="Sort by entry time (newest / oldest)" onclick="sortBy('ts')">Entered${sortArrow('ts')}</button>`;
+    head=[selAllInner(),...cols,enteredTh,''];
+    body=body.map((tr,i)=>{const r=view[i];
+      const t2=tr.replace('<td>'+actions(r.id)+'</td>',enteredCell(r)+'<td>'+actions(r.id)+'</td>');
+      return t2.replace('<tr>',`<tr class="${state.selected.has(r.id)?'row-sel':''}">`+selCell(r.id));});
+    const s=state.sort;
+    if(s.col!=null){const lbl=s.col==='ts'?'Entered (entry time)':(labels[s.col]||'');
+      sortStatus=`<span class="sort-status">Sorted by <b>${esc(lbl)}</b> · ${s.dir>0?'ascending ▲':'descending ▼'}<button class="sort-clear" onclick="clearSort()">${I.x}clear</button></span>`;}
+    else sortStatus=`<span class="sort-hint">⇅ Click a column header to sort</span>`;
+  }
+  if(!total)return emptyState();
+  const ps2=state.pageSize;
+  const sizeOpts=[10,25,50,100].map(n=>`<option value="${n}" ${ps2===n?'selected':''}>${n}</option>`).join('')+`<option value="all" ${ps2==='all'?'selected':''}>All</option>`;
+  const showFrom=ps2==='all'?1:start+1, showTo=ps2==='all'?total:end;
+  const chevL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+  const chevR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+  const nav=ps2==='all'?'':`<div class="pg-nav">
+      <button class="pg-btn" ${state.pageIndex<=0?'disabled':''} onclick="gotoPage(${state.pageIndex-1})" title="Previous">${chevL}</button>
+      <button class="pg-btn" ${state.pageIndex>=pageCount-1?'disabled':''} onclick="gotoPage(${state.pageIndex+1})" title="Next">${chevR}</button>
+    </div>`;
+  return `<div class="tbl-wrap"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${body.join('')}</tbody></table></div>
+    <div class="tbl-foot">
+      <div class="psel">Rows per page
+        <select onchange="setPageSize(this.value)">${sizeOpts}</select>
+        <span>${total} record(s)${state.search?` · filtered from ${rows().length}`:''}</span>
+      </div>
+      ${sortStatus}
+      <div class="pager">
+        <span class="pg-info">${showFrom}–${showTo} of ${total}${ps2==='all'?'':` · page ${state.pageIndex+1}/${pageCount}`}</span>
+        ${nav}
+      </div>
+    </div>`;
+}
+
+/* ===== form helpers ===== */
+let editId=null;
+function recById(id){return rows().find(r=>r.id===id)}
+function fldDate(label,id,val){return `<div class="field"><label>${label}</label>
+  <div class="dp">
+    <input id="${id}" class="dp-input" type="text" readonly value="${val?esc(val):''}" placeholder="yyyy-mm-dd" title="Click to open calendar · double-click to type" onclick="if(this.readOnly)dpOpen('${id}')" ondblclick="dpEdit('${id}')" onblur="dpCommit('${id}')" onkeydown="dpKey(event,'${id}')">
+    <span class="dp-ico" onclick="dpOpen('${id}')">${I.cal}</span>
+    <div class="dp-pop" id="${id}_pop"></div>
+  </div></div>`;}
+/* ===== Custom date picker — always English month/weekday names + Gregorian, value stored as ISO yyyy-mm-dd (locale-independent) ===== */
+const DP={
+  MON:['January','February','March','April','May','June','July','August','September','October','November','December'],
+  DOW:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],   /* ISO week start = Monday */
+  CHEVL:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+  CHEVR:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
+  id:null,y:0,m:0,view:'days',decadeStart:0
+};
+function dpPad(n){return n<10?'0'+n:''+n}
+function dpClose(){document.querySelectorAll('.dp-pop.show').forEach(p=>{p.classList.remove('show');p.style.left='';p.style.right=''});DP.id=null}
+function dpOpen(id){
+  const _inp=document.getElementById(id);if(_inp&&!_inp.readOnly)dpCommit(id);
+  if(DP.id===id){dpClose();return}
+  if(id==='f_to'){const f=document.getElementById('f_from');if(_inp)_inp.dataset.dpmin=(f&&f.value)?f.value:'';}
+  if(id==='f_from'){const tEl=document.getElementById('f_to');if(_inp)_inp.dataset.dpmax=(tEl&&tEl.value)?tEl.value:'';}
+  dpClose();DP.id=id;
+  const inp=document.getElementById(id);const v=(inp.value||'').trim();let d=new Date();
+  const mt=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v);if(mt)d=new Date(+mt[1],+mt[2]-1,+mt[3]);
+  DP.y=d.getFullYear();DP.m=d.getMonth();DP.view='days';
+  dpRender();
+  const pop=document.getElementById(id+'_pop');pop.classList.add('show');
+  const r=pop.getBoundingClientRect();
+  if(r.right>window.innerWidth-8){pop.style.left='auto';pop.style.right='0'}
+}
+function dpShift(n){
+  if(DP.view==='months'){DP.y+=n;}
+  else if(DP.view==='years'){DP.decadeStart+=n*12;}
+  else{DP.m+=n;if(DP.m<0){DP.m=11;DP.y--}else if(DP.m>11){DP.m=0;DP.y++}}
+  dpRender();
+}
+function dpToMonths(){DP.view='months';dpRender();}
+function dpToYears(){DP.decadeStart=DP.y-((DP.y%12+12)%12);DP.view='years';dpRender();}
+function dpPickMonth(m){DP.m=m;DP.view='days';dpRender();}
+function dpPickYear(y){DP.y=y;DP.view='months';dpRender();}
+function dpRender(){
+  const pop=document.getElementById(DP.id+'_pop');if(!pop)return;
+  const sel=((document.getElementById(DP.id)||{}).value||'').trim();
+  const smt=/^(\d{4})-(\d{2})-(\d{2})$/.exec(sel);
+  const selY=smt?+smt[1]:null,selM=smt?+smt[2]-1:null;
+  const t=new Date();const tY=t.getFullYear(),tM=t.getMonth();
+  const tIso=tY+'-'+dpPad(tM+1)+'-'+dpPad(t.getDate());
+
+  if(DP.view==='months'){
+    let cells='';for(let i=0;i<12;i++){
+      let c='dp-my-cell';if(DP.y===selY&&i===selM)c+=' sel';if(DP.y===tY&&i===tM)c+=' today';
+      cells+=`<div class="${c}" onclick="dpPickMonth(${i})">${DP.MON[i].slice(0,3)}</div>`;
+    }
+    pop.innerHTML=`
+     <div class="dp-head">
+       <button type="button" class="dp-nav" onclick="dpShift(-1)">${DP.CHEVL}</button>
+       <button type="button" class="dp-title" onclick="dpToYears()">${DP.y}</button>
+       <button type="button" class="dp-nav" onclick="dpShift(1)">${DP.CHEVR}</button>
+     </div>
+     <div class="dp-grid-my">${cells}</div>`;
+    return;
+  }
+  if(DP.view==='years'){
+    const start=DP.decadeStart;let cells='';
+    for(let i=0;i<12;i++){const y=start+i;let c='dp-my-cell';if(y===selY)c+=' sel';if(y===tY)c+=' today';
+      cells+=`<div class="${c}" onclick="dpPickYear(${y})">${y}</div>`;}
+    pop.innerHTML=`
+     <div class="dp-head">
+       <button type="button" class="dp-nav" onclick="dpShift(-1)">${DP.CHEVL}</button>
+       <div class="dp-title">${start} – ${start+11}</div>
+       <button type="button" class="dp-nav" onclick="dpShift(1)">${DP.CHEVR}</button>
+     </div>
+     <div class="dp-grid-my">${cells}</div>`;
+    return;
+  }
+
+  const inpEl=document.getElementById(DP.id)||{};const dmin=(inpEl.dataset&&inpEl.dataset.dpmin)||'';const dmax=(inpEl.dataset&&inpEl.dataset.dpmax)||'';
+  const lead=(new Date(DP.y,DP.m,1).getDay()+6)%7;          /* shift so Monday=0 */
+  const days=new Date(DP.y,DP.m+1,0).getDate();
+  let cells='';
+  for(let d=1;d<=days;d++){
+    const iso=DP.y+'-'+dpPad(DP.m+1)+'-'+dpPad(d);
+    const off=(dmin&&iso<dmin)||(dmax&&iso>dmax);
+    let c='dp-cell';if(iso===sel)c+=' sel';if(iso===tIso)c+=' today';if(off)c+=' off';
+    const st=d===1?` style="grid-column:${lead+1}"`:'';
+    cells+=off?`<div class="${c}"${st}>${d}</div>`:`<div class="${c}"${st} onclick="dpPick('${iso}')">${d}</div>`;
+  }
+  pop.innerHTML=`
+   <div class="dp-head">
+     <button type="button" class="dp-nav" onclick="dpShift(-1)">${DP.CHEVL}</button>
+     <button type="button" class="dp-title" onclick="dpToMonths()">${DP.MON[DP.m]} ${DP.y}</button>
+     <button type="button" class="dp-nav" onclick="dpShift(1)">${DP.CHEVR}</button>
+   </div>
+   <div class="dp-dow">${DP.DOW.map(x=>`<span>${x}</span>`).join('')}</div>
+   <div class="dp-grid">${cells}</div>
+   <div class="dp-foot">
+     <button type="button" class="dp-clear" onclick="dpClear()">Clear</button>
+     <button type="button" class="dp-now" onclick="dpPick('${tIso}')">Today</button>
+   </div>`;
+}
+/* ===== manual typing (double-click) ===== */
+function dpEdit(id){
+  dpClose();
+  const inp=document.getElementById(id);if(!inp)return;
+  inp.dataset.prev=inp.value;
+  inp.readOnly=false;inp.classList.add('editing');
+  inp.focus();inp.select();
+}
+function dpNormalize(s){
+  s=(s||'').trim();if(s==='')return '';
+  let m=/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/.exec(s);          /* yyyy-mm-dd */
+  if(!m){const d=/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/.exec(s); /* dd-mm-yyyy (year last = day first) */
+    if(d)m=[null,d[3],d[2],d[1]];}
+  if(!m)return null;
+  const y=+m[1],mo=+m[2],dd=+m[3];
+  if(mo<1||mo>12||dd<1||dd>31)return null;
+  const dt=new Date(y,mo-1,dd);
+  if(dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==dd)return null;
+  return y+'-'+dpPad(mo)+'-'+dpPad(dd);
+}
+function dpCommit(id){
+  const inp=document.getElementById(id);if(!inp||inp.readOnly)return;
+  const norm=dpNormalize(inp.value);
+  const mn=inp.dataset.dpmin||'',mx=inp.dataset.dpmax||'';
+  if(norm===null){inp.value=inp.dataset.prev||'';toast('Invalid date — use yyyy-mm-dd',true);}
+  else if(norm!==''&&((mn&&norm<mn)||(mx&&norm>mx))){inp.value=inp.dataset.prev||'';toast('Date is outside the allowed range',true);}
+  else inp.value=norm;
+  inp.readOnly=true;inp.classList.remove('editing');delete inp.dataset.prev;
+}
+function dpKey(e,id){
+  if(e.key==='Enter'){e.preventDefault();document.getElementById(id).blur();}
+  else if(e.key==='Escape'){const inp=document.getElementById(id);inp.value=inp.dataset.prev||'';inp.blur();}
+}
+function dpPick(iso){
+  const inp=document.getElementById(DP.id);
+  if(inp&&inp.dataset){const mn=inp.dataset.dpmin||'',mx=inp.dataset.dpmax||'';
+    if((mn&&iso<mn)||(mx&&iso>mx)){toast('Date is outside the allowed range',true);return;}}
+  if(inp)inp.value=iso;dpClose();
+}
+function dpClear(){const inp=document.getElementById(DP.id);if(inp)inp.value='';dpClose()}
+document.addEventListener('click',e=>{if(DP.id&&!e.target.closest('.dp'))dpClose()},true);
+/* ===== numeric input guards: block impossible values (negatives, exponent, decimals on integers) ===== */
+document.addEventListener('keydown',function(e){
+  const t=e.target;if(!t||t.tagName!=='INPUT'||!t.dataset||!t.dataset.num)return;
+  if(['e','E','+','-'].includes(e.key))e.preventDefault();
+  if(t.dataset.num==='int'&&(e.key==='.'||e.key===','))e.preventDefault();
+});
+document.addEventListener('input',function(e){
+  const t=e.target;const kind=t&&t.dataset&&t.dataset.num;if(!kind)return;
+  let v=t.value;
+  if(kind==='int'){v=v.replace(/[^\d]/g,'');}
+  else{v=v.replace(/[^\d.]/g,'');const i=v.indexOf('.');if(i>=0)v=v.slice(0,i+1)+v.slice(i+1).replace(/\./g,'');}
+  if(v!==t.value)t.value=v;
+},true);
+function fld(label,id,val,type='text',ph='',req=false,attrs=''){
+  if(type==='date')return fldDate(label,id,val);
+  return `<div class="field"><label>${label}${req?'<span class="req">*</span>':''}</label><input id="${id}" type="${type}" value="${val!=null?esc(String(val)):''}" placeholder="${esc(ph)}" autocomplete="off" ${attrs}></div>`;}
+/* combobox: type freely + suggestions (datalist) */
+function combo(label,id,opts,val,ph,req,onchange){
+  const lid=id+'_dl';
+  return `<div class="field"><label>${label}${req?'<span class="req">*</span>':''}</label>
+   <input id="${id}" list="${lid}" value="${val!=null?esc(String(val)):''}" placeholder="${esc(ph||'Type or pick…')}" autocomplete="off" ${onchange?`onchange="${onchange}" oninput="${onchange}"`:''}>
+   <datalist id="${lid}">${opts.map(o=>`<option value="${esc(o.v)}">${esc(o.l||o.v)}</option>`).join('')}</datalist></div>`;}
+const curOpts=()=>(META.currencies||[]).map(c=>({v:c.code,l:`${c.code} (${c.sym})`}));
+const curCombo=(val)=>combo('Currency','f_cur',curOpts(),val||cc().cur,'USD');
+const validBlock=(r)=>`<div class="modal-section"><h4>${I.cal} Rate Validity</h4><div class="fgrid">${fld('Valid from','f_from',r?.from,'date')}${fld('Valid to','f_to',r?.to,'date')}</div></div>`;
+function portScopeOpts(includeNationwide){
+  const o=[];if(includeNationwide)o.push({v:'',l:'Nationwide (all ports)'});
+  masterPorts().forEach(p=>o.push({v:`${p.code} · ${p.name}`,l:`Port · ${p.code}`}));
+  masterCFS().forEach(c=>o.push({v:`${c.code} · ${c.name}`,l:`CFS · ${c.name}`}));
+  return o;}
+function parseCode(s){if(!s)return'';return String(s).split(' · ')[0].trim();}
+function findScopeLabel(code){if(!code)return'';const p=masterPorts().find(x=>x.code===code);if(p)return`${p.code} · ${p.name}`;
+  const f=masterCFS().find(x=>x.code===code);if(f)return`${f.code} · ${f.name}`;return code;}
+
+function openForm(id){
+  editId=id||null;const def=PAGES[state.page];const r=id?recById(id):null;let html;
+  switch(def.kind){
+    case 'master-ports':html=formPorts(r);break;
+    case 'master-cfs':html=formCFS(r);break;
+    case 'master-admin':html=formAdmin(r);break;
+    case 'fee':html=formFee(def,r);break;
+    case 'trucking':html=formTruck(def,r);break;
+    case 'ocean':html=formOcean(def,r);break;
+    case 'localcharge':html=formLC(def,r);break;
+    case 'flat':html=formFlat(def,r);break;
+  }
+  document.getElementById('modalHost').innerHTML=html;
+  document.getElementById('overlay').classList.add('show');
+  if(def.kind==='trucking')initTruckForm(r);
+  if(def.kind==='fee'&&def.scope)scopeMode=(r&&r.scope)?'port':'all';
+  if(def.kind==='localcharge')initLCForm(def,r);
+  if(['fee','ocean'].includes(def.kind))initModeForm(def,r);
+  setTimeout(()=>{const f=document.querySelector('.modal input');if(f)f.focus();},50);
+}
+function closeForm(){document.getElementById('overlay').classList.remove('show');editId=null;editFxCode=null;}
+document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closeForm();});
+
+/* ===== MENU EDITOR: category + item CRUD ===== */
+const ICON_CHOICES=[['db','Database'],['pin','Origin / Pin'],['ship','Ship / Freight'],['layers','Destination / Layers'],['truck','Truck'],['box','Box'],['tag','Tag'],['doc','Document'],['cal','Calendar']];
+const TEMPLATES=[
+  ['fee','Standard fee — FCL per container / LCL per unit'],
+  ['trucking','Trucking — port/CFS + postal code'],
+  ['ocean','Ocean freight — lane + schedule'],
+  ['localcharge','Local charge set — multiple fee types'],
+  ['flat','Flat fee — single unit (e.g. per B/L)'],
+];
+function metaModal(title,sub,body,onSave){
+  document.getElementById('modalHost').innerHTML=`<div class="modal"><div class="modal-head"><div><h3>${esc(title)}</h3><p>${esc(sub)}</p></div><button class="x" onclick="closeForm()">${I.x}</button></div>
+    <div class="modal-body">${body}</div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeForm()">Cancel</button><button class="btn btn-primary" id="metaSaveBtn">${I.check} Save</button></div></div>`;
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('metaSaveBtn').onclick=onSave;
+  setTimeout(()=>{const f=document.querySelector('.modal input,.modal select');if(f)f.focus();},50);}
+
+/* in-app confirmation dialog (replaces native confirm) */
+function confirmModal(opts){
+  const danger=opts.danger!==false;
+  document.getElementById('modalHost').innerHTML=`<div class="modal modal-confirm"><div class="modal-head"><div><h3>${esc(opts.title||'Are you sure?')}</h3></div><button class="x" onclick="closeForm()">${I.x}</button></div>
+    <div class="modal-body"><p class="confirm-msg">${opts.message||''}</p></div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeForm()">Cancel</button><button class="btn ${danger?'btn-danger':'btn-primary'}" id="confirmOkBtn">${danger?I.trash:I.check} ${esc(opts.confirmLabel||'Confirm')}</button></div></div>`;
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('confirmOkBtn').onclick=()=>{closeForm();if(opts.onConfirm)opts.onConfirm();};
+  setTimeout(()=>{const b=document.getElementById('confirmOkBtn');if(b)b.focus();},50);}
+function groupModal(gid){
+  if(gid&&groupLocked(gid)){toast('Core category cannot be edited',true);return;}
+  const g=gid?NAV.find(x=>x.id===gid):null;
+  const iconOpts=ICON_CHOICES.map(([k,l])=>`<option value="${k}" ${(g?g.icon===k:k==='tag')?'selected':''}>${esc(l)}</option>`).join('');
+  const body=`<div class="fgrid">
+    <div class="field span2"><label>Category name<span class="req">*</span></label><input id="m_gname" value="${g?esc(g.label):''}" placeholder="e.g. At Transshipment" autocomplete="off"></div>
+    <div class="field span2"><label>Icon</label><select id="m_gicon" class="m-select">${iconOpts}</select></div>
+  </div>`;
+  metaModal(gid?'Rename category':'Add category',gid?'Update the category name & icon':'Create a new sidebar category',body,()=>saveGroup(gid));}
+function saveGroup(gid){
+  if(gid&&groupLocked(gid)){toast('Core category cannot be edited',true);return;}
+  const name=document.getElementById('m_gname').value.trim();if(!name){toast('Enter a category name',true);return;}
+  const icon=document.getElementById('m_gicon').value;
+  if(gid){const g=NAV.find(x=>x.id===gid);g.label=name;g.icon=icon;}
+  else NAV.push({id:'g_'+uid().slice(1),label:name,icon:icon,items:[]});
+  persistMeta();closeForm();renderAll();toast(gid?'Category updated':'Category added');}
+function delGroup(gid){const g=NAV.find(x=>x.id===gid);if(!g)return;
+  if(groupLocked(gid)){toast('Core category cannot be deleted',true);return;}
+  confirmModal({title:'Move category to Dustbin?',message:`Category “${esc(g.label)}” with ${g.items.length} item(s) and all their data will be moved to the Dustbin. Everything can be restored later.`,confirmLabel:'Move to Dustbin',onConfirm:()=>{
+    const pages={},data={};
+    g.items.forEach(it=>{pages[it.id]=clone(PAGES[it.id]);COUNTRIES.forEach(c=>{(data[c.id]=data[c.id]||{})[it.id]=clone((DB[c.id]&&DB[c.id][it.id])||[]);});});
+    pushTrash({type:'group',label:g.label,group:clone(g),pages:pages,data:data});
+    g.items.forEach(it=>{delete PAGES[it.id];COUNTRIES.forEach(c=>{if(DB[c.id])delete DB[c.id][it.id];});});
+    const i=NAV.findIndex(x=>x.id===gid);if(i>=0)NAV.splice(i,1);
+    if(!findNavItem(state.page))state.page=firstPage();
+    persistMeta();persist();renderAll();toast('Moved to Dustbin');}});}
+
+/* --- item (page) --- */
+function itemModal(groupId,pageId){
+  const p=pageId?PAGES[pageId]:null;const navItem=pageId?findNavItem(pageId):null;
+  const curGroup=p?p.group:groupId;
+  const grpOpts=NAV.map(g=>`<option value="${g.id}" ${curGroup===g.id?'selected':''}>${esc(g.label)}</option>`).join('');
+  const tplOpts=TEMPLATES.map(([k,l])=>`<option value="${k}" ${(p?p.kind===k:k==='fee')?'selected':''}>${esc(l)}</option>`).join('');
+  const lock=!!p;
+  const body=`<div class="fgrid">
+    <div class="field span2"><label>Item name<span class="req">*</span></label><input id="m_iname" value="${navItem?esc(navItem.label):''}" placeholder="e.g. Quarantine Fee" autocomplete="off"></div>
+    <div class="field"><label>Category</label><select id="m_igroup" class="m-select">${grpOpts}</select></div>
+    <div class="field"><label>Fee type / template${lock?' (locked)':''}</label><select id="m_itype" class="m-select" ${lock?'disabled':''} onchange="itemTypeOpts()">${tplOpts}</select></div>
+    <div class="field span2"><label>Description (optional)</label><input id="m_idesc" value="${p?esc(p.desc||''):''}" placeholder="Short note shown under the page title" autocomplete="off"></div>
+  </div>
+  <div id="m_typeopts"></div>`;
+  metaModal(pageId?'Edit item':'Add item',pageId?'Update name, category, description & options':'Create a new fee / item',body,()=>saveItem(pageId));
+  itemTypeOpts(p);}
+function itemTypeOpts(p){
+  const t=document.getElementById('m_itype').value;const host=document.getElementById('m_typeopts');let h='';
+  if(t==='fee'){const fee=p&&p.kind==='fee';
+    h=`<div class="modal-section"><h4>${I.box} Standard fee options</h4><div class="fgrid">
+      <div class="field"><label>LCL unit</label><input id="m_lclunit" value="${fee?(p.lclUnit==null?'':esc(p.lclUnit)):'set'}" placeholder="set / W/M / tons — leave blank for FCL only"><span class="hint">Blank = FCL only (no LCL row).</span></div>
+      <div class="field"><label>Behaviour</label>
+        <label style="display:flex;align-items:center;gap:8px;font-weight:500;color:var(--g600)"><input type="checkbox" id="m_scope" ${(fee?p.scope:true)?'checked':''} style="width:auto;flex:none"> Port / scope selector</label>
+        <label style="display:flex;align-items:center;gap:8px;font-weight:500;color:var(--g600);margin-top:6px"><input type="checkbox" id="m_inspect" ${fee&&p.inspect?'checked':''} style="width:auto;flex:none"> Inspection note column</label></div>
+    </div></div>`;
+  }else if(t==='flat'){const fl=p&&p.kind==='flat';
+    h=`<div class="modal-section"><h4>${I.tag} Flat fee options</h4><div class="fgrid"><div class="field"><label>Charging unit<span class="req">*</span></label><input id="m_flatunit" value="${fl?esc(p.flatUnit||''):'B/L'}" placeholder="B/L / SET"></div></div></div>`;
+  }else if(t==='localcharge'){
+    h=`<div class="hint" style="margin-top:6px;color:var(--g400)">A flexible “Other fee…” set is created — you can record FCL or LCL (W/M) entries with custom names from the entry form.</div>`;
+  }else{
+    h=`<div class="hint" style="margin-top:6px;color:var(--g400)">Fixed structure — no extra options.</div>`;
+  }
+  host.innerHTML=h;}
+function saveItem(pageId){
+  const name=document.getElementById('m_iname').value.trim();if(!name){toast('Enter an item name',true);return;}
+  const groupId=document.getElementById('m_igroup').value;const desc=document.getElementById('m_idesc').value.trim();
+  if(pageId){
+    const p=PAGES[pageId];const oldGroup=p.group;
+    p.title=name;p.desc=desc;p.group=groupId;
+    if(p.kind==='fee'){const u=document.getElementById('m_lclunit').value.trim();p.lclUnit=u===''?null:u;
+      if(document.getElementById('m_scope').checked)p.scope='port';else delete p.scope;
+      if(document.getElementById('m_inspect').checked)p.inspect=true;else delete p.inspect;}
+    if(p.kind==='flat')p.flatUnit=document.getElementById('m_flatunit').value.trim()||'unit';
+    const item=findNavItem(pageId);item.label=name;
+    if(oldGroup!==groupId){removeNavItem(pageId);NAV.find(g=>g.id===groupId).items.push(item);}
+    persistMeta();closeForm();state.page=pageId;renderAll();toast('Item updated');return;
+  }
+  const type=document.getElementById('m_itype').value;const pid='p_'+uid().slice(1);
+  const cfg={kind:type,title:name,desc:desc,group:groupId,validity:true};
+  if(type==='fee'){const u=document.getElementById('m_lclunit').value.trim();cfg.fcl=true;cfg.lclUnit=u===''?null:u;
+    if(document.getElementById('m_scope').checked)cfg.scope='port';
+    if(document.getElementById('m_inspect').checked)cfg.inspect=true;}
+  if(type==='flat')cfg.flatUnit=document.getElementById('m_flatunit').value.trim()||'unit';
+  if(type==='localcharge')cfg.lcset=[{v:'Other',label:'Other fee…',fcl:true,lclUnit:'W/M',free:true}];
+  PAGES[pid]=cfg;NAV.find(g=>g.id===groupId).items.push({id:pid,label:name});
+  ensureDB();persistMeta();persist();closeForm();state.page=pid;state.pageIndex=0;state.editMenu=false;renderAll();toast('Item added');}
+function delItem(pid){const it=findNavItem(pid);if(!it)return;
+  confirmModal({title:'Move item to Dustbin?',message:`“${esc(it.label)}” and its data in every country will be moved to the Dustbin. You can restore it later.`,confirmLabel:'Move to Dustbin',onConfirm:()=>{
+    const data={};COUNTRIES.forEach(c=>{data[c.id]=clone((DB[c.id]&&DB[c.id][pid])||[]);});
+    pushTrash({type:'item',page:pid,label:it.label,group:PAGES[pid]?PAGES[pid].group:null,config:clone(PAGES[pid]),data:data});
+    removeNavItem(pid);delete PAGES[pid];COUNTRIES.forEach(c=>{if(DB[c.id])delete DB[c.id][pid];});
+    if(state.page===pid)state.page=firstPage();
+    persistMeta();persist();renderAll();toast('Moved to Dustbin');}});}
+
+function modalShell(title,sub,body,wide,saveFn){
+  return `<div class="modal ${wide?'wide':''}"><div class="modal-head"><div><h3>${title}</h3><p>${sub}</p></div><button class="x" onclick="closeForm()">${I.x}</button></div>
+    <div class="modal-body">${body}</div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeForm()">Cancel</button><button class="btn btn-primary" onclick="${saveFn||'saveForm()'}">${I.check} Save</button></div></div>`;}
+
+/* master forms */
+function formPorts(r){const b=`<div class="fgrid three">
+  ${fld('UN/LOCODE','f_code',r?.code,'text','VNSGN',true)}${fld('City','f_city',r?.city,'text','Ho Chi Minh City')}
+  <div class="field"><label>Port name<span class="req">*</span></label><input id="f_name" value="${r?.name?esc(r.name):''}" placeholder="Cat Lai" autocomplete="off"></div></div>`;
+  return modalShell((r?'Edit':'Add')+' seaport',`Country: ${cc().name}`,b);}
+function formCFS(r){const b=`<div class="fgrid">
+  ${fld('CFS Code','f_code',r?.code,'text','VN-CFS-SNP',true)}
+  ${combo('Linked port','f_port',[{v:'',l:'— No link —'},...masterPorts().map(p=>({v:p.code,l:p.name}))],r?.port||'','Type or pick a port')}
+  <div class="field span2"><label>CFS warehouse name<span class="req">*</span></label><input id="f_name" value="${r?.name?esc(r.name):''}" placeholder="Tan Cang CFS" autocomplete="off"></div>
+  <div class="field span2"><label>Address</label><input id="f_addr" value="${r?.addr?esc(r.addr):''}" placeholder="Nguyen Thi Dinh, HCMC" autocomplete="off"></div></div>`;
+  return modalShell((r?'Edit':'Add')+' CFS warehouse',`Country: ${cc().name}`,b);}
+function formAdmin(r){const provs=[...new Set(masterAdmin().map(a=>a.prov))].map(p=>({v:p}));
+  const dists=[...new Set(masterAdmin().map(a=>a.dist))].map(p=>({v:p}));
+  const b=`<div class="fgrid">
+  ${combo('Province','f_prov',provs,r?.prov,'Type or pick…',true)}
+  ${combo('District','f_dist',dists,r?.dist,'Type or pick…',true)}
+  ${fld('Ward','f_ward',r?.ward,'text','Tan Thuan Dong')}${fld('Postal Code','f_zip',r?.zip,'text','72915',true)}
+  </div><div class="field full" style="margin-top:4px"><span class="hint">International-standard postal code — used as the suggestion source for the trucking-fee input.</span></div>`;
+  return modalShell((r?'Edit':'Add')+' postal code',`Country: ${cc().name}`,b);}
+
+/* rate groups */
+function rateGroupFCL(r){return `<div class="rate-grid">${CONTAINERS.map(k=>`<div class="rate-input"><label>${k}</label><div class="wrap"><span class="cur">$</span><input id="r_${k}" type="number" step="0.01" min="0" inputmode="decimal" data-num="money" value="${r&&r.mode==='FCL'&&r.r[k]!=null?r.r[k]:''}" placeholder="0.00"></div></div>`).join('')}</div>`;}
+function rateGroupLCL(unit,r){return `<div class="rate-input" style="max-width:280px"><label>Unit price (/${unit})</label><div class="wrap"><span class="cur">$</span><input id="r_val" type="number" step="0.01" min="0" inputmode="decimal" data-num="money" value="${r&&r.r&&r.r.val!=null?r.r.val:''}" placeholder="0.00"></div></div>`;}
+function rateGroupTruck(r){return `<div class="rate-grid">${TRUCKS.map(([k,l])=>`<div class="rate-input"><label>${l}</label><div class="wrap"><span class="cur">$</span><input id="r_${k}" type="number" step="0.01" min="0" inputmode="decimal" data-num="money" value="${r&&r.mode==='LCL'&&r.r[k]!=null?r.r[k]:''}" placeholder="0.00"></div></div>`).join('')}</div>`;}
+function modeToggle(active){return `<div class="mode-toggle" id="modeToggle"><button data-m="FCL" class="${active==='FCL'?'on':''}" onclick="switchMode('FCL')">FCL</button><button data-m="LCL" class="${active==='LCL'?'on':''}" onclick="switchMode('LCL')">LCL</button></div>`;}
+
+/* fee form */
+function formFee(def,r){
+  const mode=r?.mode||'FCL';
+  const typeBlock=def.feeTypes?combo('Surcharge type','f_feeType',def.feeTypes.map(t=>({v:t})),r?.feeType||def.feeTypes[0],'BAF / YAS / RR…',true):'';
+  const sm=(r&&r.scope)?'port':'all';
+  const scopeSection=def.scope?`
+    <div class="modal-section"><h4>${I.pin} Applicable scope</h4>
+      <div class="tick-group" id="scopeTicks">
+        <button type="button" class="tick-opt ${sm==='all'?'on':''}" data-sm="all" onclick="setScopeMode('all')">
+          <span class="tick-box">${I.check}</span><span class="tk-txt"><span class="tk-title">Apply to all ports</span><span class="tk-sub">One shared rate &amp; validity for every port</span></span></button>
+        <button type="button" class="tick-opt ${sm==='port'?'on':''}" data-sm="port" onclick="setScopeMode('port')">
+          <span class="tick-box">${I.check}</span><span class="tk-txt"><span class="tk-title">Per port</span><span class="tk-sub">A separate rate for one specific port / CFS</span></span></button>
+      </div>
+      <div id="scopePortWrap" style="${sm==='port'?'':'display:none'}">${combo('Port / CFS','f_scope',portScopeOpts(false),r?.scope?findScopeLabel(r.scope):'','Type or pick a port / CFS',true)}</div>
+    </div>`:'';
+  const b=`<div class="fgrid three">${typeBlock}${curCombo(r?.cur)}<div></div></div>
+    ${scopeSection}
+    <div class="modal-section"><h4>${I.box} Rate Table</h4>${def.lclUnit!==null?modeToggle(mode):'<div class="hint" style="margin-bottom:10px">FCL only.</div>'}<div id="rateArea"></div></div>
+    ${def.inspect?`<div class="modal-section"><h4>${I.doc} Notes</h4><div class="field full"><label>Other inspection costs (per invoice)</label><textarea id="f_note">${r?.note?esc(r.note):''}</textarea></div></div>`:''}
+    ${def.validity?validBlock(r):''}`;
+  return modalShell((r?'Edit':'Add')+' '+def.title.split('—')[0].trim().toLowerCase(),`${cc().name}${def.scope?' · choose how the rate applies':''}`,b,true);
+}
+let scopeMode='all';
+function setScopeMode(m){scopeMode=m;
+  document.querySelectorAll('#scopeTicks .tick-opt').forEach(b=>b.classList.toggle('on',b.dataset.sm===m));
+  const w=document.getElementById('scopePortWrap');if(w)w.style.display=(m==='port')?'':'none';}
+let currentMode='FCL';
+function initModeForm(def,r){currentMode=r?.mode||'FCL';renderRateArea(def,r);}
+function renderRateArea(def,r){
+  if(def.kind==='ocean'){renderOceanRate(def,r);return;}
+  const area=document.getElementById('rateArea');if(!area)return;const lclUnit=def.lclUnit||'set';
+  if(def.lclUnit===null){area.innerHTML=rateGroupFCL(r);currentMode='FCL';return;}
+  area.innerHTML=currentMode==='FCL'?rateGroupFCL(r):rateGroupLCL(lclUnit,r);
+}
+function switchMode(m){const def=PAGES[state.page];currentMode=m;
+  document.querySelectorAll('#modeToggle button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  const r=editId?recById(editId):null;
+  if(def.kind==='trucking'){renderTruckRate(r);return;}
+  renderRateArea(def,r);}
+
+/* trucking form */
+function formTruck(def,r){
+  const locOpts=[{v:'',l:'— Select port / CFS —'},...masterPorts().map(p=>({v:`${p.code} · ${p.name}`,l:`Port · ${p.code}`})),...masterCFS().map(c=>({v:`${c.code} · ${c.name}`,l:`CFS · ${c.name}`}))];
+  const b=`<div class="fgrid">
+    ${combo('Origin port / CFS','f_port',locOpts,r?.port?findScopeLabel(r.port):'','Type or pick…',true)}${curCombo(r?.cur)}</div>
+  <div class="modal-section"><h4>${I.pin} Delivery / pickup point (postal code)</h4>
+    <div class="field full ac" style="position:relative"><label>Postal Code<span class="req">*</span></label>
+      <input id="f_zip" autocomplete="off" placeholder="Type a postal code or administrative unit name…" value="${r?.zip?esc(r.zip):''}" oninput="acFilter(this.value)" onfocus="acFilter(this.value)">
+      <div class="ac-list" id="acList"></div><input type="hidden" id="f_adm" value="${r?.adm?esc(r.adm):''}">
+      <span class="hint" id="acHint">${r?.adm?'Selected: '+esc(r.adm):'Suggestions show the postal code with the Province/District/Ward name.'}</span></div></div>
+  <div class="modal-section"><h4>${I.truck} Trucking Rate Table</h4>${modeToggle(r?.mode||'FCL')}<div id="rateArea"></div></div>
+  ${validBlock(r)}`;
+  return modalShell((r?'Edit':'Add')+' trucking fee',`${cc().name} · ${def.title.includes('Origin')?'At Origin':'At Destination'}`,b,true);
+}
+function initTruckForm(r){currentMode=r?.mode||'FCL';renderTruckRate(r);}
+function renderTruckRate(r){const area=document.getElementById('rateArea');if(!area)return;area.innerHTML=currentMode==='FCL'?rateGroupFCL(r):rateGroupTruck(r);}
+function acFilter(q){const list=document.getElementById('acList');if(!list)return;q=(q||'').toLowerCase().trim();
+  const items=masterAdmin().filter(a=>!q||a.zip.toLowerCase().includes(q)||`${a.prov} ${a.dist} ${a.ward}`.toLowerCase().includes(q)).slice(0,12);
+  if(!items.length){list.innerHTML=`<div class="ac-empty">No suggestions — check the “Postal Code” section for ${cc().name}.</div>`;list.classList.add('show');return;}
+  list.innerHTML=items.map(a=>`<div class="ac-item" onclick="acPick('${a.id}')"><span class="ac-zip">${esc(a.zip)}</span><span class="ac-name">${esc(a.ward?a.ward+', ':'')}${esc(a.dist)}, ${esc(a.prov)}</span></div>`).join('');
+  list.classList.add('show');}
+function acPick(id){const a=masterAdmin().find(x=>x.id===id);if(!a)return;
+  document.getElementById('f_zip').value=a.zip;const label=`${a.ward?a.ward+', ':''}${a.dist}, ${a.prov}`;
+  document.getElementById('f_adm').value=label;document.getElementById('acHint').textContent='Selected: '+label;
+  document.getElementById('acList').classList.remove('show');}
+document.addEventListener('click',e=>{const l=document.getElementById('acList');if(l&&!e.target.closest('.ac'))l.classList.remove('show');});
+
+/* ocean form */
+function formOcean(def,r){
+  const polOpts=[{v:'',l:'— Select POL —'},...masterPorts().map(p=>({v:p.code,l:p.name}))];
+  const b=`<div class="fgrid three">${combo('POL (origin port)','f_pol',polOpts,r?.pol||'','Type or pick…',true)}${fld('POD (destination port)','f_pod',r?.pod,'text','USLAX',true)}${fld('Carrier','f_carrier',r?.carrier,'text','ONE / COSCO')}</div>
+  <div class="modal-section"><h4>${I.ship} Ocean Freight</h4>${modeToggle(r?.mode||'FCL')}<div id="rateArea"></div><div style="max-width:280px;margin-top:10px">${curCombo(r?.cur)}</div></div>
+  <div class="modal-section"><h4>${I.cal} Schedule & Transit</h4><div class="fgrid three">${fld('ETD','f_etd',r?.etd,'text','Mon/Thu')}${fld('Transit time (days)','f_transit',r?.transit,'number','0',false,'min="0" step="1" inputmode="numeric" data-num="int"')}${fld('Via (transshipment)','f_via',r?.via,'text','Direct / SGSIN')}${fld('Freetime at origin (days)','f_ftO',r?.ftO,'number','0',false,'min="0" step="1" inputmode="numeric" data-num="int"')}${fld('Freetime at destination (days)','f_ftD',r?.ftD,'number','0',false,'min="0" step="1" inputmode="numeric" data-num="int"')}</div></div>
+  ${validBlock(r)}`;
+  return modalShell((r?'Edit':'Add')+' ocean freight',`${cc().name} · origin lane`,b,true);
+}
+function renderOceanRate(def,r){const area=document.getElementById('rateArea');if(!area)return;area.innerHTML=currentMode==='FCL'?rateGroupFCL(r):rateGroupLCL('set',r);}
+
+/* local charge form */
+function formLC(def,r){
+  const b=`<div class="fgrid three">${combo('Fee type','f_feeType',def.lcset.map(t=>({v:t.v,l:t.label})),r?.feeType||def.lcset[0].v,'Type or pick…',true,'onLCType()')}${curCombo(r?.cur)}<div></div></div>
+  <div class="modal-section"><h4>${I.tag} Rate Table <span id="lcUnitTag" style="font-weight:600;color:var(--g400);text-transform:none;letter-spacing:0"></span></h4><div id="lcModeWrap"></div><div id="rateArea"></div></div>
+  ${validBlock(r)}`;
+  return modalShell((r?'Edit':'Add')+' local charge',`${cc().name} · ${def.title.includes('Origin')?'At Origin':'At Destination'}`,b,true);
+}
+let _lcEditRec=null;
+function initLCForm(def,r){_lcEditRec=r;renderLC(def,r);}
+function lcDescriptor(def,v){let t=def.lcset.find(x=>x.v.toLowerCase()===String(v||'').toLowerCase());
+  if(!t)t={v:v||'',label:v||'',fcl:true,lclUnit:'SET',free:true};return t;}
+function onLCType(){renderLC(PAGES[state.page],_lcEditRec);}
+function renderLC(def,r){
+  const v=document.getElementById('f_feeType').value;const t=lcDescriptor(def,v);
+  const wrap=document.getElementById('lcModeWrap');const tag=document.getElementById('lcUnitTag');
+  if(t.flatUnit){currentMode='FLAT';wrap.innerHTML='';tag.textContent=`(fixed / ${t.flatUnit})`;
+    document.getElementById('rateArea').innerHTML=rateGroupLCL(t.flatUnit,r&&r.mode==='FLAT'?{r:r.r}:null);return;}
+  const m=(r&&['FCL','LCL'].includes(r.mode))?r.mode:(t.fcl?'FCL':'LCL');currentMode=m;
+  let toggle='';
+  if(t.fcl&&t.lclUnit!==null)toggle=modeToggle(m);
+  else if(t.fcl)toggle='<div class="hint" style="margin-bottom:10px">FCL only.</div>';
+  else toggle='<div class="hint" style="margin-bottom:10px">LCL only.</div>';
+  wrap.innerHTML=toggle;tag.textContent=t.lclUnit?`(FCL: container · LCL: /${t.lclUnit})`:'';
+  wrap.querySelectorAll('#modeToggle button').forEach(b=>b.onclick=()=>{currentMode=b.dataset.m;
+    wrap.querySelectorAll('#modeToggle button').forEach(x=>x.classList.toggle('on',x.dataset.m===currentMode));drawLCRate(t,r);});
+  drawLCRate(t,r);
+}
+function drawLCRate(t,r){const area=document.getElementById('rateArea');
+  if(currentMode==='FCL')area.innerHTML=rateGroupFCL(r&&r.mode==='FCL'?r:null);
+  else area.innerHTML=rateGroupLCL(t.lclUnit||'unit',r&&r.mode==='LCL'?{r:r.r}:null);}
+
+/* flat form */
+function formFlat(def,r){const b=`<div class="fgrid"><div class="field"><label>Unit</label><input value="${def.flatUnit}" disabled style="background:var(--g50)"></div>${curCombo(r?.cur)}</div>
+  <div class="modal-section"><h4>${I.tag} Rate Table</h4>${rateGroupLCL(def.flatUnit,r?{r:r.r}:null)}</div>${validBlock(r)}`;
+  return modalShell((r?'Edit':'Add')+' fee',`${cc().name}`,b);}
+
+/* ===== save ===== */
+function gv(id){const e=document.getElementById(id);return e?e.value.trim():''}
+function gnum(id){const v=gv(id);return v===''?null:Number(v)}
+function collectFCL(){const o={};CONTAINERS.forEach(k=>{const v=gnum('r_'+k);if(v!=null)o[k]=v;});return o;}
+function collectTruck(){const o={};TRUCKS.forEach(([k])=>{const v=gnum('r_'+k);if(v!=null)o[k]=v;});return o;}
+function saveForm(){
+  const def=PAGES[state.page];const list=rows();let r={};let ok=true;
+  const need=(v,msg)=>{if(!v){toast(msg,true);ok=false;}return v;};
+  switch(def.kind){
+    case 'master-ports':need(gv('f_code'),'Enter UN/LOCODE');need(gv('f_name'),'Enter port name');
+      r={code:gv('f_code').toUpperCase(),name:gv('f_name'),city:gv('f_city')};break;
+    case 'master-cfs':need(gv('f_code'),'Enter CFS code');need(gv('f_name'),'Enter warehouse name');
+      r={code:gv('f_code').toUpperCase(),name:gv('f_name'),addr:gv('f_addr'),port:gv('f_port')};break;
+    case 'master-admin':need(gv('f_prov'),'Enter province');need(gv('f_dist'),'Enter district');need(gv('f_zip'),'Enter postal code');
+      r={prov:gv('f_prov'),dist:gv('f_dist'),ward:gv('f_ward'),zip:gv('f_zip')};break;
+    case 'fee':r={mode:def.lclUnit===null?'FCL':currentMode,cur:gv('f_cur')};
+      if(def.scope){if(scopeMode==='port'){r.scope=parseCode(gv('f_scope'));need(r.scope,'Select a port / CFS, or switch to “Apply to all ports”');}else r.scope='';}if(def.feeTypes)r.feeType=gv('f_feeType');
+      if(r.mode==='FCL'){r.r=collectFCL();need(Object.keys(r.r).length,'Enter at least 1 container rate');}
+      else{r.r={val:gnum('r_val')};r.unit=def.lclUnit;need(r.r.val!=null,'Enter LCL unit price');}
+      if(def.inspect)r.note=gv('f_note');r.from=gv('f_from');r.to=gv('f_to');break;
+    case 'trucking':need(gv('f_port'),'Select port/CFS');need(gv('f_zip'),'Enter/select postal code');
+      r={port:parseCode(gv('f_port')),zip:gv('f_zip'),adm:gv('f_adm'),mode:currentMode,cur:gv('f_cur')};
+      if(currentMode==='FCL'){r.r=collectFCL();need(Object.keys(r.r).length,'Enter container rate');}
+      else{r.r=collectTruck();need(Object.keys(r.r).length,'Enter rate per truck type');}
+      r.from=gv('f_from');r.to=gv('f_to');break;
+    case 'ocean':need(gv('f_pol'),'Select POL');need(gv('f_pod'),'Enter POD');
+      r={pol:parseCode(gv('f_pol')).toUpperCase(),pod:gv('f_pod').toUpperCase(),carrier:gv('f_carrier'),mode:currentMode,cur:gv('f_cur'),etd:gv('f_etd'),transit:gv('f_transit'),via:gv('f_via'),ftO:gv('f_ftO'),ftD:gv('f_ftD')};
+      if(currentMode==='FCL'){r.r=collectFCL();need(Object.keys(r.r).length,'Enter container freight');}
+      else{r.r={val:gnum('r_val')};r.unit='set';need(r.r.val!=null,'Enter LCL freight');}
+      r.from=gv('f_from');r.to=gv('f_to');break;
+    case 'localcharge':{const t=lcDescriptor(def,gv('f_feeType'));need(gv('f_feeType'),'Enter fee type');r={feeType:gv('f_feeType'),cur:gv('f_cur')};
+      if(t.flatUnit){r.mode='FLAT';r.unit=t.flatUnit;r.r={val:gnum('r_val')};need(r.r.val!=null,'Enter rate');}
+      else if(currentMode==='FCL'){r.mode='FCL';r.r=collectFCL();need(Object.keys(r.r).length,'Enter container rate');}
+      else{r.mode='LCL';r.unit=t.lclUnit;r.r={val:gnum('r_val')};need(r.r.val!=null,'Enter LCL unit price');}
+      r.from=gv('f_from');r.to=gv('f_to');break;}
+    case 'flat':r={mode:'FLAT',unit:def.flatUnit,cur:gv('f_cur'),r:{val:gnum('r_val')}};need(r.r.val!=null,'Enter rate');r.from=gv('f_from');r.to=gv('f_to');break;
+  }
+  if(r.r){const vals=(r.r.val!=null)?[r.r.val]:Object.values(r.r);
+    if(vals.some(v=>v!=null&&!(Number(v)>0))){toast('Rates must be greater than 0',true);ok=false;}}
+  if(r.from&&r.to&&r.to<r.from){toast('“Valid to” cannot be earlier than “Valid from”',true);ok=false;}
+  if(!ok)return;
+  if(editId){const i=list.findIndex(x=>x.id===editId);const old=list[i]||{};list[i]=Object.assign({id:editId,ts:old.ts},r);toast('Record updated');}
+  else{list.push(Object.assign({id:uid(),ts:nowTs()},r));toast('New record added');}
+  persist();closeForm();renderAll();
+}
+function delRow(id){const list=rows();const i=list.findIndex(x=>x.id===id);if(i<0)return;
+  const r=list[i];const def=PAGES[state.page];
+  confirmModal({title:'Move to Dustbin?',message:`“${esc(recLabel(r))}” will be moved to the Dustbin. You can restore it later.`,confirmLabel:'Move to Dustbin',onConfirm:()=>{
+    const lst=rows();const j=lst.findIndex(x=>x.id===id);if(j<0)return;
+    pushTrash({type:'record',country:state.country,page:state.page,pageTitle:def?def.title:state.page,label:recLabel(r),payload:clone(r)});
+    lst.splice(j,1);persist();renderAll();toast('Moved to Dustbin');}});}
+
+/* ===== EXCEL import / template ===== */
+function excelCols(def){
+  const rateFCL=CONTAINERS.map(k=>({k,h:k}));
+  const truckCols=TRUCKS.map(([k])=>({k,h:k}));
+  switch(def.kind){
+    case 'master-ports':return [{k:'code',h:'code'},{k:'name',h:'name'},{k:'city',h:'city'}];
+    case 'master-cfs':return [{k:'code',h:'code'},{k:'name',h:'name'},{k:'addr',h:'address'},{k:'port',h:'linked_port'}];
+    case 'master-admin':return [{k:'prov',h:'province'},{k:'dist',h:'district'},{k:'ward',h:'ward'},{k:'zip',h:'zipcode'}];
+    case 'fee':return [...(def.feeTypes?[{k:'feeType',h:'fee_type'}]:[]),...(def.scope?[{k:'scope',h:'scope_code'}]:[]),{k:'mode',h:'mode'},...rateFCL,{k:'val',h:'lcl_value'},{k:'unit',h:'unit'},{k:'cur',h:'currency'},...(def.inspect?[{k:'note',h:'note'}]:[]),{k:'from',h:'valid_from'},{k:'to',h:'valid_to'}];
+    case 'trucking':return [{k:'port',h:'port_or_cfs_code'},{k:'zip',h:'zipcode'},{k:'adm',h:'admin_unit'},{k:'mode',h:'mode'},...rateFCL,...truckCols,{k:'cur',h:'currency'},{k:'from',h:'valid_from'},{k:'to',h:'valid_to'}];
+    case 'ocean':return [{k:'pol',h:'pol'},{k:'pod',h:'pod'},{k:'carrier',h:'carrier'},{k:'mode',h:'mode'},...rateFCL,{k:'val',h:'lcl_value'},{k:'cur',h:'currency'},{k:'etd',h:'etd'},{k:'transit',h:'transit_days'},{k:'via',h:'via'},{k:'ftO',h:'freetime_origin'},{k:'ftD',h:'freetime_dest'},{k:'from',h:'valid_from'},{k:'to',h:'valid_to'}];
+    case 'localcharge':return [{k:'feeType',h:'fee_type'},{k:'mode',h:'mode'},...rateFCL,{k:'val',h:'lcl_value'},{k:'unit',h:'unit'},{k:'cur',h:'currency'},{k:'from',h:'valid_from'},{k:'to',h:'valid_to'}];
+    case 'flat':return [{k:'unit',h:'unit'},{k:'val',h:'value'},{k:'cur',h:'currency'},{k:'from',h:'valid_from'},{k:'to',h:'valid_to'}];
+  }
+  return [];
+}
+function ensureXLSX(){if(typeof XLSX==='undefined'){toast('Excel library not loaded — needs internet access',true);return false;}return true;}
+function downloadTemplate(){
+  if(!ensureXLSX())return;const def=PAGES[state.page];const cols=excelCols(def);
+  const ex=sampleRow(def);
+  const aoa=[cols.map(c=>c.h),cols.map(c=>ex[c.k]!=null?ex[c.k]:'')];
+  const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=cols.map(()=>({wch:16}));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Template');
+  XLSX.writeFile(wb,`SHOPTRANS_${state.country}_${state.page}_template.xlsx`);
+  toast('Template downloaded');
+}
+function sampleRow(def){
+  const s={mode:'FCL','20GP':100,'40GP':150,'40HC':150,'45HC':170,val:'',unit:'',cur:cc().cur,from:'2026-01-01',to:'2026-12-31'};
+  if(def.kind==='master-ports')return {code:'VNSGN',name:'Cat Lai',city:'Ho Chi Minh City'};
+  if(def.kind==='master-cfs')return {code:'VN-CFS-SNP',name:'Tan Cang CFS',addr:'Nguyen Thi Dinh, HCMC',port:'VNSGN'};
+  if(def.kind==='master-admin')return {prov:'Ho Chi Minh City',dist:'District 7',ward:'Tan Thuan Dong',zip:'72915'};
+  if(def.scope)s.scope='VNSGN';if(def.feeTypes)s.feeType=def.feeTypes[0];
+  if(def.kind==='trucking'){s.port='VNSGN';s.zip='75358';s.adm='Tan Dong Hiep, Di An, Binh Duong';TRUCKS.forEach(([k])=>s[k]='');}
+  if(def.kind==='ocean'){s.pol='VNSGN';s.pod='USLAX';s.carrier='ONE';s.etd='Mon/Thu';s.transit=18;s.via='Direct';s.ftO=7;s.ftD=14;}
+  if(def.kind==='localcharge')s.feeType=def.lcset[0].v;
+  if(def.kind==='flat'){return {unit:def.flatUnit,val:30,cur:cc().cur,from:'2026-01-01',to:'2026-12-31'};}
+  if(def.inspect)s.note='per invoice';
+  return s;
+}
+function triggerImport(){if(!ensureXLSX())return;const inp=document.getElementById('xlsxFile');inp.value='';inp.click();}
+document.getElementById('xlsxFile').addEventListener('change',handleImport);
+function handleImport(e){
+  const file=e.target.files[0];if(!file)return;const reader=new FileReader();
+  reader.onload=ev=>{try{
+    const wb=XLSX.read(ev.target.result,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const json=XLSX.utils.sheet_to_json(ws,{defval:''});
+    const def=PAGES[state.page];const cols=excelCols(def);const list=rows();let added=0;
+    json.forEach(row=>{
+      const norm={};Object.keys(row).forEach(h=>norm[h.toString().trim().toLowerCase()]=row[h]);
+      const get=hk=>{const c=cols.find(c=>c.h===hk);return c?(norm[hk]!==undefined?norm[hk]:''):'';};
+      const rec=rowToRec(def,norm);if(rec){list.push(Object.assign({id:uid(),ts:nowTs()},rec));added++;}
+    });
+    persist();renderAll();toast(`Imported <b>${added}</b> record(s) from Excel`);
+  }catch(err){console.error(err);toast('Import failed — check the file format',true);}};
+  reader.readAsArrayBuffer(file);
+}
+function val(norm,h){const v=norm[h];return v===undefined||v===null?'':String(v).trim();}
+function numOrNull(norm,h){const v=norm[h];if(v===''||v===undefined||v===null)return null;const n=Number(v);return isNaN(n)?null:n;}
+function rowToRec(def,norm){
+  const r={};
+  const fclRates=()=>{const o={};CONTAINERS.forEach(k=>{const n=numOrNull(norm,k.toLowerCase());if(n!=null)o[k]=n;});return o;};
+  const truckRates=()=>{const o={};TRUCKS.forEach(([k])=>{const n=numOrNull(norm,k.toLowerCase());if(n!=null)o[k]=n;});return o;};
+  switch(def.kind){
+    case 'master-ports':if(!val(norm,'code'))return null;return {code:val(norm,'code').toUpperCase(),name:val(norm,'name'),city:val(norm,'city')};
+    case 'master-cfs':if(!val(norm,'code'))return null;return {code:val(norm,'code').toUpperCase(),name:val(norm,'name'),addr:val(norm,'address'),port:val(norm,'linked_port').toUpperCase()};
+    case 'master-admin':if(!val(norm,'zipcode'))return null;return {prov:val(norm,'province'),dist:val(norm,'district'),ward:val(norm,'ward'),zip:val(norm,'zipcode')};
+    case 'fee':{const mode=def.lclUnit===null?'FCL':(val(norm,'mode').toUpperCase()||'FCL');r.mode=mode;r.cur=val(norm,'currency')||cc().cur;
+      if(def.scope)r.scope=val(norm,'scope_code').toUpperCase();if(def.feeTypes)r.feeType=val(norm,'fee_type');
+      if(mode==='FCL'){r.r=fclRates();if(!Object.keys(r.r).length)return null;}else{const v=numOrNull(norm,'lcl_value');if(v==null)return null;r.r={val:v};r.unit=val(norm,'unit')||def.lclUnit;}
+      if(def.inspect)r.note=val(norm,'note');r.from=val(norm,'valid_from');r.to=val(norm,'valid_to');return r;}
+    case 'trucking':{const mode=val(norm,'mode').toUpperCase()||'FCL';r.mode=mode;r.cur=val(norm,'currency')||cc().cur;
+      r.port=val(norm,'port_or_cfs_code').toUpperCase();r.zip=val(norm,'zipcode');r.adm=val(norm,'admin_unit');if(!r.port)return null;
+      if(mode==='FCL'){r.r=fclRates();if(!Object.keys(r.r).length)return null;}else{r.r=truckRates();if(!Object.keys(r.r).length)return null;}
+      r.from=val(norm,'valid_from');r.to=val(norm,'valid_to');return r;}
+    case 'ocean':{const mode=val(norm,'mode').toUpperCase()||'FCL';r.mode=mode;r.cur=val(norm,'currency')||cc().cur;
+      r.pol=val(norm,'pol').toUpperCase();r.pod=val(norm,'pod').toUpperCase();if(!r.pol||!r.pod)return null;r.carrier=val(norm,'carrier');
+      r.etd=val(norm,'etd');r.transit=val(norm,'transit_days');r.via=val(norm,'via');r.ftO=val(norm,'freetime_origin');r.ftD=val(norm,'freetime_dest');
+      if(mode==='FCL'){r.r=fclRates();if(!Object.keys(r.r).length)return null;}else{const v=numOrNull(norm,'lcl_value');if(v==null)return null;r.r={val:v};r.unit='set';}
+      r.from=val(norm,'valid_from');r.to=val(norm,'valid_to');return r;}
+    case 'localcharge':{const t=lcDescriptor(def,val(norm,'fee_type'));if(!val(norm,'fee_type'))return null;r.feeType=val(norm,'fee_type');r.cur=val(norm,'currency')||cc().cur;
+      let mode=val(norm,'mode').toUpperCase();if(t.flatUnit)mode='FLAT';else if(!mode)mode=t.fcl?'FCL':'LCL';r.mode=mode;
+      if(mode==='FCL'){r.r=fclRates();if(!Object.keys(r.r).length)return null;}
+      else if(mode==='FLAT'){const v=numOrNull(norm,'lcl_value');if(v==null)return null;r.r={val:v};r.unit=t.flatUnit;}
+      else{const v=numOrNull(norm,'lcl_value');if(v==null)return null;r.r={val:v};r.unit=val(norm,'unit')||t.lclUnit;}
+      r.from=val(norm,'valid_from');r.to=val(norm,'valid_to');return r;}
+    case 'flat':{const v=numOrNull(norm,'value');if(v==null)return null;return {mode:'FLAT',unit:def.flatUnit,cur:val(norm,'currency')||cc().cur,r:{val:v},from:val(norm,'valid_from'),to:val(norm,'valid_to')};}
+  }
+  return null;
+}
+
+/* ===== util + boot ===== */
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+let toastT;
+function toast(msg,warn){const t=document.getElementById('toast');t.className='toast show'+(warn?' warn':'');
+  t.innerHTML=(warn?I.info:I.check)+'<span>'+msg+'</span>';clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
+function renderAll(){renderCountryDropdown();renderSidebar();renderMain();}
+loadMeta();loadDB();loadTrash();renderAll();
+</script>
+</body>
+</html>
