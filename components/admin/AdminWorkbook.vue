@@ -946,7 +946,7 @@
           'gsd-air-dup-icd-cont-modal': isAirDupIcdContSealModal(),
           'gsd-air-dup-ccd-cont-modal': isAirDupCcdContSealModal(),
           'gsd-truck-cont-modal': isTruckContModal(),
-          'gsd-fcl-dup-tcd-truck-modal': isTruckContModal() && (isFclDduTcdSheet() || (isDapTcdSheet() && opsParts?.mode === 'FCL')),
+          'gsd-fcl-dup-tcd-truck-modal': usesTcdTruckStatusTemplate() && (isFclDduTcdSheet() || (isDapTcdSheet() && opsParts?.mode === 'FCL')),
           'gsd-fcl-dap-tcd-truck-modal': isTruckContModal() && isDapTcdSheet() && opsParts?.mode === 'FCL',
           'gsd-dap-fcd-trucking-detail-modal': isTruckContModal() && isAirSheet() && isDapFcdSheet() && isLclTruckingDetailModal(),
           'gsd-prs-modal': isPickupReturnStatusModal(),
@@ -981,6 +981,7 @@
         }"
         role="dialog"
         aria-modal="true"
+        @mousedown="closePickupBcMenuOnOutside"
       >
         <button class="gsd-modal-x" type="button" title="Close" @click="closeGsdModal">&times;</button>
         <div v-if="gsdModal.loading && (isPaymentRequestModal() || isExpenseCollectModal())" class="payment-loading-screen" role="status" aria-live="polite">
@@ -1761,7 +1762,7 @@
               <button v-if="!isTcdTruckContModal()" class="wb-modal-btn primary" type="button" @click="addTruckContRecord">Add+</button>
               <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || !selectedTruckContIndexes().length" @click="enableTruckContEdit">Edit</button>
               <button class="wb-modal-btn remove" type="button" :disabled="!selectedTruckContIndexes().length" @click="removeSelectedTruckContRecords">Remove -</button>
-              <button v-if="isTcdTruckContModal()" class="wb-modal-btn primary epod" type="button" :disabled="!selectedTruckContIndexes().length" @click="exportTruckEpod">Export ePOD</button>
+              <button v-if="showsTruckEpodExport()" class="wb-modal-btn primary epod" type="button" :disabled="!selectedTruckContIndexes().length" @click="exportTruckEpod">Export ePOD</button>
             </div>
             <div class="gsd-truck-table-wrap">
               <table class="gsd-truck-table">
@@ -1776,7 +1777,7 @@
                   <col style="width:130px" />
                   <col style="width:158px" />
                 </colgroup>
-                <colgroup v-else-if="isTcdTruckContModal()">
+                <colgroup v-else-if="usesTcdTruckStatusTemplate()">
                   <col style="width:42px" />
                   <col style="width:52px" />
                   <col style="width:78px" />
@@ -1817,7 +1818,7 @@
                   <col style="width:110px" />
                 </colgroup>
                 <thead>
-                  <tr v-if="isTcdTruckContModal() || isLclTruckingDetailModal()">
+                  <tr v-if="usesTcdTruckStatusTemplate() || isLclTruckingDetailModal()">
                     <th class="tk-all">All</th>
                     <th>ORDER</th>
                     <th>PU NO#</th>
@@ -1837,7 +1838,7 @@
                     <th v-if="!isReadonlyTruckContModal()" class="tk-all" rowspan="2">All</th>
                     <th rowspan="2">ORDER</th>
                     <th rowspan="2">PU NO#</th>
-                    <th rowspan="2"><span class="gsd-truck-heading"><span>Truck Comp</span><button v-if="!isReadonlyTruckContModal() && !isTcdTruckContModal()" class="gsd-truck-plus" type="button" @click.stop="addTruckCompanyFromModal">+</button></span></th>
+                    <th rowspan="2"><span class="gsd-truck-heading"><span>Truck Comp</span><button v-if="!isReadonlyTruckContModal()" class="gsd-truck-plus" type="button" title="Add Haulier" @click.stop="addTruckCompanyFromModal">+</button></span></th>
                     <th v-if="!isAirDcdTruckingModal()" rowspan="2">Container No#</th>
                     <th v-if="!isAirDcdTruckingModal()" rowspan="2">ContType</th>
                     <th v-if="!isAirDcdTruckingModal()" rowspan="2">Seal No#</th>
@@ -1859,10 +1860,22 @@
                     <td class="tk-order">{{ index + 1 }}</td>
                     <td><button class="gsd-pu-link" type="button" @click="openTruckPuDetail(index)">PU{{ String(index + 1).padStart(4, '0') }}</button></td>
                     <td class="truck-company-cell">
-                      <select v-if="truckContRowCanEdit(record)" v-model="record.truck" class="truck-company-select" @change="handleTruckCompanyChange(record)">
-                        <option value="">-- SELECT TRUCK COMP --</option>
-                        <option v-for="option in truckCompanyOptions" :key="option" :value="option">{{ option }}</option>
-                      </select>
+                      <template v-if="truckContRowCanEdit(record)">
+                        <input
+                          v-model="record.truck"
+                          class="truck-company-select truck-company-filter"
+                          type="text"
+                          placeholder="Type to filter"
+                          autocomplete="off"
+                          @focus="openTruckCompanyPicker(index)"
+                          @input="handleTruckCompanyInput(record, index)"
+                          @blur="closeTruckCompanyPickerSoon"
+                        />
+                        <div v-if="truckCompanyPicker.open && truckCompanyPicker.index === index" class="truck-company-picker">
+                          <button v-for="option in filteredTruckCompanyOptions(record.truck)" :key="option" type="button" @mousedown.prevent="selectTruckCompanyOption(record, option)">{{ option }}</button>
+                          <div v-if="!filteredTruckCompanyOptions(record.truck).length" class="truck-company-picker-empty">No Haulier found</div>
+                        </div>
+                      </template>
                       <button v-else-if="record.truck" class="gsd-pu-link" type="button" @click="showTruckCompanyDetail(record.truck)">{{ record.truck }}</button>
                       <span v-else>—</span>
                     </td>
@@ -1876,12 +1889,12 @@
                         class="gsd-pu-link truck-driver-picker-link"
                         :class="{ empty: !record.driver }"
                         type="button"
-                        :disabled="!record.truck"
-                        :title="!record.truck ? 'Select Truck Comp first' : (truckContRowCanEdit(record) ? 'Select driver from this Truck Comp' : 'View drivers of this Truck Comp')"
-                        @click="openTruckDriverPicker(record, index)"
+                        :disabled="!record.truck || (!truckContRowCanEdit(record) && !record.driver)"
+                        :title="!record.truck ? 'Select Truck Comp first' : (truckContRowCanEdit(record) ? 'Select driver from this Truck Comp' : 'View driver detail')"
+                        @click="truckContRowCanEdit(record) ? openTruckDriverPicker(record, index) : showTruckDriverDetail(record)"
                       >{{ record.driver || 'SELECT' }}</button>
                     </td>
-                    <template v-if="isTcdTruckContModal() || isLclTruckingDetailModal()">
+                    <template v-if="usesTcdTruckStatusTemplate() || isLclTruckingDetailModal()">
                       <td class="prs-days">{{ truckDaysAfterAta(record) }}</td>
                       <td><input v-model="record.eta1" type="date" :disabled="!truckContRowCanEdit(record)" /></td>
                       <td><input v-model="record.eta2" type="time" :disabled="!truckContRowCanEdit(record)" /></td>
@@ -2011,7 +2024,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(record, index) in pickupReturnRecords()" :key="record.id || index" @click="selectLockedPickupReturnRow(record)">
+                  <tr v-for="(record, index) in pickupReturnRecords()" :key="record.id || index" @click="togglePickupReturnRow(record, $event)">
                     <td><input v-model="record.selected" type="checkbox" @click.stop @change="syncPickupReturnEditState" /></td>
                     <td class="prs-order">{{ index + 1 }}</td>
                     <td v-if="isDupTruckingStatusModal()" class="prs-readonly">{{ record.puNo || record.containerNo || '' }}</td>
@@ -2021,9 +2034,9 @@
                     <td v-if="isDupTruckingStatusModal()" class="prs-readonly">{{ record.driverInfo || record.driverName || '' }}</td>
                     <td v-if="isDupTruckingStatusModal()"><input v-model="record.returnDate" class="prs-date" type="date" :disabled="!gsdModal.editing" /></td>
                     <td class="prs-days">{{ pickupReturnDaysAfterAta(record) }}</td>
-                    <td><input v-model="record.pickupDate" class="prs-date" type="date" :disabled="!gsdModal.editing" @change="syncPickupReturnEditState" /></td>
+                    <td><input v-model="record.pickupDate" class="prs-date" type="date" :disabled="!gsdModal.editing" /></td>
                     <td v-if="isDupTruckingStatusModal()" class="prs-readonly">{{ record.arrivingTime || record.estimatedArrivingTime || '' }}</td>
-                    <td v-if="!isLclPickupStatusModal() && !isDupTruckingStatusModal()"><input v-model="record.returnDate" class="prs-date" type="date" :disabled="!gsdModal.editing" @change="syncPickupReturnEditState" /></td>
+                    <td v-if="!isLclPickupStatusModal() && !isDupTruckingStatusModal()"><input v-model="record.returnDate" class="prs-date" type="date" :disabled="!gsdModal.editing" /></td>
                     <td v-if="isDupTruckingStatusModal()" class="epodcell">
                       <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign })">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -3431,7 +3444,7 @@
               <tr v-if="!truckDriverModal.records.length">
                 <td class="truck-driver-empty" colspan="8">No driver yet. Click "Add+".</td>
               </tr>
-              <tr v-for="(driver, index) in truckDriverModal.records" v-else :key="driver.id || index" :class="{ 'driver-row-editing': driver.editing }">
+              <tr v-for="(driver, index) in truckDriverModal.records" v-else :key="driver.id || index" :class="{ 'driver-row-editing': driver.editing, 'driver-row-current': truckDriverIsCurrent(driver) }">
                 <td><input v-model="driver.selected" type="checkbox" /></td>
                 <td>{{ index + 1 }}</td>
                 <td>
@@ -3455,7 +3468,7 @@
         <div class="truck-driver-actions">
           <button class="wb-modal-btn cancel" type="button" @click="cancelTruckDriverModal">Cancel</button>
           <button class="wb-modal-btn select" type="button" :disabled="!canSelectTruckDriver()" @click="selectCheckedTruckDriver">Select</button>
-          <button class="wb-modal-btn primary" type="button" :disabled="truckDriverModal.saving" @click="saveTruckDriverRecords">{{ truckDriverModal.saving ? 'Saving...' : 'Save' }}</button>
+          <button class="wb-modal-btn primary" type="button" :disabled="truckDriverModal.saving || !truckDriverHasEditingRow()" @click="saveTruckDriverRecords">{{ truckDriverModal.saving ? 'Saving...' : 'Save' }}</button>
         </div>
       </div>
     </div>
@@ -4359,6 +4372,7 @@ const truckDriverModal = reactive({
   companyEntityId: '',
   companyId: '',
   companyName: '',
+  selectedDriverName: '',
   records: [] as TruckDriverRecord[],
   companyForm: emptyClientForm() as TruckCompanyForm,
   targetIndex: -1,
@@ -4402,14 +4416,14 @@ const emptyTruckDriverRecord = (): TruckDriverRecord => ({
   active: 'Active',
 })
 const normalizeTruckDriverRecord = (item: any): TruckDriverRecord => ({
-  id: String(item?.id || `DRV-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`),
+  id: String(item?.id || item?._uid || `DRV-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`),
   selected: false,
   editing: !!item?.editing,
   name: upperText(item?.name || item?.driverName || ''),
   did: upperText(item?.did || item?.driverId || ''),
   phone: String(item?.phone || item?.driverPhone || '').trim(),
-  htruck: upperText(item?.htruck || item?.holdingTruck || ''),
-  htrailer: upperText(item?.htrailer || item?.holdingTrailer || ''),
+  htruck: upperText(item?.htruck || item?.holdingTruck || item?.truck || ''),
+  htrailer: upperText(item?.htrailer || item?.holdingTrailer || item?.trailer || ''),
   active: String(item?.active || item?.status || 'Active').trim() || 'Active',
 })
 const normalizeClientRecord = (record: any): GsdClientRecord => {
@@ -4455,6 +4469,7 @@ const countryOptions = ref<string[]>([])
 const routeCountryOptions = ref<string[]>([])
 const truckCompanyOptions = ref<string[]>([])
 const truckCompanyDriverMap = ref<Record<string, TruckDriverRecord[]>>({})
+const truckCompanyRecordMap = ref<Record<string, GsdClientRecord>>({})
 const truckCompanyPicker = reactive({ open: false, index: -1 })
 const truckDetailsSending = ref(false)
 let epodStatusTimer: ReturnType<typeof setInterval> | null = null
@@ -4959,11 +4974,28 @@ const uppercaseClientField = (field: keyof ReturnType<typeof emptyClientForm>) =
 }
 const loadTruckCompanyOptions = async () => {
   try {
-    const res = await props.request('/entities/clients?limit=1000')
-    const items = (Array.isArray(res?.items) ? res.items : Array.isArray(res?.data?.items) ? res.data.items : Array.isArray(res?.data?.data?.items) ? res.data.data.items : [])
-      .map(normalizeClientRecord)
-      .filter((item: GsdClientRecord) => item.roles?.map(upperText).includes('TRUCK COMP'))
+    const res = await props.request(`/records?country=${encodeURIComponent(countryViewId())}&page=traders_hauliers&search=&limit=1000&skip=0`)
+    const source = Array.isArray(res?.items) ? res.items : Array.isArray(res?.data?.items) ? res.data.items : []
+    const items = source.map((record: any) => normalizeClientRecord({
+      ...(record?.data || {}),
+      entityId: record?.id,
+      sourcePage: record?.page || 'traders_hauliers',
+      sourceKind: record?.kind || 'traders-suppliers',
+      sourceCountry: record?.country || countryViewId(),
+      sourceSortOrder: record?.sortOrder || 0,
+      sourceData: record?.data || {},
+      id: record?.data?.id || record?.id,
+      companyName: record?.data?.company || record?.data?.companyName,
+      picName: record?.data?.pic || record?.data?.picName,
+      roles: ['HAULIER'],
+      drivers: record?.data?.drivers || [],
+    }))
     truckCompanyOptions.value = Array.from(new Set(items.map((item: GsdClientRecord) => upperText(item.namecode || item.companyName || item.id)).filter(Boolean))).sort((a, b) => a.localeCompare(b))
+    truckCompanyRecordMap.value = items.reduce((acc, item: GsdClientRecord) => {
+      const name = upperText(item.namecode || item.companyName || item.id)
+      if (name) acc[name] = item
+      return acc
+    }, {} as Record<string, GsdClientRecord>)
     truckCompanyDriverMap.value = items.reduce((acc, item: GsdClientRecord) => {
       const name = upperText(item.namecode || item.companyName || item.id)
       if (name) acc[name] = (item.drivers || []).map(normalizeTruckDriverRecord)
@@ -4994,11 +5026,17 @@ const handleTruckCompanyInput = (record: TruckContRecord, index: number) => {
   truckCompanyPicker.open = true
 }
 const selectTruckCompanyOption = (record: TruckContRecord, option: string) => {
+  const previous = upperText(record.truck || '')
   record.truck = option
+  if (previous !== upperText(option)) handleTruckCompanyChange(record)
   truckCompanyPicker.open = false
   truckCompanyPicker.index = -1
+  const targetIndex = truckContRecords().indexOf(record)
+  if (targetIndex >= 0) {
+    record.selected = true
+    truckContEditingRows.value = new Set([...truckContEditingRows.value, targetIndex])
+  }
   gsdModal.editing = true
-  persistTruckContCell(true)
 }
 const uppercaseTruckCompanyField = (field: keyof TruckCompanyForm) => {
   ;(truckCompanyModal.form as any)[field] = upperText((truckCompanyModal.form as any)[field])
@@ -5018,7 +5056,6 @@ const truckCompanyCanCancel = () => {
 }
 const cancelTruckCompanyForm = () => {
   if (truckCompanyModal.savedName) {
-    persistTruckContCell(true)
     closeTruckCompanyModal()
     return
   }
@@ -5051,6 +5088,7 @@ const openTruckDriverList = async () => {
   truckDriverModal.companyName = truckCompanyModal.savedName
   truckDriverModal.companyForm = { ...truckCompanyModal.form }
   truckDriverModal.targetIndex = -1
+  truckDriverModal.selectedDriverName = ''
   const source = truckCompanyModal.drivers.length ? truckCompanyModal.drivers : truckCompanyDriverMap.value[truckCompanyModal.savedName] || []
   truckDriverModal.records = (source.length ? source : [emptyTruckDriverRecord()]).map((record) => ({ ...normalizeTruckDriverRecord(record), selected: false, editing: !source.length }))
   truckDriverModal.editing = false
@@ -5103,16 +5141,8 @@ const openTruckDriverPicker = async (record: TruckContRecord, targetIndex: numbe
   const companyName = upperText(record.truck || '')
   if (!companyName) return
   try {
-    const res = await props.request('/entities/clients?limit=1000')
-    const source = Array.isArray(res?.items)
-      ? res.items
-      : Array.isArray(res?.data?.items)
-        ? res.data.items
-        : Array.isArray(res?.data?.data?.items) ? res.data.data.items : []
-    const company = source.map(normalizeClientRecord).find((item: GsdClientRecord) =>
-      item.roles?.map(upperText).includes('TRUCK COMP')
-      && [item.namecode, item.companyName, item.id].some((value) => upperText(value) === companyName),
-    )
+    await loadTruckCompanyOptions()
+    const company = truckCompanyRecordMap.value[companyName]
     if (!company?.entityId) {
       showToast('Truck Company source not found in Internal Directory')
       return
@@ -5120,6 +5150,7 @@ const openTruckDriverPicker = async (record: TruckContRecord, targetIndex: numbe
     truckDriverModal.companyEntityId = company.entityId
     truckDriverModal.companyId = company.id
     truckDriverModal.companyName = companyName
+    truckDriverModal.selectedDriverName = upperText(record.driver || '')
     truckDriverModal.companyForm = clientFormFromRecord(company)
     truckDriverModal.targetIndex = truckContRowCanEdit(record) ? targetIndex : -1
     truckDriverModal.records = (company.drivers || []).map((driver) => ({ ...normalizeTruckDriverRecord(driver), selected: false, editing: false }))
@@ -5137,28 +5168,59 @@ const saveTruckCompany = async () => {
   if (!validateClientForm(payload)) return
   truckCompanyModal.saving = true
   try {
-    const saved = await props.request('/entities/clients', {
+    const saved = await props.request('/records', {
       method: 'POST',
       body: {
-        ...payload,
-        roles: ['TRUCK COMP'],
+        country: countryViewId(),
+        page: 'traders_hauliers',
+        kind: 'traders-suppliers',
+        sortOrder: 0,
+        data: {
+          recdate: new Date().toISOString().slice(0, 10),
+          id: payload.id,
+          namecode: payload.namecode,
+          role: 'HAULIER',
+          roles: ['HAULIER'],
+          gsd: currentTraderCreator(),
+          company: payload.companyName,
+          address: payload.address,
+          city: payload.city,
+          country: payload.country,
+          pic: payload.picName,
+          phone: payload.phone,
+          email: payload.email,
+          status: payload.status || 'ACTIVE',
+          drivers: [],
+        },
       },
     })
-    const clean = normalizeClientRecord(saved?.data || saved)
+    const record = saved?.data && saved?.data?.data ? saved.data : saved
+    const clean = normalizeClientRecord({
+      ...(record?.data || {}), entityId: record?.id,
+      id: record?.data?.id || record?.id,
+      companyName: record?.data?.company,
+      picName: record?.data?.pic,
+      roles: ['HAULIER'], drivers: record?.data?.drivers || [],
+    })
     const name = upperText(clean.namecode || clean.companyName || clean.id)
     if (name && !truckCompanyOptions.value.map(upperText).includes(name)) {
       truckCompanyOptions.value = [...truckCompanyOptions.value, name].sort((a, b) => a.localeCompare(b))
     }
     const records = truckContRecords()
     const target = records[truckCompanyModal.targetIndex] || records.find((record) => !record.truck) || records[0]
-    if (target) target.truck = name
+    if (target) {
+      target.truck = name
+      target.selected = true
+      const targetIndex = records.indexOf(target)
+      if (targetIndex >= 0) truckContEditingRows.value = new Set([...truckContEditingRows.value, targetIndex])
+    }
     truckCompanyModal.entityId = clean.entityId || ''
     truckCompanyModal.savedId = clean.id || ''
     truckCompanyModal.savedName = name
     truckCompanyModal.drivers = (clean.drivers || []).map(normalizeTruckDriverRecord)
     if (name) truckCompanyDriverMap.value = { ...truckCompanyDriverMap.value, [name]: truckCompanyModal.drivers }
+    await loadTruckCompanyOptions()
     gsdModal.editing = true
-    persistTruckContCell(true)
   } catch (error: any) {
     console.error('Could not save truck company', error)
     showToast(error?.data?.message || error?.message || 'Could not save Truck Comp')
@@ -5370,16 +5432,24 @@ const sortedIndexes = (indexes: number[]) => {
   return [...header, ...body]
 }
 const filteredRowIndexes = computed(() => {
-  const needle = query.value.toLowerCase()
+  const needle = query.value.trim().toLowerCase()
   const indexes = rows.value.map((_, index) => index).filter(rowMatchesStatus)
+  const jobColumn = (rows.value[0] || []).findIndex((_, column) => normalizedHeaderLabel(column) === 'JOB NO#')
+  const isExactJobSearch = isOpsPage.value && opsFilterField.value === 'all' && jobColumn >= 0 && rows.value.some((row, index) =>
+    index > 0 && String(row?.[jobColumn] ?? '').trim().toLowerCase() === needle,
+  )
   const filtered = needle
     ? indexes.filter((index) => {
         if (index === 0) return true
+        if (isExactJobSearch) {
+          return String(rows.value[index]?.[jobColumn] ?? '').trim().toLowerCase() === needle
+        }
         if (isOpsPage.value && opsFilterField.value !== 'all') {
           const column = Number(opsFilterField.value)
           return String(rows.value[index]?.[column] ?? '').toLowerCase().includes(needle)
         }
-        return rows.value[index].some((cell) => String(cell ?? '').toLowerCase().includes(needle))
+        const searchColumns = isOpsPage.value ? visibleColumns.value : rows.value[index].map((_, column) => column)
+        return searchColumns.some((column) => String(rows.value[index]?.[column] ?? '').toLowerCase().includes(needle))
       })
     : indexes
   const advanced = opsAppliedFilters.value.length
@@ -7569,9 +7639,8 @@ const isExwFclDocumentLocked = (column: number) =>
   ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && !['ECD', 'DCD', 'ICD'].includes(opsDeptUpper()) && ['HBL NO#', 'MBL NO#'].includes(normalizedHeaderLabel(column))
 const isLockedColumn = (column: number) => {
   if (normalizedHeaderLabel(column) === 'MODE') return true
-  // REF# starts from JOB NO# when a linked row is created, but remains an
-  // independent user-editable reference afterwards.
-  if (normalizedHeaderLabel(column) === 'REF#') return false
+  // REF# is owned by ECD. Downstream departments only receive and display it.
+  if (normalizedHeaderLabel(column) === 'REF#') return opsDeptUpper() !== 'ECD'
   if (lockedColumns().has(column)) return true
   if (String(opsParts.value?.mode || '').toUpperCase() === 'AIR') return isAirStructureLockedColumn(column)
   if (String(opsParts.value?.mode || '').toUpperCase() === 'LCL') return isLclStructureLockedColumn(column)
@@ -8170,6 +8239,7 @@ const isLinkedImportDownstreamAtaCell = (row: number, column: number) => {
 }
 const isLockedOpsCell = (row: number, column: number) =>
   normalizedHeaderLabel(column) === 'MODE' ||
+  (normalizedHeaderLabel(column) === 'REF#' && opsDeptUpper() !== 'ECD') ||
   (row > 0 && isOpsTimeColumn(column)) ||
   isLockedAfterBcSentDate(row, column) ||
   (opsDeptUpper() === 'GSD' && /^(ECD|ICD) OPS$/.test(normalizedHeaderLabel(column))) || (
@@ -8532,6 +8602,13 @@ const doReleaseReady = (row: number, column: number) => {
 }
 const isDoReleaseWarnCell = (row: number, column: number) =>
   normalizedHeaderLabel(column) === 'DO RELEASE' && isDoIcdSheet() && !doReleaseReady(row, column)
+const truckContHasLinkedVolume = (row: number, column: number) => {
+  if (normalizedHeaderLabel(column) !== 'TRUCK & CONT/SEAL INFO') return false
+  if (!['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase())) return false
+  if (String(opsParts.value?.mode || '').toUpperCase() !== 'FCL' || String(opsParts.value?.dept || '').toUpperCase() !== 'TCD') return false
+  const volumeColumn = (rows.value[0] || []).findIndex((_, index) => normalizedHeaderLabel(index) === 'VOLUME')
+  return volumeColumn >= 0 && volumeCellHasRecords(rows.value[row]?.[volumeColumn])
+}
 const gsdActionButtonText = (row: number, column: number) => {
   const label = normalizedHeaderLabel(column)
   if (label === 'REMINDER' || label === 'NOTICE') return 'VIEW'
@@ -8565,8 +8642,8 @@ const gsdActionButtonText = (row: number, column: number) => {
   if (isFclDduTcdSheet() && label === 'DELIVERY DETAIL') return String(rows.value[row]?.[column] || '').trim() ? 'DETAIL' : 'ADD+'
   if (isFclDduTcdSheet() && label === 'CLEARANCE DETAIL') return 'DETAIL'
   if (['DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && opsParts.value?.dept === 'FCD' && ['DELIVERY DETAIL', 'TRUCK & CONT/SEAL INFO'].includes(label)) return 'DETAIL'
-  if (['EXW', 'FCA'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && opsParts.value?.dept === 'TCD' && ['PICKUP DETAIL', 'TRUCK & CONT/SEAL INFO'].includes(label)) {
-    return String(rows.value[row]?.[column] || '').trim() ? 'DETAIL' : 'ADD+'
+  if (['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && opsParts.value?.dept === 'TCD' && ['PICKUP DETAIL', 'TRUCK & CONT/SEAL INFO'].includes(label)) {
+    return String(rows.value[row]?.[column] || '').trim() || truckContHasLinkedVolume(row, column) ? 'DETAIL' : 'ADD+'
   }
   if (opsParts.value?.type === 'DAP' && opsParts.value?.mode === 'FCL' && opsParts.value?.dept === 'ICD' && ['DELIVERY DETAIL', 'TRUCK & CONT/SEAL INFO'].includes(label)) return 'DETAIL'
   if (opsParts.value?.type === 'DAP' && opsParts.value?.mode === 'FCL' && opsParts.value?.dept === 'FCD' && ['DELIVERY DETAIL', 'TRUCK & CONT/SEAL INFO'].includes(label)) return 'DETAIL'
@@ -8654,7 +8731,7 @@ const infoDetailNeedsAttention = (row: number, column: number) =>
 const truckDetailNeedsAttention = (row: number, column: number) =>
   truckActionIsDetail(row, column) && !hasTruckRecords(row, column)
 const detailActionNeedsAttention = (row: number, column: number) =>
-  isDetailActionButton(row, column) && !String(rows.value[row]?.[column] ?? '').trim()
+  isDetailActionButton(row, column) && !String(rows.value[row]?.[column] ?? '').trim() && !truckContHasLinkedVolume(row, column)
 const showActionEditIcon = (row: number, column: number) =>
   !isDetailActionButton(row, column) && showLinkedEditIcon(row, column)
 const isPlainDocumentValue = (row: number, column: number) => {
@@ -10023,8 +10100,15 @@ const openGsdModal = async (row: number, column: number) => {
         if (!linkedReadonly) doContSealRecords().forEach((record) => { record.unlocked = true })
       } else if (label === 'TRUCK & CONT/SEAL INFO' || label === 'CONT/SEAL INFO' || label === 'TRUCKING INFO' || label === 'TRUCKING DETAIL') {
         gsdModal.formFields = []
-        gsdModal.form = truckContFormFromCell(rawText)
-        if (opsParts.value?.mode === 'FCL' && opsDeptUpper() === 'TCD') gsdModal.form = seedTruckContFromVolume(gsdModal.form)
+        const linkedValue = await linkedEcdTruckContValue(row, rawText)
+        if (linkedValue !== rawText && String(linkedValue || '').trim()) rows.value[row][column] = linkedValue
+        gsdModal.form = truckContFormFromCell(linkedValue)
+        const originTruckVolumeView = String(opsParts.value?.mode || '').toUpperCase() === 'FCL' &&
+          ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) &&
+          ['ECD', 'TCD', 'CCD'].includes(opsDeptUpper())
+        if (originTruckVolumeView || (opsParts.value?.mode === 'FCL' && opsDeptUpper() === 'TCD')) {
+          gsdModal.form = seedTruckContFromVolume(gsdModal.form)
+        }
         gsdModal.form.initialRecords = truckContSnapshot(gsdModal.form.records)
         gsdModal.editing = false
         void loadTruckCompanyOptions()
@@ -10124,8 +10208,9 @@ const openGsdModal = async (row: number, column: number) => {
       } else if (['PICKUP/RETURN STATUS', 'PICKUP STATUS', 'TRUCKING STATUS'].includes(label)) {
         gsdModal.formFields = []
         gsdModal.form = pickupReturnFormFromCell(rawText)
-        gsdModal.form.locked = true
-        gsdModal.editing = false
+        const opensInEditMode = label === 'PICKUP/RETURN STATUS'
+        gsdModal.form.locked = !opensInEditMode
+        gsdModal.editing = opensInEditMode
       } else if (label === 'CLEARANCE DOCS APPROVAL') {
         gsdModal.formFields = []
         gsdModal.form = clearanceDocsFormFromCell(rawText)
@@ -10943,6 +11028,38 @@ const linkedCcdContSealValue = async (row: number, fallback: any) => {
     return fallback
   }
 }
+const linkedEcdTruckContValue = async (row: number, fallback: any) => {
+  const parsed = opsParts.value
+  if (!parsed || opsDeptUpper() !== 'ECD' || String(parsed.mode || '').toUpperCase() !== 'FCL' ||
+    !['EXW', 'FCA', 'FCF'].includes(String(parsed.type || '').toUpperCase())) return fallback
+  const currentHeader = (rows.value[0] || []).map((item) => String(item || '').trim())
+  const currentRow = rows.value[row] || []
+  const sourceLink = opsShipmentLink(currentHeader, currentRow, row, settings.value)
+  try {
+    const sourceKey = opsLeafKey(parsed.base, parsed.mode, parsed.type, 'TCD')
+    const sourceSheet = await props.request(`/workbook/sheets/${encodeURIComponent(sheetStorageKey(sourceKey))}`)
+    const sourceHeader = opsHeaderFor(parsed.base, parsed.mode, 'TCD', parsed.type)
+    const extracted = extractWorkbookRows(Array.isArray(sourceSheet.rows) ? sourceSheet.rows.map((item: any[]) => [...item]) : [], sourceSheet)
+    const sourceRows = alignRowsToHeader(extracted.rows, sourceHeader).rows
+    const sourceSettings = extracted.settings || sourceSheet.settings || {}
+    const links = sourceSettings.opsRowLinks || {}
+    let linkedRow = sourceLink
+      ? sourceRows.findIndex((_item, index) => index > 0 && String(links[String(index)] || '') === sourceLink)
+      : -1
+    if (linkedRow < 1) {
+      const identity = rowIdentity(currentHeader, currentRow)
+      if (identity) linkedRow = sourceRows.findIndex((item, index) => index > 0 && rowIdentity(sourceHeader, item) === identity)
+    }
+    // Compatibility for old generated rows saved before opsRowLinks existed.
+    if (linkedRow < 1 && row > 0 && row < sourceRows.length) linkedRow = row
+    const column = sourceHeader.findIndex((label) => ['TRUCK & CONT/SEAL INFO', 'TRUCKING INFO'].includes(upperText(label)))
+    const value = linkedRow > 0 && column >= 0 ? sourceRows[linkedRow]?.[column] : ''
+    return String(value ?? '').trim() ? value : fallback
+  } catch (error: any) {
+    if (requestStatus(error) !== 404) console.warn('Could not load linked TRUCK & CONT/SEAL INFO from TCD', error)
+    return fallback
+  }
+}
 const linkedOriginContSealHasData = () => {
   if (!isDoContSealModal() || !settings.value?.crossServiceInboundRows?.[String(gsdModal.row)]) return false
   const value = rows.value[gsdModal.row]?.[gsdModal.column]
@@ -10960,13 +11077,20 @@ const isReadonlyDoContSealModal = () => isReadonlyCcdDduContSealModal() || (
 const canAddDoContSealRecord = () => isDoContSealModal() && !isReadonlyDoContSealModal()
 const isTruckContModal = () => !isDoContSealModal() && isGsdFormModalLabel('TRUCK & CONT/SEAL INFO', 'TRUCKS & CONT/SEAL DETAILS', 'CONT/SEAL INFO', 'TRUCKING INFO', 'TRUCKING DETAIL')
 const isTcdTruckContModal = () => isTruckContModal() && opsParts.value?.mode === 'FCL' && opsDeptUpper() === 'TCD'
+const showsTruckEpodExport = () => isTcdTruckContModal() &&
+  ['DO', 'DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase())
+// Origin-service TRUCK & CONT/SEAL INFO uses one consistent table in ECD and
+// every receiving department. TCD still owns Edit/Send actions, but it must
+// not switch these flows to the pickup-status/ePOD table used by DAP/DDU/DDP.
+const usesTcdTruckStatusTemplate = () => isTcdTruckContModal() &&
+  !['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase())
 // AIR/LCL mockups: TRUCKING INFO has no Container/Seal columns and uses "Warehouse GateIn Time";
 // it is editable on TCD and a read-only view on every other dept
 const isLclTruckingInfoModal = () => isTruckContModal() && isLclSheet() && normalizedHeaderLabel(gsdModal.column) === 'TRUCKING INFO'
 const isLclTruckingDetailModal = () => isTruckContModal() && isLclSheet() && normalizedHeaderLabel(gsdModal.column) === 'TRUCKING DETAIL'
 const isAirDcdTruckingModal = isLclTruckingInfoModal
 const isReadonlyTruckContModal = () => !isStandaloneManualOpsRow(gsdModal.row) && isTruckContModal() && (
-  (['EXW', 'FCA'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && ['ECD', 'CCD', 'DCD', 'FCD'].includes(opsDeptUpper())) ||
+  (['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && ['ECD', 'CCD', 'DCD', 'FCD'].includes(opsDeptUpper())) ||
   (['EXW', 'FCA'].includes(String(opsParts.value?.type || '').toUpperCase()) && isLclSheet() && ['ECD', 'DCD', 'FCD'].includes(opsDeptUpper())) ||
   (isLclTruckingInfoModal() && opsDeptUpper() !== 'TCD') ||
   (isLclTruckingDetailModal() && opsDeptUpper() === 'FCD') ||
@@ -12044,6 +12168,14 @@ const pickupBcFiles = (): Array<{ name: string; url: string }> => {
     .map((doc: any) => ({ name: String(doc?.name || ''), url: String(doc?.url || '') }))
     .filter((doc: { name: string; url: string }) => doc.url && !seen.has(doc.url) && !!seen.add(doc.url))
 }
+const closePickupBcMenuOnOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement | null
+  if (target?.closest('.pickup-bc-files')) return
+  const modal = event.currentTarget as HTMLElement | null
+  modal?.querySelectorAll<HTMLDetailsElement>('.pickup-bc-files[open]').forEach((details) => {
+    details.open = false
+  })
+}
 const openPickupBcFile = (file: { name: string; url: string }) => { if (file.url) void viewBookingAttachment(file.url) }
 const clearPickupInvalid = (key: string) => {
   if (!pickupInvalidFields.value.has(key)) return
@@ -12276,6 +12408,8 @@ const sendPickupToTarget = async () => {
         shipmentLink: settings.value?.opsRowLinks?.[String(gsdModal.row)] || '',
         to: gsdModal.form.picEmail,
         shipper: rowValueByHeader('SHIPPER'),
+        shipperName: emailCellDisplayValue('SHIPPER', rowValueByHeader('SHIPPER')),
+        consigneeName: emailCellDisplayValue('CNEE', rowValueByHeader('CNEE')),
         target,
         jobNo: rowValueByHeader('JOB NO#') || rowValueByHeader('REF#'),
         refNo: rowValueByHeader('REF#'),
@@ -13003,9 +13137,14 @@ const truckContSnapshot = (records: TruckContRecord[] = []) => JSON.stringify(re
   epodReceiver: String(record.epodReceiver || '').trim(),
 })))
 const truckContIsDirty = () => truckContSnapshot(truckContRecords()) !== String(gsdModal.form.initialRecords || '')
-const truckDetailsCanSend = () => !gsdModal.editing && !truckDetailsSending.value && truckContRecords().some((record) =>
-  [record.truck, record.driver, record.container, record.seal, record.eta1, record.eta2].some((value) => String(value || '').trim()),
-)
+const truckDetailsCanSend = () => {
+  if (gsdModal.editing || truckDetailsSending.value) return false
+  const records = truckContRecords()
+  return records.length > 0 && records.every((record) =>
+    [record.truck, record.container, record.contType, record.seal, record.driver, record.eta1, record.eta2]
+      .every((value) => String(value || '').trim()),
+  )
+}
 const uppercaseTruckRecordField = (record: TruckContRecord, field: keyof TruckContRecord) => {
   ;(record as any)[field] = upperText((record as any)[field])
 }
@@ -13016,6 +13155,7 @@ const truckDriverOptions = (truck?: string) => {
   return Array.from(new Set(source.map((driver) => upperText(driver.name)).filter(Boolean))).sort((a, b) => a.localeCompare(b))
 }
 const selectedTruckDriverIndexes = () => truckDriverModal.records.map((record, index) => record.selected ? index : -1).filter((index) => index >= 0)
+const truckDriverHasEditingRow = () => truckDriverModal.records.some((record) => !!record.editing)
 const toggleAllTruckDrivers = () => {
   const all = truckDriverModal.records.length > 0 && truckDriverModal.records.every((record) => record.selected)
   truckDriverModal.records.forEach((record) => { record.selected = !all })
@@ -13059,7 +13199,10 @@ const cancelTruckDriverModal = () => {
   truckDriverModal.records = []
   truckDriverModal.companyId = ''
   truckDriverModal.targetIndex = -1
+  truckDriverModal.selectedDriverName = ''
 }
+const truckDriverIsCurrent = (driver: TruckDriverRecord) =>
+  !!truckDriverModal.selectedDriverName && upperText(driver.name) === truckDriverModal.selectedDriverName
 const handleTruckCompanyChange = (record: TruckContRecord) => {
   record.truck = upperText(record.truck || '')
   record.driver = ''
@@ -13072,6 +13215,7 @@ const selectTruckDriverForRow = (driver: TruckDriverRecord) => {
   target.driver = upperText(driver.name)
   target.drvId = upperText(driver.did)
   target.drvPhone = String(driver.phone || '').trim()
+  truckDriverModal.selectedDriverName = upperText(driver.name)
   truckDriverModal.open = false
   truckDriverModal.targetIndex = -1
 }
@@ -13097,22 +13241,36 @@ const saveTruckDriverRecords = async () => {
   const drivers = cleanTruckDriverRecords()
   truckDriverModal.saving = true
   try {
-    const saved = await props.request(`/entities/clients/${encodeURIComponent(truckDriverModal.companyEntityId)}`, {
+    const company = truckCompanyRecordMap.value[upperText(truckDriverModal.companyName)]
+    const saved = await props.request(`/records/${encodeURIComponent(truckDriverModal.companyEntityId)}`, {
       method: 'PATCH',
       body: {
-        ...truckDriverModal.companyForm,
-        id: truckDriverModal.companyId,
-        roles: ['TRUCK COMP'],
-        drivers,
+        country: company?.sourceCountry || countryViewId(),
+        page: company?.sourcePage || 'traders_hauliers',
+        kind: company?.sourceKind || 'traders-suppliers',
+        sortOrder: company?.sourceSortOrder || 0,
+        data: {
+          ...(company?.sourceData || {}),
+          drivers: drivers.map((driver) => ({
+            _uid: driver.id,
+            name: driver.name,
+            driverId: driver.did,
+            phone: driver.phone,
+            truck: driver.htruck,
+            trailer: driver.htrailer,
+            status: driver.active,
+          })),
+        },
       },
     })
-    const clean = normalizeClientRecord(saved?.data || saved)
-    const name = upperText(clean.namecode || clean.companyName || truckDriverModal.companyName)
-    const savedDrivers = ((clean.drivers && clean.drivers.length) ? clean.drivers : drivers).map(normalizeTruckDriverRecord)
+    const savedRecord = saved?.data && saved?.data?.data ? saved.data : saved
+    const name = upperText(savedRecord?.data?.namecode || savedRecord?.data?.company || truckDriverModal.companyName)
+    const savedDrivers = (savedRecord?.data?.drivers || drivers).map(normalizeTruckDriverRecord)
     if (upperText(truckCompanyModal.savedName) === name) truckCompanyModal.drivers = savedDrivers
     truckDriverModal.records = savedDrivers.map((record) => ({ ...record, selected: false, editing: false }))
     truckDriverModal.companyName = name
     truckCompanyDriverMap.value = { ...truckCompanyDriverMap.value, [name]: savedDrivers }
+    await loadTruckCompanyOptions()
   } catch (error: any) {
     console.error('Could not save truck drivers', error)
     showToast(error?.data?.message || error?.message || 'Could not save drivers')
@@ -13121,7 +13279,11 @@ const saveTruckDriverRecords = async () => {
   }
 }
 const selectedTruckContIndexes = () => truckContRecords().map((record, index) => record.selected ? index : -1).filter((index) => index >= 0)
-const truckContRowCanEdit = (record: TruckContRecord) => !isReadonlyTruckContModal() && gsdModal.editing && !!record.selected
+const truckContEditingRows = ref(new Set<number>())
+const truckContRowCanEdit = (record: TruckContRecord) =>
+  !isReadonlyTruckContModal() && gsdModal.editing && (
+    !!record.selected || truckContEditingRows.value.has(truckContRecords().indexOf(record))
+  )
 const parseTruckDate = (value: any) => {
   const text = String(value || '').trim()
   if (!text) return null
@@ -13137,11 +13299,15 @@ const truckDaysAfterAta = (record: TruckContRecord) => {
 }
 const addTruckContRecord = () => {
   if (!Array.isArray(gsdModal.form.records)) gsdModal.form.records = []
-  gsdModal.form.records.push(emptyTruckContRecord())
+  const record = { ...emptyTruckContRecord(), selected: true }
+  gsdModal.form.records.push(record)
+  truckContEditingRows.value = new Set([gsdModal.form.records.length - 1])
   gsdModal.editing = true
 }
 const enableTruckContEdit = async () => {
-  if (!selectedTruckContIndexes().length) return
+  const selectedIndexes = selectedTruckContIndexes()
+  if (!selectedIndexes.length) return
+  truckContEditingRows.value = new Set(selectedIndexes)
   await loadTruckCompanyOptions()
   gsdModal.form.editRecordsSnapshot = JSON.stringify(truckContRecords())
   gsdModal.form.editLockedSnapshot = !!gsdModal.form.locked
@@ -13162,6 +13328,7 @@ const cancelTruckContEdit = () => {
   gsdModal.form.locked = !!gsdModal.form.editLockedSnapshot
   gsdModal.form.sentAt = String(gsdModal.form.editSentAtSnapshot || '')
   gsdModal.form.editRecordsSnapshot = ''
+  truckContEditingRows.value = new Set()
   gsdModal.form.editLockedSnapshot = undefined
   gsdModal.form.editSentAtSnapshot = undefined
   gsdModal.editing = false
@@ -13193,7 +13360,20 @@ const clearTruckContRecords = () => {
 const addTruckCompanyFromModal = () => {
   const selected = selectedTruckContIndexes()[0]
   const emptyIndex = truckContRecords().findIndex((record) => !record.truck)
-  void openTruckCompanyModal(selected >= 0 ? selected : emptyIndex >= 0 ? emptyIndex : 0)
+  const targetIndex = selected >= 0 ? selected : emptyIndex >= 0 ? emptyIndex : 0
+  const target = truckContRecords()[targetIndex]
+  if (!target) return
+  if (!gsdModal.editing) {
+    gsdModal.form.editRecordsSnapshot = JSON.stringify(truckContRecords())
+    gsdModal.form.editLockedSnapshot = !!gsdModal.form.locked
+    gsdModal.form.editSentAtSnapshot = String(gsdModal.form.sentAt || '')
+  }
+  target.selected = true
+  truckContEditingRows.value = new Set([...truckContEditingRows.value, targetIndex])
+  gsdModal.form.locked = false
+  gsdModal.form.sentAt = ''
+  gsdModal.editing = true
+  void openTruckCompanyModal(targetIndex)
 }
 const persistTruckContCell = (immediate = false) => {
   if (!rows.value[gsdModal.row]) return
@@ -13218,7 +13398,9 @@ const persistTruckContCell = (immediate = false) => {
 }
 const saveTruckContDetails = async () => {
   if (!gsdModal.editing) return
-  const editedRecords = truckContRecords().filter((record) => record.selected)
+  const editedRecords = truckContRecords().filter((record, index) =>
+    record.selected || truckContEditingRows.value.has(index),
+  )
   if (!editedRecords.length) {
     showToast('Select row(s) to save')
     return
@@ -13228,8 +13410,12 @@ const saveTruckContDetails = async () => {
     showToast('Truck Comp must be selected from Internal Directory')
     return
   }
-  const required = isTcdTruckContModal()
-    ? ['truck', 'container', 'contType', 'seal', 'driver', 'eta1', 'eta2', 'gdate']
+  const originServiceTruck = isTcdTruckContModal() &&
+    ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase())
+  const required = originServiceTruck
+    ? ['truck', 'container', 'contType', 'seal', 'driver', 'eta1', 'eta2']
+    : isTcdTruckContModal()
+      ? ['truck', 'container', 'contType', 'seal', 'driver', 'eta1', 'eta2', 'gdate']
     : ['truck', 'container', 'contType', 'seal', 'driver', 'eta1', 'eta2', 'gdate', 'gtime']
   if (editedRecords.some((record: any) => required.some((field) => !String(record[field] || '').trim()))) {
     showToast('Please complete all Truck & Cont/Seal fields before saving')
@@ -13238,7 +13424,7 @@ const saveTruckContDetails = async () => {
   gsdModal.form.locked = true
   persistTruckContCell(false)
   await saveSheet()
-  if (['EXW', 'FCA', 'DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase()) && ['FCL', 'LCL'].includes(String(opsParts.value?.mode || '').toUpperCase()) && opsDeptUpper() === 'TCD') {
+  if (['EXW', 'FCA', 'FCF', 'DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase()) && ['FCL', 'LCL'].includes(String(opsParts.value?.mode || '').toUpperCase()) && opsDeptUpper() === 'TCD') {
     await Promise.all(fclTcdMirrorDepts().map((dept) => {
       const targetLabel = dept === 'ICD' ? 'CONT/SEAL INFO' : dept === 'ECD' ? 'TRUCKING INFO' : 'TRUCK & CONT/SEAL INFO'
       return mirrorExwFclWorkflowCell(dept, targetLabel, rows.value[gsdModal.row][gsdModal.column])
@@ -13246,6 +13432,7 @@ const saveTruckContDetails = async () => {
   }
   gsdModal.form.initialRecords = truckContSnapshot(truckContRecords())
   gsdModal.form.editRecordsSnapshot = ''
+  truckContEditingRows.value = new Set()
   gsdModal.form.editLockedSnapshot = undefined
   gsdModal.form.editSentAtSnapshot = undefined
   gsdModal.editing = false
@@ -13375,7 +13562,8 @@ const printTruckPuDetail = () => {
   w.document.write(html)
   w.document.close()
 }
-const showTruckDriverDetail = (record: TruckContRecord) => {
+const showTruckDriverDetail = async (record: TruckContRecord) => {
+  await loadTruckCompanyOptions()
   const driver = findTruckDriver(record.truck, record.driver)
   if (!driver) { showToast('Driver detail not found'); return }
   driverDetail.rows = [
@@ -13392,15 +13580,8 @@ const showTruckDriverDetail = (record: TruckContRecord) => {
 }
 const showTruckCompanyDetail = async (name: string) => {
   try {
-    const res = await props.request('/entities/clients?limit=1000')
-    const source = Array.isArray(res?.items)
-      ? res.items
-      : Array.isArray(res?.data?.items)
-        ? res.data.items
-        : Array.isArray(res?.data?.data?.items) ? res.data.data.items : []
-    const target = source.map(normalizeClientRecord).find((item: GsdClientRecord) =>
-      [item.namecode, item.companyName, item.id].some((value) => upperText(value) === upperText(name)),
-    )
+    await loadTruckCompanyOptions()
+    const target = truckCompanyRecordMap.value[upperText(name)]
     if (!target) { showToast('Truck Company detail not found'); return }
     driverDetail.title = 'TRUCK COMPANY DETAIL'
     driverDetail.rows = clientDetailRows(target).map((item) => [item.label, item.value] as [string, string])
@@ -13545,6 +13726,7 @@ const toggleAllPickupReturnRecords = (event: Event) => {
   pickupReturnRecords().forEach((record) => {
     record.selected = checked
   })
+  syncPickupReturnEditState()
 }
 const toggleAllTruckingStatusRecords = () => {
   const records = pickupReturnRecords()
@@ -13589,12 +13771,21 @@ const openPickupReturnPuDetail = (record: PickupReturnRecord, index: number) => 
 const syncPickupReturnEditState = () => {
   if (!hasPickupReturnSelection() && gsdModal.editing && gsdModal.form.locked) gsdModal.editing = false
 }
+const togglePickupReturnRow = (record: PickupReturnRecord, event: MouseEvent) => {
+  const target = event.target as HTMLElement | null
+  if (target?.closest('button, a, input[type="checkbox"]')) return
+  if (gsdModal.editing) {
+    record.selected = true
+    return
+  }
+  record.selected = !record.selected
+  syncPickupReturnEditState()
+}
 const selectLockedPickupReturnRow = (record: PickupReturnRecord) => {
   if (gsdModal.editing || isAirDupFcdTruckingStatusModal()) return
   record.selected = true
 }
 const enablePickupReturnEdit = () => {
-  if (!hasPickupReturnSelection()) pickupReturnRecords().forEach((record) => { record.selected = true })
   gsdModal.form.locked = false
   gsdModal.editing = true
 }
@@ -14995,9 +15186,9 @@ const sendPreAlert = async () => {
           volume: emailCellDisplayValue('VOLUME', rowValueByHeader('VOLUME')), remarks: gsdModal.form.remarks,
         },
         documents: [
-          ...Object.values(gsdModal.form.files || {}).map((file: any) => preAlertFileName(file)),
-          ...[preDocsData().ci, preDocsData().pl, ...(preDocsData().others || [])].flatMap((item: any) => (item.files || []).map((file: any) => file.name)),
-        ].filter(Boolean),
+          ...Object.values(gsdModal.form.files || {}).map((file: any) => ({ name: preAlertFileName(file), url: String(file?.url || '') })),
+          ...[preDocsData().ci, preDocsData().pl, ...(preDocsData().others || [])].flatMap((item: any) => (item.files || []).map((file: any) => ({ name: String(file?.name || ''), url: String(file?.url || '') }))),
+        ].filter((file: any) => file.name),
       },
     })
     gsdModal.form.sent = true
@@ -15775,8 +15966,6 @@ const cellClass = (row: number, column: number) => ({
   lockedsrc: row > 0 && isLockedOpsCell(row, column),
   xfercell: row > 0 && xferColumn() === column,
   'has-note': Boolean(noteText(row, column)),
-  'mode-auto': row > 0 && normalizedHeaderLabel(column) === 'MODE' && upperText(rows.value[row]?.[column]) === 'AUTO',
-  'mode-manual': row > 0 && normalizedHeaderLabel(column) === 'MODE' && ['MANU', 'MANUAL'].includes(upperText(rows.value[row]?.[column])),
   'linked-date-changed': linkedDateChanged(row, column),
 })
 const toggleCheckbox = async (row: number, column: number, event: Event) => {
@@ -15937,17 +16126,29 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
       const shipmentLink = ensureOpsShipmentLink(sourceHeader, sourceRow, row, sourceState.settings)
       const sourceStorageKey = sheetStorageKey(sourceKey, sourceCountry)
       const sourcePayload = sheetPayload(sourceKey, false, sourceCountry, sourceState)
-      const dispatched = await trackLinkedWrite(props.request(`/workbook/sheets/${encodeURIComponent(sourceStorageKey)}/dispatch-bc-sent`, {
-        method: 'POST',
-        body: {
-          ...versionedSheetPayload(sourceStorageKey, sourcePayload),
-          rowIndex: row,
-          sentAt,
-          shipmentLink,
-          countryCode: generatedJobCountryCode(),
-          sales: String(sourceState.settings?.opsRowCreators?.[String(row)] || sourceRow[sourceHeader.indexOf('SALES')] || '').trim(),
-        },
-      }))
+      const dispatchUrl = `/workbook/sheets/${encodeURIComponent(sourceStorageKey)}/dispatch-bc-sent`
+      const dispatchBody = {
+        ...versionedSheetPayload(sourceStorageKey, sourcePayload),
+        rowIndex: row,
+        sentAt,
+        shipmentLink,
+        countryCode: generatedJobCountryCode(),
+        sales: String(sourceState.settings?.opsRowCreators?.[String(row)] || sourceRow[sourceHeader.indexOf('SALES')] || '').trim(),
+      }
+      let dispatched: any
+      try {
+        dispatched = await trackLinkedWrite(props.request(dispatchUrl, { method: 'POST', body: dispatchBody }))
+      } catch (error: any) {
+        if (requestStatus(error) !== 409 || !sourceStillVisible()) throw error
+        const latest = await props.request(`/workbook/sheets/${encodeURIComponent(sourceStorageKey)}`)
+        const latestUpdatedAt = responseUpdatedAt(latest)
+        if (!latestUpdatedAt) throw error
+        rememberSheetUpdatedAt(sourceStorageKey, latestUpdatedAt)
+        dispatched = await trackLinkedWrite(props.request(dispatchUrl, {
+          method: 'POST',
+          body: { ...dispatchBody, expectedUpdatedAt: latestUpdatedAt },
+        }))
+      }
       rememberSheetUpdatedAt(sourceStorageKey, responseUpdatedAt(dispatched))
       const emailResult = dispatched?.email || dispatched?.data?.email || dispatched?.data?.data?.email
       const dispatchedSettings = dispatched?.settings || dispatched?.data?.settings || dispatched?.data?.data?.settings
@@ -15964,10 +16165,7 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
         saveState.value = `Saved ${new Date().toLocaleTimeString('en-GB')}`
       }
     } catch (error: any) {
-      if (requestStatus(error) === 409 && sourceStillVisible()) {
-        await loadSheet()
-        return
-      }
+      if (sourceStillVisible()) input.checked = isChecked(rows.value[row]?.[column])
       showToast(error?.data?.message || error?.message || 'Could not save BC SENT')
     } finally {
       dispatchLoading.value = ''
@@ -17812,8 +18010,6 @@ const opsCellClass = (row: number, column: number) => ({
   vdly: ['ETD', 'ETA'].includes(normalizedHeaderLabel(column)) && rowVesselDelayed(row),
   refecd: isRefEcdCell(row, column),
   'time-cell': isOpsTimeColumn(column),
-  'mode-auto': normalizedHeaderLabel(column) === 'MODE' && upperText(rows.value[row]?.[column]) === 'AUTO',
-  'mode-manual': normalizedHeaderLabel(column) === 'MODE' && ['MANU', 'MANUAL'].includes(upperText(rows.value[row]?.[column])),
   'linked-date-changed': linkedDateChanged(row, column),
   'inline-editing': isEditingCell(row, column),
 })
@@ -18554,6 +18750,7 @@ onBeforeUnmount(() => {
 .bd-foot .wb-modal-btn:disabled{background:#c7cdc9!important;border-color:#c7cdc9!important;color:#eef1ef!important;cursor:not-allowed}
 .bd-foot .bill-send{background:#64748b;border-color:#64748b;color:#fff}
 .bd-foot .bill-send:not(:disabled){background:#008f4c;border-color:#008f4c}
+.bd-foot .bill-send:hover:not(:disabled){background:#008447;border-color:#008447}
 .bd-foot .edit:not(:disabled){background:#e67e22;border-color:#e67e22;color:#fff}
 @media(max-width:720px){.gsd-modal.gsd-bill-modal:has(.bd-body){padding:30px 18px 22px}.bd-row{flex-wrap:wrap}.bd-lab{flex-basis:130px}.bd-date{width:170px;flex-basis:170px}.bd-foot{width:100%}}
 .gsd-prealert-modal{width:486px;max-width:96vw;max-height:90vh;overflow-y:auto;padding:30px 28px 22px;border-radius:12px;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-prealert-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-pre-title{font-weight:800;font-size:14px;color:#1f2a26;margin:0 0 12px}.gsd-pre-dest{font-weight:700;font-size:13px;color:#33413b;margin:0 0 14px 14px}.gsd-pre-section{display:flex;flex-direction:column;align-items:center}.gsd-pre-row{display:flex;align-items:center;gap:12px;margin:9px 0}.gsd-pre-row.doc{width:440px;justify-content:flex-start}.gsd-pre-label{width:150px;text-align:right;font-weight:800;font-size:12.5px;color:#33413b;flex:none}.gsd-pre-row.doc .gsd-pre-label{width:170px}.gsd-pre-check{width:18px;height:18px;flex:none;accent-color:#008f4c;cursor:pointer}.gsd-pre-date,.gsd-pre-other{width:150px;height:38px;flex:none;text-align:center;padding:8px 10px;border:1px solid #c9d3cf;border-radius:8px;font:inherit;color:#33413b;background:#f7faf9;outline:none}.gsd-pre-other{text-align:left}.gsd-pre-icon{flex:none;border:none;background:none;cursor:pointer;color:#33413b;padding:2px;display:inline-flex;align-items:center;justify-content:center;line-height:0}.gsd-pre-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.gsd-pre-icon.upload.has{color:#1b7a43}.gsd-pre-icon.eye{opacity:.3;color:#9aa6a1;cursor:default}.gsd-pre-icon.eye.on{opacity:1;color:#0f4c81;cursor:pointer}.gsd-pre-icon:disabled{opacity:.4;cursor:not-allowed}.gsd-pre-divider{border-top:1px solid #e4eae7;margin:14px 0}.gsd-pre-doc-head{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 8px}.gsd-pre-doc-head span{font-weight:800;font-size:13px;color:#1f2a26}.gsd-pre-doc-head .wb-modal-btn{height:32px;min-height:32px;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:800}.gsd-pre-remarks{display:block;margin:6px 0 0}.gsd-pre-remarks span{display:block;font-weight:800;font-size:13px;color:#1f2a26;margin:0 0 6px}.gsd-pre-remarks textarea{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid #c9d3cf;border-radius:8px;font:inherit;color:#33413b;resize:vertical;outline:none}.gsd-pre-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}.gsd-pre-actions .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:800}.gsd-pre-actions .edit{background:#f6c998;border-color:#f6c998;color:#fff}.gsd-pre-actions .send{background:#0f4c81;border-color:#0f4c81;color:#fff}.gsd-pre-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-pre-actions .wb-modal-btn:disabled{opacity:.55;cursor:not-allowed}
@@ -19070,6 +19267,7 @@ onBeforeUnmount(() => {
 /* Truck driver editor: editable controls fill their cells and active drivers stay visually distinct. */
 .truck-driver-actions .select{background:#e67e22;color:#fff}.truck-driver-actions .select:hover:not(:disabled){background:#cf6f1c}.truck-driver-actions .select:disabled{background:#f4c79d;color:#fff;opacity:.55;cursor:not-allowed}
 .truck-driver-table tr.driver-row-editing td:has(input:not([type=checkbox])),.truck-driver-table tr.driver-row-editing td:has(select){padding:0;background:#fff4df}.truck-driver-table tr.driver-row-editing input:not([type=checkbox]),.truck-driver-table tr.driver-row-editing select{display:block;width:100%;height:100%;min-height:36px;box-sizing:border-box;padding:6px 8px;border-radius:0;background:#fff4df}.truck-driver-table tr.driver-row-editing input:focus,.truck-driver-table tr.driver-row-editing select:focus{border-radius:0;background:#fff;box-shadow:inset 0 0 0 2px #f39a12}.truck-driver-table .driver-status-cell.active,.truck-driver-table .driver-status-cell.active select{background:#dff5e8;color:#08743e;font-weight:800}.truck-driver-table .driver-status-cell.inactive,.truck-driver-table .driver-status-cell.inactive select{background:#f2f4f3;color:#7a847d}.truck-driver-name-link{width:100%;border:0;background:transparent;color:#08743e;text-decoration:underline;font:inherit;font-weight:800;cursor:pointer}.truck-driver-name-link:disabled{color:#7a847d;text-decoration:none;cursor:default}.truck-driver-picker-link.empty{color:#008f4c}.truck-driver-picker-link:disabled{color:#9aa6a1;text-decoration:none;cursor:not-allowed}
+.truck-driver-table tr.driver-row-current td{background:#dff5e8!important;box-shadow:inset 0 1px 0 #68c993,inset 0 -1px 0 #68c993}.truck-driver-table tr.driver-row-current td:first-child{box-shadow:inset 3px 0 0 #008f4c,inset 0 1px 0 #68c993,inset 0 -1px 0 #68c993}.truck-driver-table tr.driver-row-current .truck-driver-name-link{color:#006b38}.truck-company-cell{text-align:center!important}.truck-company-cell .truck-company-filter{text-align:center;text-align-last:center;cursor:text}.truck-company-cell>.gsd-pu-link{display:block;width:100%;text-align:center}.truck-company-picker button{text-align:center}
 .gsd-pickup-form select{width:100%;height:36px;border:1px solid #d3dacf;border-radius:7px;background:#fff;padding:7px 30px 7px 10px;font:inherit;font-size:12.5px;color:#33413b;outline:none}.gsd-pickup-form select:focus{box-shadow:inset 0 0 0 2px #00c566}.gsd-pickup-form select:disabled{background:#eef4f2;color:#64746d;cursor:not-allowed}.gsd-modal.gsd-mock-pk-modal .gsd-pickup-form select{height:38px;border-color:#c9d3cf;border-radius:8px;font-size:13px}.gsd-modal.gsd-mock-pk-modal .gsd-pickup-form select:focus{box-shadow:none}
 /* Native dropdowns inside worksheet cells: center selected values and popup options. */
 .ops-efa-select,.ops-action-select,.actsel{text-align:center;text-align-last:center}
@@ -19111,8 +19309,8 @@ onBeforeUnmount(() => {
 .ops-ms-table tbody tr:not(.selected):not(.editing):nth-child(even) td.ops-sel{background:#eaf3ed}
 .ops-ms-table tbody tr:not(.selected):not(.editing):hover,.ops-ms-table tbody tr:not(.selected):not(.editing):hover td.ops-sel{background:#dff0e5}
 /* One consistent visual state for every disabled modal action button. */
-.wb-modal-overlay button:disabled,.overlay .modal button:disabled,.wsmodal-overlay button:disabled{opacity:.42!important;filter:saturate(.45) brightness(1.08);cursor:not-allowed!important;box-shadow:none!important;transform:none!important}
-.wb-modal-overlay button:disabled:hover,.overlay .modal button:disabled:hover,.wsmodal-overlay button:disabled:hover{opacity:.42!important;filter:saturate(.45) brightness(1.08);transform:none!important}
+.wb-modal-overlay button:disabled,.overlay .modal button:disabled,.wsmodal-overlay button:disabled{opacity:.7!important;filter:saturate(.72) brightness(1.03);cursor:not-allowed!important;box-shadow:none!important;transform:none!important}
+.wb-modal-overlay button:disabled:hover,.overlay .modal button:disabled:hover,.wsmodal-overlay button:disabled:hover{opacity:.7!important;filter:saturate(.72) brightness(1.03);transform:none!important}
 .ops-ms-table .ops-locked-date-text,.sheet-body .ops-locked-date-text{display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-height:26px;box-sizing:border-box;color:#26312b!important;background:transparent!important;font:400 12px/1.35 Arial,sans-serif!important;text-decoration:none!important;letter-spacing:0!important;text-transform:none!important}
 /* Cutoff uses the same in-app calendar as ETD/ETA and compact 24-hour selectors. */
 .gsd-cutoff-inputs .gsd-cutoff-date{display:flex;align-items:center;justify-content:space-between;width:150px;height:38px;box-sizing:border-box;border:1px solid #cfd8d2;border-radius:8px;background:#fff;padding:0 10px;color:#33413b;font:inherit;font-size:13px;cursor:pointer}
@@ -19162,4 +19360,8 @@ onBeforeUnmount(() => {
 .gsd-payment-modal .gsd-pay-table tr.selrow td.pay-check{background:#e9f8ef!important}
 .gsd-payment-modal .gsd-pay-table th.pay-check::before,.gsd-payment-modal .gsd-pay-table td.pay-check::before{content:"";position:absolute;z-index:-1;top:-2px;right:100%;bottom:-2px;width:20px;background:#fff;pointer-events:none}
 .gsd-payment-modal .gsd-pay-table th.pay-check>input,.gsd-payment-modal .gsd-pay-table td.pay-check>input{position:relative;z-index:1}
+.gsd-release-actions .wb-modal-btn.release-send{transition:background-color .15s ease,border-color .15s ease,box-shadow .15s ease}
+.gsd-release-actions .wb-modal-btn.release-send:hover:not(:disabled),.gsd-release-actions .wb-modal-btn.release-send:focus-visible:not(:disabled){background:#0b5f59;border-color:#0b5f59;color:#fff;box-shadow:0 2px 8px rgba(15,118,110,.24)}
+.gsd-release-actions .wb-modal-btn.release-send:active:not(:disabled){background:#094f4a;border-color:#094f4a}
+.gsd-prs-actions .wb-modal-btn.primary:disabled{opacity:1!important;filter:none!important;background:#b9d9c9!important;border-color:#b9d9c9!important;color:#fff!important}
 </style>
