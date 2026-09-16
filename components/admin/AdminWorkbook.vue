@@ -4077,6 +4077,44 @@ type TruckCompanyForm = ReturnType<typeof emptyClientForm>
 type ClientView = 'search' | 'detail' | 'new' | 'edit'
 type PaymentDocSide = 'pay' | 'collect' | 'invoice'
 type PaymentDocument = { name: string; url: string; type?: string }
+const maxAdminAttachmentBytes = 30 * 1024 * 1024
+const uploadAdminAttachment = async (file: File) => {
+  if (file.size > maxAdminAttachmentBytes) throw new Error('File size must not exceed 30 MB')
+  const body = new FormData()
+  body.append('file', file, file.name)
+  // Keep the established route so a newly deployed frontend remains
+  // compatible while the backend process is rebuilt/restarted. The updated
+  // backend stores every document type in the shared persistent directory.
+  const uploaded = await props.request('/attachments/booking-details', { method: 'POST', body })
+  const url = String(uploaded?.url || '').trim()
+  if (!url) throw new Error('The server did not return the uploaded file URL')
+  return {
+    name: String(uploaded?.name || file.name).trim(),
+    url,
+    type: String(uploaded?.mimeType || file.type || 'application/octet-stream'),
+    mimeType: String(uploaded?.mimeType || file.type || 'application/octet-stream'),
+    size: Number(uploaded?.size || file.size || 0),
+  }
+}
+const viewAdminAttachment = async (url: string) => {
+  const attachmentUrl = String(url || '').trim()
+  if (!attachmentUrl) return
+  if (!attachmentUrl.startsWith('/attachments/')) {
+    window.open(attachmentUrl, '_blank', 'noopener,noreferrer')
+    return
+  }
+  const preview = window.open('', '_blank')
+  try {
+    const file = await props.request(attachmentUrl, { responseType: 'blob' })
+    const objectUrl = URL.createObjectURL(file instanceof Blob ? file : new Blob([file]))
+    if (preview) preview.location.href = objectUrl
+    else window.open(objectUrl, '_blank', 'noopener,noreferrer')
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
+  } catch (error: any) {
+    preview?.close()
+    showToast(String(error?.data?.message || error?.message || 'Could not open the attachment'))
+  }
+}
 type PaymentOptionKind = 'charge' | 'party' | 'collect' | 'currency'
 type PaymentLine = {
   id: string
@@ -8317,22 +8355,24 @@ const chooseDoInfoFile = (kind: 'mbl' | 'hbl') => {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png'
-  input.onchange = () => {
+  input.onchange = async () => {
     const file = input.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const attachment = { name: file.name, dataUrl: String(reader.result || ''), type: file.type }
+    try {
+      const uploaded = await uploadAdminAttachment(file)
+      const attachment = { name: uploaded.name, dataUrl: uploaded.url, type: uploaded.type }
       if (kind === 'mbl') doInfoModal.mblFile = attachment
       else doInfoModal.hblFile = attachment
+    } catch (error: any) {
+      showToast(String(error?.data?.message || error?.message || 'Could not upload the attachment'))
     }
-    reader.readAsDataURL(file)
   }
   input.click()
 }
 const viewDoInfoFile = (kind: 'mbl' | 'hbl') => {
   const file = kind === 'mbl' ? doInfoModal.mblFile : doInfoModal.hblFile
   if (!file.dataUrl) return
+  if (file.dataUrl.startsWith('/attachments/')) { void viewAdminAttachment(file.dataUrl); return }
   let previewUrl = file.dataUrl
   let objectUrl = ''
   try {
@@ -9320,6 +9360,10 @@ const viewPaymentDoc = (line: PaymentLine, side: PaymentDocSide) => {
     showToast('This legacy attachment has no saved file content. Please upload it again.')
     return
   }
+  if (attachment.url.startsWith('/attachments/')) {
+    void viewAdminAttachment(attachment.url)
+    return
+  }
   try {
     let viewUrl = attachment.url
     let shouldRevoke = false
@@ -9360,19 +9404,22 @@ const uploadPaymentDocs = (index: number, side: PaymentDocSide) => {
   const input = document.createElement('input')
   input.type = 'file'
   input.multiple = false
-  input.onchange = () => {
+  input.onchange = async () => {
     const file = input.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const attachment: PaymentDocument = { name: file.name, url: String(reader.result || ''), type: file.type }
+    try {
+      dispatchLoading.value = `Uploading ${file.name}...`
+      const uploaded = await uploadAdminAttachment(file)
+      const attachment: PaymentDocument = { name: uploaded.name, url: uploaded.url, type: uploaded.type }
       if (side === 'pay') line.docsPay = [attachment]
       else if (side === 'collect') line.docsCollect = [attachment]
       else line.docsInvoice = [attachment]
       persistPaymentRequest()
+    } catch (error: any) {
+      showToast(String(error?.data?.message || error?.message || 'Could not upload the attachment'))
+    } finally {
+      dispatchLoading.value = ''
     }
-    reader.onerror = () => showToast('Could not read the selected file')
-    reader.readAsDataURL(file)
   }
   input.click()
 }
@@ -9684,9 +9731,7 @@ const onBookingDetailFile = async (event: Event) => {
   if (!file) return
   bookingDetailModal.uploading = true
   try {
-    const body = new FormData()
-    body.append('file', file, file.name)
-    const uploaded = await props.request('/attachments/booking-details', { method: 'POST', body })
+    const uploaded = await uploadAdminAttachment(file)
     const url = String(uploaded?.url || '').trim()
     if (!url) throw new Error('The server did not return the uploaded file URL')
     const name = String(uploaded?.name || file.name).trim()
@@ -9708,22 +9753,7 @@ const onBookingDetailFile = async (event: Event) => {
 const viewBookingAttachment = async (url: string) => {
   const attachmentUrl = String(url || '').trim()
   if (!attachmentUrl) return
-  if (!attachmentUrl.startsWith('/attachments/booking-details/')) {
-    window.open(attachmentUrl, '_blank', 'noopener,noreferrer')
-    return
-  }
-  const preview = window.open('', '_blank')
-  try {
-    const file = await props.request(attachmentUrl, { responseType: 'blob' })
-    const blob = file instanceof Blob ? file : new Blob([file])
-    const objectUrl = URL.createObjectURL(blob)
-    if (preview) preview.location.href = objectUrl
-    else window.open(objectUrl, '_blank', 'noopener,noreferrer')
-    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
-  } catch (error: any) {
-    preview?.close()
-    showToast(String(error?.data?.message || error?.message || 'Could not open the booking attachment'))
-  }
+  await viewAdminAttachment(attachmentUrl)
 }
 const viewBookingDetailFile = () => { if (bookingDetailModal.url) void viewBookingAttachment(bookingDetailModal.url) }
 const saveBookingDetail = () => {
@@ -12093,22 +12123,25 @@ const pickupHasInput = () => {
 }
 const openPickupBooking = () => {
   const url = String(gsdModal.form.bookingUrl || '').trim()
-  if (url) window.open(url, '_blank')
+  if (url) void viewAdminAttachment(url)
 }
 const choosePickupBookingFile = () => {
   if (!pickupCanEdit() || !gsdModal.form.uploadBooking) return
   pickupBookingFileInput.value?.click()
 }
-const handlePickupBookingFile = (event: Event) => {
+const handlePickupBookingFile = async (event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (file) {
-    const oldUrl = String(gsdModal.form.bookingUrl || '')
-    if (oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl)
-    gsdModal.form.booking = file.name
-    gsdModal.form.bookingUrl = URL.createObjectURL(file)
-    gsdModal.form.uploadBooking = true
-    showToast(`Booking uploaded · ${file.name}`)
+    try {
+      const uploaded = await uploadAdminAttachment(file)
+      gsdModal.form.booking = uploaded.name
+      gsdModal.form.bookingUrl = uploaded.url
+      gsdModal.form.uploadBooking = true
+      showToast(`Booking uploaded · ${uploaded.name}`)
+    } catch (error: any) {
+      showToast(String(error?.data?.message || error?.message || 'Could not upload the booking'))
+    }
   }
   input.value = ''
 }
@@ -12465,18 +12498,22 @@ const chooseClearanceDocFile = (key: string) => {
   clearanceDocUploadTarget.value = key
   clearanceDocFileInput.value?.click()
 }
-const handleClearanceDocFile = (event: Event) => {
+const handleClearanceDocFile = async (event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   const key = clearanceDocUploadTarget.value
   if (file && key) {
     const doc = clearanceDocs().find((item) => item.key === key)
     if (doc) {
-      if (doc.url?.startsWith('blob:')) URL.revokeObjectURL(doc.url)
-      doc.file = file.name
-      doc.displayName = file.name
-      doc.url = URL.createObjectURL(file)
-      doc.verified = true
+      try {
+        const uploaded = await uploadAdminAttachment(file)
+        doc.file = uploaded.name
+        doc.displayName = uploaded.name
+        doc.url = uploaded.url
+        doc.verified = true
+      } catch (error: any) {
+        showToast(String(error?.data?.message || error?.message || 'Could not upload the clearance document'))
+      }
     }
   }
   clearanceDocUploadTarget.value = ''
@@ -12484,7 +12521,7 @@ const handleClearanceDocFile = (event: Event) => {
 }
 const viewClearanceDocFile = (key: string) => {
   const doc = clearanceDocs().find((item) => item.key === key)
-  if (doc?.url) window.open(doc.url, '_blank')
+  if (doc?.url) void viewAdminAttachment(doc.url)
 }
 const persistClearanceDocs = (immediate = false) => {
   rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ form: { docs: clearanceDocs(), locked: !!gsdModal.form.locked } })
@@ -13799,18 +13836,23 @@ const removeSiSubmitContainer = (index: number) => {
   gsdModal.form.containers.splice(index, 1)
   if (!gsdModal.form.containers.length) gsdModal.form.containers.push(newSiSubmitContainer())
 }
-const handleSiMarksFile = (event: Event) => {
+const handleSiMarksFile = async (event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (file) {
-    gsdModal.form.marksFile = { name: file.name, url: URL.createObjectURL(file) }
-    showToast(`File attached: ${file.name}`)
+    try {
+      const uploaded = await uploadAdminAttachment(file)
+      gsdModal.form.marksFile = { name: uploaded.name, url: uploaded.url }
+      showToast(`File attached: ${uploaded.name}`)
+    } catch (error: any) {
+      showToast(String(error?.data?.message || error?.message || 'Could not upload the file'))
+    }
   }
   input.value = ''
 }
 const viewSiMarksFile = () => {
   const url = String(gsdModal.form.marksFile?.url || '')
-  if (url) window.open(url, '_blank', 'noopener,noreferrer')
+  if (url) void viewAdminAttachment(url)
   else showToast(String(gsdModal.form.marksFile?.name || 'No file'))
 }
 const removeSiMarksFile = () => { if (gsdModal.editing) gsdModal.form.marksFile = null }
@@ -13977,10 +14019,15 @@ const openBillDetailUpload = (field: 'mblFile' | 'hblFile') => {
   billDetailUploadField.value = field
   billDetailFileInput.value?.click()
 }
-const handleBillDetailFile = (event: Event) => {
+const handleBillDetailFile = async (event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
-  if (file) gsdModal.form[billDetailUploadField.value] = { name: file.name, url: URL.createObjectURL(file) }
+  if (file) {
+    try {
+      const uploaded = await uploadAdminAttachment(file)
+      gsdModal.form[billDetailUploadField.value] = { name: uploaded.name, url: uploaded.url }
+    } catch (error: any) { showToast(String(error?.data?.message || error?.message || 'Could not upload the file')) }
+  }
   input.value = ''
 }
 const syncBillReleasePayment = (selected: 'all' | 'later') => {
@@ -14008,10 +14055,15 @@ const saveEcdPaymentDetail = async () => {
     showToast(error?.data?.message || error?.message || 'Could not update Approval List deadline')
   }
 }
-const handleBillReleaseFile = (event: Event) => {
+const handleBillReleaseFile = async (event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
-  if (file) gsdModal.form.mblFile = { name: file.name, url: URL.createObjectURL(file) }
+  if (file) {
+    try {
+      const uploaded = await uploadAdminAttachment(file)
+      gsdModal.form.mblFile = { name: uploaded.name, url: uploaded.url }
+    } catch (error: any) { showToast(String(error?.data?.message || error?.message || 'Could not upload the file')) }
+  }
   input.value = ''
 }
 const clearBillRelease = () => {
@@ -14192,7 +14244,7 @@ const saveBillApproval = async () => {
 }
 const viewBillDetailFile = (file: any) => {
   const url = String(file?.url || '').trim()
-  if (url) window.open(url, '_blank', 'noopener,noreferrer')
+  if (url) void viewAdminAttachment(url)
   else showToast(String(file?.name || 'Attachment'))
 }
 const billDocValue = (key: string) => String(billDocModal[key] || '')
@@ -14657,7 +14709,7 @@ const choosePreDocsFile = (section: 'ci' | 'pl' | 'other', index = 0) => {
   preDocsFileTarget.value = { section, index }
   preDocsFileInput.value?.click()
 }
-const handlePreDocsFile = (event: Event) => {
+const handlePreDocsFile = async (event: Event) => {
   const input = event.target as HTMLInputElement
   const files = Array.from(input.files || [])
   const target = preDocsFileTarget.value
@@ -14665,8 +14717,13 @@ const handlePreDocsFile = (event: Event) => {
     const pd = preDocsData()
     const bucket = target.section === 'other' ? pd.others[target.index].files : pd[target.section].files
     if (!Array.isArray(bucket)) return
-    files.forEach((file) => bucket.push({ name: file.name, url: URL.createObjectURL(file) }))
-    showToast(`Uploaded: ${files.map((file) => file.name).join(', ')}`)
+    try {
+      for (const file of files) {
+        const uploaded = await uploadAdminAttachment(file)
+        bucket.push({ name: uploaded.name, url: uploaded.url })
+      }
+      showToast(`Uploaded: ${files.map((file) => file.name).join(', ')}`)
+    } catch (error: any) { showToast(String(error?.data?.message || error?.message || 'Could not upload the document')) }
   }
   input.value = ''
   preDocsFileTarget.value = null
@@ -14681,7 +14738,7 @@ const removePreDocsFile = (section: 'ci' | 'pl' | 'other', fileIndex: number, in
 const viewPreDocsFile = (file: any) => {
   const url = String(file?.url || '')
   if (!url) { showToast('Upload this file again to preview it'); return }
-  window.open(url, '_blank', 'noopener,noreferrer')
+  void viewAdminAttachment(url)
 }
 const viewPreDocsFiles = (files: any[]) => {
   const available = (Array.isArray(files) ? files : []).filter((file) => String(file?.url || ''))
@@ -14689,7 +14746,7 @@ const viewPreDocsFiles = (files: any[]) => {
     showToast('Upload this file again to preview it')
     return
   }
-  available.forEach((file) => window.open(String(file.url), '_blank', 'noopener,noreferrer'))
+  available.forEach((file) => { void viewAdminAttachment(String(file.url)) })
 }
 const addPreDocsOther = () => {
   if (!preDocsModal.editing) return
@@ -14722,21 +14779,22 @@ const attachPreAlertFile = (key: string) => {
   preAlertFileTarget.value = key
   preAlertFileInput.value?.click()
 }
-const handlePreAlertFile = (event: Event) => {
+const handlePreAlertFile = async (event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   const key = preAlertFileTarget.value
   if (file && key) {
     if (!gsdModal.form.files) gsdModal.form.files = {}
-    const previousUrl = gsdModal.form.files[key]?.url
-    if (previousUrl) URL.revokeObjectURL(previousUrl)
-    gsdModal.form.files[key] = { name: file.name, url: URL.createObjectURL(file) }
-    showToast(`Uploaded: ${file.name}`)
+    try {
+      const uploaded = await uploadAdminAttachment(file)
+      gsdModal.form.files[key] = { name: uploaded.name, url: uploaded.url }
+      showToast(`Uploaded: ${uploaded.name}`)
+    } catch (error: any) { showToast(String(error?.data?.message || error?.message || 'Could not upload the document')) }
   }
   input.value = ''
   preAlertFileTarget.value = ''
 }
-const viewPreAlertFile = (key: string) => {
+const viewPreAlertFile = async (key: string) => {
   const file = gsdModal.form.files?.[key]
   const name = preAlertFileName(file)
   const url = String(file?.url || '')
@@ -14744,12 +14802,22 @@ const viewPreAlertFile = (key: string) => {
     showToast(name ? 'Upload this file again to preview it' : 'No file uploaded')
     return
   }
-  preAlertViewer.name = name
-  preAlertViewer.url = url
-  preAlertViewer.open = true
+  try {
+    let previewUrl = url
+    if (url.startsWith('/attachments/')) {
+      const data = await props.request(url, { responseType: 'blob' })
+      previewUrl = URL.createObjectURL(data instanceof Blob ? data : new Blob([data]))
+    }
+    if (preAlertViewer.url.startsWith('blob:')) URL.revokeObjectURL(preAlertViewer.url)
+    preAlertViewer.name = name
+    preAlertViewer.url = previewUrl
+    preAlertViewer.open = true
+  } catch (error: any) { showToast(String(error?.data?.message || error?.message || 'Could not open the document')) }
 }
 const closePreAlertViewer = () => {
+  if (preAlertViewer.url.startsWith('blob:')) URL.revokeObjectURL(preAlertViewer.url)
   preAlertViewer.open = false
+  preAlertViewer.url = ''
 }
 const openPreAlertViewerInTab = () => {
   if (preAlertViewer.url) window.open(preAlertViewer.url, '_blank', 'noopener,noreferrer')
@@ -15251,9 +15319,7 @@ const addDealtFiles = async (event: Event) => {
   dispatchLoading.value = files.length > 1 ? `Uploading ${files.length} DEALT INFO files...` : `Uploading ${files[0].name}...`
   try {
     for (const file of files) {
-      const body = new FormData()
-      body.append('file', file, file.name)
-      const uploaded = await props.request('/attachments/booking-details', { method: 'POST', body })
+      const uploaded = await uploadAdminAttachment(file)
       const url = String(uploaded?.url || '').trim()
       if (!url) throw new Error(`The server did not return a URL for ${file.name}`)
       gsdModal.dealt.files.push({

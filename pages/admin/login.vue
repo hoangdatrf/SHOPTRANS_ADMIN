@@ -2,7 +2,7 @@
   <main class="admin-login">
     <section class="login-card">
       <div class="brand">
-        <div class="brand-mark">ST</div>
+        <img class="brand-mark" src="/shoptrans-admin-mark.svg" alt="Shoptrans" />
         <div>
           <strong>Shoptrans</strong>
           <span>Admin Console</span>
@@ -117,12 +117,9 @@ const submit = async () => {
 .brand-mark {
   width: 42px;
   height: 42px;
-  border-radius: 11px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  background: linear-gradient(135deg, #00C566, var(--green));
-  font-weight: 800;
+  display: block;
+  flex: 0 0 42px;
+  object-fit: contain;
 }
 .brand strong { display: block; font-size: 17px; }
 .brand span { display: block; font-size: 11px; color: var(--g300); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
