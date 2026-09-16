@@ -2760,6 +2760,7 @@
                     <col class="ec-col-sender" />
                     <col class="ec-col-note" />
                     <col class="ec-col-date" />
+                    <col class="ec-col-last-feedback" />
                     <col class="ec-col-status" />
                     <col class="ec-col-reason" />
                     <template v-if="expenseCollectShowsDebitInvoiceColumns()">
@@ -2785,7 +2786,7 @@
                           &nbsp; TOTAL COLLECTION: <b>{{ expenseTotal('collect') }}</b>
                         </span>
                       </th>
-                      <th colspan="4" class="ec-sum-ded">
+                      <th colspan="5" class="ec-sum-ded">
                         <span class="ec-sumin">CURRENCY:
                           <select v-model="gsdModal.form.deductCurrency" class="ec-cursel"><option v-for="cur in expenseCurrencies" :key="cur">{{ cur }}</option></select>
                           &nbsp; DEDUCTED AMOUNT: <b>{{ expenseDeductedTotal() }}</b>
@@ -2797,7 +2798,7 @@
                       <th class="pcheck"><input type="checkbox" :checked="expenseAllVisibleSelected()" @change="toggleExpenseAllVisible" /></th>
                       <th>Charge name</th><th class="grp-pay">Pay to</th><th class="grp-pay">Pay at</th><th class="grp-pay">Currency</th><th class="grp-pay">Total</th><th class="grp-pay">Upload</th>
                       <th class="grp-col">Collect from</th><th class="grp-col">Collect at</th><th class="grp-col">Currency</th><th class="grp-col">Total</th><th class="grp-col">Upload</th>
-                      <th class="grp-fb">Sender</th><th class="grp-fb">Note from sender</th><th class="grp-fb">Requested Date</th><th class="grp-fb">Status</th><th class="grp-fb">Reason</th>
+                      <th class="grp-fb">Sender</th><th class="grp-fb">Note from sender</th><th class="grp-fb">Requested Date</th><th class="grp-fb">Last Feedback</th><th class="grp-fb">Status</th><th class="grp-fb">Reason</th>
                       <template v-if="expenseCollectShowsDebitInvoiceColumns()">
                         <th class="grp-dn">E.DNNo#</th><th class="grp-dn">E.DNDate</th><th class="grp-dn">I.DNNo#</th><th class="grp-dn">I.DNDate</th>
                         <th class="grp-inv">E.InvoiceNo#</th><th class="grp-inv">E.InvoiceDate</th><th class="grp-inv">I.InvoiceNo#</th><th class="grp-inv">I.InvoiceDate</th>
@@ -2825,6 +2826,7 @@
                       <td class="grp-fb"><span class="ec-cell" :title="line.sender">{{ line.sender }}</span></td>
                       <td class="grp-fb"><span class="ec-cell" :title="line.noteFrom">{{ line.noteFrom }}</span></td>
                       <td class="grp-fb"><span class="ec-cell" :title="line.reqDate">{{ line.reqDate }}</span></td>
+                      <td class="grp-fb"><span class="ec-cell ec-last-feedback" :title="line.lastFeedback">{{ line.lastFeedback || '-' }}</span></td>
                       <td class="ec-status grp-fb">
                         <select v-model="line.status" class="ec-statussel" :class="expenseStatusClass(line.status)" :disabled="!!line.statusDetails && !line.editing">
                           <option value="">-</option>
@@ -2835,14 +2837,14 @@
                       </td>
                       <td class="grp-fb"><input v-model.trim="line.reason" class="ec-reason" placeholder="Enter reason" :disabled="!!line.statusDetails && !line.editing" /></td>
                       <template v-if="expenseCollectShowsDebitInvoiceColumns()">
-                        <td class="grp-dn"><input v-model.trim="line.ednNo" class="ec-fcd-input" @input="line.ednNo = upperText(line.ednNo); persistExpenseCollect()" /></td>
-                        <td class="grp-dn"><input v-model="line.ednDate" class="ec-fcd-input" type="date" @input="persistExpenseCollect()" /></td>
-                        <td class="grp-dn"><input v-model.trim="line.idnNo" class="ec-fcd-input" @input="line.idnNo = upperText(line.idnNo); persistExpenseCollect()" /></td>
-                        <td class="grp-dn"><input v-model="line.idnDate" class="ec-fcd-input" type="date" @input="persistExpenseCollect()" /></td>
-                        <td class="grp-inv"><input v-model.trim="line.einvNo" class="ec-fcd-input" @input="line.einvNo = upperText(line.einvNo); persistExpenseCollect()" /></td>
-                        <td class="grp-inv"><input v-model="line.einvDate" class="ec-fcd-input" type="date" @input="persistExpenseCollect()" /></td>
-                        <td class="grp-inv"><input v-model.trim="line.iinvNo" class="ec-fcd-input" @input="line.iinvNo = upperText(line.iinvNo); persistExpenseCollect()" /></td>
-                        <td class="grp-inv"><input v-model="line.iinvDate" class="ec-fcd-input" type="date" @input="persistExpenseCollect()" /></td>
+                        <td class="grp-dn"><input v-model.trim="line.ednNo" class="ec-fcd-input" :disabled="!!line.statusDetails && !line.editing" @input="line.ednNo = upperText(line.ednNo); persistExpenseCollect()" /></td>
+                        <td class="grp-dn"><input v-model="line.ednDate" class="ec-fcd-input" type="date" :disabled="!!line.statusDetails && !line.editing" @input="persistExpenseCollect()" /></td>
+                        <td class="grp-dn"><input v-model.trim="line.idnNo" class="ec-fcd-input" :disabled="!!line.statusDetails && !line.editing" @input="line.idnNo = upperText(line.idnNo); persistExpenseCollect()" /></td>
+                        <td class="grp-dn"><input v-model="line.idnDate" class="ec-fcd-input" type="date" :disabled="!!line.statusDetails && !line.editing" @input="persistExpenseCollect()" /></td>
+                        <td class="grp-inv"><input v-model.trim="line.einvNo" class="ec-fcd-input" :disabled="!!line.statusDetails && !line.editing" @input="line.einvNo = upperText(line.einvNo); persistExpenseCollect()" /></td>
+                        <td class="grp-inv"><input v-model="line.einvDate" class="ec-fcd-input" type="date" :disabled="!!line.statusDetails && !line.editing" @input="persistExpenseCollect()" /></td>
+                        <td class="grp-inv"><input v-model.trim="line.iinvNo" class="ec-fcd-input" :disabled="!!line.statusDetails && !line.editing" @input="line.iinvNo = upperText(line.iinvNo); persistExpenseCollect()" /></td>
+                        <td class="grp-inv"><input v-model="line.iinvDate" class="ec-fcd-input" type="date" :disabled="!!line.statusDetails && !line.editing" @input="persistExpenseCollect()" /></td>
                       </template>
                       <template v-else>
                         <td class="grp-fb"><span class="ec-cell" :title="line.statusDetails">{{ line.statusDetails }}</span></td>
@@ -2851,7 +2853,7 @@
                       </template>
                     </tr>
                     <tr v-if="!expenseCollectVisibleLines().length">
-                      <td :colspan="expenseCollectShowsDebitInvoiceColumns() ? 25 : 20" class="pr-empty">No matching line for the selected currency.</td>
+                      <td :colspan="expenseCollectShowsDebitInvoiceColumns() ? 26 : 21" class="pr-empty">No matching line for the selected currency.</td>
                     </tr>
                   </tbody>
                   </table>
@@ -4097,7 +4099,10 @@ type PaymentLine = {
   approvedAt: string
   status: string
   reason: string
+  lastFeedback: string
   statusDetails: string
+  requestUnread: boolean
+  feedbackUnread: boolean
   ednNo: string
   ednDate: string
   idnNo: string
@@ -4247,7 +4252,10 @@ const newPaymentLine = (): PaymentLine => ({
   approvedAt: '',
   status: '',
   reason: '',
+  lastFeedback: '',
   statusDetails: '',
+  requestUnread: false,
+  feedbackUnread: false,
   ednNo: '',
   ednDate: '',
   idnNo: '',
@@ -5807,7 +5815,10 @@ const loadSheet = async () => {
       const modeColumn = (rowsLoaded[0] || []).findIndex((cell) => String(cell ?? '').trim().toUpperCase() === 'MODE')
       const manualRows = new Set<number>((settingsLoaded.manualOpsRows || []).map(Number))
       if (modeColumn >= 0) rowsLoaded.forEach((row, index) => {
-        if (index > 0 && !String(row?.[modeColumn] ?? '').trim()) row[modeColumn] = manualRows.has(index) ? 'MANUAL' : 'AUTO'
+        if (index <= 0) return
+        const currentMode = upperText(row?.[modeColumn])
+        if (!currentMode) row[modeColumn] = manualRows.has(index) ? 'MANU' : 'AUTO'
+        else if (currentMode === 'MANUAL') row[modeColumn] = 'MANU'
       })
     }
 
@@ -6347,7 +6358,7 @@ const addRow = async () => {
     if (blankRow > 0) {
       rows.value[blankRow] = makeBlankWorkbookRow()
       const modeColumn = headerIndexOf(['MODE'])
-      if (modeColumn >= 0) rows.value[blankRow][modeColumn] = 'MANUAL'
+      if (modeColumn >= 0) rows.value[blankRow][modeColumn] = 'MANU'
       const links = { ...(settings.value.opsRowLinks || {}) }
       if (String(opsParts.value?.dept || '').toUpperCase() === 'GSD') links[String(blankRow)] = newOpsShipmentLink()
       else delete links[String(blankRow)]
@@ -6363,7 +6374,7 @@ const addRow = async () => {
   if (isOpsPage.value) {
     const row = rows.value.length - 1
     const modeColumn = headerIndexOf(['MODE'])
-    if (modeColumn >= 0) rows.value[row][modeColumn] = 'MANUAL'
+    if (modeColumn >= 0) rows.value[row][modeColumn] = 'MANU'
     const links = { ...(settings.value.opsRowLinks || {}) }
     if (String(opsParts.value?.dept || '').toUpperCase() === 'GSD') links[String(row)] = newOpsShipmentLink()
     else delete links[String(row)]
@@ -8121,6 +8132,7 @@ const isLinkedImportDownstreamAtaCell = (row: number, column: number) => {
 }
 const isLockedOpsCell = (row: number, column: number) =>
   normalizedHeaderLabel(column) === 'MODE' ||
+  (row > 0 && isOpsTimeColumn(column)) ||
   isLockedAfterBcSentDate(row, column) ||
   (opsDeptUpper() === 'GSD' && /^(ECD|ICD) OPS$/.test(normalizedHeaderLabel(column))) || (
     !isStandaloneManualOpsRow(row) && (isLockedColumn(column) || isCrossServiceInboundIcdPartyCell(row, column) || isLinkedImportDownstreamAtaCell(row, column))
@@ -8483,7 +8495,17 @@ const isDoReleaseWarnCell = (row: number, column: number) =>
 const gsdActionButtonText = (row: number, column: number) => {
   const label = normalizedHeaderLabel(column)
   if (label === 'REMINDER' || label === 'NOTICE') return 'VIEW'
-  if (label === 'VOLUME' && isExwEcdSheet()) return volumeSummaryText(rows.value[row]?.[column]) || 'ADD+'
+  if (label === 'VOLUME') {
+    const value = rows.value[row]?.[column]
+    const summary = volumeSummaryText(value)
+    const legacyText = String(value ?? '').trim().startsWith('{') ? '' : String(value ?? '').trim()
+    return summary || legacyText || (isLockedOpsCell(row, column) ? 'DETAIL' : 'ADD+')
+  }
+  if (label === 'VESSEL/VOYAGE' || label === 'VESSEL NAME') {
+    const vessel = vesselFromCellValue(rows.value[row]?.[column])
+    const summary = vessel ? [vessel.name, vessel.voyage].filter(Boolean).join(' / ') : ''
+    return summary || (isLockedOpsCell(row, column) ? 'DETAIL' : 'ADD+')
+  }
   if (label === 'FREETIME CONFIRMATION') return freetimeSummaryText(rows.value[row]?.[column]) || 'ADD+'
   if (label === 'BILL DETAIL') return billDetailHasData(rows.value[row]?.[column]) ? 'DETAIL' : 'ADD+'
   // BC NO# is a linked document value. Show the booking number even when the
@@ -8598,7 +8620,11 @@ const showActionEditIcon = (row: number, column: number) =>
 const isPlainDocumentValue = (row: number, column: number) => {
   const label = normalizedHeaderLabel(column)
   if (label === 'BC NO#') return !!bookingDetailValue(rows.value[row]?.[column])
-  if (label === 'VOLUME') return !!volumeSummaryText(rows.value[row]?.[column])
+  if (label === 'VOLUME') {
+    const value = rows.value[row]?.[column]
+    return !!volumeSummaryText(value) || (!!String(value ?? '').trim() && !String(value ?? '').trim().startsWith('{'))
+  }
+  if (label === 'VESSEL/VOYAGE' || label === 'VESSEL NAME') return !!vesselFromCellValue(rows.value[row]?.[column])
   if (label === 'FREETIME CONFIRMATION') return !!freetimeSummaryText(rows.value[row]?.[column])
   if (label === 'HBL NO#') {
     const text = gsdActionButtonText(row, column)
@@ -8608,7 +8634,13 @@ const isPlainDocumentValue = (row: number, column: number) => {
 }
 // Red counter badge on the NOTICE "VIEW" button (mockup `.nbadge`)
 const noticeBadgeCount = (row: number, column: number) => {
-  if (!['REMINDER', 'NOTICE'].includes(normalizedHeaderLabel(column))) return 0
+  const label = normalizedHeaderLabel(column)
+  if (label === 'PAYMENT REQUEST' || ['EXPENSE/COLLECT LIST', 'EXPENSE/COLLECTION LIST'].includes(label)) {
+    const payment = paymentRequestFromCell(rows.value[row]?.[column])
+    const unreadKey = opsDeptUpper() === 'FCD' ? 'requestUnread' : 'feedbackUnread'
+    return payment.lines.filter((line: any) => !!line?.[unreadKey]).length
+  }
+  if (!['REMINDER', 'NOTICE'].includes(label)) return 0
   const parsed = parseJsonCell(rows.value[row]?.[column], null as any)
   const inbox = parsed && typeof parsed === 'object' && Array.isArray((parsed as any).inbox) ? (parsed as any).inbox : []
   return inbox.filter((note: any) => note?.read !== true).length
@@ -8758,14 +8790,17 @@ const normalizePaymentLine = (line: any): PaymentLine => ({
   curCollect: String(line?.curCollect || line?.curCol || line?.currencyCollect || ''),
   totalCollect: (line?.totalCollect ?? line?.totalCol) === '' || (line?.totalCollect ?? line?.totalCol) == null ? '' : formatMoneyValue(line?.totalCollect ?? line?.totalCol),
   docsCollect: normalizePaymentDocuments(line?.docsCollect ?? line?.docsCol),
-  noteToFcd: String(line?.noteToFcd || line?.note || ''),
+  noteToFcd: String(line?.noteToFcd || line?.noteFrom || line?.note || ''),
   sender: String(line?.sender || ''),
   reqDate: String(line?.reqDate || line?.requestedAt || ''),
-  sentAt: String(line?.sentAt || ''),
+  sentAt: String(line?.sentAt || line?.reqDate || ''),
   approvedAt: String(line?.approvedAt || ''),
   status: String(line?.status || ''),
   reason: String(line?.reason || ''),
+  lastFeedback: String(line?.lastFeedback || ''),
   statusDetails: String(line?.statusDetails || ''),
+  requestUnread: !!line?.requestUnread,
+  feedbackUnread: !!line?.feedbackUnread,
   ednNo: String(line?.ednNo || line?.eDnNo || line?.edn || ''),
   ednDate: String(line?.ednDate || line?.eDnDate || ''),
   idnNo: String(line?.idnNo || line?.iDnNo || line?.idn || ''),
@@ -8779,7 +8814,7 @@ const normalizePaymentLine = (line: any): PaymentLine => ({
   editing: !!line?.editing || !line?.sentAt,
 })
 const paymentLineHasData = (line: PaymentLine) =>
-  ['chargeName', 'payTo', 'payAt', 'curPay', 'totalPay', 'collectFrom', 'collectAt', 'curCollect', 'totalCollect', 'noteToFcd', 'sentAt', 'approvedAt', 'status', 'reason', 'statusDetails', 'ednNo', 'ednDate', 'idnNo', 'idnDate', 'einvNo', 'einvDate', 'iinvNo', 'iinvDate'].some((key) => String((line as any)[key] || '').trim()) ||
+  ['chargeName', 'payTo', 'payAt', 'curPay', 'totalPay', 'collectFrom', 'collectAt', 'curCollect', 'totalCollect', 'noteToFcd', 'sentAt', 'approvedAt', 'status', 'reason', 'lastFeedback', 'statusDetails', 'ednNo', 'ednDate', 'idnNo', 'idnDate', 'einvNo', 'einvDate', 'iinvNo', 'iinvDate'].some((key) => String((line as any)[key] || '').trim()) ||
   line.ready || line.docsPay.length > 0 || line.docsCollect.length > 0 || line.docsInvoice.length > 0
 const paymentRequestFromCell = (value: any): PaymentRequestState => {
   const parsed = parseJsonCell(value, null as any)
@@ -9269,7 +9304,7 @@ const upperPaymentField = (line: PaymentLine, key: 'curPay' | 'curCollect' | 'ed
 }
 // Debit/Invoice references are completed by FCD in Payment Approval and are
 // mirrored back here as feedback. Requesting departments only view them.
-const paymentDnFieldLocked = (_line: PaymentLine, _key: 'ednNo' | 'ednDate' | 'idnNo' | 'idnDate' | 'einvNo' | 'einvDate' | 'iinvNo' | 'iinvDate') => false
+const paymentDnFieldLocked = (line: PaymentLine, _key: 'ednNo' | 'ednDate' | 'idnNo' | 'idnDate' | 'einvNo' | 'einvDate' | 'iinvNo' | 'iinvDate') => paymentLineLocked(line)
 const paymentStatusClass = (status: string) => ({
   'st-appr': upperText(status) === 'APPROVED',
   'st-rej': upperText(status) === 'REJECTED',
@@ -9377,6 +9412,7 @@ const sendPaymentRequest = async () => {
   gsdModal.payment.lines = gsdModal.payment.lines.map((line) => targetIds.has(line.id)
     ? {
         ...line,
+        lastFeedback: [line.status, line.reason].filter((value) => String(value || '').trim()).join(' - ') || line.lastFeedback,
         sentAt: stamp,
         sender: opsDeptUpper(),
         reqDate: stamp,
@@ -9384,6 +9420,8 @@ const sendPaymentRequest = async () => {
         status: '',
         reason: '',
         statusDetails: '',
+        requestUnread: true,
+        feedbackUnread: false,
         editing: false,
         selected: false,
       }
@@ -9880,6 +9918,10 @@ const openGsdModal = async (row: number, column: number) => {
           await loadPaymentReferenceOptions()
           if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
           gsdModal.payment = paymentRequestFromCell(rawText)
+          if (opsDeptUpper() !== 'FCD' && gsdModal.payment.lines.some((line) => line.feedbackUnread)) {
+            gsdModal.payment.lines.forEach((line) => { line.feedbackUnread = false })
+            persistPaymentRequest()
+          }
         // Payment Request identity is inherited from the current workbook row;
         // users should not have to retype (or accidentally edit) these keys.
         const currentHeader = rows.value[0] || []
@@ -10041,6 +10083,10 @@ const openGsdModal = async (row: number, column: number) => {
             scheduleSave()
           }
           gsdModal.form = expenseCollectFromCell(linkedPaymentValue)
+          if (expenseCollectLines().some((line: any) => line.requestUnread)) {
+            expenseCollectLines().forEach((line: any) => { line.requestUnread = false })
+            persistExpenseCollect()
+          }
           gsdModal.editing = true
         } finally {
           if (loadId === gsdModalLoadId) gsdModal.loading = false
@@ -11255,12 +11301,17 @@ const normalizeExpenseLine = (line: any, index = 0) => ({
   docsPay: normalizePaymentDocuments(line?.docsPay),
   docsCollect: normalizePaymentDocuments(line?.docsCollect ?? line?.docsCol),
   sender: String(line?.sender || ''),
+  noteToFcd: String(line?.noteToFcd || line?.noteFrom || ''),
   noteFrom: String(line?.noteFrom || line?.noteToFcd || ''),
+  sentAt: String(line?.sentAt || line?.reqDate || ''),
   reqDate: String(line?.reqDate || line?.sentAt || ''),
   approvedAt: String(line?.approvedAt || ''),
   status: String(line?.status || ''),
   reason: String(line?.reason || ''),
+  lastFeedback: String(line?.lastFeedback || ''),
   statusDetails: String(line?.statusDetails || ''),
+  requestUnread: !!line?.requestUnread,
+  feedbackUnread: !!line?.feedbackUnread,
   ready: !!line?.ready,
   ednNo: String(line?.ednNo || ''),
   ednDate: String(line?.ednDate || ''),
@@ -11386,6 +11437,8 @@ const sendExpenseCollectFeedback = async () => {
   selected.forEach((line: any) => {
     line.statusDetails = `${line.status} ${sentAt}`
     line.approvedAt = upperText(line.status) === 'APPROVED' ? sentAt : ''
+    line.feedbackUnread = true
+    line.requestUnread = false
     line.editing = false
     line.selected = false
   })
@@ -15657,7 +15710,7 @@ const cellClass = (row: number, column: number) => ({
   xfercell: row > 0 && xferColumn() === column,
   'has-note': Boolean(noteText(row, column)),
   'mode-auto': row > 0 && normalizedHeaderLabel(column) === 'MODE' && upperText(rows.value[row]?.[column]) === 'AUTO',
-  'mode-manual': row > 0 && normalizedHeaderLabel(column) === 'MODE' && upperText(rows.value[row]?.[column]) === 'MANUAL',
+  'mode-manual': row > 0 && normalizedHeaderLabel(column) === 'MODE' && ['MANU', 'MANUAL'].includes(upperText(rows.value[row]?.[column])),
   'linked-date-changed': linkedDateChanged(row, column),
 })
 const toggleCheckbox = async (row: number, column: number, event: Event) => {
@@ -17678,11 +17731,6 @@ const sendSelectedTruckRecords = async () => { if (await askConfirm('Send truck 
 const sendAllTruckRecords = async () => { if (await askConfirm('Send all truck schedules?', 'All rows will be stamped as sent.')) markTruckRecordsSent(truckModal.records.map((_, index) => index)) }
 const opsColumnWidth = (column: number) => Math.max(86, columnWidth(column))
 const rowVesselDelayed = (row: number) => {
-  // ETD/ETA delay highlighting belongs to the ECD worksheet where the vessel
-  // delay is actually entered. Linked rows in CCD/TCD/DCD/FCD inherit the
-  // vessel payload (including the legacy `delayed` flag), so using that flag in
-  // every department incorrectly makes newly generated rows look modified.
-  if (opsDeptUpper() !== 'ECD') return false
   const vesselColumn = headerIndexOf(['VESSEL/VOYAGE'])
   if (vesselColumn < 0) return false
   return vesselDelayedOf(rows.value[row]?.[vesselColumn])
@@ -17697,8 +17745,9 @@ const opsCellClass = (row: number, column: number) => ({
   locked: isLockedOpsCell(row, column),
   vdly: ['ETD', 'ETA'].includes(normalizedHeaderLabel(column)) && rowVesselDelayed(row),
   refecd: isRefEcdCell(row, column),
+  'time-cell': isOpsTimeColumn(column),
   'mode-auto': normalizedHeaderLabel(column) === 'MODE' && upperText(rows.value[row]?.[column]) === 'AUTO',
-  'mode-manual': normalizedHeaderLabel(column) === 'MODE' && upperText(rows.value[row]?.[column]) === 'MANUAL',
+  'mode-manual': normalizedHeaderLabel(column) === 'MODE' && ['MANU', 'MANUAL'].includes(upperText(rows.value[row]?.[column])),
   'linked-date-changed': linkedDateChanged(row, column),
   'inline-editing': isEditingCell(row, column),
 })
@@ -17789,6 +17838,7 @@ const formatAdminDateDisplay = (value: any) => {
 const displayCell = (value: any, row: number, column: number) => {
   const format = cellFormatOf(row, column)
   if (row > 0 && normalizedHeaderLabel(column) === 'ACTION' && (value == null || value === '')) return 'ACTIVE'
+  if (row > 0 && normalizedHeaderLabel(column) === 'MODE' && upperText(value) === 'MANUAL') return 'MANU'
   // Linked Client cells can arrive through a generic renderer (for example
   // after a cross-department copy). Always show the client code/name rather
   // than leaking the serialized CLIENT object into the grid.
@@ -19026,6 +19076,20 @@ onBeforeUnmount(() => {
 .payment-loading-mark{display:flex;align-items:flex-end;gap:5px;height:30px;margin-bottom:4px}.payment-loading-mark span{display:block;width:7px;border-radius:999px;background:#008f4c;animation:payment-loading-wave .9s ease-in-out infinite}.payment-loading-mark span:nth-child(1){height:14px}.payment-loading-mark span:nth-child(2){height:26px;animation-delay:.12s}.payment-loading-mark span:nth-child(3){height:19px;animation-delay:.24s}
 @keyframes payment-loading-wave{0%,100%{transform:scaleY(.55);opacity:.45}50%{transform:scaleY(1);opacity:1}}
 /* PAYMENT REQUEST: keep the checkbox column fixed while the wide table scrolls. */
+/* Operations MODE/TIME are immutable metadata and should read as plain text. */
+.ops-ms-table td.vdly,.sheet-body td.vdly{background:#fff1dc!important;color:#c45f08!important;font-weight:700!important}
+.ops-ms-table td.vdly .ops-textcell,.sheet-body td.vdly .ops-textcell{color:#c45f08!important;font-weight:700!important}
+.ops-ms-table td.mode-auto,.ops-ms-table td.mode-manual,.sheet-body td.mode-auto,.sheet-body td.mode-manual{background:transparent!important;color:#26312b!important;font-weight:400!important}
+.ops-ms-table td.mode-auto .ops-textcell,.ops-ms-table td.mode-manual .ops-textcell,.sheet-body td.mode-auto .ops-textcell,.sheet-body td.mode-manual .ops-textcell{color:#26312b!important;font-weight:400!important}
+.ops-ms-table td.time-cell,.ops-ms-table td.time-cell.locked,.sheet-body td.time-cell,.sheet-body td.time-cell.locked{background:inherit!important;color:#26312b!important;font-weight:400!important}
+.ops-ms-table td.time-cell .ops-textcell,.sheet-body td.time-cell .ops-textcell{color:#26312b!important;font-weight:400!important}
+.gsd-expcol-modal col.ec-col-status{width:150px!important;min-width:150px!important}
+.gsd-expcol-modal col.ec-col-last-feedback{width:190px!important;min-width:190px!important}
+.gsd-expcol-modal .ec-statussel{width:100%!important;min-width:148px!important}
+.gsd-expcol-modal .ec-last-feedback{max-width:180px!important}
+.gsd-expcol-modal .expcol-table th:nth-child(17),.gsd-expcol-modal .expcol-table td:nth-child(17){width:auto!important;min-width:150px!important}
+.gsd-expcol-modal .expcol-table th:nth-child(18),.gsd-expcol-modal .expcol-table td:nth-child(18){width:220px!important;min-width:220px!important}
+.gsd-expcol-modal .expcol-table th.pcheck,.gsd-expcol-modal .expcol-table td.pcheck,.gsd-expcol-modal .pr-table th.pcheck,.gsd-expcol-modal .pr-table td.pcheck{box-shadow:none!important}
 .gsd-payment-modal .gsd-pay-table{border-collapse:separate!important;border-spacing:0!important}
 .gsd-payment-modal .gsd-pay-table th.pay-check,.gsd-payment-modal .gsd-pay-table td.pay-check{position:sticky!important;left:0!important;width:34px!important;min-width:34px!important;max-width:34px!important;box-sizing:border-box;overflow:visible!important;background-clip:padding-box!important;border-right:1px solid #c5d2ca!important;box-shadow:3px 0 4px -3px rgba(15,61,35,.42)!important;isolation:isolate}
 .gsd-payment-modal .gsd-pay-table th.pay-check{z-index:31!important;background:#eef3ee!important}.gsd-payment-modal .gsd-pay-table td.pay-check{z-index:30!important;background:#fff!important}
