@@ -983,6 +983,11 @@
         aria-modal="true"
       >
         <button class="gsd-modal-x" type="button" title="Close" @click="closeGsdModal">&times;</button>
+        <div v-if="gsdModal.loading && (isPaymentRequestModal() || isExpenseCollectModal())" class="payment-loading-screen" role="status" aria-live="polite">
+          <div class="payment-loading-mark"><span></span><span></span><span></span></div>
+          <strong>Loading payment data</strong>
+          <small>Please wait a moment…</small>
+        </div>
 
         <template v-if="gsdModal.kind === 'extra'">
           <div class="gsd-extra-head">
@@ -2550,7 +2555,6 @@
                     <span class="pr-searchresults" :class="{ show: paymentSearchOpen }">
                       <button v-for="match in paymentSearchResults" :key="`${match.row}-${match.refNo}-${match.jobNo}`" class="pr-sr-item" type="button" @mousedown.prevent="selectPaymentHistoryMatch(match.row)">
                         <span class="pr-sr-info"><b>{{ match.jobNo || '—' }}</b><br />REF: {{ match.refNo || '—' }} · {{ match.lineCount }} line(s)</span>
-                        <span class="pr-sr-time">{{ match.time || 'No date' }}</span>
                       </button>
                       <span v-if="!paymentSearchResults.length" class="pr-sr-empty">No previous Job No matches your search.</span>
                     </span>
@@ -2769,8 +2773,7 @@
                   </colgroup>
                   <thead>
                     <tr class="ec-sumrow">
-                      <th class="pcheck"></th>
-                      <th colspan="6" class="ec-sum-pay">
+                      <th colspan="7" class="ec-sum-pay">
                         <span class="ec-sumin">CURRENCY:
                           <select v-model="gsdModal.form.payCurrency" class="ec-cursel"><option v-for="cur in expenseCurrencies" :key="cur">{{ cur }}</option></select>
                           &nbsp; TOTAL PAYMENT: <b>{{ expenseTotal('pay') }}</b>
@@ -4260,6 +4263,7 @@ const newPaymentLine = (): PaymentLine => ({
 const emptyPaymentRequest = (): PaymentRequestState => ({ jobNo: '', refNo: '', refLastBiz: '', issueFrom: '', issueBank: '', lines: [] })
 const gsdModal = reactive({
   open: false,
+  loading: false,
   row: 0,
   column: 0,
   kind: 'generic' as 'extra' | 'client' | 'dealt' | 'reminder' | 'hbl' | 'form' | 'generic',
@@ -4286,6 +4290,7 @@ const gsdModal = reactive({
   extra: emptyExtraState(),
   dealt: emptyDealtState(),
 })
+let gsdModalLoadId = 0
 const entityOptionModal = reactive({
   open: false,
   type: 'city' as 'city' | 'country',
@@ -9724,6 +9729,7 @@ const mirroredEcdVolumeValue = async (row: number) => {
   }
 }
 const openGsdModal = async (row: number, column: number) => {
+  const loadId = ++gsdModalLoadId
   const label = normalizedHeaderLabel(column)
   if (label === 'BC NO#') { openBookingDetail(row, column); return }
   if (label === 'BC DETAIL' || label === 'BC SENT') { openBcModal(row, column); return }
@@ -9739,6 +9745,9 @@ const openGsdModal = async (row: number, column: number) => {
   gsdModal.kind = label === 'EXTRA SERVICE' ? 'extra' : clientLinkLabels.includes(label) ? 'client' : label === 'DEALT INFO' ? 'dealt' : (label === 'REMINDER' || label === 'NOTICE') ? 'reminder' : label === 'HBL NO#' ? 'hbl' : formButtonLabels.includes(label) ? 'form' : 'generic'
   gsdModal.title = label === 'DEALT INFO' ? 'Dealt info' : (label === 'REMINDER' || label === 'NOTICE') ? 'Notice' : gsdModalTitleFor(label)
   gsdModal.label = label === 'CLIENT' ? 'Client detail' : label === 'DEALT INFO' ? 'Inquiry / cost / quote / remarks' : (label === 'REMINDER' || label === 'NOTICE') ? '' : 'Details'
+  gsdModal.loading = label === 'PAYMENT REQUEST' || label === 'EXPENSE/COLLECT LIST' || label === 'EXPENSE/COLLECTION LIST'
+  if (label === 'PAYMENT REQUEST') gsdModal.payment = emptyPaymentRequest()
+  if (gsdModal.loading) gsdModal.form = {}
   gsdModal.editing = !hasValue
   gsdModal.formFields = []
   gsdModal.form = {}
@@ -9867,8 +9876,10 @@ const openGsdModal = async (row: number, column: number) => {
     } else if (gsdModal.kind === 'form') {
       const parsed = parseJsonCell(rawText, null as any)
       if (label === 'PAYMENT REQUEST') {
-        await loadPaymentReferenceOptions()
-        gsdModal.payment = paymentRequestFromCell(rawText)
+        try {
+          await loadPaymentReferenceOptions()
+          if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
+          gsdModal.payment = paymentRequestFromCell(rawText)
         // Payment Request identity is inherited from the current workbook row;
         // users should not have to retype (or accidentally edit) these keys.
         const currentHeader = rows.value[0] || []
@@ -9881,6 +9892,9 @@ const openGsdModal = async (row: number, column: number) => {
         paymentInvalidFields.value = new Set()
         resetPaymentSearch()
         gsdModal.editing = true
+        } finally {
+          if (loadId === gsdModalLoadId) gsdModal.loading = false
+        }
       } else if (['CUT OFF DETAILS', 'CUT OFF DETAIL', 'CUTOFF DETAIL'].includes(label)) {
         gsdModal.formFields = []
         gsdModal.form = cutoffFormFromCell(rawText)
@@ -10018,14 +10032,19 @@ const openGsdModal = async (row: number, column: number) => {
         gsdModal.editing = (isAirDoIcdPreAlertConfirmationModal() || isAirDupCompactPreAlertConfirmationModal() || isFclDduCcdPreAlertConfirmationModal()) ? true : !gsdModal.form.locked
       } else if (label === 'EXPENSE/COLLECT LIST' || label === 'EXPENSE/COLLECTION LIST') {
         gsdModal.formFields = []
-        await loadPaymentReferenceOptions()
-        const linkedPaymentValue = await recoverLinkedPaymentRequestForFcd(row, rawText)
-        if (linkedPaymentValue !== rawText && String(linkedPaymentValue || '').trim()) {
-          rows.value[row][column] = linkedPaymentValue
-          scheduleSave()
+        try {
+          await loadPaymentReferenceOptions()
+          const linkedPaymentValue = await recoverLinkedPaymentRequestForFcd(row, rawText)
+          if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
+          if (linkedPaymentValue !== rawText && String(linkedPaymentValue || '').trim()) {
+            rows.value[row][column] = linkedPaymentValue
+            scheduleSave()
+          }
+          gsdModal.form = expenseCollectFromCell(linkedPaymentValue)
+          gsdModal.editing = true
+        } finally {
+          if (loadId === gsdModalLoadId) gsdModal.loading = false
         }
-        gsdModal.form = expenseCollectFromCell(linkedPaymentValue)
-        gsdModal.editing = true
       } else if (['PICKUP/RETURN STATUS', 'PICKUP STATUS', 'TRUCKING STATUS'].includes(label)) {
         gsdModal.formFields = []
         gsdModal.form = pickupReturnFormFromCell(rawText)
@@ -10065,7 +10084,9 @@ const openGsdModal = async (row: number, column: number) => {
   if (isSentEcdRowLocked(row)) gsdModal.editing = false
 }
 const closeGsdModal = () => {
-  if (isPaymentRequestModal()) persistPaymentRequest()
+  if (isPaymentRequestModal() && !gsdModal.loading) persistPaymentRequest()
+  gsdModalLoadId += 1
+  gsdModal.loading = false
   resetPaymentSearch()
   gsdModal.open = false
 }
@@ -18994,4 +19015,21 @@ onBeforeUnmount(() => {
 .ops-ms-table .ops-client,.ops-ms-table .ops-client b,.ops-ms-table .clival-btn,.ops-ms-table .clival-btn b,.ops-ms-table .ops-pill.linked-value,.ops-ms-table .gsd-btn.linked-value,.ops-ms-table .ops-pill.document-value,.ops-ms-table .gsd-btn.document-value{color:#26312b!important;font-weight:400!important;text-decoration:none!important}
 .ops-ms-table .ops-client:hover,.ops-ms-table .ops-client:hover b,.ops-ms-table .clival-btn:hover,.ops-ms-table .clival-btn:hover b,.ops-ms-table .ops-pill.linked-value:hover,.ops-ms-table .gsd-btn.linked-value:hover,.ops-ms-table .ops-pill.document-value:hover,.ops-ms-table .gsd-btn.document-value:hover{color:#26312b!important;text-decoration:underline!important;text-underline-offset:2px}
 .ops-ms-table .ops-client:disabled:hover,.ops-ms-table .ops-client:disabled:hover b,.ops-ms-table .clival-btn:disabled:hover,.ops-ms-table .clival-btn:disabled:hover b{cursor:default;text-decoration:none!important}
+/* RefLastBiz results: roomy rows, reference content only (no timestamp column). */
+.gsd-payment-modal .pr-searchinp{height:32px}
+.gsd-payment-modal .pr-searchresults{min-width:360px;max-width:460px;max-height:360px}
+.gsd-payment-modal button.pr-sr-item{min-height:52px;padding:10px 14px;align-items:center;justify-content:flex-start}
+.gsd-payment-modal .pr-sr-info{width:100%;font-size:12px;line-height:1.55}
+.gsd-payment-modal .gsd-modal-x,.gsd-expcol-modal .gsd-modal-x{z-index:101}
+.payment-loading-screen{position:absolute;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:inherit;background:rgba(255,255,255,.97);color:#33413b}
+.payment-loading-screen strong{font-size:14px;font-weight:750}.payment-loading-screen small{color:#7a847d;font-size:11.5px}
+.payment-loading-mark{display:flex;align-items:flex-end;gap:5px;height:30px;margin-bottom:4px}.payment-loading-mark span{display:block;width:7px;border-radius:999px;background:#008f4c;animation:payment-loading-wave .9s ease-in-out infinite}.payment-loading-mark span:nth-child(1){height:14px}.payment-loading-mark span:nth-child(2){height:26px;animation-delay:.12s}.payment-loading-mark span:nth-child(3){height:19px;animation-delay:.24s}
+@keyframes payment-loading-wave{0%,100%{transform:scaleY(.55);opacity:.45}50%{transform:scaleY(1);opacity:1}}
+/* PAYMENT REQUEST: keep the checkbox column fixed while the wide table scrolls. */
+.gsd-payment-modal .gsd-pay-table{border-collapse:separate!important;border-spacing:0!important}
+.gsd-payment-modal .gsd-pay-table th.pay-check,.gsd-payment-modal .gsd-pay-table td.pay-check{position:sticky!important;left:0!important;width:34px!important;min-width:34px!important;max-width:34px!important;box-sizing:border-box;overflow:visible!important;background-clip:padding-box!important;border-right:1px solid #c5d2ca!important;box-shadow:3px 0 4px -3px rgba(15,61,35,.42)!important;isolation:isolate}
+.gsd-payment-modal .gsd-pay-table th.pay-check{z-index:31!important;background:#eef3ee!important}.gsd-payment-modal .gsd-pay-table td.pay-check{z-index:30!important;background:#fff!important}
+.gsd-payment-modal .gsd-pay-table tr.selrow td.pay-check{background:#e9f8ef!important}
+.gsd-payment-modal .gsd-pay-table th.pay-check::before,.gsd-payment-modal .gsd-pay-table td.pay-check::before{content:"";position:absolute;z-index:-1;top:-2px;right:100%;bottom:-2px;width:20px;background:#fff;pointer-events:none}
+.gsd-payment-modal .gsd-pay-table th.pay-check>input,.gsd-payment-modal .gsd-pay-table td.pay-check>input{position:relative;z-index:1}
 </style>
