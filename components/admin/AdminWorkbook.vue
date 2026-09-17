@@ -2070,7 +2070,7 @@
                 <div><div class="si-lh-name">{{ siCompanyName() }}</div><div class="si-lh-addr">3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam</div><div class="si-lh-contact">Tel: 84.028-35470468&nbsp;&nbsp;&nbsp;Fax: 84.028-35470469</div></div>
                 <div class="si-title-block"><div class="si-doc-title">SHIPPING INSTRUCTION</div><div class="si-doc-sub">SEA FCL</div></div>
               </div>
-              <div class="si-g2"><div class="si-f"><div class="si-party-head"><span>Shipper</span><label><input v-model="gsdModal.form.copyShipper" type="checkbox" :disabled="!gsdModal.editing" @change="toggleSiPartyCopy('SHIPPER')" /> Copy from Shipper</label></div><textarea v-model="gsdModal.form.shipper" rows="3" :disabled="!gsdModal.editing || gsdModal.form.copyShipper"></textarea></div><div class="si-f"><div class="si-party-head"><span>Consignee</span><label><input v-model="gsdModal.form.copyConsignee" type="checkbox" :disabled="!gsdModal.editing" @change="toggleSiPartyCopy('CNEE')" /> Copy from Consignee</label></div><textarea v-model="gsdModal.form.consignee" rows="3" :disabled="!gsdModal.editing || gsdModal.form.copyConsignee"></textarea></div></div>
+              <div class="si-g2"><div class="si-f"><div class="si-party-head"><span>Shipper</span><label><input v-model="gsdModal.form.copyShipper" type="checkbox" :disabled="!gsdModal.editing" @change="toggleSiPartyCopy('SHIPPER')" /> Copy from Shipper</label></div><textarea v-model="gsdModal.form.shipper" rows="3" :disabled="!gsdModal.editing" @input="gsdModal.form.copyShipper = false"></textarea></div><div class="si-f"><div class="si-party-head"><span>Consignee</span><label><input v-model="gsdModal.form.copyConsignee" type="checkbox" :disabled="!gsdModal.editing" @change="toggleSiPartyCopy('CNEE')" /> Copy from Consignee</label></div><textarea v-model="gsdModal.form.consignee" rows="3" :disabled="!gsdModal.editing" @input="gsdModal.form.copyConsignee = false"></textarea></div></div>
               <label class="si-f"><span>Notify Party</span><textarea v-model="gsdModal.form.notify" rows="2" :disabled="!gsdModal.editing"></textarea></label>
               <div class="si-g3"><label class="si-f"><span>Booking No.</span><input v-model="gsdModal.form.bookingNo" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Vessel/Voyage</span><input v-model="gsdModal.form.vessel" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Departure Date</span><input v-model="gsdModal.form.depDate" type="date" :disabled="!gsdModal.editing" /></label></div>
               <div class="si-g2"><label class="si-f"><span>Place of Receipt</span><input v-model="gsdModal.form.por" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Port of Loading</span><input v-model="gsdModal.form.pol" type="text" :disabled="!gsdModal.editing" /></label></div>
@@ -7637,10 +7637,16 @@ const isLclFcaDcdInboundColumn = (column: number) =>
   ].includes(normalizedHeaderLabel(column))
 const isExwFclDocumentLocked = (column: number) =>
   ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && !['ECD', 'DCD', 'ICD'].includes(opsDeptUpper()) && ['HBL NO#', 'MBL NO#'].includes(normalizedHeaderLabel(column))
+// DCD is responsible for maintaining the master bill number.  Keep this
+// exception close to the general lock rule so it applies consistently to all
+// transport modes and service types.
+const isDcdEditableMblColumn = (column: number) =>
+  opsDeptUpper() === 'DCD' && normalizedHeaderLabel(column) === 'MBL NO#'
 const isLockedColumn = (column: number) => {
   if (normalizedHeaderLabel(column) === 'MODE') return true
   // REF# is owned by ECD. Downstream departments only receive and display it.
   if (normalizedHeaderLabel(column) === 'REF#') return opsDeptUpper() !== 'ECD'
+  if (isDcdEditableMblColumn(column)) return false
   if (lockedColumns().has(column)) return true
   if (String(opsParts.value?.mode || '').toUpperCase() === 'AIR') return isAirStructureLockedColumn(column)
   if (String(opsParts.value?.mode || '').toUpperCase() === 'LCL') return isLclStructureLockedColumn(column)
@@ -8261,7 +8267,7 @@ const isOpsStaffColumn = (column: number) => {
   return ['FCL', 'LCL', 'AIR'].includes(String(opsParts.value?.mode || '').toUpperCase()) && label === `${opsDeptUpper()} OPS`
 }
 const isOpsDropdownColumn = (column: number) => !!opsParts.value && !isLockedColumn(column) && (isOpsStaffColumn(column) || defaultDropdownOptionsFor(column).length > 0)
-const isDropdownCell = (row: number, column: number) => row > 0 && !isActionSelectCell(row, column) && (
+const isDropdownCell = (row: number, column: number) => row > 0 && !isDcdEditableMblColumn(column) && !isActionSelectCell(row, column) && (
   isStandaloneManualOpsRow(row)
     ? columnFormatOf(column).kind === 'dropdown' || isOpsStaffColumn(column) || defaultDropdownOptionsFor(column).length > 0
     : !isExwCcdPlainTextColumn(column) && (columnFormatOf(column).kind === 'dropdown' || isOpsDropdownColumn(column))
