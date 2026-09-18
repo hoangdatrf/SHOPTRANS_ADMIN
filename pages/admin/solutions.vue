@@ -16,7 +16,7 @@
     <div v-if="notice" class="notice success">{{ notice }}</div>
     <div v-if="error" class="notice error">{{ error }}</div>
 
-    <div v-if="loading" style="text-align:center;padding:40px;color:var(--muted);font-weight:700;">Loading data...</div>
+    <AdminLoadingScreen v-if="loading" />
     
     <div v-else class="content-sections">
       <!-- Hero Section -->

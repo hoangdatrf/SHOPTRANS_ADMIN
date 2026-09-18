@@ -21,7 +21,7 @@
       <button v-for="t in serviceTypes" :key="t" :class="{ active: activeType === t }" @click="activeType = t">{{ t }}</button>
     </div>
 
-    <div v-if="loading" style="text-align:center;padding:40px;color:var(--muted);font-weight:700;">Loading...</div>
+    <AdminLoadingScreen v-if="loading" />
 
     <template v-else>
       <div v-for="group in groupedByChargeGroup" :key="group.name" style="margin-bottom:20px;">

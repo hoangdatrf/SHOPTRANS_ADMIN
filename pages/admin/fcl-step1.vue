@@ -34,7 +34,7 @@
       </select>
     </div>
 
-    <div v-if="loading" style="text-align:center;padding:40px;color:var(--muted);font-weight:700;">Loading data...</div>
+    <AdminLoadingScreen v-if="loading" />
 
     <template v-else>
       <div v-for="group in groupedFiltered" :key="group.region" style="margin-bottom:20px;">

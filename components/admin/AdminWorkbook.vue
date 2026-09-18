@@ -543,7 +543,7 @@
     </div>
 
     <div class="sheet-shell">
-      <div v-if="loading" class="sheet-empty">Loading worksheet...</div>
+      <AdminLoadingScreen v-if="loading" compact message="Loading worksheet" />
       <div v-else-if="!rows.length" class="sheet-empty">No worksheet data.</div>
       <div v-else class="sheet-grid">
         <button class="corner" type="button" title="Select all rows" @mousedown.prevent="startSel('all', 0, 0)"></button>
@@ -864,10 +864,7 @@
       <svg v-else viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
     </div>
     <div v-if="dispatchLoading" class="dispatch-loading-overlay" role="dialog" aria-modal="true" aria-live="polite">
-      <div class="dispatch-loading-modal">
-        <span class="dispatch-loading-spinner" aria-hidden="true"></span>
-        <span>Processing</span>
-      </div>
+      <AdminLoadingScreen compact message="Processing" :detail="dispatchLoading" />
     </div>
     <div v-if="rowConfirmModal.open" class="wb-modal-overlay row-confirm-overlay" @mousedown.self="resolveRowConfirm(false)">
       <div class="row-confirm-modal" role="dialog" aria-modal="true">
@@ -985,9 +982,7 @@
       >
         <button class="gsd-modal-x" type="button" title="Close" @click="closeGsdModal">&times;</button>
         <div v-if="gsdModal.loading && (isPaymentRequestModal() || isExpenseCollectModal())" class="payment-loading-screen" role="status" aria-live="polite">
-          <div class="payment-loading-mark"><span></span><span></span><span></span></div>
-          <strong>Loading payment data</strong>
-          <small>Please wait a moment…</small>
+          <AdminLoadingScreen compact message="Loading payment data" detail="Please wait a moment…" />
         </div>
 
         <template v-if="gsdModal.kind === 'extra'">
@@ -2073,8 +2068,8 @@
               <div class="si-g2"><div class="si-f"><div class="si-party-head"><span>Shipper</span><label><input v-model="gsdModal.form.copyShipper" type="checkbox" :disabled="!gsdModal.editing" @change="toggleSiPartyCopy('SHIPPER')" /> Copy from Shipper</label></div><textarea v-model="gsdModal.form.shipper" rows="3" :disabled="!gsdModal.editing" @input="gsdModal.form.copyShipper = false"></textarea></div><div class="si-f"><div class="si-party-head"><span>Consignee</span><label><input v-model="gsdModal.form.copyConsignee" type="checkbox" :disabled="!gsdModal.editing" @change="toggleSiPartyCopy('CNEE')" /> Copy from Consignee</label></div><textarea v-model="gsdModal.form.consignee" rows="3" :disabled="!gsdModal.editing" @input="gsdModal.form.copyConsignee = false"></textarea></div></div>
               <label class="si-f"><span>Notify Party</span><textarea v-model="gsdModal.form.notify" rows="2" :disabled="!gsdModal.editing"></textarea></label>
               <div class="si-g3"><label class="si-f"><span>Booking No.</span><input v-model="gsdModal.form.bookingNo" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Vessel/Voyage</span><input v-model="gsdModal.form.vessel" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Departure Date</span><input v-model="gsdModal.form.depDate" type="date" :disabled="!gsdModal.editing" /></label></div>
-              <div class="si-g2"><label class="si-f"><span>Place of Receipt</span><input v-model="gsdModal.form.por" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Port of Loading</span><input v-model="gsdModal.form.pol" type="text" :disabled="!gsdModal.editing" /></label></div>
-              <div class="si-g2"><label class="si-f"><span>Port of Discharge</span><input v-model="gsdModal.form.pod" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Place of Delivery</span><input v-model="gsdModal.form.podl" type="text" :disabled="!gsdModal.editing" /></label></div>
+              <div class="si-g2"><label class="si-f"><span>Place of Receipt</span><input v-model="gsdModal.form.por" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Port of Loading</span><input v-model="gsdModal.form.pol" type="text" :disabled="!gsdModal.editing" @input="uppercaseSiPort('pol')" /></label></div>
+              <div class="si-g2"><label class="si-f"><span>Port of Discharge</span><input v-model="gsdModal.form.pod" type="text" :disabled="!gsdModal.editing" @input="uppercaseSiPort('pod')" /></label><label class="si-f"><span>Place of Delivery</span><input v-model="gsdModal.form.podl" type="text" :disabled="!gsdModal.editing" /></label></div>
               <div class="si-section-title">Freight Term</div>
               <div class="si-radio"><label><input v-model="gsdModal.form.freight" type="radio" value="Prepaid" :disabled="!gsdModal.editing" /> Freight Prepaid</label><label><input v-model="gsdModal.form.freight" type="radio" value="Collect" :disabled="!gsdModal.editing" /> Freight Collect</label></div>
               <div class="si-section-title">Container &amp; Seal Information</div>
@@ -13898,8 +13893,8 @@ const siSubmitFormFromCell = (value: any) => {
     vessel: String(saved.vessel || ''),
     depDate: String(saved.depDate || ''),
     por: String(saved.por || ''),
-    pol: String(saved.pol || ''),
-    pod: String(saved.pod || ''),
+    pol: String(saved.pol || '').toUpperCase(),
+    pod: String(saved.pod || '').toUpperCase(),
     podl: String(saved.podl || ''),
     freight: String(saved.freight || 'Prepaid'),
     containers: (containers.length ? containers : [newSiSubmitContainer()]).map((container: any) => ({
@@ -13918,6 +13913,9 @@ const siSubmitFormFromCell = (value: any) => {
 }
 const siMarksFileInput = ref<HTMLInputElement | null>(null)
 const siPartyCopyBackup = reactive({ shipper: '', consignee: '' })
+const uppercaseSiPort = (field: 'pol' | 'pod') => {
+  gsdModal.form[field] = String(gsdModal.form[field] || '').toUpperCase()
+}
 const siCompanyName = () => gsdModal.form.company === 'shoptrans' ? 'SHOPTRANS VIETNAM CO., LTD' : 'TX LOGISTICS VIETNAM CO., LTD'
 const siSubmitContainers = () => Array.isArray(gsdModal.form.containers) ? gsdModal.form.containers : []
 const rawSiSourceValue = (label: string) => {
@@ -14003,8 +14001,8 @@ const syncSiSubmitFromSources = () => {
   const routeValue = rawSiSourceValue('ROUTE')
   const pol = siRouteDisplay(routeValue, 'pol')
   const pod = siRouteDisplay(routeValue, 'pod')
-  if (pol) gsdModal.form.pol = pol
-  if (pod) gsdModal.form.pod = pod
+  if (pol) gsdModal.form.pol = pol.toUpperCase()
+  if (pod) gsdModal.form.pod = pod.toUpperCase()
   const truckValue = rawSiSourceValue('TRUCK & CONT/SEAL INFO') || rawSiSourceValue('TRUCKING INFO')
   const linked = truckContFormFromCell(truckValue).records.filter((item) => item.container || item.seal || item.contType)
   if (linked.length) {
@@ -14107,13 +14105,16 @@ const exportSiSubmitPdf = async () => {
             ? source.selectedOptions[0]?.textContent || source.value
             : source.value
           const display = clonedDocument.createElement('div')
+          const displayText = clonedDocument.createElement('span')
           const style = window.getComputedStyle(source)
-          display.textContent = value || ''
+          displayText.textContent = value || ''
+          displayText.className = 'si-pdf-field-text'
+          display.appendChild(displayText)
           display.className = `${control.className || ''} si-pdf-field-value`
           display.style.boxSizing = 'border-box'
           display.style.width = '100%'
-          display.style.minHeight = `${Math.max(source.offsetHeight, 30)}px`
-          display.style.height = 'auto'
+          const fieldHeight = Math.max(source.offsetHeight, 30)
+          display.style.minHeight = `${fieldHeight}px`
           display.style.border = style.border
           display.style.borderRadius = style.borderRadius
           display.style.background = style.backgroundColor
@@ -14126,20 +14127,80 @@ const exportSiSubmitPdf = async () => {
           display.style.overflowWrap = 'anywhere'
           display.style.wordBreak = 'break-word'
           if (source instanceof HTMLTextAreaElement) {
+            display.style.height = 'auto'
             display.style.paddingTop = '6px'
             display.style.paddingBottom = '6px'
           } else {
-            display.style.display = 'flex'
-            display.style.alignItems = 'center'
+            // html2canvas renders the baseline of disabled native inputs lower
+            // than it appears in the browser. A fixed line box keeps every
+            // one-line SI field vertically centered in the exported PDF.
+            display.style.display = 'block'
+            display.style.height = `${fieldHeight}px`
+            display.style.lineHeight = `${Math.max(fieldHeight - 2, 1)}px`
             display.style.paddingTop = '0'
             display.style.paddingBottom = '0'
+            display.style.whiteSpace = 'nowrap'
+            display.style.overflow = 'hidden'
           }
           if (control.closest('.si-table')) {
             display.style.justifyContent = 'center'
           }
           control.replaceWith(display)
         })
+        clonedSheet.querySelectorAll<HTMLElement>('.si-table th, .si-table td.si-order').forEach((cell) => {
+          const tableText = clonedDocument.createElement('span')
+          tableText.className = 'si-pdf-table-text'
+          tableText.textContent = cell.textContent || ''
+          cell.textContent = ''
+          cell.appendChild(tableText)
+        })
+        clonedSheet.querySelectorAll<HTMLElement>('.si-section-title').forEach((title) => {
+          title.style.marginTop = '18px'
+          title.style.marginBottom = '0'
+          title.style.paddingBottom = '0'
+          title.style.borderBottom = '0'
+          const sectionLine = clonedDocument.createElement('div')
+          sectionLine.className = 'si-pdf-section-line'
+          title.insertAdjacentElement('afterend', sectionLine)
+        })
         clonedSheet.querySelectorAll<HTMLElement>('.si-party-head label,.si-attachment,.si-add-container,input[type="file"]').forEach((control) => control.remove())
+        const pdfBaselineStyle = clonedDocument.createElement('style')
+        pdfBaselineStyle.textContent = `
+          .gsd-si-modal .si-pdf-field-text {
+            display: inline-block;
+            transform: translateY(-6px);
+          }
+          .gsd-si-modal .si-f > span:first-child,
+          .gsd-si-modal .si-party-head > span,
+          .gsd-si-modal .si-signature > div,
+          .gsd-si-modal .si-signature > b,
+          .gsd-si-modal .si-signature > strong,
+          .gsd-si-modal .si-signed-stamp {
+            position: relative;
+            top: -6px;
+          }
+          .gsd-si-modal .si-table .si-pdf-field-text {
+            transform: translateY(-5px);
+          }
+          .gsd-si-modal .si-pdf-table-text {
+            display: inline-block;
+            transform: translateY(-4px);
+          }
+          .gsd-si-modal .si-table th .si-pdf-table-text {
+            transform: translateY(-5px);
+          }
+          .gsd-si-modal .si-radio input {
+            position: relative;
+            top: 5px;
+          }
+          .gsd-si-modal .si-pdf-section-line {
+            height: 1px;
+            margin-top: 6px;
+            margin-bottom: 10px;
+            background: #16406e;
+          }
+        `
+        clonedDocument.head.appendChild(pdfBaselineStyle)
       },
     })
     if (!canvas.width || !canvas.height) throw new Error('The SI PDF page could not be rendered')

@@ -2,7 +2,7 @@
   <main class="adm">
     <header v-if="!isWorkspacePage" class="topbar">
       <div class="brand admin-brand-link" role="link" tabindex="0" title="Go to Operations" @click="setPage('wb_efa_fcl')" @keydown.enter.prevent="setPage('wb_efa_fcl')">
-        <div class="brand-mark">S</div>
+        <img class="brand-mark" src="/shoptrans-admin-mark.svg" alt="SHOPTRANS" />
         <div>
           <div class="brand-name">SHOP<span>TRANS</span></div>
           <div class="brand-sub">Management System</div>
@@ -36,7 +36,7 @@
     <div class="shell" :class="{ 'workbook-shell': isWorkspacePage, 'sidebar-collapsed': sidebarCollapsed }" :style="isWorkspacePage ? { '--sidew': `${sidebarWidth}px` } : undefined">
       <aside class="sidebar" :class="{ edit: state.editMenu }">
         <div v-if="isWorkspacePage" class="workbook-brand admin-brand-link" role="link" tabindex="0" title="Go to Operations" @click="setPage('wb_efa_fcl')" @keydown.enter.prevent="setPage('wb_efa_fcl')">
-          <div class="brand-mark">S</div>
+          <img class="brand-mark" src="/shoptrans-admin-mark.svg" alt="SHOPTRANS" />
           <div>
             <div class="brand-name">SHOP<span style="color:var(--g-500)">TRANS</span></div>
             <div class="brand-sub">Management System</div>
@@ -834,12 +834,7 @@
               >
                 <Transition name="sm-loading-fade">
                   <div v-if="loading" class="sm-modern-loading" role="status" aria-live="polite">
-                    <div class="sm-loading-card">
-                      <div class="sm-loading-mark"><span>S</span><i></i></div>
-                      <strong>SHOPTRANS</strong>
-                      <small>Loading data</small>
-                      <div class="sm-loading-dots"><i></i><i></i><i></i></div>
-                    </div>
+                    <AdminLoadingScreen compact />
                   </div>
                 </Transition>
                 <table class="sm-grid-table" :style="salesTableStyle" @contextmenu.prevent.stop>
