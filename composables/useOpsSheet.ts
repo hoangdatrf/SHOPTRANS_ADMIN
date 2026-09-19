@@ -451,14 +451,19 @@ export function opsHeaderFor(base: OpsBase, mode: OpsMode, dept: OpsDept, type?:
   const renamedHeader = ['ICD', 'TCD'].includes(String(dept || '').toUpperCase()) && ['DO', 'DAP', 'DDU', 'DDP'].includes(String(type || '').toUpperCase())
     ? rawHeader.map((label) => label === 'DO VALIDITY' ? 'DO INFO' : label)
     : rawHeader
+  // DO / ICD no longer displays the document popup column. Keep DO INFO in
+  // DAP/DDU/DDP and in every other department where it is still required.
+  const visibleHeader = String(type || '').toUpperCase() === 'DO' && String(dept || '').toUpperCase() === 'ICD'
+    ? renamedHeader.filter((label) => label !== 'DO INFO')
+    : renamedHeader
   // Downstream worksheets own one assignee column. GSD additionally shows the
   // next department's linked assignee beside its own GSD column.
   const departmentOpsPattern = /^(?:(?:GSD|ECD|ICD|TCD|CCD|DCD|FCD|QCD) OPS|OPS[12]?)$/
-  const firstOpsColumn = renamedHeader.findIndex((label) => departmentOpsPattern.test(String(label).toUpperCase()))
+  const firstOpsColumn = visibleHeader.findIndex((label) => departmentOpsPattern.test(String(label).toUpperCase()))
   const header = firstOpsColumn < 0
-    ? renamedHeader
+    ? visibleHeader
     : String(dept).toUpperCase() === 'GSD'
-    ? renamedHeader.reduce<string[]>((result, label, index) => {
+    ? visibleHeader.reduce<string[]>((result, label, index) => {
         if (!departmentOpsPattern.test(String(label).toUpperCase())) return [...result, label]
         if (index !== firstOpsColumn) return result
         const linkedOps = String(label).toUpperCase()
@@ -466,7 +471,7 @@ export function opsHeaderFor(base: OpsBase, mode: OpsMode, dept: OpsDept, type?:
           ? [...result, 'GSD']
           : [...result, 'GSD', linkedOps]
       }, [])
-    : renamedHeader.reduce<string[]>((result, label, index) => {
+    : visibleHeader.reduce<string[]>((result, label, index) => {
         if (!departmentOpsPattern.test(String(label).toUpperCase())) return [...result, label]
         return index === firstOpsColumn ? [...result, `${String(dept).toUpperCase()} OPS`] : result
       }, [])
