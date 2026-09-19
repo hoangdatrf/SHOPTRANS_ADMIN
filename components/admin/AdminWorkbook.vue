@@ -2076,6 +2076,7 @@
               <div class="si-table-wrap"><table class="si-table"><thead><tr><th>#</th><th>ContNo#</th><th>ContType</th><th>SealNo#</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th></tr></thead><tbody><tr v-for="(container, index) in siSubmitContainers()" :key="container.id"><td class="si-order">{{ index + 1 }}</td><td><input v-model="container.contNo" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.contType" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.sealNo" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.qty" type="number" min="0" step="1" :disabled="!gsdModal.editing" /></td><td><input v-model="container.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="container.gw" type="number" min="0" step="0.01" :disabled="!gsdModal.editing" /></td><td><input v-model="container.mea" type="number" min="0" step="0.001" :disabled="!gsdModal.editing" /></td></tr></tbody></table></div>
               <button v-if="gsdModal.editing && !isFclExwDcdSiModal()" class="wb-modal-btn si-add-container" type="button" @click="addSiSubmitContainer">+ Add Container</button>
               <div class="si-section-title">Cargo Description</div>
+              <label class="si-f si-description"><span>Description</span><textarea v-model="gsdModal.form.description" rows="2" :disabled="!gsdModal.editing"></textarea></label>
               <div class="si-g3"><label class="si-f"><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="si-marks" rows="1" :disabled="!gsdModal.editing"></textarea><span class="si-attachment"><button v-if="gsdModal.editing" class="si-attach-button" type="button" @click="siMarksFileInput?.click()"><svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5 5 0 0 1-7-7l9-9a3.3 3.3 0 0 1 4.7 4.7l-9 9a1.7 1.7 0 0 1-2.4-2.4l8.1-8.1"/></svg>AttFile</button><span v-if="gsdModal.form.marksFile" class="si-file-name">{{ gsdModal.form.marksFile.name }}</span><button v-if="gsdModal.form.marksFile" class="si-file-icon" type="button" title="View" @click="viewSiMarksFile"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button><button v-if="gsdModal.editing && gsdModal.form.marksFile" class="si-file-remove" type="button" title="Remove" @click="removeSiMarksFile">&times;</button><em v-if="!gsdModal.editing && !gsdModal.form.marksFile">No file attached</em></span></label><label class="si-f"><span>QTY</span><input :value="siSubmitTotal('qty')" type="text" readonly /></label><label class="si-f"><span>Unit</span><input v-model="gsdModal.form.unit" type="text" :disabled="!gsdModal.editing" /></label></div>
               <div class="si-g2"><label class="si-f"><span>GW (KG)</span><input :value="siSubmitTotal('gw')" type="text" readonly /></label><label class="si-f"><span>MEA. (CBM)</span><input :value="siSubmitTotal('mea')" type="text" readonly /></label></div>
               <label class="si-f"><span>Special Instructions</span><textarea v-model="gsdModal.form.specialInst" rows="3" :disabled="!gsdModal.editing"></textarea></label>
@@ -2115,7 +2116,7 @@
               <div class="bd-body">
                 <div class="bd-sec-title">{{ isAwbDetailModal() ? 'MAWB DETAILS' : 'MBL DETAILS' }}</div>
                 <div class="bd-rows">
-                  <div class="bd-row"><span class="bd-lab">SI SUBMITED:</span><input v-model="gsdModal.form.siSubmitted" type="checkbox" class="bd-cb" :disabled="!isDcdBillDetailModal() || !gsdModal.editing" @change="syncBillDetailTimestamp('siSubmitted')" /><input v-model.trim="gsdModal.form.siSubmittedAt" type="text" class="bd-date bd-mirror" readonly placeholder="dd/mm/yyyy hh:mm" /><button v-if="!isReadonlyExwFclEcdBillDetail()" class="bd-up" type="button" disabled title="Upload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M8 9l4-4 4 4"/><path d="M5 18.5h14"/></svg></button><button class="bd-eye" :class="{ on: !!gsdModal.form.siSubmittedFile?.url }" type="button" :disabled="!gsdModal.form.siSubmittedFile?.url" title="View" @click="viewBillDetailFile(gsdModal.form.siSubmittedFile)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+                  <div class="bd-row"><span class="bd-lab">SI SUBMITTED:</span><input v-model="gsdModal.form.siSubmitted" type="checkbox" class="bd-cb" :disabled="!isDcdBillDetailModal() || !gsdModal.editing" @change="syncBillDetailTimestamp('siSubmitted')" /><input v-model.trim="gsdModal.form.siSubmittedAt" type="text" class="bd-date bd-mirror" readonly placeholder="dd/mm/yyyy hh:mm" /><button v-if="!isReadonlyExwFclEcdBillDetail()" class="bd-up" :class="{ has: !!gsdModal.form.siSubmittedFile?.url }" type="button" :disabled="!isDcdBillDetailModal() || !gsdModal.editing || !gsdModal.form.siSubmitted" title="Upload SI Submitted file" @click="openBillDetailUpload('siSubmittedFile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M8 9l4-4 4 4"/><path d="M5 18.5h14"/></svg></button><button class="bd-eye" :class="{ on: !!gsdModal.form.siSubmittedFile?.url }" type="button" :disabled="!gsdModal.form.siSubmittedFile?.url" title="View SI Submitted file" @click="viewBillDetailFile(gsdModal.form.siSubmittedFile)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                   <div class="bd-row"><span class="bd-lab">{{ isAwbDetailModal() ? 'MAWB APPROVED:' : 'MBL APPROVED:' }}</span><input v-model="gsdModal.form.mbl" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing" @change="syncBillTimestamp('mbl')" /><input v-model.trim="gsdModal.form.mblAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><button v-if="!isReadonlyExwFclEcdBillDetail()" class="bd-up" :class="{ has: !!gsdModal.form.mblFile?.url }" type="button" :disabled="!gsdModal.editing" title="Upload" @click="openBillDetailUpload('mblFile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M8 9l4-4 4 4"/><path d="M5 18.5h14"/></svg></button><button class="bd-eye" :class="{ on: !!gsdModal.form.mblFile?.url }" type="button" :disabled="!gsdModal.form.mblFile?.url" title="View" @click="viewBillDetailFile(gsdModal.form.mblFile)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                 </div>
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-div"></div>
@@ -3207,8 +3208,8 @@
               </tr>
               <tr>
                 <td colspan="2" class="tall">
-                  <span class="blabel">Notify Party</span><span class="bval" data-ph="Name, Full Address, Tax ID, Email, Phone No, PIC Name" :contenteditable="!billDocModal.locked" @blur="setBillDocField('notify', $event)">{{ billDocValue('notify') }}</span>
-                  <label v-if="billDocModal.kind === 'B/L'" class="same-wrap"><input type="checkbox" class="same-chk" :disabled="billDocModal.locked">SAME AS CNEE</label>
+                  <span class="blabel">Notify Party</span><span class="bval" data-ph="Name, Full Address, Tax ID, Email, Phone No, PIC Name" :contenteditable="!billDocModal.locked && !billDocModal.sameAsConsignee" @blur="setBillDocField('notify', $event)">{{ billDocValue('notify') }}</span>
+                  <label v-if="billDocModal.kind === 'B/L'" class="same-wrap"><input v-model="billDocModal.sameAsConsignee" type="checkbox" class="same-chk" :disabled="billDocModal.locked" @change="toggleBillNotifySameAsConsignee">SAME AS CONSIGNEE</label>
                 </td>
               </tr>
               <tr>
@@ -3237,25 +3238,25 @@
               </thead>
               <tbody>
                 <tr class="grow">
-                  <td :contenteditable="!billDocModal.locked"></td>
-                  <td :contenteditable="!billDocModal.locked" class="ctr"></td>
-                  <td :contenteditable="!billDocModal.locked" data-ph="SAID TO CONTAIN &mdash; AS DECLARED BY SHIPPER"></td>
-                  <td :contenteditable="!billDocModal.locked" class="num"></td>
-                  <td :contenteditable="!billDocModal.locked" class="num"></td>
+                  <td :contenteditable="!billDocModal.locked" @blur="setBillDocField('marks', $event)">{{ billDocValue('marks') }}</td>
+                  <td :contenteditable="!billDocModal.locked" class="ctr" @blur="setBillDocField('packages', $event)">{{ billDocValue('packages') }}</td>
+                  <td :contenteditable="!billDocModal.locked" data-ph="SAID TO CONTAIN &mdash; AS DECLARED BY SHIPPER" @blur="setBillDocField('goodsDescription', $event)">{{ billDocValue('goodsDescription') }}</td>
+                  <td :contenteditable="!billDocModal.locked" class="num" @blur="setBillDocField('grossWeight', $event)">{{ billDocValue('grossWeight') }}</td>
+                  <td :contenteditable="!billDocModal.locked" class="num" @blur="setBillDocField('measurement', $event)">{{ billDocValue('measurement') }}</td>
                 </tr>
               </tbody>
             </table>
             <table class="bgrid" style="margin-top:6px">
               <tbody>
               <tr>
-                <td><span class="blabel">Freight &amp; Charges</span><select class="fsel" :disabled="billDocModal.locked"><option value=""></option><option>FREIGHT PREPAID</option><option>FREIGHT COLLECT</option><option>AS ARRANGED</option></select></td>
-                <td><span class="blabel">Freight Payable At</span><span class="bval" :contenteditable="!billDocModal.locked"></span></td>
-                <td><span class="blabel">Number of Original {{ billDocModal.kind === 'B/L' ? 'B(s)/L' : 'FCR(s)' }}</span><span class="bval" :data-ph="billDocModal.kind === 'B/L' ? 'THREE (3)' : 'ONE (1)'" :contenteditable="!billDocModal.locked"></span></td>
+                <td><span class="blabel">Freight &amp; Charges</span><select v-model="billDocModal.freightCharges" class="fsel" :disabled="billDocModal.locked"><option value=""></option><option>FREIGHT PREPAID</option><option>FREIGHT COLLECT</option><option>AS ARRANGED</option></select></td>
+                <td><span class="blabel">Freight Payable At</span><span class="bval" :contenteditable="!billDocModal.locked" @blur="setBillDocField('freightPayableAt', $event)">{{ billDocValue('freightPayableAt') }}</span></td>
+                <td><span class="blabel">Number of Original {{ billDocModal.kind === 'B/L' ? 'B(s)/L' : 'FCR(s)' }}</span><span class="bval" :contenteditable="!billDocModal.locked" @blur="setBillDocField('originalCount', $event)">{{ billDocValue('originalCount') }}</span></td>
               </tr>
               <tr>
-                <td><span class="blabel">Place of Issue</span><span class="bval" data-ph="Ho Chi Minh City, Vietnam" :contenteditable="!billDocModal.locked"></span></td>
-                <td><span class="blabel">Date of Issue</span><span class="bval" data-ph="yyyy/mm/dd" :contenteditable="!billDocModal.locked"></span></td>
-                <td><span class="blabel">{{ billDocModal.kind === 'B/L' ? 'Shipped on Board Date' : 'Date of Receipt of Cargo' }}</span><span class="bval" :data-ph="billDocModal.kind === 'B/L' ? '' : 'yyyy/mm/dd'" :contenteditable="!billDocModal.locked"></span></td>
+                <td><span class="blabel">Place of Issue</span><span class="bval" data-ph="Ho Chi Minh City, Vietnam" :contenteditable="!billDocModal.locked" @blur="setBillDocField('placeOfIssue', $event)">{{ billDocValue('placeOfIssue') }}</span></td>
+                <td><span class="blabel">Date of Issue</span><span class="bval">{{ billDocValue('dateOfIssue') }}</span></td>
+                <td><span class="blabel">{{ billDocModal.kind === 'B/L' ? 'Shipped on Board Date' : 'Date of Receipt of Cargo' }}</span><span class="bval" :contenteditable="!billDocModal.locked" @blur="setBillDocField('shippedOnBoardDate', $event)">{{ billDocValue('shippedOnBoardDate') }}</span></td>
               </tr>
               </tbody>
             </table>
@@ -3266,6 +3267,7 @@
                 <div class="space"></div>
                 <div class="who"></div>
                 <div class="role">Authorized Signature</div>
+                <em v-if="billDocModal.signedAt" class="bill-signed-stamp">✓ Signed · {{ billDocModal.signedAt }}</em>
               </div>
             </div>
             <div class="foot">
@@ -4495,7 +4497,7 @@ const paymentHistoryPicker = reactive<any>({ open: false, row: -1, jobNo: '', re
 let clientSearchRun = 0
 const preAlertFileTarget = ref('')
 const preAlertViewer = reactive({ open: false, url: '', name: '' })
-const billDocModal = reactive<any>({ open: false, readonly: false, isRelease: false, exportingPdf: false, billType: 'ORIGINAL B/L', kind: 'B/L', company: 'TX LOGISTICS VIETNAM CO.,LTD', copySi: false, locked: false, attachments: 0, savedAt: '', docNo: '', refNo: '', shipper: '', consignee: '', notify: '', preCarriage: '', receipt: '', vessel: '', pol: '', pod: '', delivery: '' })
+const billDocModal = reactive<any>({ open: false, readonly: false, isRelease: false, exportingPdf: false, billType: 'ORIGINAL B/L', kind: 'B/L', company: 'TX LOGISTICS VIETNAM CO.,LTD', copySi: false, locked: false, attachments: 0, savedAt: '', signedAt: '', docNo: '', refNo: '', shipper: '', consignee: '', notify: '', notifyBackup: '', sameAsConsignee: false, preCarriage: '', receipt: '', vessel: '', pol: '', pod: '', delivery: '', marks: '', packages: '', goodsDescription: '', grossWeight: '', measurement: '', freightCharges: '', freightPayableAt: '', originalCount: '', placeOfIssue: '', dateOfIssue: '', shippedOnBoardDate: '' })
 const billDocRouteFields = [
   { key: 'preCarriage', label: 'PRE-CARRIAGE BY' }, { key: 'receipt', label: 'PLACE OF RECEIPT' },
   { key: 'vessel', label: 'OCEAN VESSEL / VOYAGE NO.' }, { key: 'pol', label: 'PORT OF LOADING' },
@@ -13902,6 +13904,7 @@ const siSubmitFormFromCell = (value: any) => {
       ...container,
       id: String(container?.id || `SI-CONT-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`),
     })),
+    description: String(saved.description || saved.cargoDescription || ''),
     marks: String(saved.marks || ''),
     marksFile: saved.marksFile || null,
     unit: String(saved.unit || 'PACKAGES'),
@@ -14271,9 +14274,10 @@ const billDetailApprovalForRow = (row: number) => {
 }
 const billReleaseFileInput = ref<HTMLInputElement | null>(null)
 const billDetailFileInput = ref<HTMLInputElement | null>(null)
-const billDetailUploadField = ref<'mblFile' | 'hblFile'>('mblFile')
-const openBillDetailUpload = (field: 'mblFile' | 'hblFile') => {
+const billDetailUploadField = ref<'siSubmittedFile' | 'mblFile' | 'hblFile'>('mblFile')
+const openBillDetailUpload = (field: 'siSubmittedFile' | 'mblFile' | 'hblFile') => {
   if (isReadonlyExwFclEcdBillDetail() || !gsdModal.editing) return
+  if (field === 'siSubmittedFile' && (!isDcdBillDetailModal() || !gsdModal.form.siSubmitted)) return
   billDetailUploadField.value = field
   billDetailFileInput.value?.click()
 }
@@ -14283,7 +14287,9 @@ const handleBillDetailFile = async (event: Event) => {
   if (file) {
     try {
       const uploaded = await uploadAdminAttachment(file)
-      gsdModal.form[billDetailUploadField.value] = { name: uploaded.name, url: uploaded.url }
+      if (billDetailUploadField.value !== 'siSubmittedFile' || gsdModal.form.siSubmitted) {
+        gsdModal.form[billDetailUploadField.value] = { name: uploaded.name, url: uploaded.url }
+      }
     } catch (error: any) { showToast(String(error?.data?.message || error?.message || 'Could not upload the file')) }
   }
   input.value = ''
@@ -14375,6 +14381,10 @@ const syncBillTimestamp = (field: 'mbl' | 'hbl') => {
 }
 const syncBillDetailTimestamp = (field: 'siReceived' | 'siSubmitted') => {
   gsdModal.form[`${field}At`] = gsdModal.form[field] ? billTimestamp() : ''
+  if (field === 'siSubmitted' && !gsdModal.form.siSubmitted) {
+    gsdModal.form.siSubmittedFile = null
+    if (billDetailUploadField.value === 'siSubmittedFile' && billDetailFileInput.value) billDetailFileInput.value.value = ''
+  }
 }
 const enableBillApprovalEdit = () => {
   gsdModal.editing = true
@@ -14506,7 +14516,19 @@ const viewBillDetailFile = (file: any) => {
   else showToast(String(file?.name || 'Attachment'))
 }
 const billDocValue = (key: string) => String(billDocModal[key] || '')
-const setBillDocField = (key: string, event: Event) => { billDocModal[key] = String((event.target as HTMLElement)?.innerText || '').trim() }
+const setBillDocField = (key: string, event: Event) => {
+  const value = String((event.target as HTMLElement)?.innerText || '').trim()
+  billDocModal[key] = ['pol', 'pod'].includes(key) ? value.toUpperCase() : value
+}
+const toggleBillNotifySameAsConsignee = () => {
+  if (billDocModal.sameAsConsignee) {
+    billDocModal.notifyBackup = billDocModal.notify === 'SAME AS CONSIGNEE' ? '' : billDocModal.notify
+    billDocModal.notify = 'SAME AS CONSIGNEE'
+  } else {
+    billDocModal.notify = String(billDocModal.notifyBackup || '')
+  }
+}
+const billDocumentIssueDate = () => billTimestamp().slice(0, 10)
 const linkedVesselText = (value: any) => {
   const vessel = vesselFromCellValue(value)
   return vessel ? [vessel.name, vessel.voyage].filter(Boolean).join(' / ') : ''
@@ -14535,16 +14557,23 @@ const openBillDocument = async (kind: 'B/L' | 'FCR', isRelease = false) => {
   }
   await loadRouteReferenceData()
   const routeValue = rawSiSourceValue('ROUTE') || rowValueByHeader('ROUTE')
-  const linkedPol = siRouteDisplay(routeValue, 'pol')
-  const linkedPod = siRouteDisplay(routeValue, 'pod')
+  const linkedPol = siRouteDisplay(routeValue, 'pol').toUpperCase()
+  const linkedPod = siRouteDisplay(routeValue, 'pod').toUpperCase()
+  const shippedDate = String(rowValueByHeader('ATD') || rowValueByHeader('ETD') || '').trim()
+  const sameAsConsignee = !!saved?.sameAsConsignee || String(saved?.notify || '').trim().toUpperCase() === 'SAME AS CONSIGNEE'
   Object.assign(billDocModal, {
     open: true, readonly: !isRelease && isReadonlyExwFclEcdBillDetail(), isRelease, billType: saved?.billType || 'ORIGINAL B/L',
     kind, company: saved?.company || 'TX LOGISTICS VIETNAM CO.,LTD', copySi: false,
     locked: isRelease || isReadonlyExwFclEcdBillDetail() ? true : !!saved?.locked, attachments: Number(saved?.attachments || 0), savedAt: saved?.savedAt || '',
     docNo: saved?.docNo || rowValueByHeader(kind === 'B/L' ? 'HBL NO#' : 'REF#'), refNo: saved?.refNo || rowValueByHeader('REF#'),
     shipper: saved?.shipper || siClientTextFromSource(rawSiSourceValue('SHIPPER')), consignee: saved?.consignee || siClientTextFromSource(rawSiSourceValue('CNEE')),
-    notify: saved?.notify || siClientTextFromSource(rawSiSourceValue('DESTINATION AGENT')), preCarriage: saved?.preCarriage || '', receipt: saved?.receipt || '',
-    vessel: linkedVesselText(saved?.vessel || rawSiSourceValue('VESSEL/VOYAGE')), pol: linkedPol || saved?.pol || '', pod: linkedPod || saved?.pod || '', delivery: saved?.delivery || '',
+    notify: sameAsConsignee ? 'SAME AS CONSIGNEE' : saved?.notify || siClientTextFromSource(rawSiSourceValue('DESTINATION AGENT')), notifyBackup: sameAsConsignee ? '' : saved?.notify || '', sameAsConsignee,
+    preCarriage: saved?.preCarriage || '', receipt: saved?.receipt || '', vessel: linkedVesselText(saved?.vessel || rawSiSourceValue('VESSEL/VOYAGE')),
+    pol: String(saved?.pol || linkedPol || '').toUpperCase(), pod: String(saved?.pod || linkedPod || '').toUpperCase(), delivery: saved?.delivery || '',
+    marks: saved?.marks || '', packages: saved?.packages || '', goodsDescription: saved?.goodsDescription || '', grossWeight: saved?.grossWeight || '', measurement: saved?.measurement || '',
+    freightCharges: saved?.freightCharges || '', freightPayableAt: saved?.freightPayableAt || saved?.pol || linkedPol || '', originalCount: saved?.originalCount || (kind === 'B/L' ? '3' : '1'),
+    placeOfIssue: saved?.placeOfIssue || 'HO CHI MINH CITY, VIETNAM', dateOfIssue: saved?.dateOfIssue || '', shippedOnBoardDate: saved?.shippedOnBoardDate || shippedDate,
+    signedAt: saved?.signedAt || '',
   })
 }
 const copyBillDocumentFromSi = () => {
@@ -14552,10 +14581,13 @@ const copyBillDocumentFromSi = () => {
   billDocModal.shipper = siClientTextFromSource(rawSiSourceValue('SHIPPER'))
   billDocModal.consignee = siClientTextFromSource(rawSiSourceValue('CNEE'))
   billDocModal.notify = siClientTextFromSource(rawSiSourceValue('DESTINATION AGENT'))
+  billDocModal.sameAsConsignee = false
+  billDocModal.notifyBackup = billDocModal.notify
   billDocModal.vessel = linkedVesselText(rawSiSourceValue('VESSEL/VOYAGE'))
   const routeValue = rawSiSourceValue('ROUTE') || rowValueByHeader('ROUTE')
-  billDocModal.pol = siRouteDisplay(routeValue, 'pol')
-  billDocModal.pod = siRouteDisplay(routeValue, 'pod')
+  billDocModal.pol = siRouteDisplay(routeValue, 'pol').toUpperCase()
+  billDocModal.pod = siRouteDisplay(routeValue, 'pod').toUpperCase()
+  billDocModal.freightPayableAt = billDocModal.pol
 }
 const addBillAttachedSheet = () => {
   if (billDocModal.locked) return
@@ -14568,12 +14600,29 @@ const removeBillAttachedSheet = (index: number) => {
   showToast(`Attached sheet ${index} removed`)
 }
 const clearBillDocument = () => {
-  Object.assign(billDocModal, { docNo: '', refNo: '', shipper: '', consignee: '', notify: '', preCarriage: '', receipt: '', vessel: '', pol: '', pod: '', delivery: '', attachments: 0, savedAt: '' })
+  Object.assign(billDocModal, { docNo: '', refNo: '', shipper: '', consignee: '', notify: '', notifyBackup: '', sameAsConsignee: false, preCarriage: '', receipt: '', vessel: '', pol: '', pod: '', delivery: '', marks: '', packages: '', goodsDescription: '', grossWeight: '', measurement: '', freightCharges: '', freightPayableAt: '', originalCount: billDocModal.kind === 'B/L' ? '3' : '1', placeOfIssue: 'HO CHI MINH CITY, VIETNAM', dateOfIssue: '', shippedOnBoardDate: '', signedAt: '', attachments: 0, savedAt: '' })
 }
 const saveBillDocument = () => {
+  billDocModal.pol = String(billDocModal.pol || '').toUpperCase()
+  billDocModal.pod = String(billDocModal.pod || '').toUpperCase()
+  if (billDocModal.sameAsConsignee) billDocModal.notify = 'SAME AS CONSIGNEE'
+  if (!String(billDocModal.originalCount || '').trim()) billDocModal.originalCount = billDocModal.kind === 'B/L' ? '3' : '1'
+  billDocModal.dateOfIssue = billDocumentIssueDate()
+  if (!String(billDocModal.shippedOnBoardDate || '').trim()) billDocModal.shippedOnBoardDate = String(rowValueByHeader('ATD') || rowValueByHeader('ETD') || '').trim()
+  const requiredFields: Array<[string, string]> = [
+    ['docNo', billDocModal.kind === 'B/L' ? 'B/L No#' : 'FCR No#'], ['refNo', 'Reference No#'], ['shipper', 'Shipper'], ['consignee', 'Consignee'], ['notify', 'Notify Party'],
+    ['vessel', 'Ocean Vessel / Voyage No.'], ['pol', 'Port of Loading'], ['pod', 'Port of Discharge'], ['packages', 'No. of Pkgs'], ['goodsDescription', 'Description of Goods'],
+    ['grossWeight', 'Gross Weight'], ['measurement', 'Measurement'], ['freightCharges', 'Freight & Charges'], ['freightPayableAt', 'Freight Payable At'], ['placeOfIssue', 'Place of Issue'], ['shippedOnBoardDate', billDocModal.kind === 'B/L' ? 'Shipped on Board Date' : 'Date of Receipt of Cargo'],
+  ]
+  const missing = requiredFields.filter(([key]) => !String(billDocModal[key] || '').trim()).map(([, label]) => label)
+  if (missing.length) {
+    showToast(`Please complete required field${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`)
+    return
+  }
   billDocModal.savedAt = billTimestamp()
+  billDocModal.signedAt = billTimestamp()
   billDocModal.locked = true
-  const data = JSON.stringify(Object.fromEntries(['company','attachments','savedAt','docNo','refNo','shipper','consignee','notify','preCarriage','receipt','vessel','pol','pod','delivery','billType'].map((key) => [key, billDocModal[key]]).concat([['locked', true]])))
+  const data = JSON.stringify(Object.fromEntries(['company','attachments','savedAt','signedAt','docNo','refNo','shipper','consignee','notify','sameAsConsignee','preCarriage','receipt','vessel','pol','pod','delivery','marks','packages','goodsDescription','grossWeight','measurement','freightCharges','freightPayableAt','originalCount','placeOfIssue','dateOfIssue','shippedOnBoardDate','billType'].map((key) => [key, billDocModal[key]]).concat([['locked', true]])))
 
   if (billDocModal.isRelease) {
     const headers = rows.value[0] || []
@@ -19088,17 +19137,17 @@ onBeforeUnmount(() => {
 .blform .f{display:inline-block;min-width:60px;border-bottom:1px dashed #b7c3cf;padding:1px 3px;outline:none}
 .blform .f:empty::before{content:attr(data-ph);color:#b0b8c0}
 .blform .bgrid{width:100%;border:1.2px solid #0f4c81;border-collapse:collapse;table-layout:fixed}
-.blform .bgrid td{border:1px solid #0f4c81;padding:4px 6px;vertical-align:top;overflow-wrap:break-word}
-.blform .blabel{display:block;font-size:8.5px;font-weight:700;color:#0f4c81;letter-spacing:.5px;text-transform:uppercase;margin-bottom:2px}
+.blform .bgrid td{border:1px solid #0f4c81;padding:6px 8px;vertical-align:top;overflow-wrap:break-word}
+.blform .blabel{display:block;font-size:8.5px;font-weight:700;color:#0f4c81;letter-spacing:.5px;line-height:1.35;text-transform:uppercase;margin-bottom:4px}
 .blform .same-wrap{display:inline-flex;align-items:center;font-size:8.5px;font-weight:700;color:#0f4c81;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;margin-top:8px}
 .blform .same-wrap input{margin:0 4px 0 0;vertical-align:middle;cursor:pointer}
-.blform .bval{display:block;min-height:14px;outline:none;white-space:pre-wrap;overflow-wrap:break-word}
+.blform .bval{display:block;min-height:16px;outline:none;line-height:1.4;white-space:pre-wrap;overflow-wrap:break-word}
 .blform .bval:empty::before{content:attr(data-ph);color:#b7bfc7}
 .blform .tall .bval{min-height:46px}
 .blform .fsel{border:none;background:#f6f9fc;font:inherit;font-weight:600;width:100%;padding:2px;cursor:pointer}
 .blform table.ctab{width:100%;border-collapse:collapse;table-layout:fixed}
-.blform .ctab th{background:#eef4f9;color:#0f4c81;border:1px solid #0f4c81;padding:5px 4px;font-size:9.5px;text-transform:uppercase;letter-spacing:.4px}
-.blform .ctab td{border:1px solid #0f4c81;padding:4px;vertical-align:top;white-space:pre-wrap;outline:none}
+.blform .ctab th{background:#eef4f9;color:#0f4c81;border:1px solid #0f4c81;padding:6px 5px;font-size:9.5px;line-height:1.3;text-transform:uppercase;letter-spacing:.4px}
+.blform .ctab td{border:1px solid #0f4c81;padding:6px;line-height:1.4;vertical-align:top;white-space:pre-wrap;outline:none}
 .blform .ctab td.num{text-align:right}
 .blform .ctab td.ctr{text-align:center}
 .blform .ctab td[data-ph]:empty::before{content:attr(data-ph);color:#b7bfc7}
@@ -19110,6 +19159,7 @@ onBeforeUnmount(() => {
 .blform .sig .space{height:56px;border-bottom:1px solid #333;margin:6px 8px;display:flex;align-items:center;justify-content:center}
 .blform .sig .who{font-weight:800;font-size:12px;margin-top:4px}
 .blform .sig .role{font-size:10px;color:#444}
+.blform .bill-signed-stamp{display:block;margin-top:6px;color:#159447;font-size:10px;font-style:normal;font-weight:800}
 .blform .signstamp{display:inline-flex;align-items:center;gap:9px}
 .blform .ss-check{width:24px;height:24px;border-radius:50%;background:#22a559;color:#fff;font-size:14px;display:inline-flex;align-items:center;justify-content:center;line-height:1}
 .blform .ss-time{font-size:12px;font-weight:800;color:#222;letter-spacing:.02em}
