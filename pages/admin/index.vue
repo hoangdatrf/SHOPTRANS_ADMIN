@@ -952,7 +952,7 @@
                               <input v-model="smEditDraft[column.key]" class="sm-celli" type="number" inputmode="decimal" :placeholder="salesCellPlaceholder(column)" />
                               <button type="button" title="Calculate with OpenRouteService" :disabled="haulageCalculating" @click.stop="calculateHaulageRoute(smEditDraft)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7" /></svg></button>
                             </div>
-                            <input v-else v-model="smEditDraft[column.key]" class="sm-celli" :type="salesInputType(column)" :inputmode="salesInputMode(column)" :placeholder="salesCellPlaceholder(column)" :data-key="column.key" @focusout="formatSalesNumberInput(column.key, $event, 'edit')" />
+                            <input v-else v-model="smEditDraft[column.key]" class="sm-celli" :type="salesInputType(column)" :inputmode="salesInputMode(column)" :placeholder="salesCellPlaceholder(column)" :data-key="column.key" @focus="refreshSmLedge" @focusout="formatSalesNumberInput(column.key, $event, 'edit'); refreshSmLedge()" />
                           </template>
                           <div v-else class="viewcell">
                             <input v-if="column.kind === 'checkbox'" type="checkbox" class="sm-check" :checked="!!dataOf(record)[column.key]" disabled />
@@ -1087,7 +1087,7 @@
                             <input v-model="smDraft[column.key]" class="sm-celli" type="number" inputmode="decimal" :placeholder="salesCellPlaceholder(column)" />
                             <button type="button" title="Calculate with OpenRouteService" :disabled="haulageCalculating" @click.stop="calculateHaulageRoute(smDraft)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7" /></svg></button>
                           </div>
-                          <input v-else v-model="smDraft[column.key]" class="sm-celli" :type="salesInputType(column)" :inputmode="salesInputMode(column)" :placeholder="salesCellPlaceholder(column)" :data-key="column.key" @focusout="formatSalesNumberInput(column.key, $event, 'add')" />
+                          <input v-else v-model="smDraft[column.key]" class="sm-celli" :type="salesInputType(column)" :inputmode="salesInputMode(column)" :placeholder="salesCellPlaceholder(column)" :data-key="column.key" @focus="refreshSmLedge" @focusout="formatSalesNumberInput(column.key, $event, 'add'); refreshSmLedge()" />
                         </td>
                       </tr>
                     </template>
@@ -6323,7 +6323,7 @@ const chooseSalesList = (key: string, value: any) => {
   closeSalesList()
 }
 const handleSalesRowEnter = async (mode: 'add' | 'edit', event: KeyboardEvent) => {
-  if (currentPage.value.kind !== 'sales-marketing' || saving.value) return
+  if (saving.value || event.isComposing) return
   if (mode === 'add' && !smAdding.value || mode === 'edit' && !smEditId.value) return
   const target = event.target as HTMLElement | null
   if (target?.closest('button, textarea')) return
@@ -6337,11 +6337,7 @@ const handleSalesListEnter = async (key: string, mode: 'add' | 'edit', event: Ke
     chooseSalesList(key, activeSalesListOption(key) || activeSalesListDraft()[key])
     return
   }
-  if (currentPage.value.kind === 'sales-marketing') {
-    await handleSalesRowEnter(mode, event)
-    return
-  }
-  chooseSalesList(key, activeSalesListDraft()[key])
+  await handleSalesRowEnter(mode, event)
 }
 const handleSalesListOutside = (event: MouseEvent) => {
   const target = event.target as Element | null
@@ -6903,12 +6899,13 @@ const smLedgeStyle = computed(() => {
   const table = typeof document === 'undefined' ? null : document.querySelector('.sm-tablewrap table') as HTMLElement | null
   const row = typeof document === 'undefined' ? null : document.querySelector('.sm-tablewrap tbody tr.sm-editing') as HTMLElement | null
   if (!wrap || !table || !row) return {}
-  const ledgeWidth = 126
-  const emailIndex = tableColumns.value.findIndex((column: any) => column.key === 'email')
-  const anchorCell = row.children[emailIndex >= 0 ? emailIndex + 2 : 1] as HTMLElement | undefined
-  const cellLeft = table.offsetLeft + (anchorCell?.offsetLeft || 0)
-  const cellWidth = anchorCell?.offsetWidth || 0
-  const left = cellWidth < ledgeWidth ? cellLeft : Math.max(cellLeft, Math.min(cellLeft + (cellWidth - ledgeWidth) / 2, cellLeft + cellWidth - ledgeWidth))
+  const activeElement = document.activeElement as HTMLElement | null
+  const datePickerOpen = activeElement?.matches('input[type="date"]') && !!activeElement.closest('tr.sm-editing')
+  // Keep the actions at the beginning of the visible row while horizontally
+  // scrolling. A native date picker opens below the focused date input, so
+  // temporarily move the actions aside to leave its popup unobstructed.
+  const stickyInset = datePickerOpen ? 286 : 44
+  const left = wrap.scrollLeft + stickyInset
   const compactRowHeight = 34
   return {
     top: `${table.offsetTop + row.offsetTop + compactRowHeight - 1.5}px`,

@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TX Logistics / Shoptrans - Freight Documents (FCL / LCL / AIR)</title>
+<style>
+:root{
+  --green:#008F4C; --green-h:#00753e;
+  --orange:#e67e22; --orange-h:#cf6f1c;
+  --grey:#64748b; --grey-h:#51606e;
+  --red:#c0392b; --red-h:#a23227;
+  --navy:#0f4c81; --navy-h:#0b3a63;
+  --line:#d7dce2; --ink:#1f2733; --muted:#6b7686;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#eef1f4;color:var(--ink);font-family:Arial,Helvetica,sans-serif;font-size:13px}
+.topbar{display:flex;justify-content:space-between;align-items:center;background:#fff;border-bottom:1px solid var(--line);padding:10px 18px;position:sticky;top:0;z-index:30}
+.brand-name{font-weight:700;font-size:15px}
+.brand-sub{font-size:11px;color:var(--muted)}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+.topbar-actions select{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px}
+.tabs{display:flex;gap:4px;background:#fff;padding:0 18px;border-bottom:1px solid var(--line);position:sticky;top:49px;z-index:25}
+.tabbtn{border:none;background:transparent;padding:11px 16px;font-size:13px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;font-weight:700}
+.tabbtn:hover{color:var(--ink)}
+.tabbtn.active{color:var(--navy);border-bottom-color:var(--navy)}
+.tabs2{display:flex;gap:2px;background:#f4f6f8;padding:0 18px;border-bottom:1px solid var(--line)}
+.tabbtn2{border:none;background:transparent;padding:9px 14px;font-size:12.5px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;font-weight:600}
+.tabbtn2:hover{color:var(--ink)}
+.tabbtn2.active{color:var(--orange);border-bottom-color:var(--orange);background:#fff}
+main{padding:22px 0 60px}
+.tabpane{display:none}
+.tabpane.active{display:block}
+.toolbar{max-width:210mm;margin:0 auto 10px;display:flex;gap:8px;padding:0 4px}
+.doc-sheet{max-width:210mm;margin:0 auto;background:#fff;padding:16mm 14mm;box-shadow:0 1px 4px rgba(0,0,0,.12);border:1px solid var(--line)}
+.btn{border:none;border-radius:6px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;color:#fff}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-green{background:var(--green)} .btn-green:hover{background:var(--green-h)}
+.btn-orange{background:var(--orange)} .btn-orange:hover{background:var(--orange-h)}
+.btn-grey{background:var(--grey)} .btn-grey:hover{background:var(--grey-h)}
+.btn-red{background:var(--red)} .btn-red:hover{background:var(--red-h)}
+.btn-navy{background:var(--navy)} .btn-navy:hover{background:var(--navy-h)}
+.letterhead{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:16px}
+.lh-name{font-weight:700;font-size:15px}
+.lh-addr{font-size:11.5px;color:var(--muted);max-width:340px;margin-top:2px}
+.lh-contact{font-size:11.5px;color:var(--muted);margin-top:2px}
+.doc-title-block{text-align:right}
+.doc-title{font-size:19px;font-weight:800;letter-spacing:.5px;color:var(--navy)}
+.doc-subtitle{font-size:11.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px}
+.field input[type=text],.field input[type=number],.field input[type=date],.field textarea,.field select{
+  width:100%;border:1px solid var(--line);border-radius:5px;padding:7px 8px;font-size:13px;font-family:inherit;color:var(--ink);background:#fff
+}
+.field textarea{resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px;margin-bottom:8px}
+.radio-row{display:flex;gap:18px;align-items:center;padding:6px 0}
+.radio-row label{font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px;cursor:pointer}
+.radio-row input[type=radio]{cursor:pointer}
+.doc-table{width:100%;border-collapse:collapse;margin-top:6px}
+.doc-table th,.doc-table td{border:1px solid var(--line);padding:6px 7px;font-size:12.5px;text-align:center}
+.doc-table th{background:#f4f6f8;font-size:11px;text-transform:uppercase;color:var(--muted)}
+.doc-table td input,.doc-table td select{width:100%;border:none;padding:2px;font-size:12.5px;background:transparent;text-align:center}
+.doc-table td textarea{width:100%;border:none;padding:2px;font-size:12.5px;background:transparent;resize:vertical;text-align:center}
+.doc-table td input:focus,.doc-table td select:focus,.doc-table td textarea:focus{outline:1px solid var(--navy);background:#fbfdff}
+.doc-table td.cell-readout{color:var(--muted);font-weight:700;text-align:center}
+.doc-table tfoot td{font-weight:700;background:#f9fafb}
+.row-remove{border:none;background:var(--red);color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:12px;line-height:1}
+.row-remove:hover{background:var(--red-h)}
+.row-remove-sm{width:11px;height:11px;font-size:6px}
+.field input[readonly]{background:#f4f6f8;color:var(--muted);cursor:default}
+.signature-block{display:flex;justify-content:space-between;margin-top:46px}
+.sig-col{width:45%;text-align:center}
+.sig-col .sig-label{font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
+.sig-company{font-weight:700;font-size:12.5px}
+.sig-space{height:34px}
+.sig-name{font-weight:700;border-top:1px solid var(--ink);padding-top:4px;font-size:13px}
+.gdate-wrap{position:relative;display:block;width:100%}
+input.gdate{position:relative;cursor:pointer;color:transparent}
+input.gdate::-webkit-datetime-edit{opacity:0}
+input.gdate::-webkit-datetime-edit-fields-wrapper{opacity:0}
+input.gdate::-webkit-calendar-picker-indicator{position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0}
+input.gdate::selection{background:transparent}
+/*date-click*/
+.gd-txt{position:absolute;left:9px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:13px;color:var(--ink)}
+input.gdate:disabled + .gd-txt{color:var(--muted)}
+.section-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--navy);margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:6px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:100}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.modal-overlay{position:fixed;inset:0;background:rgba(15,20,28,.45);display:flex;align-items:center;justify-content:center;z-index:200}
+.modal-box{background:#fff;border-radius:10px;padding:20px 22px;width:340px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.modal-box.modal-wide{width:440px}
+.modal-box h3{margin:0 0 14px;font-size:15px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+@media print{
+  .topbar,.tabs,.tabs2,.no-print{display:none !important}
+  body{background:#fff}
+  main{padding:0}
+  .doc-sheet{box-shadow:none;border:none;margin:0;padding:0;max-width:100%}
+  @page{size:A4;margin:15mm}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="brand-name">TX Logistics / Shoptrans</div>
+    <div class="brand-sub">Freight &amp; Delivery Documents — FCL / LCL / AIR</div>
+  </div>
+  <div class="topbar-actions">
+    <label style="font-size:12px;font-weight:700;color:var(--muted)">Company:</label>
+    <select id="companySelect" onchange="applyCompany()">
+      <option value="tx">TX LOGISTICS VIETNAM CO., LTD</option>
+      <option value="shoptrans">SHOPTRANS VIETNAM CO., LTD</option>
+    </select>
+    <button class="btn btn-grey" onclick="openCompanyModal()">Company Info</button>
+  </div>
+</div>
+
+<div class="tabs"><button class="tabbtn active" data-mode="fcl" onclick="switchMode('fcl')">FCL (Sea)</button><button class="tabbtn" data-mode="lcl" onclick="switchMode('lcl')">LCL (Sea)</button><button class="tabbtn" data-mode="air" onclick="switchMode('air')">AIR</button></div>
+<div class="tabs2" id="docTabs-fcl"><button class="tabbtn2 active" data-doc="an-fcl" onclick="switchDoc('an-fcl')">Arrival Notice</button><button class="tabbtn2" data-doc="si-fcl" onclick="switchDoc('si-fcl')">Shipping Instruction</button><button class="tabbtn2" data-doc="do-fcl" onclick="switchDoc('do-fcl')">Delivery Order</button></div>
+<div class="tabs2" id="docTabs-lcl" style="display:none"><button class="tabbtn2 active" data-doc="an-lcl" onclick="switchDoc('an-lcl')">Arrival Notice</button><button class="tabbtn2" data-doc="si-lcl" onclick="switchDoc('si-lcl')">Shipping Instruction</button><button class="tabbtn2" data-doc="do-lcl" onclick="switchDoc('do-lcl')">Delivery Order</button></div>
+<div class="tabs2" id="docTabs-air" style="display:none"><button class="tabbtn2 active" data-doc="an-air" onclick="switchDoc('an-air')">Arrival Notice</button><button class="tabbtn2" data-doc="si-air" onclick="switchDoc('si-air')">Shipping Instruction</button><button class="tabbtn2" data-doc="do-air" onclick="switchDoc('do-air')">Delivery Order</button><button class="tabbtn2" data-doc="mf-air" onclick="switchDoc('mf-air')">Manifest</button></div>
+
+<main>
+
+<section id="pane-an-fcl" class="tabpane active">
+  <div class="toolbar no-print">
+    <button class="btn btn-grey" onclick="clearPane('an-fcl')">New</button>
+    <button class="btn btn-green" onclick="saveDraft('an-fcl')">Save Draft</button>
+    <button class="btn btn-navy" onclick="window.print()">Print</button>
+  </div>
+  <div class="doc-sheet" id="sheet-an-fcl">
+    <div class="letterhead">
+      <div>
+        <div class="lh-name" data-lh="name"></div>
+        <div class="lh-addr" data-lh="addr"></div>
+        <div class="lh-contact" data-lh="contact"></div>
+      </div>
+      <div class="doc-title-block">
+        <div class="doc-title">ARRIVAL NOTICE</div>
+        <div class="doc-subtitle">SEA FCL</div>
+      </div>
+    </div>
+
+<div class="grid2"><div class="field"><label>AN No.</label><input type="text" data-key="anNo"></div><div class="field"><label>Date</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="anDate"><span class="gd-txt"></span></div></div></div>
+<div class="grid2"><div class="field"><label>From (Shipper)</label><textarea rows="3" data-key="shipper"></textarea></div><div class="field"><label>To (Consignee)</label><textarea rows="3" data-key="consignee"></textarea></div></div>
+<div class="field"><label>Notify Party</label><textarea rows="2" data-key="notify"></textarea></div>
+<div class="grid3"><div class="field"><label>Vessel/Voyage</label><input type="text" data-key="vessel"></div><div class="field"><label>ETA</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="eta"><span class="gd-txt"></span></div></div><div class="field"><label>B/L No.</label><input type="text" data-key="blNo"></div></div>
+<div class="grid2"><div class="field"><label>Port of Loading</label><input type="text" data-key="pol"></div><div class="field"><label>Port of Discharge</label><input type="text" data-key="pod"></div></div>
+
+<div class="section-title">Container &amp; Seal Information</div>
+<table class="doc-table" id="an-fcl-cont-table">
+  <thead><tr>
+    <th style="width:28px">#</th><th>ContNo#</th><th style="width:100px">ContType</th><th>SealNo#</th>
+    <th style="width:100px">GW (KG)</th><th style="width:100px">MEA. (CBM)</th><th class="no-print" style="width:22px"></th>
+  </tr></thead>
+  <tbody id="an-fcl-cont-body"></tbody>
+</table>
+<template id="tpl-an-fcl-cont-body">
+  <tr>
+    <td class="rowno"></td>
+    <td><input type="text" data-key="contNo"></td>
+    <td><input type="text" data-key="contType"></td>
+    <td><input type="text" data-key="sealNo"></td>
+    <td><input type="number" step="0.01" data-key="gw"></td>
+    <td><input type="number" step="0.001" data-key="mea"></td>
+    <td class="no-print"><button class="row-remove row-remove-sm">×</button></td>
+  </tr>
+</template>
+<button class="btn btn-green btn-sm no-print" style="margin-top:8px" onclick="addTableRow('an-fcl-cont-body')">+ Add Container</button>
+
+
+<div class="section-title">Description of Goods</div>
+<div class="grid3">
+  <div class="field"><label>Marks &amp; Numbers</label><input type="text" data-key="marks"></div>
+  <div class="field"><label>QTY</label><input type="text" id="an-fcl-goods-qty" value="0" readonly></div>
+  <div class="field"><label>Unit</label><input type="text" id="an-fcl-goods-unit" value="CONT" readonly></div>
+</div>
+<div class="grid2">
+  <div class="field"><label>GW (KG)</label><input type="text" id="an-fcl-goods-gw" value="0" readonly></div>
+  <div class="field"><label>MEA. (CBM)</label><input type="text" id="an-fcl-goods-mea" value="0" readonly></div>
+</div>
+
+
+<div class="section-title">Charges Due</div>
+<table class="doc-table" id="an-fcl-charges-table">
+  <thead><tr>
+    <th style="width:26px">#</th><th>Charge Name</th><th style="width:60px">Qty</th><th style="width:70px">Unit</th>
+    <th style="width:100px">Unit Price</th><th style="width:70px">CUR</th><th style="width:80px">Tax Rate (%)</th>
+    <th style="width:120px">Total Price</th><th class="no-print" style="width:34px"></th>
+  </tr></thead>
+  <tbody id="an-fcl-charges-body"></tbody>
+  <tfoot>
+    <tr><td colspan="7">Total Tax Amount</td><td id="an-fcl-tax-total">0</td><td class="no-print"></td></tr>
+    <tr><td colspan="7">Total Charge</td><td id="an-fcl-charge-total">0</td><td class="no-print"></td></tr>
+  </tfoot>
+</table>
+<template id="tpl-an-fcl-charges-body">
+  <tr>
+    <td class="rowno"></td>
+    <td><input type="text" data-key="chargeName"></td>
+    <td><input type="number" step="0.01" data-key="qty"></td>
+    <td><input type="text" data-key="unit"></td>
+    <td><input type="number" step="0.01" data-key="unitPrice"></td>
+    <td><select data-key="cur"><option>VND</option><option>USD</option></select></td>
+    <td><input type="number" step="0.01" data-key="taxRate" placeholder="%"></td>
+    <td class="cell-readout" data-role="totalPrice">0</td>
+    <td class="no-print"><button class="row-remove">×</button></td>
+  </tr>
+</template>
+<button class="btn btn-green btn-sm no-print" style="margin-top:8px" onclick="addTableRow('an-fcl-charges-body')">+ Add Charge</button>
+
+
+<div class="grid2" style="margin-top:16px">
+  <div class="field"><label>Payment Instruction</label><textarea rows="2" data-key="payInst"></textarea></div>
+  <div class="field"><label>Contact for Cargo Release</label><textarea rows="2" data-key="contact"></textarea></div>
+</div>
+<div class="field"><label>Remarks</label><input type="text" data-key="remarks"></div>
+
+<div class="signature-block">
+  <div class="sig-col"></div>
+  <div class="sig-col">
+    <div class="sig-label">Issued by</div>
+    <div class="sig-company" data-lh="name"></div>
+    <div class="sig-space"></div>
+    <div class="sig-name" data-lh="signatory"></div>
+  </div>
+</div>
+
+
+
+  </div>
+</section>
+
+
+<section id="pane-si-fcl" class="tabpane">
+  <div class="toolbar no-print">
+    <button class="btn btn-grey" onclick="clearPane('si-fcl')">New</button>
+    <button class="btn btn-green" onclick="saveDraft('si-fcl')">Save Draft</button>
+    <button class="btn btn-navy" onclick="window.print()">Print</button>
+  </div>
+  <div class="doc-sheet" id="sheet-si-fcl">
+    <div class="letterhead">
+      <div>
+        <div class="lh-name" data-lh="name"></div>
+        <div class="lh-addr" data-lh="addr"></div>
+        <div class="lh-contact" data-lh="contact"></div>
+      </div>
+      <div class="doc-title-block">
+        <div class="doc-title">SHIPPING INSTRUCTION</div>
+        <div class="doc-subtitle">SEA FCL</div>
+      </div>
+    </div>
+
+<div class="grid2"><div class="field"><label>SI No.</label><input type="text" data-key="siNo"></div><div class="field"><label>Date</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="siDate"><span class="gd-txt"></span></div></div></div>
+<div class="grid2"><div class="field"><label>Shipper</label><textarea rows="3" data-key="shipper"></textarea></div><div class="field"><label>Consignee</label><textarea rows="3" data-key="consignee"></textarea></div></div>
+<div class="field"><label>Notify Party</label><textarea rows="2" data-key="notify"></textarea></div>
+<div class="grid3"><div class="field"><label>Booking No.</label><input type="text" data-key="bookingNo"></div><div class="field"><label>Vessel/Voyage</label><input type="text" data-key="vessel"></div><div class="field"><label>Departure Date</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="depDate"><span class="gd-txt"></span></div></div></div>
+<div class="grid2"><div class="field"><label>Place of Receipt</label><input type="text" data-key="por"></div><div class="field"><label>Port of Loading</label><input type="text" data-key="pol"></div></div>
+<div class="grid2"><div class="field"><label>Port of Discharge</label><input type="text" data-key="pod"></div><div class="field"><label>Place of Delivery</label><input type="text" data-key="podl"></div></div>
+<div class="section-title">Freight Term</div>
+<div class="radio-row">
+  <label><input type="radio" name="si-fcl-freight" value="Prepaid" checked> Freight Prepaid</label>
+  <label><input type="radio" name="si-fcl-freight" value="Collect"> Freight Collect</label>
+</div>
+
+<div class="section-title">Container &amp; Seal Information</div>
+<table class="doc-table" id="si-fcl-cont-table">
+  <thead><tr>
+    <th style="width:28px">#</th><th>ContNo#</th><th style="width:100px">ContType</th><th>SealNo#</th>
+    <th style="width:100px">GW (KG)</th><th style="width:100px">MEA. (CBM)</th><th class="no-print" style="width:22px"></th>
+  </tr></thead>
+  <tbody id="si-fcl-cont-body"></tbody>
+</table>
+<template id="tpl-si-fcl-cont-body">
+  <tr>
+    <td class="rowno"></td>
+    <td><input type="text" data-key="contNo"></td>
+    <td><input type="text" data-key="contType"></td>
+    <td><input type="text" data-key="sealNo"></td>
+    <td><input type="number" step="0.01" data-key="gw"></td>
+    <td><input type="number" step="0.001" data-key="mea"></td>
+    <td class="no-print"><button class="row-remove row-remove-sm">×</button></td>
+  </tr>
+</template>
+<button class="btn btn-green btn-sm no-print" style="margin-top:8px" onclick="addTableRow('si-fcl-cont-body')">+ Add Container</button>
+
+
+<div class="section-title">Cargo Description</div>
+<div class="grid3">
+  <div class="field"><label>Marks &amp; Numbers</label><input type="text" data-key="marks"></div>
+  <div class="field"><label>QTY</label><input type="text" id="si-fcl-goods-qty" value="0" readonly></div>
+  <div class="field"><label>Unit</label><input type="text" id="si-fcl-goods-unit" value="CONT" readonly></div>
+</div>
+<div class="grid2">
+  <div class="field"><label>GW (KG)</label><input type="text" id="si-fcl-goods-gw" value="0" readonly></div>
+  <div class="field"><label>MEA. (CBM)</label><input type="text" id="si-fcl-goods-mea" value="0" readonly></div>
+</div>
+
+<div class="field"><label>Special Instructions</label><textarea rows="3" data-key="specialInst"></textarea></div>
+
+<div class="signature-block">
+  <div class="sig-col"><div class="sig-label">Shipper's Confirmation</div><div class="sig-space" style="height:56px"></div><div class="sig-name">&nbsp;</div></div>
+  <div class="sig-col">
+    <div class="sig-label">Received by</div>
+    <div class="sig-company" data-lh="name"></div>
+    <div class="sig-space"></div>
+    <div class="sig-name" data-lh="signatory"></div>
+  </div>
+</div>
+
+
+  </div>
+</section>
+
+
+<section id="pane-do-fcl" class="tabpane">
+  <div class="toolbar no-print">
+    <button class="btn btn-grey" onclick="clearPane('do-fcl')">New</button>
+    <button class="btn btn-green" onclick="saveDraft('do-fcl')">Save Draft</button>
+    <button class="btn btn-navy" onclick="window.print()">Print</button>
+  </div>
+  <div class="doc-sheet" id="sheet-do-fcl">
+    <div class="letterhead">
+      <div>
+        <div class="lh-name" data-lh="name"></div>
+        <div class="lh-addr" data-lh="addr"></div>
+        <div class="lh-contact" data-lh="contact"></div>
+      </div>
+      <div class="doc-title-block">
+        <div class="doc-title">DELIVERY ORDER</div>
+        <div class="doc-subtitle">SEA FCL</div>
+      </div>
+    </div>
+
+<div class="grid2"><div class="field"><label>D/O No.</label><input type="text" data-key="doNo"></div><div class="field"><label>Date</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="doDate"><span class="gd-txt"></span></div></div></div>
+<div class="field"><label>To (CY)</label><input type="text" data-key="toParty"></div>
+<div class="grid2"><div class="field"><label>Shipper</label><textarea rows="2" data-key="shipper"></textarea></div><div class="field"><label>Consignee</label><textarea rows="2" data-key="consignee"></textarea></div></div>
+<div class="field"><label>Notify Party</label><textarea rows="2" data-key="notify"></textarea></div>
+<div class="grid3"><div class="field"><label>Vessel/Voyage</label><input type="text" data-key="vessel"></div><div class="field"><label>B/L No.</label><input type="text" data-key="blNo"></div><div class="field"><label>Valid Until</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="validUntil"><span class="gd-txt"></span></div></div></div>
+
+<div class="section-title">Container &amp; Seal Information</div>
+<table class="doc-table" id="do-fcl-cont-table">
+  <thead><tr>
+    <th style="width:28px">#</th><th>ContNo#</th><th style="width:100px">ContType</th><th>SealNo#</th>
+    <th style="width:100px">GW (KG)</th><th style="width:100px">MEA. (CBM)</th><th class="no-print" style="width:22px"></th>
+  </tr></thead>
+  <tbody id="do-fcl-cont-body"></tbody>
+</table>
+<template id="tpl-do-fcl-cont-body">
+  <tr>
+    <td class="rowno"></td>
+    <td><input type="text" data-key="contNo"></td>
+    <td><input type="text" data-key="contType"></td>
+    <td><input type="text" data-key="sealNo"></td>
+    <td><input type="number" step="0.01" data-key="gw"></td>
+    <td><input type="number" step="0.001" data-key="mea"></td>
+    <td class="no-print"><button class="row-remove row-remove-sm">×</button></td>
+  </tr>
+</template>
+<button class="btn btn-green btn-sm no-print" style="margin-top:8px" onclick="addTableRow('do-fcl-cont-body')">+ Add Container</button>
+
+
+<div class="section-title">Description of Goods</div>
+<div class="grid3">
+  <div class="field"><label>Marks &amp; Numbers</label><input type="text" data-key="marks"></div>
+  <div class="field"><label>QTY</label><input type="text" id="do-fcl-goods-qty" value="0" readonly></div>
+  <div class="field"><label>Unit</label><input type="text" id="do-fcl-goods-unit" value="CONT" readonly></div>
+</div>
+<div class="grid2">
+  <div class="field"><label>GW (KG)</label><input type="text" id="do-fcl-goods-gw" value="0" readonly></div>
+  <div class="field"><label>MEA. (CBM)</label><input type="text" id="do-fcl-goods-mea" value="0" readonly></div>
+</div>
+
+<div class="grid2" style="margin-top:16px"><div class="field"><label>Place of Delivery</label><input type="text" data-key="placeDelivery"></div><div class="field"><label>Remarks</label><input type="text" data-key="remarks"></div></div>
+
+<div class="signature-block">
+  <div class="sig-col"><div class="sig-label">Received by (Consignee)</div><div class="sig-space" style="height:56px"></div><div class="sig-name">&nbsp;</div></div>
+  <div class="sig-col">
+    <div class="sig-label">Issued by</div>
+    <div class="sig-company" data-lh="name"></div>
+    <div class="sig-space"></div>
+    <div class="sig-name" data-lh="signatory"></div>
+  </div>
+</div>
+
+
+  </div>
+</section>
+
+
+<section id="pane-an-lcl" class="tabpane">
+  <div class="toolbar no-print">
+    <button class="btn btn-grey" onclick="clearPane('an-lcl')">New</button>
+    <button class="btn btn-green" onclick="saveDraft('an-lcl')">Save Draft</button>
+    <button class="btn btn-navy" onclick="window.print()">Print</button>
+  </div>
+  <div class="doc-sheet" id="sheet-an-lcl">
+    <div class="letterhead">
+      <div>
+        <div class="lh-name" data-lh="name"></div>
+        <div class="lh-addr" data-lh="addr"></div>
+        <div class="lh-contact" data-lh="contact"></div>
+      </div>
+      <div class="doc-title-block">
+        <div class="doc-title">ARRIVAL NOTICE</div>
+        <div class="doc-subtitle">SEA LCL</div>
+      </div>
+    </div>
+
+<div class="grid2"><div class="field"><label>AN No.</label><input type="text" data-key="anNo"></div><div class="field"><label>Date</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="anDate"><span class="gd-txt"></span></div></div></div>
+<div class="grid2"><div class="field"><label>From (Shipper)</label><textarea rows="3" data-key="shipper"></textarea></div><div class="field"><label>To (Consignee)</label><textarea rows="3" data-key="consignee"></textarea></div></div>
+<div class="field"><label>Notify Party</label><textarea rows="2" data-key="notify"></textarea></div>
+<div class="grid3"><div class="field"><label>Vessel/Voyage</label><input type="text" data-key="vessel"></div><div class="field"><label>ETA</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="eta"><span class="gd-txt"></span></div></div><div class="field"><label>B/L No.</label><input type="text" data-key="blNo"></div></div>
+<div class="grid2"><div class="field"><label>Port of Loading</label><input type="text" data-key="pol"></div><div class="field"><label>Port of Discharge</label><input type="text" data-key="pod"></div></div>
+<div class="field"><label>CFS / Warehouse for Cargo Pick-up</label><textarea rows="2" data-key="cfs"></textarea></div>
+
+<div class="section-title">Description of Goods</div>
+<table class="doc-table" id="an-lcl-goods-table">
+  <thead><tr>
+    <th style="width:28px">#</th><th>Marks &amp; Numbers</th><th style="width:70px">QTY</th><th style="width:80px">Unit</th>
+    <th style="width:90px">GW (KG)</th><th style="width:100px">MEA. (CBM)</th><th class="no-print" style="width:34px"></th>
+  </tr></thead>
+  <tbody id="an-lcl-goods-body"></tbody>
+</table>
+<template id="tpl-an-lcl-goods-body">
+  <tr>
+    <td class="rowno"></td>
+    <td><input type="text" data-key="marks"></td>
+    <td><input type="number" step="0.01" data-key="qty"></td>
+    <td><input type="text" data-key="unit"></td>
+    <td><input type="number" step="0.01" data-key="gw"></td>
+    <td><input type="number" step="0.001" data-key="mea"></td>
+    
+    <td class="no-print"><button class="row-remove">×</button></td>
+  </tr>
+</template>
+<button class="btn btn-green btn-sm no-print" style="margin-top:8px" onclick="addTableRow('an-lcl-goods-body')">+ Add Row</button>
+
+
+<div class="section-title">Charges Due</div>
+<table class="doc-table" id="an-lcl-charges-table">
+  <thead><tr>
+    <th style="width:26px">#</th><th>Charge Name</th><th style="width:60px">Qty</th><th style="width:70px">Unit</th>
+    <th style="width:100px">Unit Price</th><th style="width:70px">CUR</th><th style="width:80px">Tax Rate (%)</th>
+    <th style="width:120px">Total Price</th><th class="no-print" style="width:34px"></th>
+  </tr></thead>
+  <tbody id="an-lcl-charges-body"></tbody>
+  <tfoot>
+    <tr><td colspan="7">Total Tax Amount</td><td id="an-lcl-tax-total">0</td><td class="no-print"></td></tr>
+    <tr><td colspan="7">Total Charge</td><td id="an-lcl-charge-total">0</td><td class="no-print"></td></tr>
+  </tfoot>
+</table>
+<template id="tpl-an-lcl-charges-body">
+  <tr>
+    <td class="rowno"></td>
+    <td><input type="text" data-key="chargeName"></td>
+    <td><input type="number" step="0.01" data-key="qty"></td>
+    <td><input type="text" data-key="unit"></td>
+    <td><input type="number" step="0.01" data-key="unitPrice"></td>
+    <td><select data-key="cur"><option>VND</option><option>USD</option></select></td>
+    <td><input type="number" step="0.01" data-key="taxRate" placeholder="%"></td>
+    <td class="cell-readout" data-role="totalPrice">0</td>
+    <td class="no-print"><button class="row-remove">×</button></td>
+  </tr>
+</template>
+<button class="btn btn-green btn-sm no-print" style="margin-top:8px" onclick="addTableRow('an-lcl-charges-body')">+ Add Charge</button>
+
+
+<div class="grid2" style="margin-top:16px">
+  <div class="field"><label>Payment Instruction</label><textarea rows="2" data-key="payInst"></textarea></div>
+  <div class="field"><label>Contact for Cargo Release</label><textarea rows="2" data-key="contact"></textarea></div>
+</div>
+<div class="field"><label>Remarks</label><input type="text" data-key="remarks"></div>
+
+<div class="signature-block">
+  <div class="sig-col"></div>
+  <div class="sig-col">
+    <div class="sig-label">Issued by</div>
+    <div class="sig-company" data-lh="name"></div>
+    <div class="sig-space"></div>
+    <div class="sig-name" data-lh="signatory"></div>
+  </div>
+</div>
+
+
+
+  </div>
+</section>
+
+
+<section id="pane-si-lcl" class="tabpane">
+  <div class="toolbar no-print">
+    <button class="btn btn-grey" onclick="clearPane('si-lcl')">New</button>
+    <button class="btn btn-green" onclick="saveDraft('si-lcl')">Save Draft</button>
+    <button class="btn btn-navy" onclick="window.print()">Print</button>
+  </div>
+  <div class="doc-sheet" id="sheet-si-lcl">
+    <div class="letterhead">
+      <div>
+        <div class="lh-name" data-lh="name"></div>
+        <div class="lh-addr" data-lh="addr"></div>
+        <div class="lh-contact" data-lh="contact"></div>
+      </div>
+      <div class="doc-title-block">
+        <div class="doc-title">SHIPPING INSTRUCTION</div>
+        <div class="doc-subtitle">SEA LCL</div>
+      </div>
+    </div>
+
+<div class="grid2"><div class="field"><label>SI No.</label><input type="text" data-key="siNo"></div><div class="field"><label>Date</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="siDate"><span class="gd-txt"></span></div></div></div>
+<div class="grid2"><div class="field"><label>Shipper</label><textarea rows="3" data-key="shipper"></textarea></div><div class="field"><label>Consignee</label><textarea rows="3" data-key="consignee"></textarea></div></div>
+<div class="field"><label>Notify Party</label><textarea rows="2" data-key="notify"></textarea></div>
+<div class="grid3"><div class="field"><label>Booking No.</label><input type="text" data-key="bookingNo"></div><div class="field"><label>Vessel/Voyage</label><input type="text" data-key="vessel"></div><div class="field"><label>Departure Date</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="depDate"><span class="gd-txt"></span></div></div></div>
+<div class="grid2"><div class="field"><label>Place of Receipt</label><input type="text" data-key="por"></div><div class="field"><label>Port of Loading</label><input type="text" data-key="pol"></div></div>
+<div class="grid2"><div class="field"><label>Port of Discharge</label><input type="text" data-key="pod"></div><div class="field"><label>Place of Delivery</label><input type="text" data-key="podl"></div></div>
+<div class="section-title">Freight Term</div>
+<div class="radio-row">
+  <label><input type="radio" name="si-lcl-freight" value="Prepaid" checked> Freight Prepaid</label>
+  <label><input type="radio" name="si-lcl-freight" value="Collect"> Freight Collect</label>
+</div>
+
+<div class="section-title">Cargo Description</div>
+<table class="doc-table" id="si-lcl-goods-table">
+  <thead><tr>
+    <th style="width:28px">#</th><th>Marks &amp; Numbers</th><th style="width:70px">QTY</th><th style="width:80px">Unit</th>
+    <th style="width:90px">GW (KG)</th><th style="width:100px">MEA. (CBM)</th><th class="no-print" style="width:34px"></th>
+  </tr></thead>
+  <tbody id="si-lcl-goods-body"></tbody>
+</table>
+<template id="tpl-si-lcl-goods-body">
+  <tr>
+    <td class="rowno"></td>
+    <td><input type="text" data-key="marks"></td>
+    <td><input type="number" step="0.01" data-key="qty"></td>
+    <td><input type="text" data-key="unit"></td>
+    <td><input type="number" step="0.01" data-key="gw"></td>
+    <td><input type="number" step="0.001" data-key="mea"></td>
+    
+    <td class="no-print"><button class="row-remove">×</button></td>
+  </tr>
+</template>
+<button class="btn btn-green btn-sm no-print" style="margin-top:8px" onclick="addTableRow('si-lcl-goods-body')">+ Add Row</button>
+
+<div class="field"><label>Special Instructions</label><textarea rows="3" data-key="specialInst"></textarea></div>
+
+<div class="signature-block">
+  <div class="sig-col"><div class="sig-label">Shipper's Confirmation</div><div class="sig-space" style="height:56px"></div><div class="sig-name">&nbsp;</div></div>
+  <div class="sig-col">
+    <div class="sig-label">Received by</div>
+    <div class="sig-company" data-lh="name"></div>
+    <div class="sig-space"></div>
+    <div class="sig-name" data-lh="signatory"></div>
+  </div>
+</div>
+
+
+  </div>
+</section>
+
+
+<section id="pane-do-lcl" class="tabpane">
+  <div class="toolbar no-print">
+    <button class="btn btn-grey" onclick="clearPane('do-lcl')">New</button>
+    <button class="btn btn-green" onclick="saveDraft('do-lcl')">Save Draft</button>
+    <button class="btn btn-navy" onclick="window.print()">Print</button>
+  </div>
+  <div class="doc-sheet" id="sheet-do-lcl">
+    <div class="letterhead">
+      <div>
+        <div class="lh-name" data-lh="name"></div>
+        <div class="lh-addr" data-lh="addr"></div>
+        <div class="lh-contact" data-lh="contact"></div>
+      </div>
+      <div class="doc-title-block">
+        <div class="doc-title">DELIVERY ORDER</div>
+        <div class="doc-subtitle">SEA LCL</div>
+      </div>
+    </div>
+
+<div class="grid2"><div class="field"><label>D/O No.</label><input type="text" data-key="doNo"></div><div class="field"><label>Date</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="doDate"><span class="gd-txt"></span></div></div></div>
+<div class="field"><label>To (CFS / Warehouse)</label><textarea rows="2" data-key="toParty"></textarea></div>
+<div class="grid2"><div class="field"><label>Shipper</label><textarea rows="2" data-key="shipper"></textarea></div><div class="field"><label>Consignee</label><textarea rows="2" data-key="consignee"></textarea></div></div>
+<div class="field"><label>Notify Party</label><textarea rows="2" data-key="notify"></textarea></div>
+<div class="grid3"><div class="field"><label>Vessel/Voyage</label><input type="text" data-key="vessel"></div><div class="field"><label>B/L No.</label><input type="text" data-key="blNo"></div><div class="field"><label>Valid Until</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="validUntil"><span class="gd-txt"></span></div></div></div>
+
+<div class="section-title">Description of Goods</div>
+<table class="doc-table" id="do-lcl-goods-table">
+  <thead><tr>
+    <th style="width:28px">#</th><th>Marks &amp; Numbers</th><th style="width:70px">QTY</th><th style="width:80px">Unit</th>
+    <th style="width:90px">GW (KG)</th><th style="width:100px">MEA. (CBM)</th><th class="no-print" style="width:34px"></th>
+  </tr></thead>
+  <tbody id="do-lcl-goods-body"></tbody>
+</table>
+<template id="tpl-do-lcl-goods-body">
+  <tr>
+    <td class="rowno"></td>
+    <td><input type="text" data-key="marks"></td>
+    <td><input type="number" step="0.01" data-key="qty"></td>
+    <td><input type="text" data-key="unit"></td>
+    <td><input type="number" step="0.01" data-key="gw"></td>
+    <td><input type="number" step="0.001" data-key="mea"></td>
+    
+    <td class="no-print"><button class="row-remove">×</button></td>
+  </tr>
+</template>
+<button class="btn btn-green btn-sm no-print" style="margin-top:8px" onclick="addTableRow('do-lcl-goods-body')">+ Add Row</button>
+
+<div class="grid2" style="margin-top:16px"><div class="field"><label>Place of Delivery</label><input type="text" data-key="placeDelivery"></div><div class="field"><label>Remarks</label><input type="text" data-key="remarks"></div></div>
+
+<div class="signature-block">
+  <div class="sig-col"><div class="sig-label">Received by (Consignee)</div><div class="sig-space" style="height:56px"></div><div class="sig-name">&nbsp;</div></div>
+  <div class="sig-col">
+    <div class="sig-label">Issued by</div>
+    <div class="sig-company" data-lh="name"></div>
+    <div class="sig-space"></div>
+    <div class="sig-name" data-lh="signatory"></div>
+  </div>
+</div>
+
+
+  </div>
+</section>
+
+
+<section id="pane-an-air" class="tabpane">
+  <div class="toolbar no-print">
+    <button class="btn btn-grey" onclick="clearPane('an-air')">New</button>
+    <button class="btn btn-green" onclick="saveDraft('an-air')">Save Draft</button>
+    <button class="btn btn-navy" onclick="window.print()">Print</button>
+  </div>
+  <div class="doc-sheet" id="sheet-an-air">
+    <div class="letterhead">
+      <div>
+        <div class="lh-name" data-lh="name"></div>
+        <div class="lh-addr" data-lh="addr"></div>
+        <div class="lh-contact" data-lh="contact"></div>
+      </div>
+      <div class="doc-title-block">
+        <div class="doc-title">ARRIVAL NOTICE</div>
+        <div class="doc-subtitle">AIR</div>
+      </div>
+    </div>
+
+<div class="grid2"><div class="field"><label>AN No.</label><input type="text" data-key="anNo"></div><div class="field"><label>Date</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="anDate"><span class="gd-txt"></span></div></div></div>
+<div class="grid2"><div class="field"><label>From (Shipper)</label><textarea rows="3" data-key="shipper"></textarea></div><div class="field"><label>To (Consignee)</label><textarea rows="3" data-key="consignee"></textarea></div></div>
+<div class="field"><label>Notify Party</label><textarea rows="2" data-key="notify"></textarea></div>
+<div class="grid3"><div class="field"><label>Flight No.</label><input type="text" data-key="flightNo"></div><div class="field"><label>Flight Date</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="flightDate"><span class="gd-txt"></span></div></div><div class="field"><label>AWB No.</label><input type="text" data-key="awbNo"></div></div>
+<div class="grid3"><div class="field"><label>Airport of Loading</label><input type="text" data-key="aol"></div><div class="field"><label>Airport of Discharge</label><input type="text" data-key="aod"></div><div class="field"><label>ETA</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="eta"><span class="gd-txt"></span></div></div></div>
+<div class="field"><label>To (Air Cargo Warehouse)</label><textarea rows="2" data-key="toWarehouse"></textarea></div>
+
+<div class="section-title">Description of Goods</div>
+<table class="doc-table" id="an-air-goods-table">
+  <thead><tr>
+    <th style="width:28px">#</th><th>Marks &amp; Numbers</th><th style="width:70px">QTY</th><th style="width:80px">Unit</th>
+    <th style="width:90px">GW (KG)</th><th style="width:100px">MEA. (CBM)</th><th class="no-print" style="width:34px"></th>
+  </tr></thead>
+  <tbody id="an-air-goods-body"></tbody>
+</table>
+<template id="tpl-an-air-goods-body">
+  <tr>
+    <td class="rowno"></td>
+    <td><input type="text" data-key="marks"></td>
+    <td><input type="number" step="0.01" data-key="qty"></td>
+    <td><input type="text" data-key="unit"></td>
+    <td><input type="number" step="0.01" data-key="gw"></td>
+    <td><input type="number" step="0.001" data-key="mea"></td>
+    
+    <td class="no-print"><button class="row-remove">×</button></td>
+  </tr>
+</template>
+<button class="btn btn-green btn-sm no-print" style="margin-top:8px" onclick="addTableRow('an-air-goods-body')">+ Add Row</button>
+
+
+<div class="section-title">Charges Due</div>
+<table class="doc-table" id="an-air-charges-table">
+  <thead><tr>
+    <th style="width:26px">#</th><th>Charge Name</th><th style="width:60px">Qty</th><th style="width:70px">Unit</th>
+    <th style="width:100px">Unit Price</th><th style="width:70px">CUR</th><th style="width:80px">Tax Rate (%)</th>
+    <th style="width:120px">Total Price</th><th class="no-print" style="width:34px"></th>
+  </tr></thead>
+  <tbody id="an-air-charges-body"></tbody>
+  <tfoot>
+    <tr><td colspan="7">Total Tax Amount</td><td id="an-air-tax-total">0</td><td class="no-print"></td></tr>
+    <tr><td colspan="7">Total Charge</td><td id="an-air-charge-total">0</td><td class="no-print"></td></tr>
+  </tfoot>
+</table>
+<template id="tpl-an-air-charges-body">
+  <tr>
+    <td class="rowno"></td>
+    <td><input type="text" data-key="chargeName"></td>
+    <td><input type="number" step="0.01" data-key="qty"></td>
+    <td><input type="text" data-key="unit"></td>
+    <td><input type="number" step="0.01" data-key="unitPrice"></td>
+    <td><select data-key="cur"><option>VND</option><option>USD</option></select></td>
+    <td><input type="number" step="0.01" data-key="taxRate" placeholder="%"></td>
+    <td class="cell-readout" data-role="totalPrice">0</td>
+    <td class="no-print"><button class="row-remove">×</button></td>
+  </tr>
+</template>
+<button class="btn btn-green btn-sm no-print" style="margin-top:8px" onclick="addTableRow('an-air-charges-body')">+ Add Charge</button>
+
+
+<div class="grid2" style="margin-top:16px">
+  <div class="field"><label>Payment Instruction</label><textarea rows="2" data-key="payInst"></textarea></div>
+  <div class="field"><label>Contact for Cargo Release</label><textarea rows="2" data-key="contact"></textarea></div>
+</div>
+<div class="field"><label>Remarks</label><input type="text" data-key="remarks"></div>
+
+<div class="signature-block">
+  <div class="sig-col"></div>
+  <div class="sig-col">
+    <div class="sig-label">Issued by</div>
+    <div class="sig-company" data-lh="name"></div>
+    <div class="sig-space"></div>
+    <div class="sig-name" data-lh="signatory"></div>
+  </div>
+</div>
+
+
+
+  </div>
+</section>
+
+
+<section id="pane-si-air" class="tabpane">
+  <div class="toolbar no-print">
+    <button class="btn btn-grey" onclick="clearPane('si-air')">New</button>
+    <button class="btn btn-green" onclick="saveDraft('si-air')">Save Draft</button>
+    <button class="btn btn-navy" onclick="window.print()">Print</button>
+  </div>
+  <div class="doc-sheet" id="sheet-si-air">
+    <div class="letterhead">
+      <div>
+        <div class="lh-name" data-lh="name"></div>
+        <div class="lh-addr" data-lh="addr"></div>
+        <div class="lh-contact" data-lh="contact"></div>
+      </div>
+      <div class="doc-title-block">
+        <div class="doc-title">SHIPPING INSTRUCTION</div>
+        <div class="doc-subtitle">AIR</div>
+      </div>
+    </div>
+
+<div class="grid2"><div class="field"><label>SI No.</label><input type="text" data-key="siNo"></div><div class="field"><label>Date</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="siDate"><span class="gd-txt"></span></div></div></div>
+<div class="grid2"><div class="field"><label>Shipper</label><textarea rows="3" data-key="shipper"></textarea></div><div class="field"><label>Consignee</label><textarea rows="3" data-key="consignee"></textarea></div></div>
+<div class="field"><label>Notify Party</label><textarea rows="2" data-key="notify"></textarea></div>
+<div class="grid3"><div class="field"><label>Booking No.</label><input type="text" data-key="bookingNo"></div><div class="field"><label>Flight No.</label><input type="text" data-key="flightNo"></div><div class="field"><label>Flight Date</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="flightDate"><span class="gd-txt"></span></div></div></div>
+<div class="grid2"><div class="field"><label>Airport of Loading</label><input type="text" data-key="aol"></div><div class="field"><label>Airport of Discharge</label><input type="text" data-key="aod"></div></div>
+<div class="field"><label>To (Air Cargo Warehouse)</label><textarea rows="2" data-key="toWarehouse"></textarea></div>
+<div class="section-title">Freight Term</div>
+<div class="radio-row">
+  <label><input type="radio" name="si-air-freight" value="Prepaid" checked> Freight Prepaid</label>
+  <label><input type="radio" name="si-air-freight" value="Collect"> Freight Collect</label>
+</div>
+
+<div class="section-title">Cargo Description</div>
+<table class="doc-table" id="si-air-goods-table">
+  <thead><tr>
+    <th style="width:28px">#</th><th>Marks &amp; Numbers</th><th style="width:70px">QTY</th><th style="width:80px">Unit</th>
+    <th style="width:90px">GW (KG)</th><th style="width:100px">MEA. (CBM)</th><th style="width:90px">C.W (KG)</th><th class="no-print" style="width:34px"></th>
+  </tr></thead>
+  <tbody id="si-air-goods-body"></tbody>
+</table>
+<template id="tpl-si-air-goods-body">
+  <tr>
+    <td class="rowno"></td>
+    <td><input type="text" data-key="marks"></td>
+    <td><input type="number" step="0.01" data-key="qty"></td>
+    <td><input type="text" data-key="unit"></td>
+    <td><input type="number" step="0.01" data-key="gw"></td>
+    <td><input type="number" step="0.001" data-key="mea"></td>
+    <td class="cell-readout" data-role="cw">0</td>
+    <td class="no-print"><button class="row-remove">×</button></td>
+  </tr>
+</template>
+<button class="btn btn-green btn-sm no-print" style="margin-top:8px" onclick="addTableRow('si-air-goods-body')">+ Add Row</button>
+
+<div class="field"><label>Special Instructions</label><textarea rows="3" data-key="specialInst"></textarea></div>
+
+<div class="signature-block">
+  <div class="sig-col"><div class="sig-label">Shipper's Confirmation</div><div class="sig-space" style="height:56px"></div><div class="sig-name">&nbsp;</div></div>
+  <div class="sig-col">
+    <div class="sig-label">Received by</div>
+    <div class="sig-company" data-lh="name"></div>
+    <div class="sig-space"></div>
+    <div class="sig-name" data-lh="signatory"></div>
+  </div>
+</div>
+
+
+  </div>
+</section>
+
+
+<section id="pane-do-air" class="tabpane">
+  <div class="toolbar no-print">
+    <button class="btn btn-grey" onclick="clearPane('do-air')">New</button>
+    <button class="btn btn-green" onclick="saveDraft('do-air')">Save Draft</button>
+    <button class="btn btn-navy" onclick="window.print()">Print</button>
+  </div>
+  <div class="doc-sheet" id="sheet-do-air">
+    <div class="letterhead">
+      <div>
+        <div class="lh-name" data-lh="name"></div>
+        <div class="lh-addr" data-lh="addr"></div>
+        <div class="lh-contact" data-lh="contact"></div>
+      </div>
+      <div class="doc-title-block">
+        <div class="doc-title">DELIVERY ORDER</div>
+        <div class="doc-subtitle">AIR</div>
+      </div>
+    </div>
+
+<div class="grid2"><div class="field"><label>D/O No.</label><input type="text" data-key="doNo"></div><div class="field"><label>Date</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="doDate"><span class="gd-txt"></span></div></div></div>
+<div class="field"><label>To (Air Cargo Warehouse)</label><textarea rows="2" data-key="toParty"></textarea></div>
+<div class="grid2"><div class="field"><label>Shipper</label><textarea rows="2" data-key="shipper"></textarea></div><div class="field"><label>Consignee</label><textarea rows="2" data-key="consignee"></textarea></div></div>
+<div class="field"><label>Notify Party</label><textarea rows="2" data-key="notify"></textarea></div>
+<div class="grid3"><div class="field"><label>Flight No.</label><input type="text" data-key="flightNo"></div><div class="field"><label>AWB No.</label><input type="text" data-key="awbNo"></div><div class="field"><label>Valid Until</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="validUntil"><span class="gd-txt"></span></div></div></div>
+
+<div class="section-title">Description of Goods</div>
+<table class="doc-table" id="do-air-goods-table">
+  <thead><tr>
+    <th style="width:28px">#</th><th>Marks &amp; Numbers</th><th style="width:70px">QTY</th><th style="width:80px">Unit</th>
+    <th style="width:90px">GW (KG)</th><th style="width:100px">MEA. (CBM)</th><th style="width:90px">C.W (KG)</th><th class="no-print" style="width:34px"></th>
+  </tr></thead>
+  <tbody id="do-air-goods-body"></tbody>
+</table>
+<template id="tpl-do-air-goods-body">
+  <tr>
+    <td class="rowno"></td>
+    <td><input type="text" data-key="marks"></td>
+    <td><input type="number" step="0.01" data-key="qty"></td>
+    <td><input type="text" data-key="unit"></td>
+    <td><input type="number" step="0.01" data-key="gw"></td>
+    <td><input type="number" step="0.001" data-key="mea"></td>
+    <td class="cell-readout" data-role="cw">0</td>
+    <td class="no-print"><button class="row-remove">×</button></td>
+  </tr>
+</template>
+<button class="btn btn-green btn-sm no-print" style="margin-top:8px" onclick="addTableRow('do-air-goods-body')">+ Add Row</button>
+
+<div class="grid2" style="margin-top:16px"><div class="field"><label>Place of Delivery</label><input type="text" data-key="placeDelivery"></div><div class="field"><label>Remarks</label><input type="text" data-key="remarks"></div></div>
+
+<div class="signature-block">
+  <div class="sig-col"><div class="sig-label">Received by (Consignee)</div><div class="sig-space" style="height:56px"></div><div class="sig-name">&nbsp;</div></div>
+  <div class="sig-col">
+    <div class="sig-label">Issued by</div>
+    <div class="sig-company" data-lh="name"></div>
+    <div class="sig-space"></div>
+    <div class="sig-name" data-lh="signatory"></div>
+  </div>
+</div>
+
+
+  </div>
+</section>
+
+
+<section id="pane-mf-air" class="tabpane">
+  <div class="toolbar no-print">
+    <button class="btn btn-grey" onclick="clearPane('mf-air')">New</button>
+    <button class="btn btn-green" onclick="saveDraft('mf-air')">Save Draft</button>
+    <button class="btn btn-navy" onclick="window.print()">Print</button>
+  </div>
+  <div class="doc-sheet" id="sheet-mf-air">
+    <div class="letterhead">
+      <div>
+        <div class="lh-name" data-lh="name"></div>
+        <div class="lh-addr" data-lh="addr"></div>
+        <div class="lh-contact" data-lh="contact"></div>
+      </div>
+      <div class="doc-title-block">
+        <div class="doc-title">MANIFEST</div>
+        <div class="doc-subtitle">AIR CARGO</div>
+      </div>
+    </div>
+
+<div class="grid2"><div class="field"><label>AWB No.</label><input type="text" data-key="awbNo"></div><div class="field"><label>Date</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="mfDate"><span class="gd-txt"></span></div></div></div>
+<div class="grid3"><div class="field"><label>Flight No.</label><input type="text" data-key="flightNo"></div><div class="field"><label>Flight Date</label><div class="gdate-wrap"><input type="date" class="gdate" data-key="flightDate"><span class="gd-txt"></span></div></div><div class="field"><label>Carrier</label><input type="text" data-key="carrier"></div></div>
+<div class="grid2"><div class="field"><label>Airport of Loading</label><input type="text" data-key="aol"></div><div class="field"><label>Airport of Discharge</label><input type="text" data-key="aod"></div></div>
+
+<div class="section-title">Shipper / Consignee / Notify Information</div>
+<table class="doc-table" id="mf-air-info-table">
+  <thead><tr>
+    <th style="width:28px">#</th><th>Shipper (Name &amp; Address)</th>
+    <th>Consignee (Name &amp; Address)</th><th>Notify Party</th><th class="no-print" style="width:34px"></th>
+  </tr></thead>
+  <tbody id="mf-air-info-body"></tbody>
+</table>
+<template id="tpl-mf-air-info-body">
+  <tr>
+    <td class="rowno"></td>
+    <td><textarea rows="2" data-key="shipper"></textarea></td>
+    <td><textarea rows="2" data-key="consignee"></textarea></td>
+    <td><textarea rows="2" data-key="notify"></textarea></td>
+    <td class="no-print"><button class="row-remove">×</button></td>
+  </tr>
+</template>
+<button class="btn btn-green btn-sm no-print" style="margin-top:8px" onclick="addTableRow('mf-air-info-body')">+ Add Row</button>
+
+<div class="section-title">Cargo Information</div>
+<table class="doc-table" id="mf-air-cargo-table">
+  <thead><tr>
+    <th style="width:28px">#</th>
+    <th style="width:60px">Pcs</th><th style="width:90px">Gross Wt (KG)</th><th>Description of Goods</th><th style="width:110px">Declared Value</th>
+    <th class="no-print" style="width:34px"></th>
+  </tr></thead>
+  <tbody id="mf-air-cargo-body"></tbody>
+  <tfoot><tr>
+    <td>Total</td>
+    <td id="mf-air-cargo-total-pcs">0</td><td id="mf-air-cargo-total-gw">0</td>
+    <td colspan="2"></td><td class="no-print"></td>
+  </tr></tfoot>
+</table>
+<template id="tpl-mf-air-cargo-body">
+  <tr>
+    <td class="rowno"></td>
+    <td><input type="number" data-key="pcs"></td>
+    <td><input type="number" step="0.01" data-key="gw"></td>
+    <td><input type="text" data-key="desc"></td>
+    <td><input type="text" data-key="declaredValue"></td>
+    <td class="no-print"><button class="row-remove">×</button></td>
+  </tr>
+</template>
+<button class="btn btn-green btn-sm no-print" style="margin-top:8px" onclick="addTableRow('mf-air-cargo-body')">+ Add Row</button>
+
+
+<div class="signature-block">
+  <div class="sig-col"></div>
+  <div class="sig-col">
+    <div class="sig-label">Prepared by</div>
+    <div class="sig-company" data-lh="name"></div>
+    <div class="sig-space"></div>
+    <div class="sig-name" data-lh="signatory"></div>
+  </div>
+</div>
+
+
+  </div>
+</section>
+
+</main>
+
+<div id="toast" class="toast"></div>
+
+<div id="confirmOverlay" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div id="confirmMsg" style="font-size:13.5px"></div>
+    <div class="modal-actions">
+      <button id="confirmYes" class="btn btn-red">YES</button>
+      <button id="confirmNo" class="btn btn-grey">NO</button>
+    </div>
+  </div>
+</div>
+
+<div id="companyModalOverlay" class="modal-overlay" style="display:none">
+  <div class="modal-box modal-wide">
+    <h3>Company Information — <span id="cmCompanyLabel"></span></h3>
+    <div class="field"><label>Company Name</label><input id="cmName" type="text"></div>
+    <div class="field"><label>Address</label><textarea id="cmAddr" rows="2"></textarea></div>
+    <div class="grid2">
+      <div class="field"><label>Tel</label><input id="cmTel" type="text"></div>
+      <div class="field"><label>Fax</label><input id="cmFax" type="text"></div>
+    </div>
+    <div class="field"><label>Authorized Signatory</label><input id="cmSign" type="text"></div>
+    <div class="modal-actions">
+      <button class="btn btn-green" onclick="saveCompanyInfo()">Save</button>
+      <button class="btn btn-grey" onclick="closeCompanyModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- Company data ---------- */
+const DEFAULT_COMPANIES = {
+  tx: {
+    name: "TX LOGISTICS VIETNAM CO., LTD",
+    address: "3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam",
+    tel: "84.028-35470468",
+    fax: "84.028-35470469",
+    signatory: "NGUYEN HUU PHUOC"
+  },
+  shoptrans: { name: "SHOPTRANS VIETNAM CO., LTD", address: "", tel: "", fax: "", signatory: "" }
+};
+let companies = loadCompanies();
+function loadCompanies(){
+  try{
+    const raw = localStorage.getItem('txforms2_company_v1');
+    if(!raw) return JSON.parse(JSON.stringify(DEFAULT_COMPANIES));
+    const saved = JSON.parse(raw);
+    return {
+      tx: Object.assign({}, DEFAULT_COMPANIES.tx, saved.tx || {}),
+      shoptrans: Object.assign({}, DEFAULT_COMPANIES.shoptrans, saved.shoptrans || {})
+    };
+  }catch(e){ return JSON.parse(JSON.stringify(DEFAULT_COMPANIES)); }
+}
+function persistCompanies(){ localStorage.setItem('txforms2_company_v1', JSON.stringify(companies)); }
+function applyCompany(){
+  const key = document.getElementById('companySelect').value;
+  const c = companies[key];
+  document.querySelectorAll('[data-lh]').forEach(el=>{
+    const k = el.dataset.lh;
+    if(k==='name') el.textContent = c.name || '';
+    else if(k==='addr') el.textContent = c.address || '';
+    else if(k==='contact') el.textContent = (c.tel? 'Tel: '+c.tel:'') + (c.fax? '   Fax: '+c.fax:'');
+    else if(k==='signatory') el.textContent = c.signatory || '';
+  });
+  localStorage.setItem('txforms2_selected_company_v1', key);
+}
+function openCompanyModal(){
+  const key = document.getElementById('companySelect').value;
+  const c = companies[key];
+  document.getElementById('cmCompanyLabel').textContent = c.name || key.toUpperCase();
+  document.getElementById('cmName').value = c.name || '';
+  document.getElementById('cmAddr').value = c.address || '';
+  document.getElementById('cmTel').value = c.tel || '';
+  document.getElementById('cmFax').value = c.fax || '';
+  document.getElementById('cmSign').value = c.signatory || '';
+  document.getElementById('companyModalOverlay').style.display = 'flex';
+}
+function closeCompanyModal(){ document.getElementById('companyModalOverlay').style.display = 'none'; }
+function saveCompanyInfo(){
+  const key = document.getElementById('companySelect').value;
+  companies[key] = {
+    name: document.getElementById('cmName').value,
+    address: document.getElementById('cmAddr').value,
+    tel: document.getElementById('cmTel').value,
+    fax: document.getElementById('cmFax').value,
+    signatory: document.getElementById('cmSign').value
+  };
+  persistCompanies(); applyCompany(); closeCompanyModal(); toast('Company info saved');
+}
+
+/* ---------- Tabs: mode (level 1) + doc (level 2) ---------- */
+const MODE_DOCS = {
+  fcl: ['an-fcl','si-fcl','do-fcl'],
+  lcl: ['an-lcl','si-lcl','do-lcl'],
+  air: ['an-air','si-air','do-air','mf-air']
+};
+let currentMode = 'fcl';
+let lastDocByMode = {};
+function switchMode(mode){
+  currentMode = mode;
+  document.querySelectorAll('.tabbtn[data-mode]').forEach(b=>b.classList.toggle('active', b.dataset.mode===mode));
+  Object.keys(MODE_DOCS).forEach(m=>{
+    const bar = document.getElementById('docTabs-'+m);
+    if(bar) bar.style.display = (m===mode) ? 'flex' : 'none';
+  });
+  const target = lastDocByMode[mode] || MODE_DOCS[mode][0];
+  switchDoc(target);
+}
+function switchDoc(docKey){
+  const mode = Object.keys(MODE_DOCS).find(m=>MODE_DOCS[m].includes(docKey));
+  if(mode) lastDocByMode[mode] = docKey;
+  document.querySelectorAll('.tabbtn2[data-doc]').forEach(b=>b.classList.toggle('active', b.dataset.doc===docKey));
+  document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('active', p.id==='pane-'+docKey));
+}
+
+/* ---------- Toast ---------- */
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ---------- Confirm modal (no native confirm/alert/prompt) ---------- */
+let _confirmCb = null;
+function confirmBox(msg, onYes){
+  document.getElementById('confirmMsg').textContent = msg;
+  document.getElementById('confirmOverlay').style.display = 'flex';
+  _confirmCb = onYes;
+}
+document.getElementById('confirmYes').onclick = ()=>{
+  document.getElementById('confirmOverlay').style.display = 'none';
+  const cb = _confirmCb; _confirmCb = null; if(cb) cb();
+};
+document.getElementById('confirmNo').onclick = ()=>{
+  document.getElementById('confirmOverlay').style.display = 'none'; _confirmCb = null;
+};
+
+/* ---------- Date overlay (global-date-fmt) ---------- */
+/*global-date-fmt*/
+function fmtDate(iso){
+  if(!iso) return '';
+  const parts = iso.split('-');
+  if(parts.length!==3) return '';
+  return parts[2]+'/'+parts[1]+'/'+parts[0];
+}
+function initDateOverlays(root){
+  (root||document).querySelectorAll('.gdate-wrap').forEach(wrap=>{
+    const inp = wrap.querySelector('input.gdate');
+    const span = wrap.querySelector('.gd-txt');
+    if(!inp || !span || inp._gdInit) return;
+    inp._gdInit = true;
+    const update = ()=>{ span.textContent = fmtDate(inp.value); };
+    inp.addEventListener('change', update);
+    inp.addEventListener('input', update);
+    wrap.addEventListener('click', ()=>{ if(inp.disabled) return; try{ inp.showPicker(); }catch(e){ inp.focus(); } });
+    update();
+  });
+}
+
+/* ---------- Recalculations (generic, prefix-scoped) ---------- */
+
+/* Container & Seal Information -> auto-fills Description of Goods (FCL only) */
+function recalcContainerSummary(prefix){
+  let count = 0, gw = 0, mea = 0;
+  document.querySelectorAll('#'+prefix+'-cont-body tr').forEach(tr=>{
+    count++;
+    gw  += parseFloat(tr.querySelector('[data-key="gw"]').value) || 0;
+    mea += parseFloat(tr.querySelector('[data-key="mea"]').value) || 0;
+  });
+  const q = document.getElementById(prefix+'-goods-qty');
+  const g = document.getElementById(prefix+'-goods-gw');
+  const m = document.getElementById(prefix+'-goods-mea');
+  if(q) q.value = count;
+  if(g) g.value = gw.toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2});
+  if(m) m.value = mea.toLocaleString('en-US',{minimumFractionDigits:3, maximumFractionDigits:3});
+}
+
+/* Charges Due v2: per-row Total Price = Qty x Unit Price; footer = sum Tax Amount / sum Total Charge */
+function recalcChargesV2(prefix){
+  let taxTotal = 0, chargeTotal = 0;
+  document.querySelectorAll('#'+prefix+'-charges-body tr').forEach(tr=>{
+    const qty = parseFloat(tr.querySelector('[data-key="qty"]').value) || 0;
+    const unitPrice = parseFloat(tr.querySelector('[data-key="unitPrice"]').value) || 0;
+    const taxRate = parseFloat(tr.querySelector('[data-key="taxRate"]').value) || 0;
+    const totalPrice = qty * unitPrice;
+    const taxAmt = totalPrice * taxRate / 100;
+    const cell = tr.querySelector('[data-role="totalPrice"]');
+    if(cell) cell.textContent = totalPrice.toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2});
+    taxTotal += taxAmt;
+    chargeTotal += totalPrice + taxAmt;
+  });
+  const taxEl = document.getElementById(prefix+'-tax-total');
+  const chgEl = document.getElementById(prefix+'-charge-total');
+  if(taxEl) taxEl.textContent = taxTotal.toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2});
+  if(chgEl) chgEl.textContent = chargeTotal.toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+/* Cargo/Goods table (AIR only): C.W (KG) = max(GW, CBM x 167), auto per row */
+function recalcCWForRow(tr){
+  if(!tr) return;
+  const gwEl = tr.querySelector('[data-key="gw"]');
+  const meaEl = tr.querySelector('[data-key="mea"]');
+  const cwEl = tr.querySelector('[data-role="cw"]');
+  if(!gwEl || !meaEl || !cwEl) return;
+  const gw = parseFloat(gwEl.value) || 0;
+  const mea = parseFloat(meaEl.value) || 0;
+  const vw = mea * 167;
+  const cw = Math.max(gw, vw);
+  cwEl.textContent = cw.toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function recalcRowCW(el){ recalcCWForRow(el.closest('tr')); }
+function recalcAllRowCW(prefix){
+  document.querySelectorAll('#'+prefix+'-goods-body tr').forEach(recalcCWForRow);
+}
+
+/* Manifest Cargo Information: footer totals for Pcs / Gross Wt */
+function recalcManifestCargoTotals(prefix){
+  let pcs = 0, gw = 0;
+  document.querySelectorAll('#'+prefix+'-cargo-body tr').forEach(tr=>{
+    pcs += parseFloat(tr.querySelector('[data-key="pcs"]').value) || 0;
+    gw  += parseFloat(tr.querySelector('[data-key="gw"]').value) || 0;
+  });
+  const pEl = document.getElementById(prefix+'-cargo-total-pcs');
+  const gEl = document.getElementById(prefix+'-cargo-total-gw');
+  if(pEl) pEl.textContent = pcs;
+  if(gEl) gEl.textContent = gw.toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+/* ---------- Dynamic table rows ---------- */
+const TABLE_CONFIG = {
+'an-fcl-cont-body': { tpl:'tpl-an-fcl-cont-body', numbered:true, recalc:()=>recalcContainerSummary('an-fcl') },
+  'an-fcl-charges-body': { tpl:'tpl-an-fcl-charges-body', numbered:true, recalc:()=>recalcChargesV2('an-fcl') },
+'an-lcl-goods-body': { tpl:'tpl-an-lcl-goods-body', numbered:true, recalc:null },
+  'an-lcl-charges-body': { tpl:'tpl-an-lcl-charges-body', numbered:true, recalc:()=>recalcChargesV2('an-lcl') },
+'an-air-goods-body': { tpl:'tpl-an-air-goods-body', numbered:true, recalc:null },
+  'an-air-charges-body': { tpl:'tpl-an-air-charges-body', numbered:true, recalc:()=>recalcChargesV2('an-air') },
+'si-fcl-cont-body': { tpl:'tpl-si-fcl-cont-body', numbered:true, recalc:()=>recalcContainerSummary('si-fcl') },
+'si-lcl-goods-body': { tpl:'tpl-si-lcl-goods-body', numbered:true, recalc:null },
+'si-air-goods-body': { tpl:'tpl-si-air-goods-body', numbered:true, recalc:()=>recalcAllRowCW('si-air') },
+'do-fcl-cont-body': { tpl:'tpl-do-fcl-cont-body', numbered:true, recalc:()=>recalcContainerSummary('do-fcl') },
+'do-lcl-goods-body': { tpl:'tpl-do-lcl-goods-body', numbered:true, recalc:null },
+'do-air-goods-body': { tpl:'tpl-do-air-goods-body', numbered:true, recalc:()=>recalcAllRowCW('do-air') },
+'mf-air-info-body': { tpl:'tpl-mf-air-info-body', numbered:true, recalc:null },
+  'mf-air-cargo-body': { tpl:'tpl-mf-air-cargo-body', numbered:true, recalc:()=>recalcManifestCargoTotals('mf-air') }
+};
+
+function addTableRow(tbodyId, rowData){
+  const cfg = TABLE_CONFIG[tbodyId];
+  const tbody = document.getElementById(tbodyId);
+  const tpl = document.getElementById(cfg.tpl);
+  const clone = tpl.content.cloneNode(true);
+  if(rowData){
+    clone.querySelectorAll('[data-key]').forEach(inp=>{ if(rowData[inp.dataset.key]!==undefined) inp.value = rowData[inp.dataset.key]; });
+  }
+  tbody.appendChild(clone);
+  if(cfg.numbered) renumberRows(tbodyId);
+  if(cfg.recalc) cfg.recalc();
+  scheduleSave(tbodyId);
+}
+function removeTableRow(btn, tbodyId){
+  confirmBox('Are you sure to remove?', ()=>{
+    const tr = btn.closest('tr');
+    tr.parentNode.removeChild(tr);
+    const cfg = TABLE_CONFIG[tbodyId];
+    if(cfg.numbered) renumberRows(tbodyId);
+    if(cfg.recalc) cfg.recalc();
+    scheduleSave(tbodyId);
+  });
+}
+function renumberRows(tbodyId){
+  document.getElementById(tbodyId).querySelectorAll('tr').forEach((tr,i)=>{
+    const rn = tr.querySelector('.rowno'); if(rn) rn.textContent = i+1;
+  });
+}
+
+/* ---------- Save / Load drafts (per pane) ---------- */
+const PANE_TABLES = {
+  'an-fcl': ['an-fcl-cont-body','an-fcl-charges-body'],
+  'an-lcl': ['an-lcl-goods-body','an-lcl-charges-body'],
+  'an-air': ['an-air-goods-body','an-air-charges-body'],
+  'si-fcl': ['si-fcl-cont-body'],
+  'si-lcl': ['si-lcl-goods-body'],
+  'si-air': ['si-air-goods-body'],
+  'do-fcl': ['do-fcl-cont-body'],
+  'do-lcl': ['do-lcl-goods-body'],
+  'do-air': ['do-air-goods-body'],
+  'mf-air': ['mf-air-info-body','mf-air-cargo-body']
+};
+let _saveTimers = {};
+function scheduleSave(tbodyId){
+  const pane = Object.keys(PANE_TABLES).find(p=>PANE_TABLES[p].includes(tbodyId));
+  if(!pane) return;
+  clearTimeout(_saveTimers[pane]);
+  _saveTimers[pane] = setTimeout(()=>saveDraft(pane, true), 600);
+}
+function collectPaneData(pane){
+  const sheet = document.getElementById('sheet-'+pane);
+  const data = { fields:{}, radios:{}, tables:{} };
+  sheet.querySelectorAll('[data-key]').forEach(el=>{
+    if(el.closest('table')) return;
+    data.fields[el.dataset.key] = el.value;
+  });
+  sheet.querySelectorAll('input[type=radio]').forEach(r=>{ if(r.checked) data.radios[r.name] = r.value; });
+  (PANE_TABLES[pane]||[]).forEach(tbodyId=>{
+    const rows = [];
+    document.querySelectorAll('#'+tbodyId+' tr').forEach(tr=>{
+      const row = {};
+      tr.querySelectorAll('[data-key]').forEach(inp=>{ row[inp.dataset.key] = inp.value; });
+      rows.push(row);
+    });
+    data.tables[tbodyId] = rows;
+  });
+  return data;
+}
+function saveDraft(pane, silent){
+  localStorage.setItem('txdoc_'+pane.replace(/-/g,'_')+'_v1', JSON.stringify(collectPaneData(pane)));
+  if(!silent) toast('Draft saved');
+}
+function loadDraft(pane){
+  const raw = localStorage.getItem('txdoc_'+pane.replace(/-/g,'_')+'_v1');
+  if(!raw) return;
+  let data; try{ data = JSON.parse(raw); }catch(e){ return; }
+  const sheet = document.getElementById('sheet-'+pane);
+  Object.keys(data.fields||{}).forEach(k=>{
+    const el = sheet.querySelector('[data-key="'+k+'"]');
+    if(el && !el.closest('table')) el.value = data.fields[k];
+  });
+  Object.keys(data.radios||{}).forEach(name=>{
+    const el = sheet.querySelector('input[name="'+name+'"][value="'+data.radios[name]+'"]');
+    if(el) el.checked = true;
+  });
+  (PANE_TABLES[pane]||[]).forEach(tbodyId=>{
+    const rows = (data.tables && data.tables[tbodyId]) || [];
+    document.getElementById(tbodyId).innerHTML = '';
+    rows.forEach(r=>addTableRow(tbodyId, r));
+  });
+}
+function clearPane(pane){
+  confirmBox('Are you sure to clear this document? All entered data will be removed.', ()=>{
+    const sheet = document.getElementById('sheet-'+pane);
+    sheet.querySelectorAll('input[type=text],input[type=number],textarea').forEach(el=>{ if(!el.closest('table')) el.value=''; });
+    sheet.querySelectorAll('input.gdate').forEach(el=>{ if(!el.closest('table')){ el.value=''; el.dispatchEvent(new Event('change')); } });
+    (PANE_TABLES[pane]||[]).forEach(tbodyId=>{
+      document.getElementById(tbodyId).innerHTML = '';
+      const cfg = TABLE_CONFIG[tbodyId];
+      if(cfg && cfg.recalc) cfg.recalc();
+    });
+    localStorage.removeItem('txdoc_'+pane.replace(/-/g,'_')+'_v1');
+    toast('Document cleared');
+  });
+}
+
+/* ---------- Event delegation for dynamically-cloned table rows ----------
+   Buttons/inputs inside template rows do NOT reliably fire inline
+   onclick/oninput once cloned in all environments, so we bind once at
+   document level instead of per-row. */
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.row-remove');
+  if(!btn) return;
+  const tr = btn.closest('tr');
+  const tbody = tr && tr.closest('tbody');
+  if(!tbody || !tbody.id) return;
+  removeTableRow(btn, tbody.id);
+});
+document.addEventListener('input', (e)=>{
+  const el = e.target;
+  const key = el.dataset ? el.dataset.key : null;
+  if(!key) return;
+  const tr = el.closest('tr');
+  const tbody = tr && tr.closest('tbody');
+  if(!tbody || !tbody.id) return;
+  const tbodyId = tbody.id;
+  if(tbodyId.endsWith('-cont-body') && (key==='gw' || key==='mea')){
+    recalcContainerSummary(tbodyId.slice(0, -('-cont-body'.length)));
+  } else if(tbodyId.endsWith('-charges-body') && (key==='qty' || key==='unitPrice' || key==='taxRate')){
+    recalcChargesV2(tbodyId.slice(0, -('-charges-body'.length)));
+  } else if(tbodyId.endsWith('-goods-body') && (key==='gw' || key==='mea')){
+    recalcCWForRow(tr);
+  } else if(tbodyId.endsWith('-cargo-body') && (key==='pcs' || key==='gw')){
+    recalcManifestCargoTotals(tbodyId.slice(0, -('-cargo-body'.length)));
+  }
+});
+
+/* ---------- Init ---------- */
+document.addEventListener('DOMContentLoaded', ()=>{
+  const savedCompany = localStorage.getItem('txforms2_selected_company_v1');
+  if(savedCompany && companies[savedCompany]) document.getElementById('companySelect').value = savedCompany;
+  applyCompany();
+  initDateOverlays(document);
+  Object.keys(PANE_TABLES).forEach(loadDraft);
+  recalcContainerSummary('an-fcl'); recalcChargesV2('an-fcl');
+  recalcChargesV2('an-lcl');
+  recalcChargesV2('an-air');
+  recalcContainerSummary('si-fcl');
+  recalcContainerSummary('do-fcl');
+  recalcManifestCargoTotals('mf-air');
+});
+</script>
+</body>
+</html>
