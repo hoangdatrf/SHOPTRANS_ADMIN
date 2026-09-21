@@ -933,7 +933,7 @@
           'gsd-vessel-ecd-modal': isExwEcdVesselDelayModal(),
           'gsd-vhist-modal': isAirDcdVesselHistoryModal(),
           'gsd-pickup-modal': isPickupModal(),
-          'gsd-air-exw-fcd-pickup-modal': isPickupModal() && isAirSheet() && isExwFcdSheet(),
+          'gsd-air-exw-fcd-pickup-modal': isPickupModal() && isAirSheet() && (isExwFcdSheet() || isFcaFcdSheet() || isFcfFcdSheet()),
           'gsd-delivery-details-modal': isDeliveryDetailsModal(),
           'gsd-mock-pk-modal': isDeliveryDetailsModal() || isExwFcaPickupModal(),
           'gsd-delivery-edit-modal': isDeliveryDetailsModal() && !isReadonlyDeliveryDetailsModal(),
@@ -1822,7 +1822,7 @@
                 </colgroup>
                 <thead>
                   <tr v-if="usesTcdTruckStatusTemplate() || isLclTruckingDetailModal()">
-                    <th class="tk-all">All</th>
+                    <th class="tk-all"><input type="checkbox" aria-label="Select all truck rows" :checked="allTruckContRowsSelected()" :indeterminate.prop="someTruckContRowsSelected()" :disabled="isReadonlyTruckContModal() || gsdModal.editing || !truckContRecords().length" @change="toggleAllTruckContRows" /></th>
                     <th>ORDER</th>
                     <th>PU NO#</th>
                     <th><span class="gsd-truck-heading"><span>Truck Comp</span><button v-if="!isReadonlyTruckContModal()" class="gsd-truck-plus" type="button" @click.stop="addTruckCompanyFromModal">+</button></span></th>
@@ -1838,7 +1838,7 @@
                   </tr>
                   <template v-else>
                   <tr>
-                    <th v-if="!isReadonlyTruckContModal()" class="tk-all" rowspan="2">All</th>
+                    <th v-if="!isReadonlyTruckContModal()" class="tk-all" rowspan="2"><input type="checkbox" aria-label="Select all truck rows" :checked="allTruckContRowsSelected()" :indeterminate.prop="someTruckContRowsSelected()" :disabled="gsdModal.editing || !truckContRecords().length" @change="toggleAllTruckContRows" /></th>
                     <th rowspan="2">ORDER</th>
                     <th rowspan="2">PU NO#</th>
                     <th rowspan="2"><span class="gsd-truck-heading"><span>Truck Comp</span><button v-if="!isReadonlyTruckContModal()" class="gsd-truck-plus" type="button" title="Add Haulier" @click.stop="addTruckCompanyFromModal">+</button></span></th>
@@ -2150,7 +2150,7 @@
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-div"></div>
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-sec-title">{{ isAwbDetailModal() ? 'HAWB DETAILS' : 'HBL DETAILS' }}</div>
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-rows">
-                  <div class="bd-row"><span class="bd-lab">SI RECEIVED:</span><input v-model="gsdModal.form.siReceived" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing" @change="syncBillDetailTimestamp('siReceived')" /><input v-model.trim="gsdModal.form.siReceivedAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><div class="bd-export-menu"><button class="bd-exportbtn" id="bdExportDocument" type="button" :disabled="!isReadonlyExwFclEcdBillDetail() && !gsdModal.form.siReceived" @click="billExportMenuOpen = !billExportMenuOpen">Export (B/L, FCR)<span class="bd-export-caret">▾</span></button><div v-if="billExportMenuOpen" class="bd-export-dropdown"><button type="button" @click="selectBillDocumentExport('B/L')">Export B/L</button><button type="button" @click="selectBillDocumentExport('FCR')">Export FCR</button></div></div></div>
+                  <div class="bd-row"><span class="bd-lab">SI RECEIVED:</span><input v-model="gsdModal.form.siReceived" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing" @change="syncBillDetailTimestamp('siReceived')" /><input v-model.trim="gsdModal.form.siReceivedAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><div class="bd-export-menu"><button class="bd-exportbtn" id="bdExportDocument" type="button" :disabled="!gsdModal.form.siReceived" @click="billExportMenuOpen = !billExportMenuOpen">Export (B/L, FCR)<span class="bd-export-caret">▾</span></button><div v-if="billExportMenuOpen" class="bd-export-dropdown"><button type="button" @click="selectBillDocumentExport('B/L')">Export B/L</button><button type="button" @click="selectBillDocumentExport('FCR')">Export FCR</button></div></div></div>
                   <div class="bd-row"><span class="bd-lab">{{ isAwbDetailModal() ? 'HAWB APPROVED:' : 'HBL APPROVED:' }}</span><input v-model="gsdModal.form.hbl" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing || !gsdModal.form.siReceived" @change="syncBillTimestamp('hbl')" /><input v-model.trim="gsdModal.form.hblAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><button class="bd-eye" :class="{ on: !!gsdModal.form.hbl && (isAwbDetailModal() ? !!gsdModal.form.hblFile?.url : !!gsdModal.form.exportBl) }" type="button" :disabled="!gsdModal.form.hbl || (isAwbDetailModal() ? !gsdModal.form.hblFile?.url : !gsdModal.form.exportBl)" :title="isAwbDetailModal() ? 'View HAWB file' : 'View Export B/L PDF'" @click="isAwbDetailModal() ? viewBillDetailFile(gsdModal.form.hblFile) : viewExportedBillPdf()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                 </div>
                 <input ref="billDetailFileInput" type="file" hidden @change="handleBillDetailFile" />
@@ -4133,7 +4133,7 @@ const emptyClientForm = () => ({
   status: 'ACTIVE',
 })
 type GsdFormField = { key: string; label: string; type?: 'text' | 'date' | 'time' | 'textarea' | 'select' | 'checkbox'; options?: string[]; checkLabel?: string }
-type ReminderNote = { id: string; date: string; dept: string; title: string; details: string; sourceType?: string; read?: boolean; changeType?: 'new' | 'updated' }
+type ReminderNote = { id: string; date: string; dept: string; title: string; details: string; authorDept?: string; sourceType?: string; read?: boolean; changeType?: 'new' | 'updated' }
 type ReminderMode = 'compose' | 'view'
 type GsdClientRecord = { entityId?: string; sourcePage?: string; sourceKind?: string; sourceCountry?: string; sourceSortOrder?: number; sourceData?: Record<string, any>; id: string; namecode: string; companyName: string; address?: string; city?: string; country?: string; picName?: string; phone?: string; email?: string; status?: string; roles?: string[]; drivers?: TruckDriverRecord[] }
 type TruckCompanyForm = ReturnType<typeof emptyClientForm>
@@ -8017,7 +8017,9 @@ const fclTcdMirrorDepts = (): Array<'ICD' | 'ECD' | 'CCD' | 'DCD' | 'FCD'> => {
   if (type === 'FCA') return ['ECD', 'DCD', 'FCD']
   return ['ECD', 'CCD', 'DCD', 'FCD']
 }
-const isExwEcdSheet = () => ['EXW', 'FCA'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.dept === 'ECD'
+// EXW/FCA/FCF share the same origin-forwarding modal behaviour. Keep the
+// historical helper name because it is referenced throughout the workbook.
+const isExwEcdSheet = () => ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.dept === 'ECD'
 const isExwTcdSheet = () => opsParts.value?.type === 'EXW' && opsParts.value?.dept === 'TCD'
 const isExwCcdSheet = () => opsParts.value?.type === 'EXW' && opsParts.value?.dept === 'CCD'
 const isExwDcdSheet = () => opsParts.value?.type === 'EXW' && opsParts.value?.dept === 'DCD'
@@ -8036,7 +8038,7 @@ const isFcfDcdSheet = () => opsParts.value?.type === 'FCF' && opsParts.value?.de
 const isDcdSheetAny = () => isExwDcdSheet() || isFcaDcdSheet() || isFcfDcdSheet()
 // AIR/LCL mockups are byte-identical (GiaodienMockup/Admin/AIR == .../LCL), so all
 // mockup-derived behaviour is scoped by isLclSheet() = mode LCL or AIR.
-const isLclExwDcdSheet = () => isLclSheet() && isExwDcdSheet()
+const isLclExwDcdSheet = () => isLclSheet() && isDcdSheetAny()
 const isLclDcdSheet = () => isLclSheet() && isDcdSheetAny()
 const opsDeptUpper = () => String(opsParts.value?.dept || '').toUpperCase()
 // GSD keeps its editable ADD+ cells; every other AIR/LCL dept uses the read-view mockup behaviour
@@ -8306,7 +8308,7 @@ const isExwCcdPlainTextColumn = (column: number) => {
     return (isExwTcdSheet() || isFcaTcdSheet()) && ['SHIPPER', 'CNEE', 'LINER'].includes(label)
   }
   // Downstream FCD volume cells use the read-only Volume modal instead of a plain text cell.
-  if (isLclSheet() && (isExwFcdSheet() || isFcfFcdSheet()) && label === 'VOLUME') return false
+  if (isLclSheet() && (isExwFcdSheet() || isFcaFcdSheet() || isFcfFcdSheet()) && label === 'VOLUME') return false
   return (
   isAirWorkflowPlainTextColumn(column) ||
   (isExwCcdSheet() && exwCcdPlainTextLabels.has(normalizedHeaderLabel(column))) ||
@@ -8664,8 +8666,8 @@ const isGsdActionButtonCell = (row: number, column: number) => {
   if (isLclSheet() && label === 'HBL NO#') {
     return !!String(rows.value[row]?.[column] ?? '').trim()
   }
-  // AIR EXW FCD: VOLUME is a read-only mirror of the matching ECD tab.
-  if (isAirSheet() && isExwFcdSheet() && label === 'VOLUME') {
+  // AIR/LCL origin FCD: VOLUME is a read-only mirror of the matching ECD tab.
+  if (isAirSheet() && (isExwFcdSheet() || isFcaFcdSheet() || isFcfFcdSheet()) && label === 'VOLUME') {
     return true
   }
   if (isAirSheet() && isDoFcdSheet() && label === 'VOLUME') return true
@@ -8818,7 +8820,7 @@ const gsdActionButtonText = (row: number, column: number) => {
   if (isAirSheet() && isDupCcdSheet() && label === 'VOLUME') return 'DETAIL'
   if (opsParts.value?.type === 'DAP' && opsParts.value?.dept === 'TCD' && label === 'VOLUME') return 'DETAIL'
   if (opsParts.value?.type === 'DAP' && opsParts.value?.dept === 'FCD' && label === 'VOLUME') return 'DETAIL'
-  if (isLclSheet() && isExwFcdSheet() && label === 'VOLUME') return 'DETAIL'
+  if (isLclSheet() && (isExwFcdSheet() || isFcaFcdSheet() || isFcfFcdSheet()) && label === 'VOLUME') return 'DETAIL'
   if (isAirSheet() && isDoFcdSheet() && label === 'VOLUME') return 'DETAIL'
   if (opsParts.value?.type === 'DO' && opsParts.value?.mode === 'FCL' && opsParts.value?.dept === 'FCD' && label === 'VOLUME') return 'DETAIL'
   if (isAirSheet() && isFcfFcdSheet() && label === 'VOLUME') {
@@ -8832,7 +8834,7 @@ const gsdActionButtonText = (row: number, column: number) => {
     ['BILL DETAIL', 'AWB DETAIL'].includes(label) &&
     ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) &&
     opsDeptUpper() === 'ECD'
-  ) return 'DETAIL'
+  ) return billDetailHasData(rows.value[row]?.[column]) ? 'DETAIL' : 'ADD+'
   if (isLclSheet() && label === 'BILL DETAIL') {
     const bill = billApprovalFormFromCell(rows.value[row]?.[column])
     return bill.mbl || bill.hbl ? 'DETAIL' : 'ADD+'
@@ -8848,7 +8850,7 @@ const gsdActionButtonText = (row: number, column: number) => {
   if (isLclSheet() && ['DAP', 'DDU', 'DDP', 'DUP'].includes(String(opsParts.value?.type || '').toUpperCase()) && String(opsParts.value?.dept || '').toUpperCase() === 'ICD' && label === 'PICKUP STATUS') return 'DETAIL'
   if ((isExwCcdSheet() || isExwTcdSheet() || isExwDcdSheet() || isExwFcdSheet() || isFcaTcdSheet() || isFcaDcdSheet() || isFcaFcdSheet() || isFcfDcdSheet()) && ['CUT OFF DETAILS', 'VOLUME'].includes(label)) return 'DETAIL'
   if (isLclSheet() && (isExwTcdSheet() || isFcaTcdSheet()) && label === 'PICKUP DETAIL') return rows.value[row]?.[column] ? 'DETAIL' : 'ADD+'
-  if (isLclSheet() && (isExwEcdSheet() || isExwCcdSheet() || isExwDcdSheet() || isExwFcdSheet() || isFcaEcdSheet() || isFcaDcdSheet() || isFcaFcdSheet()) && label === 'TRUCKING INFO') return 'DETAIL'
+  if (isLclSheet() && (isExwEcdSheet() || isExwCcdSheet() || isExwDcdSheet() || isExwFcdSheet() || isFcaEcdSheet() || isFcaDcdSheet() || isFcaFcdSheet() || isFcfDcdSheet() || isFcfFcdSheet()) && label === 'TRUCKING INFO') return 'DETAIL'
   if (isLclSheet() && isDapTcdSheet() && label === 'DELIVERY DETAILS') return rows.value[row]?.[column] ? 'DETAIL' : 'ADD+'
   if (isLclSheet() && (isDoIcdSheet() || isDapIcdSheet() || isDupIcdSheet()) && label === 'CONT/SEAL INFO') return rows.value[row]?.[column] ? 'DETAIL' : 'ADD+'
   if (['PICKUP DETAIL', 'DELIVERY DETAILS', 'TRUCK & CONT/SEAL INFO', 'CONT/SEAL INFO', 'PICKUP/RETURN STATUS'].includes(label)) return 'DETAIL'
@@ -8957,7 +8959,7 @@ const recoverLinkedNoticeInbox = async (row: number, column: number) => {
       changeType: 'new' as const,
     }))
     const local = parseJsonCell(rows.value[row]?.[column], null as any)
-    const localNotes = local && Array.isArray(local.notes) ? local.notes : []
+    const localNotes = local && Array.isArray(local.notes) ? local.notes.filter((note: any) => upperText(note?.authorDept || '') === upperText(current.dept)) : []
     const localInbox = local && Array.isArray(local.inbox) ? local.inbox : []
     const merged = [...localInbox]
     recovered.forEach((note: ReminderNote) => {
@@ -8965,7 +8967,7 @@ const recoverLinkedNoticeInbox = async (row: number, column: number) => {
       if (index >= 0) merged[index] = note
       else merged.push(note)
     })
-    rows.value[row][column] = JSON.stringify({ notes: localNotes, inbox: merged })
+    rows.value[row][column] = JSON.stringify({ ownerDept: upperText(current.dept), notes: localNotes, inbox: merged })
     await saveSheet()
     return recovered
   } catch (error) {
@@ -10056,7 +10058,7 @@ const mirroredEcdVolumeValue = async (row: number) => {
   if (!parsed) return ''
   const type = String(parsed.type || '').toUpperCase()
   const dept = String(parsed.dept || '').toUpperCase()
-  const sourceDept = isAirSheet() && isExwFcdSheet()
+  const sourceDept = isAirSheet() && (isExwFcdSheet() || isFcaFcdSheet() || isFcfFcdSheet())
     ? 'ECD'
     : ['DO', 'DAP', 'DDU', 'DDP'].includes(type) && ['CCD', 'TCD', 'FCD'].includes(dept)
       ? 'ICD'
@@ -10198,13 +10200,21 @@ const openGsdModal = async (row: number, column: number) => {
       const parsed = parseJsonCell(rawText, null as any)
       const notes = parsed && typeof parsed === 'object' && Array.isArray((parsed as any).notes) ? (parsed as any).notes : []
       const inbox = parsed && typeof parsed === 'object' && Array.isArray((parsed as any).inbox) ? (parsed as any).inbox : []
+      const currentNoticeDept = opsDeptUpper()
       gsdModal.reminderNotes = notes.map((note: any, index: number) => ({
         id: String(note.id || `${Date.now()}-${index}`),
         date: String(note.date || ''),
         dept: String(note.dept || ''),
         title: String(note.title || ''),
         details: String(note.details || ''),
-      }))
+        authorDept: String(note.authorDept || ''),
+      })).filter((note: ReminderNote) => {
+        const authorDept = upperText(note.authorDept || '')
+        // Older GSD notes did not store an author. They are valid on GSD, but
+        // must not appear as outbound notes after a whole NOTICE cell was
+        // copied into a newly generated department row.
+        return authorDept ? authorDept === currentNoticeDept : currentNoticeDept === 'GSD'
+      })
       gsdModal.reminderInboxNotes = inbox.map((note: any, index: number) => ({
         id: String(note.id || `${Date.now()}-in-${index}`),
         date: String(note.date || ''),
@@ -10322,7 +10332,7 @@ const openGsdModal = async (row: number, column: number) => {
         gsdModal.form = truckContFormFromCell(linkedValue)
         const originTruckVolumeView = String(opsParts.value?.mode || '').toUpperCase() === 'FCL' &&
           ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) &&
-          ['ECD', 'TCD', 'CCD'].includes(opsDeptUpper())
+          ['ECD', 'TCD', 'CCD', 'DCD', 'FCD'].includes(opsDeptUpper())
         if (originTruckVolumeView || (opsParts.value?.mode === 'FCL' && opsDeptUpper() === 'TCD')) {
           gsdModal.form = seedTruckContFromVolume(gsdModal.form)
         }
@@ -10359,7 +10369,9 @@ const openGsdModal = async (row: number, column: number) => {
             gsdModal.form.siSubmittedFile = siForm.marksFile || null
           }
         }
-        gsdModal.editing = isReadonlyExwFclEcdBillDetail() ? false : !gsdModal.form.locked
+        // An empty BILL DETAIL opened from ADD+ starts directly in edit mode.
+        // Only an actually saved/filled record requires the Edit button.
+        gsdModal.editing = !billDetailHasData(rawText) || !gsdModal.form.locked
       } else if (label === 'BILL RELEASE' || label === 'AWB RELEASE' || (label === 'DO RELEASE' && isDoIcdSheet())) {
         gsdModal.formFields = []
         let releaseValue: any = rawText
@@ -10841,6 +10853,10 @@ const syncReminderNoteToDept = async (note: ReminderNote, operation: 'upsert' | 
     if (targetRowIndex < 1 && operation === 'remove') return true
     if (targetRowIndex < 1) {
       targetRows.push(targetHeader.map((targetLabel) => {
+        // NOTICE belongs to each department independently. Only the selected
+        // message is delivered through `inbox` below; never clone the source
+        // department's outbound notes into a newly generated target row.
+        if (['NOTICE', 'REMINDER'].includes(upperText(targetLabel))) return ''
         const aliases: Record<string, string[]> = {
           'EFA+': ['EFA+', 'FCF+', 'EXW+'],
           'ORIGIN AGENT': ['ORIGIN AGENT', 'ORIGINAL AGENT'],
@@ -10857,14 +10873,19 @@ const syncReminderNoteToDept = async (note: ReminderNote, operation: 'upsert' | 
     targetSettings.opsRowLinks = targetLinks
 
     const current = parseJsonCell(targetRows[targetRowIndex]?.[targetColumn], null as any)
-    const targetNotes = current && typeof current === 'object' && Array.isArray((current as any).notes) ? (current as any).notes : []
+    const targetNotes = current && typeof current === 'object' && Array.isArray((current as any).notes)
+      ? (current as any).notes.filter((item: any) => {
+          const authorDept = upperText(item?.authorDept || '')
+          return authorDept ? authorDept === targetDept : targetDept === 'GSD'
+        })
+      : []
     const targetInbox = current && typeof current === 'object' && Array.isArray((current as any).inbox) ? (current as any).inbox : []
     const existingNotice = targetInbox.find((item: any) => String(item?.id || '') === note.id)
     const withoutCurrent = targetInbox.filter((item: any) => String(item?.id || '') !== note.id)
     const nextInbox = operation === 'remove'
       ? withoutCurrent
       : [...withoutCurrent, { ...note, dept: sourceDept, sourceType: upperText(parsed.type), read: false, changeType: existingNotice ? 'updated' : 'new' }]
-    targetRows[targetRowIndex][targetColumn] = JSON.stringify({ notes: targetNotes, inbox: nextInbox })
+    targetRows[targetRowIndex][targetColumn] = JSON.stringify({ ownerDept: targetDept, notes: targetNotes, inbox: nextInbox })
 
     await patchLoadedWorkbookSheet(queueKey, targetSheet, { rows: [...targetRows, [workbookMetaMarker, JSON.stringify({
         version: 1,
@@ -10884,7 +10905,7 @@ const syncReminderNoteToDept = async (note: ReminderNote, operation: 'upsert' | 
 }
 const persistReminderNotes = async (immediate = false) => {
   if (!rows.value[gsdModal.row]) return false
-  rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ notes: gsdModal.reminderNotes, inbox: gsdModal.reminderInboxNotes })
+  rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ ownerDept: opsDeptUpper(), notes: gsdModal.reminderNotes, inbox: gsdModal.reminderInboxNotes })
   if (immediate) return saveSheet()
   scheduleSave()
   return true
@@ -10914,6 +10935,7 @@ const saveReminderDraft = async () => {
     dept: gsdModal.reminderDept,
     title,
     details,
+    authorDept: opsDeptUpper(),
   }
   dispatchLoading.value = `Sending notice to ${note.dept}...`
   try {
@@ -11235,7 +11257,7 @@ const isFclDduTcdDeliveryDetailModal = () => isDeliveryDetailsModal() && isFclDd
 const isDduTcdDeliveryDetailsModal = () => isDeliveryDetailsModal() && isDupTcdSheet()
 const isReadonlyDeliveryDetailsModal = () => !isStandaloneManualOpsRow(gsdModal.row) && isDeliveryDetailsModal() && (isDapIcdSheet() || isDapFcdSheet() || isDupIcdOrCcdSheet() || isDupFcdSheet() || (isDupTcdSheet() && !isFclDduTcdSheet()))
 const isPickupModal = () => isGsdFormModalLabel('PICKUP DETAIL', 'PICKUP DETAILS', 'DELIVERY DETAIL', 'DELIVERY DETAILS')
-const isExwFcaSheet = () => ['EXW', 'FCA'].includes(upperText(String(opsParts.value?.type || '')))
+const isExwFcaSheet = () => ['EXW', 'FCA', 'FCF'].includes(upperText(String(opsParts.value?.type || '')))
 const isExwFcaPickupModal = () => isPickupModal() && !isDeliveryDetailsModal() && isExwFcaSheet()
 const isDoContSealModal = () => (isDoSheet() || isDapSheet() || isDupSheet()) && isGsdFormModalLabel('CONT/SEAL INFO')
 const isAirDoIcdContSealModal = () => isAirSheet() && (isDoIcdSheet() || isDapIcdSheet()) && isDoContSealModal()
@@ -11364,14 +11386,14 @@ const isLclTruckingDetailModal = () => isTruckContModal() && isLclSheet() && nor
 const isAirDcdTruckingModal = isLclTruckingInfoModal
 const isReadonlyTruckContModal = () => !isStandaloneManualOpsRow(gsdModal.row) && isTruckContModal() && (
   (['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && ['ECD', 'CCD', 'DCD', 'FCD'].includes(opsDeptUpper())) ||
-  (['EXW', 'FCA'].includes(String(opsParts.value?.type || '').toUpperCase()) && isLclSheet() && ['ECD', 'DCD', 'FCD'].includes(opsDeptUpper())) ||
+  (['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && isLclSheet() && ['ECD', 'DCD', 'FCD'].includes(opsDeptUpper())) ||
   (isLclTruckingInfoModal() && opsDeptUpper() !== 'TCD') ||
   (isLclTruckingDetailModal() && opsDeptUpper() === 'FCD') ||
   (!isLclSheet() && (isFcaDcdSheet() || isFcaFcdSheet())) ||
   (opsParts.value?.mode === 'FCL' && (isDapIcdSheet() || isDapFcdSheet() || isDduIcdSheet() || isDupFcdSheet()) && normalizedHeaderLabel(gsdModal.column) === 'TRUCK & CONT/SEAL INFO')
 )
 const isReadonlyPickupModal = () => !isStandaloneManualOpsRow(gsdModal.row) && isPickupModal() && normalizedHeaderLabel(gsdModal.column) === 'PICKUP DETAIL' && (
-  (['EXW', 'FCA'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && ['ECD', 'CCD', 'DCD', 'FCD'].includes(opsDeptUpper())) ||
+  (['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && ['ECD', 'CCD', 'DCD', 'FCD'].includes(opsDeptUpper())) ||
   (isLclSheet() && ['ECD', 'CCD', 'DCD', 'FCD'].includes(opsDeptUpper()))
 )
 const isReadonlyDealtModal = () => !isStandaloneManualOpsRow(gsdModal.row) && gsdModal.kind === 'dealt' && (
@@ -11453,10 +11475,9 @@ const hblRequiredForRow = (row: number) => {
   return gsdModal.form?.hblRequired !== false
 }
 const currentRowRequiresHbl = () => isAwbDetailModal() || isAwbReleaseModal() || hblRequiredForRow(gsdModal.row)
-// ECD receives BILL DETAIL from DCD and may only view/export the approved
-// files. DCD remains the owning/editing department.
-const isReadonlyExwFclEcdBillDetail = () =>
-  isGsdFormModalLabel('BILL DETAIL', 'BILL APPROVAL') && opsDeptUpper() === 'ECD'
+// BILL DETAIL is shared between DCD and ECD. SI SUBMITTED remains owned by
+// DCD, while ECD can maintain the approval/receipt/export workflow.
+const isReadonlyExwFclEcdBillDetail = () => false
 const isBillReleaseModal = () => isGsdFormModalLabel('BILL RELEASE', 'AWB RELEASE')
 const isAwbReleaseModal = () => isGsdFormModalLabel('AWB RELEASE')
 const isDoReleaseModal = () => isDoIcdSheet() && isGsdFormModalLabel('DO RELEASE')
@@ -11469,10 +11490,10 @@ const billReleasePaymentReady = () => {
   return selectedExactlyOne && (!gsdModal.form.collectLater || !!String(gsdModal.form.deadline || '').trim())
 }
 const isSiSubmitModal = () => isGsdFormModalLabel('SI SUBMIT')
-const isFclExwDcdSiModal = () => isSiSubmitModal() && opsParts.value?.mode === 'FCL' && String(opsParts.value?.type || '').toUpperCase() === 'EXW' && opsDeptUpper() === 'DCD'
-// SI Submit is maintained at DCD for every FCL service type. Keep the narrower
-// EXW predicate above for the container edit rules, but sync shared shipment
-// data for all linked FCL/DCD records.
+const isFclExwDcdSiModal = () => isSiSubmitModal() && opsParts.value?.mode === 'FCL' && ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsDeptUpper() === 'DCD'
+// SI Submit is maintained at DCD for every origin-forwarding FCL service.
+// Container/seal identity comes from the linked workflow in EXW/FCA/FCF;
+// users only complete the cargo quantities and measurements here.
 const isLinkedFclDcdSiModal = () => isSiSubmitModal() && opsParts.value?.mode === 'FCL' && opsDeptUpper() === 'DCD'
 const isDcdBillDetailModal = () => isBillApprovalModal() && opsDeptUpper() === 'DCD'
 const isPreAlertConfirmationModal = () => isGsdFormModalLabel('PRE-ALERT CONFIRMATION')
@@ -13761,6 +13782,16 @@ const saveTruckDriverRecords = async () => {
   }
 }
 const selectedTruckContIndexes = () => truckContRecords().map((record, index) => record.selected ? index : -1).filter((index) => index >= 0)
+const allTruckContRowsSelected = () => truckContRecords().length > 0 && truckContRecords().every((record) => !!record.selected)
+const someTruckContRowsSelected = () => {
+  const selected = selectedTruckContIndexes().length
+  return selected > 0 && selected < truckContRecords().length
+}
+const toggleAllTruckContRows = (event: Event) => {
+  if (isReadonlyTruckContModal() || gsdModal.editing) return
+  const checked = (event.target as HTMLInputElement).checked
+  truckContRecords().forEach((record) => { record.selected = checked })
+}
 const truckContEditingRows = ref(new Set<number>())
 const truckContRowCanEdit = (record: TruckContRecord) =>
   !isReadonlyTruckContModal() && gsdModal.editing && (
@@ -14490,15 +14521,24 @@ const syncSiSubmitFromSources = () => {
   if (pod) gsdModal.form.pod = pod.toUpperCase()
   const truckValue = rawSiSourceValue('TRUCK & CONT/SEAL INFO') || rawSiSourceValue('TRUCKING INFO')
   const linked = truckContFormFromCell(truckValue).records.filter((item) => item.container || item.seal || item.contType)
-  if (linked.length) {
-    const saved = siSubmitContainers()
-    gsdModal.form.containers = linked.map((item, index) => ({
-      ...newSiSubmitContainer(),
-      ...(saved[index] || {}),
-      contNo: item.container || '',
-      contType: item.contType || '',
-      sealNo: item.seal || '',
-    }))
+  const volumes = volumeFormFromCell(rawSiSourceValue('VOLUME')).records
+  const saved = siSubmitContainers()
+  const rowCount = Math.max(linked.length, volumes.length)
+  if (rowCount) {
+    gsdModal.form.containers = Array.from({ length: rowCount }, (_, index) => {
+      const item = linked[index]
+      const volume = volumes[index]
+      const volumeSize = String(volume?.type || '').replace(/\s+/g, '').toUpperCase()
+      const volumePurpose = String(volume?.purpose || '').replace(/\s+/g, '').toUpperCase()
+      const volumeType = volumePurpose && !volumeSize.endsWith(volumePurpose) ? `${volumeSize}${volumePurpose}` : volumeSize
+      return {
+        ...newSiSubmitContainer(),
+        ...(saved[index] || {}),
+        contNo: item?.container || '',
+        contType: item?.contType || volumeType,
+        sealNo: item?.seal || '',
+      }
+    })
   }
 }
 const siSubmitTotal = (field: 'qty' | 'gw' | 'mea') => {
@@ -15241,7 +15281,7 @@ const selectBillDocumentExport = (kind: 'B/L' | 'FCR') => {
 }
 const openBillDocument = async (kind: 'B/L' | 'FCR', isRelease = false) => {
   billExportMenuOpen.value = false
-  if (!isRelease && isBillApprovalModal() && !isReadonlyExwFclEcdBillDetail() && !gsdModal.form.siReceived) {
+  if (!isRelease && isBillApprovalModal() && !gsdModal.form.siReceived) {
     showToast('Tick SI RECEIVED before exporting a document')
     return
   }
@@ -16241,6 +16281,25 @@ const volumeFormFromCell = (value: any) => {
   let records = Array.isArray(form.records) ? form.records : []
   if (!records.length && (form.volume || form.type || form.purpose)) {
     records = [{ id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, volume: Number(form.volume || 0), type: String(form.type || ''), purpose: String(form.purpose || '') }]
+  }
+  // Linked department rows may store only the visible summary (for example
+  // "2X20GP\n2X40OT") instead of the source JSON payload. Treat each summary
+  // line as one Volume record so downstream Truck/SI tables keep the same
+  // number and order of rows as the Volume modal.
+  if (!records.length && typeof value === 'string') {
+    records = value.split(/\r?\n|\s*,\s*/).map((line, index) => {
+      const match = line.trim().toUpperCase().match(/^(\d+(?:\.\d+)?)\s*X\s*(20|40|45)\s*([A-Z0-9]*)$/)
+      if (!match) return null
+      return { id: `VOL-SUMMARY-${index}-${match[2]}-${match[3]}`, volume: Number(match[1]), type: match[2], purpose: match[3] }
+    }).filter(Boolean)
+    if (!records.length) {
+      records = Array.from(value.toUpperCase().matchAll(/(\d+(?:\.\d+)?)\s*X\s*(20|40|45)\s*([A-Z]{0,3})/g)).map((match, index) => ({
+        id: `VOL-SUMMARY-${index}-${match[2]}-${match[3]}`,
+        volume: Number(match[1]),
+        type: match[2],
+        purpose: match[3],
+      }))
+    }
   }
   return {
     volume: '',
@@ -19049,7 +19108,7 @@ const rowVesselDelayed = (row: number) => {
   return vesselDelayedOf(rows.value[row]?.[vesselColumn])
 }
 const isRefEcdCell = (row: number, column: number) =>
-  row > 0 && isLclSheet() && isExwFcdSheet() && normalizedHeaderLabel(column) === 'VOLUME' && !volumeCellHasRecords(rows.value[row]?.[column])
+  row > 0 && isLclSheet() && (isExwFcdSheet() || isFcaFcdSheet() || isFcfFcdSheet()) && normalizedHeaderLabel(column) === 'VOLUME' && !volumeCellHasRecords(rows.value[row]?.[column])
 const opsCellClass = (row: number, column: number) => ({
   bool: isCheckboxCell(row, column),
   select: isDropdownCell(row, column),
