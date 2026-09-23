@@ -191,7 +191,7 @@
                         class="ops-check"
                         type="checkbox"
                         :checked="isChecked(rows[rowIndex]?.[columnIndex])"
-                        :disabled="(isExwFclGsdSentEcdColumn(columnIndex) && isSentEcdLocked(rows[rowIndex]?.[columnIndex])) || ((isExwFclEcdBcSentColumn(columnIndex) || isManifestSubmitColumn(columnIndex)) && isBcSentLocked(rows[rowIndex]?.[columnIndex]))"
+                        :disabled="isStampedOpsCheckboxDisabled(rowIndex, columnIndex)"
                         @change="toggleCheckbox(rowIndex, columnIndex, $event)"
                       /><button v-if="isStampedOpsCheckboxColumn(columnIndex) && isChecked(rows[rowIndex]?.[columnIndex])" class="bc-sent-edit" type="button" title="Edit" @click="unlockBcSent(rowIndex, columnIndex)">&#9998;</button></span>
                     <span v-if="sentCheckboxTimestamp(rows[rowIndex]?.[columnIndex], columnIndex)" class="ops-sent-at">{{ sentCheckboxTimestamp(rows[rowIndex]?.[columnIndex], columnIndex) }}</span>
@@ -253,7 +253,7 @@
                   >{{ doInfoDate(rows[rowIndex]?.[columnIndex]) || 'ADD+' }}</button>
                   <button
                     v-else-if="isGsdActionButtonCell(rowIndex, columnIndex)"
-                    v-show="!hideLockedGsdAddAction(rowIndex, gsdActionButtonText(rowIndex, columnIndex) === 'ADD+')"
+                    v-show="['EXTRA SERVICE', 'NOTES'].includes(normalizedHeaderLabel(columnIndex)) || !hideLockedGsdAddAction(rowIndex, gsdActionButtonText(rowIndex, columnIndex) === 'ADD+')"
                     class="ops-pill"
                     type="button"
                     :class="{ view: normalizedHeaderLabel(columnIndex) === 'REMINDER', has: !!String(rows[rowIndex]?.[columnIndex] || '').trim() && !['REMINDER', 'NOTICE'].includes(normalizedHeaderLabel(columnIndex)), 'linked-value': showActionEditIcon(rowIndex, columnIndex), 'document-value': isPlainDocumentValue(rowIndex, columnIndex), 'do-release-warn': isDoReleaseWarnCell(rowIndex, columnIndex), 'detail-alert': detailActionNeedsAttention(rowIndex, columnIndex), 'volume-summary-btn': normalizedHeaderLabel(columnIndex) === 'VOLUME' && !!volumeSummaryText(rows[rowIndex]?.[columnIndex]) }"
@@ -275,20 +275,16 @@
                     <option value="DONE">DONE</option>
                     <option value="CANCEL">CANCEL</option>
                   </select>
-                  <span v-else-if="isLockedAfterBcSentDate(rowIndex, columnIndex)" class="ops-textcell ops-locked-date-text">{{ displayCell(rows[rowIndex]?.[columnIndex], rowIndex, columnIndex) }}</span>
                   <button
-                    v-else-if="isAtaDateCell(rowIndex, columnIndex)"
-                    class="ops-ata-btn"
-                    :class="{ has: !!String(rows[rowIndex]?.[columnIndex] || '').trim() }"
+                    v-else-if="isScheduleDateCell(rowIndex, columnIndex)"
+                    class="ops-schedule-date"
+                    :class="{ has: !!String(rows[rowIndex]?.[columnIndex] || '').trim(), locked: !canOpenScheduleDate(rowIndex, columnIndex) }"
                     type="button"
-                    :title="String(rows[rowIndex]?.[columnIndex] || 'Choose ATA date')"
-                    @click="openAtaDatePopup(rowIndex, columnIndex, $event)"
+                    :disabled="!canOpenScheduleDate(rowIndex, columnIndex)"
+                    :title="scheduleDateTitle(rowIndex, columnIndex)"
+                    @click.stop="openScheduleDatePopup(rowIndex, columnIndex, $event)"
                   >
-                    <span v-if="String(rows[rowIndex]?.[columnIndex] || '').trim()">{{ displayCell(rows[rowIndex]?.[columnIndex], rowIndex, columnIndex) }}</span>
-                    <svg v-else viewBox="0 0 24 24" aria-hidden="true">
-                      <rect x="3" y="4" width="18" height="17" rx="2" />
-                      <path d="M8 2v4M16 2v4M3 10h18" />
-                    </svg>
+                    {{ String(rows[rowIndex]?.[columnIndex] || '').trim() ? displayCell(rows[rowIndex]?.[columnIndex], rowIndex, columnIndex) : 'dd/mm/yyyy' }}
                   </button>
                   <select
                     v-else-if="isDropdownCell(rowIndex, columnIndex) && !isLockedOpsCell(rowIndex, columnIndex)"
@@ -620,7 +616,7 @@
                           class="cell-check"
                           type="checkbox"
                           :checked="isChecked(rows[rowIndex]?.[columnIndex])"
-                          :disabled="(isExwFclGsdSentEcdColumn(columnIndex) && isSentEcdLocked(rows[rowIndex]?.[columnIndex])) || ((isExwFclEcdBcSentColumn(columnIndex) || isManifestSubmitColumn(columnIndex)) && isBcSentLocked(rows[rowIndex]?.[columnIndex]))"
+                          :disabled="isStampedOpsCheckboxDisabled(rowIndex, columnIndex)"
                           @mousedown.stop
                           @click.stop
                           @change="toggleCheckbox(rowIndex, columnIndex, $event)"
@@ -709,21 +705,17 @@
                       <option value="DONE">DONE</option>
                       <option value="CANCEL">CANCEL</option>
                     </select>
-                    <span v-else-if="isLockedAfterBcSentDate(rowIndex, columnIndex)" class="ops-locked-date-text">{{ displayCell(rows[rowIndex]?.[columnIndex], rowIndex, columnIndex) }}</span>
                     <button
-                      v-else-if="isAtaDateCell(rowIndex, columnIndex)"
-                      class="ops-ata-btn"
-                      :class="{ has: !!String(rows[rowIndex]?.[columnIndex] || '').trim() }"
+                      v-else-if="isScheduleDateCell(rowIndex, columnIndex)"
+                      class="ops-schedule-date"
+                      :class="{ has: !!String(rows[rowIndex]?.[columnIndex] || '').trim(), locked: !canOpenScheduleDate(rowIndex, columnIndex) }"
                       type="button"
-                      :disabled="isSentEcdRowLocked(rowIndex)"
+                      :disabled="!canOpenScheduleDate(rowIndex, columnIndex)"
+                      :title="scheduleDateTitle(rowIndex, columnIndex)"
                       @mousedown.stop
-                      @click.stop="openAtaDatePopup(rowIndex, columnIndex, $event)"
+                      @click.stop="openScheduleDatePopup(rowIndex, columnIndex, $event)"
                     >
-                      <span v-if="String(rows[rowIndex]?.[columnIndex] || '').trim()">{{ displayCell(rows[rowIndex]?.[columnIndex], rowIndex, columnIndex) }}</span>
-                      <svg v-else viewBox="0 0 24 24" aria-hidden="true">
-                        <rect x="3" y="4" width="18" height="17" rx="2" />
-                        <path d="M8 2v4M16 2v4M3 10h18" />
-                      </svg>
+                      {{ String(rows[rowIndex]?.[columnIndex] || '').trim() ? displayCell(rows[rowIndex]?.[columnIndex], rowIndex, columnIndex) : 'dd/mm/yyyy' }}
                     </button>
                     <button
                       v-else-if="isDropdownCell(rowIndex, columnIndex) && !isLockedOpsCell(rowIndex, columnIndex)"
@@ -893,23 +885,29 @@
         <button class="do-info-x" type="button" aria-label="Close" @click="closeDoInfoModal">×</button>
         <div class="do-info-row">
           <label>Upload<br>MBL DO:</label>
-          <input v-model="doInfoModal.mblNo" type="text" :disabled="!doInfoModal.editing" />
-          <input v-model="doInfoModal.date" type="date" :disabled="!doInfoModal.editing" />
-          <button class="gsd-pre-icon upload do-info-upload" :class="{ has: !!doInfoModal.mblFile.name }" type="button" :disabled="!doInfoModal.editing" :title="doInfoModal.mblFile.name || 'Upload MBL DO'" @click="chooseDoInfoFile('mbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg></button>
+          <input v-model="doInfoModal.mblNo" type="text" :disabled="!doInfoModal.editing || !canManageDoInfo()" />
+          <input v-model="doInfoModal.mblDate" type="date" :disabled="!doInfoModal.editing || !canManageDoInfo()" />
+          <button class="gsd-pre-icon upload do-info-upload" :class="{ has: !!doInfoModal.mblFile.name }" type="button" :disabled="!doInfoModal.editing || !canManageDoInfo()" :title="doInfoModal.mblFile.name || 'Upload MBL DO'" @click="chooseDoInfoFile('mbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg></button>
           <button v-if="doInfoModal.mblFile.dataUrl" class="gsd-pre-icon eye on do-info-view" type="button" title="View MBL DO" @click="viewDoInfoFile('mbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
         <div class="do-info-row">
           <label>HBL DO:</label>
-          <input v-model="doInfoModal.hblNo" type="text" :disabled="!doInfoModal.editing" />
-          <input v-model="doInfoModal.date" type="date" :disabled="!doInfoModal.editing" />
-          <button class="gsd-pre-icon upload do-info-upload" :class="{ has: !!doInfoModal.hblFile.name }" type="button" :disabled="!doInfoModal.editing" :title="doInfoModal.hblFile.name || 'Upload HBL DO'" @click="chooseDoInfoFile('hbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg></button>
+          <input v-model="doInfoModal.hblNo" type="text" :disabled="!doInfoModal.editing || !canManageDoInfo()" />
+          <input v-model="doInfoModal.hblDate" type="date" :disabled="!doInfoModal.editing || !canManageDoInfo()" />
+          <button class="gsd-pre-icon upload do-info-upload" :class="{ has: !!doInfoModal.hblFile.name }" type="button" :disabled="!doInfoModal.editing || !canManageDoInfo()" :title="doInfoModal.hblFile.name || 'Upload HBL DO'" @click="chooseDoInfoFile('hbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg></button>
           <button v-if="doInfoModal.hblFile.dataUrl" class="gsd-pre-icon eye on do-info-view" type="button" title="View HBL DO" @click="viewDoInfoFile('hbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
-        <div class="do-info-actions">
-          <button v-if="!doInfoModal.editing" class="edit" type="button" @click="doInfoModal.editing = true">Edit</button>
-          <button class="save" type="button" :disabled="!doInfoModal.editing || !doInfoModal.date" @click="saveDoInfoModal">Save</button>
-          <button class="close" type="button" @click="closeDoInfoModal">Close</button>
+        <div v-if="canManageDoInfo()" class="do-info-actions">
+          <button class="clear" type="button" :disabled="!doInfoHasData()" @click="clearDoInfoModal">Clear</button>
+          <button class="edit" type="button" :disabled="doInfoModal.editing" @click="doInfoModal.editing = true">Edit</button>
+          <button class="save" type="button" :disabled="!doInfoCanSave()" @click="saveDoInfoModal">Save</button>
         </div>
+      </div>
+    </div>
+    <div v-if="shipmentNotesModal.open" class="wb-modal-overlay shipment-notes-overlay" @mousedown.self="closeShipmentNotesModal">
+      <div class="shipment-notes-modal" role="dialog" aria-modal="true" aria-label="Shipment notes">
+        <button class="shipment-notes-close" type="button" title="Close" @click="closeShipmentNotesModal">&times;</button>
+        <textarea :value="shipmentNotesDraft" autofocus placeholder="Enter notes for this shipment..." @input="handleShipmentNotesInput"></textarea>
       </div>
     </div>
     <div v-if="gsdModal.open" class="wb-modal-overlay gsd-modal-overlay" @mousedown.self="closeGsdModal">
@@ -965,6 +963,7 @@
           'gsd-prealert-modal': isPreAlertModal(),
           'gsd-cda-modal': isClearanceDocsModal(),
           'gsd-clr-modal': isClearanceDetailsModal(),
+          'gsd-ccd-clr-modal': isClearanceDetailsModal() && opsDeptUpper() === 'CCD',
           'gsd-simple-clr-modal': isSimpleCcdClearanceDetailsModal(),
           'gsd-dup-tcd-clr-modal': isDupTcdClearanceDetailsModal(),
           'gsd-form-modal': gsdModal.kind === 'form',
@@ -1541,7 +1540,7 @@
               <div v-if="gsdModal.form.delayToggle" class="gsd-vdbox">
                 <label><span>New ETD:</span><input v-model="gsdModal.form.newEtd" type="date" /></label>
                 <label><span>New ETA:</span><input v-model="gsdModal.form.newEta" type="date" /></label>
-                <label><span>Reason:</span><input v-model.trim="gsdModal.form.delayReason" type="text" autocomplete="off" /></label>
+                <label><span>Reason:</span><input v-model.lazy.trim="gsdModal.form.delayReason" type="text" autocomplete="off" /></label>
               </div>
               <label class="gsd-vapall" :class="{ disabled: isExwEcdVesselControlsDisabled() }"><input v-model="gsdModal.form.applyAll" type="checkbox" :disabled="isExwEcdVesselControlsDisabled()" /> Apply to all shipments on the same vessel &amp; voyage</label>
             </div>
@@ -1586,7 +1585,7 @@
                     <td class="vessel-date">{{ formatVesselHistoryDate(item.etd) || '—' }}</td>
                     <td class="vessel-date">{{ formatVesselHistoryDate(item.eta) || '—' }}</td>
                     <td>{{ item.reason || '—' }}</td>
-                    <td><span class="gsd-vty" :class="item.type === 'DELAY' ? 'dly' : item.type === 'T/S' ? 'ts' : 'sel'">{{ item.type }}</span></td>
+                    <td><span class="gsd-vty-group"><span v-for="type in item.displayTypes || [item.type]" :key="type" class="gsd-vty" :class="type === 'DELAY' ? 'dly' : type === 'T/S' ? 'ts' : 'sel'">{{ type }}</span></span></td>
                     <td :class="item.status === 'Applied' ? 'applied' : 'expired'">{{ item.status }}</td>
                     <td class="vessel-history-actions">
                       <button type="button" class="edit" title="Edit" aria-label="Edit vessel history" @click.stop="selectVesselHistory(item)">
@@ -2898,7 +2897,7 @@
           <template v-else-if="isArrivalNoticeModal()">
             <div v-if="isArrivalNoticeSendingModal()" class="an-detail-toolbar">
               <label>Company:<select v-model="gsdModal.form.company" :disabled="!gsdModal.editing"><option value="tx">TX LOGISTICS VIETNAM CO., LTD</option><option value="shoptrans">SHOPTRANS VIETNAM CO., LTD</option></select></label>
-              <div><button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing" @click="saveArrivalNotice">Save</button><button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="gsdModal.editing = true">Edit</button><button class="wb-modal-btn export" type="button" :disabled="gsdModal.editing || arrivalNoticeExporting" @click="exportArrivalNotice">{{ arrivalNoticeExporting ? 'Exporting...' : 'Export PDF' }}</button><button class="wb-modal-btn send" type="button" :disabled="arrivalNoticeExporting || gsdModal.editing || !gsdModal.form.locked || (!!gsdModal.form.sentAt && !gsdModal.form.updatePending)" @click="sendArrivalNotice">{{ gsdModal.form.sentAt ? 'Send Update AN' : 'Send AN to Cnee' }}</button></div>
+              <div class="an-detail-toolbar-actions"><button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing" @click="saveArrivalNotice">Save</button><button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="gsdModal.editing = true">Edit</button><button class="wb-modal-btn export" type="button" :disabled="gsdModal.editing || arrivalNoticeExporting" @click="exportArrivalNotice">{{ arrivalNoticeExporting ? 'Exporting...' : 'Export PDF' }}</button><button class="wb-modal-btn send" type="button" :disabled="arrivalNoticeExporting || gsdModal.editing || !gsdModal.form.locked || (!!gsdModal.form.sentAt && !gsdModal.form.updatePending)" @click="sendArrivalNotice">{{ gsdModal.form.sentAt ? 'Send Update AN' : 'Send AN to Cnee' }}</button></div>
             </div>
             <div class="an-detail-scroll">
               <div class="an-detail-sheet">
@@ -3098,16 +3097,18 @@
       </div>
     </div>
     <div v-if="paymentNoteModal.open" class="wb-modal-overlay payment-note-overlay" @mousedown.self="closePaymentNoteModal">
-      <div class="payment-note-modal" :class="{ 'gsd-air-payment-note': isAirSheet() || isExpenseCollectModal() }" role="dialog" aria-modal="true">
-        <button class="payment-note-pdf" type="button" @click="printPaymentNote">&#8595; Download PDF</button>
-        <button class="gsd-modal-x" type="button" title="Close" @click="closePaymentNoteModal">&times;</button>
-        <div id="payment-note-document" class="payment-note-document">
-          <div class="payment-note-company">{{ paymentNoteModal.company }}</div>
-          <div class="payment-note-address">{{ paymentNoteModal.address }}</div>
-          <div class="payment-note-divider">◇◇◇</div>
-          <div class="payment-note-title">{{ paymentNoteModal.kind }} NOTE</div>
+      <div class="payment-note-modal" role="dialog" aria-modal="true">
+        <div class="payment-note-bar"><span>Document preview</span><div><button class="payment-note-pdf" type="button" :disabled="paymentNoteModal.exporting" @click="printPaymentNote">{{ paymentNoteModal.exporting ? 'Downloading…' : '⬇ Download PDF' }}</button><button class="gsd-modal-x" type="button" title="Close" @click="closePaymentNoteModal">&times;</button></div></div>
+        <div id="payment-note-document" class="payment-note-document" :class="paymentNoteModal.kind === 'CREDIT' ? 'dn-credit' : 'dn-debit'">
+          <div class="payment-note-topbar"></div>
+          <div class="payment-note-head">
+            <div class="payment-note-logo"><b>{{ paymentNoteModal.logoMark }}</b><span><strong>{{ paymentNoteModal.logoText }}</strong><small>VIET NAM</small></span></div>
+            <div class="payment-note-company-wrap"><div class="payment-note-company">{{ paymentNoteModal.company }}</div><div class="payment-note-address">{{ paymentNoteModal.address }}</div></div>
+            <div class="payment-note-badge"><strong>{{ paymentNoteModal.kind }} NOTE</strong><span>No#: {{ paymentNoteModal.documentNo }}<br />Date: {{ paymentNoteModal.date }}</span></div>
+          </div>
+          <div class="payment-note-meta"><span>JOB NO#: <b>{{ paymentNoteModal.jobNo || '—' }}</b></span><span>REF#: <b>{{ paymentNoteModal.refNo || '—' }}</b></span></div>
           <div class="payment-note-box">
-            <table>
+            <table class="payment-note-table">
               <thead><tr><th>Charge name</th><th>{{ paymentNoteModal.kind === 'DEBIT' ? 'Collect from' : 'Pay to' }}</th><th>Currency</th><th>Amount</th></tr></thead>
               <tbody>
                 <tr v-for="(line, index) in paymentNoteModal.lines" :key="index"><td>{{ line.charge }}</td><td>{{ line.party }}</td><td>{{ line.currency }}</td><td class="amount">{{ line.amount }}</td></tr>
@@ -3116,8 +3117,8 @@
             </table>
           </div>
           <div class="payment-note-foot">
-            <div><b>BANK ACCOUNT:</b><br />{{ paymentNoteModal.company }}<br />{{ paymentNoteModal.address }}<br />{{ paymentNoteModal.bank }}</div>
-            <div class="issuer">Issuer: {{ paymentNoteModal.company }}<br />Director<br />NGUYEN HUU PHUOC (MR. RUL)</div>
+            <div class="payment-note-bank"><b>BANK ACCOUNT</b><br />{{ paymentNoteModal.company }}<br />{{ paymentNoteModal.address }}<br />{{ paymentNoteModal.bank }}</div>
+            <div class="issuer"><b>ISSUER</b><br />{{ paymentNoteModal.company }}<div class="payment-note-sign-space"></div><div class="payment-note-sign-line"></div>Director<br /><strong>NGUYEN HUU PHUOC (MR. RUL)</strong></div>
           </div>
         </div>
       </div>
@@ -3240,7 +3241,7 @@
                 <div class="co-sub">3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam<br>Tel: 84.028 - 35470468 &nbsp;|&nbsp; Fax: 84.028 - 35470469</div>
                 <div class="net-line">GLOBAL NETWORK: CHINA &middot; JAPAN &middot; VIETNAM &middot; INDONESIA &middot; MALAYSIA &middot; THAILAND &middot; INDIA &middot; KOREA &middot; TAIWAN &middot; HONG KONG &middot; USA &middot; MEXICO &middot; BANGLADESH &middot; GERMANY</div>
               </div>
-              <div class="co-mark co-mk">TX</div>
+              <div class="co-mark co-mk"><span>{{ billDocumentCompanyMark() }}</span></div>
             </div>
             <div class="bl-watermark2"></div>
             <div class="doc-title-row">
@@ -3298,7 +3299,8 @@
                 </tr>
               </tbody>
             </table>
-            <table class="bgrid" style="margin-top:6px">
+            <table class="bgrid bill-summary-grid" style="margin-top:6px">
+              <colgroup><col style="width:34%" /><col style="width:34%" /><col style="width:32%" /></colgroup>
               <tbody>
               <tr>
                 <td><span class="blabel">Freight &amp; Charges</span><select v-model="billDocModal.freightCharges" class="fsel" :disabled="billDocModal.locked"><option value=""></option><option>FREIGHT PREPAID</option><option>FREIGHT COLLECT</option><option>AS ARRANGED</option></select></td>
@@ -3333,7 +3335,7 @@
                 <div class="co-sub">3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam<br>Tel: 84.028 - 35470468 &nbsp;|&nbsp; Fax: 84.028 - 35470469</div>
                 <div class="net-line">GLOBAL NETWORK: CHINA &middot; JAPAN &middot; VIETNAM &middot; INDONESIA &middot; MALAYSIA &middot; THAILAND &middot; INDIA &middot; KOREA &middot; TAIWAN &middot; HONG KONG &middot; USA &middot; MEXICO &middot; BANGLADESH &middot; GERMANY</div>
               </div>
-              <div class="co-mark co-mk">TX</div>
+              <div class="co-mark co-mk"><span>{{ billDocumentCompanyMark() }}</span></div>
             </div>
             <div class="att-title">
               <div class="att-t1">ATTACHED SHEET</div>
@@ -3759,6 +3761,7 @@ const orderedOpsDepts = (base: any, type: any, mode?: string) => {
   }
   return opsDeptsFor(base, type)
 }
+const systemOpsDepts = new Set(['GSD', 'ECD', 'ICD', 'TCD', 'CCD', 'DCD', 'FCD'])
 const opsTypeTabs = computed<{ key: string; label: string }[]>(() => {
   if (!opsParts.value) return []
   return OPS_TERMS.map((t) => ({ key: t, label: t }))
@@ -3799,7 +3802,7 @@ const deptTabs = computed<string[]>(() => {
   if (!opsParts.value) return []
   const defaults = orderedOpsDepts(opsParts.value.base, opsParts.value.type, opsParts.value.mode)
     .filter((dept) => !hiddenDeptTabs.value.includes(dept))
-  const custom = customDeptTabs.value.filter((dept) => !defaults.includes(dept as any))
+  const custom = customDeptTabs.value.filter((dept) => !systemOpsDepts.has(dept) && !defaults.includes(dept as any))
   return [...defaults, ...custom]
 })
 const activeDept = ref<string>('ECD')
@@ -3854,6 +3857,10 @@ const applyDeptModal = async () => {
     return
   }
   const defaults = opsDeptsFor(p.base, p.type)
+  if (systemOpsDepts.has(name) && !defaults.includes(name as any)) {
+    showToast(`Department ${name} is not used for ${p.type}`)
+    return
+  }
   if (!customDeptTabs.value.includes(name) && !defaults.includes(name as any)) {
     customDeptTabs.value = [...customDeptTabs.value, name]
     rememberCustomDept(p, name)
@@ -4070,7 +4077,8 @@ const doInfoModal = reactive({
   column: -1,
   mblNo: '',
   hblNo: '',
-  date: '',
+  mblDate: '',
+  hblDate: '',
   mblFile: emptyDoInfoFile(),
   hblFile: emptyDoInfoFile(),
 })
@@ -4400,7 +4408,20 @@ const gsdModal = reactive({
   extra: emptyExtraState(),
   dealt: emptyDealtState(),
 })
+const shipmentNotesModal = reactive({ open: false, row: -1, column: -1 })
+let shipmentNotesDraft = ''
+let shipmentNotesInputTimer: ReturnType<typeof setTimeout> | null = null
 let gsdModalLoadId = 0
+let gsdOpsScrollSnapshot: { left: number; top: number } | null = null
+const restoreGsdOpsScroll = () => {
+  if (!gsdOpsScrollSnapshot) return
+  nextTick(() => window.requestAnimationFrame(() => {
+    const table = document.querySelector<HTMLElement>('.ops-tablewrap')
+    if (!table || !gsdOpsScrollSnapshot) return
+    table.scrollLeft = gsdOpsScrollSnapshot.left
+    table.scrollTop = gsdOpsScrollSnapshot.top
+  }))
+}
 const entityOptionModal = reactive({
   open: false,
   type: 'city' as 'city' | 'country',
@@ -4740,8 +4761,15 @@ const loadPaymentPartyOptions = async () => {
     paymentPartiesLoading.value = false
   }
 }
+let paymentReferenceLoad: Promise<void> | null = null
+let paymentReferenceLoadedAt = 0
+let paymentReferenceCountry = ''
 const loadPaymentReferenceOptions = async () => {
-  await Promise.all([
+  const country = countryViewId()
+  if (paymentReferenceCountry === country && Date.now() - paymentReferenceLoadedAt < 30_000) return
+  if (paymentReferenceLoad && paymentReferenceCountry === country) return paymentReferenceLoad
+  paymentReferenceCountry = country
+  const load = Promise.all([
     loadPaymentChargeOptions(),
     loadPaymentPartyOptions(),
     (async () => {
@@ -4786,7 +4814,13 @@ const loadPaymentReferenceOptions = async () => {
         console.warn('Could not load Payment Request reference data', error)
       }
     })(),
-  ])
+  ]).then(() => { paymentReferenceLoadedAt = Date.now() })
+  paymentReferenceLoad = load
+  try {
+    await load
+  } finally {
+    if (paymentReferenceLoad === load) paymentReferenceLoad = null
+  }
 }
 const openPaymentOptionModal = async (kind: PaymentOptionKind) => {
   if (kind === 'party' || kind === 'collect') {
@@ -5784,14 +5818,16 @@ const refreshCustomDeptTabs = async (p = opsParts.value) => {
       const parsed = parseOpsKey(item.key)
       if (!parsed || parsed.base !== p.base || parsed.type !== p.type) continue
       activeDepts.add(parsed.dept)
-      if (!defaults.includes(parsed.dept as any)) next.add(parsed.dept)
+      if (!systemOpsDepts.has(parsed.dept) && !defaults.includes(parsed.dept as any)) next.add(parsed.dept)
     }
   } catch (error) {
     console.error('Could not load custom departments', error)
     defaults.forEach((dept) => activeDepts.add(dept))
   }
   hiddenDeptTabs.value = defaults.filter((dept) => !activeDepts.has(dept))
-  customDeptTabs.value = Array.from(next).filter((dept) => !defaults.includes(dept as any)).sort()
+  customDeptTabs.value = Array.from(next)
+    .filter((dept) => !systemOpsDepts.has(dept) && !defaults.includes(dept as any))
+    .sort()
 }
 const createDeptSheets = async (p: any, dept: string) => {
   for (const mode of opsModes) {
@@ -6401,6 +6437,12 @@ const makeBlankWorkbookRow = () => {
     else if (isOpsPage.value && normalized === 'BU') row[index] = generatedJobCountryCode()
     else if (isOpsPage.value && normalized === 'SALES') row[index] = String(props.currentUser?.displayName || props.currentUser?.username || '').trim()
     else if (isOpsPage.value && normalized === 'JOB NO#') row[index] = nextGeneratedJobNo(row[0])
+    else if (
+      isOpsPage.value && normalized === 'ICD OPS' && opsDeptUpper() === 'ICD' &&
+      ['DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type))
+    ) {
+      row[index] = leastLoadedDepartmentStaff('ICD', header.map((item) => String(item ?? '')), rows.value)
+    }
     else if (isExwFclGsdSheet() && normalized === 'GSD') {
       row[index] = leastLoadedDepartmentStaff(opsDeptUpper(), header.map((item) => String(item ?? '')), rows.value)
     }
@@ -7229,7 +7271,7 @@ const beginEditCell = async (row: number, col: number) => {
     openTruckModal(row, col)
     return
   }
-  if (isDatePopupCell(row, col)) {
+  if (isScheduleDateCell(row, col) || isDatePopupCell(row, col)) {
     const cell = sheetBody.value?.querySelector<HTMLElement>(`td[data-r="${row}"][data-c="${col}"]`)
     if (cell) openDatePopup(row, col, cell)
     return
@@ -8360,6 +8402,92 @@ const isManifestSubmitColumn = (column: number) =>
   (isDoIcdSheet() || isDapIcdSheet() || isDduIcdSheet()) &&
   normalizedHeaderLabel(column) === 'MANIFEST SUBMIT'
 const isStampedOpsCheckboxColumn = (column: number) => isExwFclGsdSentEcdColumn(column) || isExwFclEcdBcSentColumn(column) || isManifestSubmitColumn(column)
+const gsdDispatchPrerequisitesComplete = (row: number) => {
+  const header = rows.value[0] || []
+  const clientColumn = header.findIndex((_, column) => normalizedHeaderLabel(column) === 'CLIENT')
+  const dealtColumn = header.findIndex((_, column) => normalizedHeaderLabel(column) === 'DEALT INFO')
+  if (clientColumn < 0 || dealtColumn < 0) return false
+  const clientValue = String(rows.value[row]?.[clientColumn] || '').trim()
+  const dealtValue = String(rows.value[row]?.[dealtColumn] || '').trim()
+  if (!clientValue || !dealtValue) return false
+  if (!dealtValue.startsWith('{')) return true
+  try {
+    const dealt = JSON.parse(dealtValue)
+    return !!(
+      String(dealt?.inquiry || dealt?.text || '').trim() ||
+      String(dealt?.cost || '').trim() ||
+      String(dealt?.quote || dealt?.quotation || '').trim() ||
+      String(dealt?.remarks || '').trim() ||
+      (Array.isArray(dealt?.files) && dealt.files.length)
+    )
+  } catch {
+    return true
+  }
+}
+const ecdBcSentRequiredFields = [
+  { name: 'SHIPPER', aliases: ['SHIPPER'] },
+  { name: 'CNEE', aliases: ['CNEE', 'CONSIGNEE'] },
+  { name: 'ORIGIN AGENT', aliases: ['ORIGIN AGENT', 'ORIGINAL AGENT'] },
+  { name: 'DESTINATION AGENT', aliases: ['DESTINATION AGENT', 'DEST. AGENT'] },
+  { name: 'LINER', aliases: ['LINER', 'AIRLINE'] },
+  { name: 'BC NO#', aliases: ['BC NO#'] },
+  { name: 'HBL NO#', aliases: ['HBL NO#', 'HAWB NO#'] },
+  { name: 'MBL NO#', aliases: ['MBL NO#', 'MAWB NO#'] },
+  { name: 'ETD', aliases: ['ETD'] },
+  { name: 'ETA', aliases: ['ETA'] },
+  { name: 'CUTOFF DETAIL', aliases: ['CUTOFF DETAIL', 'CUT OFF DETAIL', 'CUT OFF DETAILS'] },
+  { name: 'VOLUME', aliases: ['VOLUME'] },
+  { name: 'ROUTE', aliases: ['ROUTE'] },
+  { name: 'VESSEL/VOYAGE', aliases: ['VESSEL/VOYAGE', 'VESSEL NAME', 'FLIGHT NO#'] },
+]
+const structuredCellHasText = (value: any): boolean => {
+  if (typeof value === 'string') return !!value.trim()
+  if (typeof value === 'number') return Number.isFinite(value)
+  if (Array.isArray(value)) return value.some(structuredCellHasText)
+  if (value && typeof value === 'object') return Object.values(value).some(structuredCellHasText)
+  return false
+}
+const requiredEcdCellHasValue = (label: string, value: any) => {
+  const raw = String(value ?? '').trim()
+  if (!raw) return false
+  if (label === 'BC NO#') return !!bookingDetailValue(value)
+  if (['HBL NO#', 'HAWB NO#'].includes(label) && raw.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(raw)
+      const form = parsed?.form || parsed
+      return !!String(form?.hblNo || form?.hawbNo || '').trim() || upperText(form?.required) === 'NO'
+    } catch {
+      return false
+    }
+  }
+  if (label === 'VOLUME') return volumeCellHasRecords(value) || (!raw.startsWith('{') && !raw.startsWith('['))
+  if (label === 'ROUTE') return !!routeFromCellValue(value) || (!raw.startsWith('{') && !raw.startsWith('['))
+  if (['VESSEL/VOYAGE', 'VESSEL NAME'].includes(label)) return !!vesselFromCellValue(value) || !raw.startsWith('{')
+  if (!raw.startsWith('{') && !raw.startsWith('[')) return true
+  try {
+    return structuredCellHasText(JSON.parse(raw))
+  } catch {
+    return true
+  }
+}
+const missingEcdBcSentFields = (row: number) => {
+  const header = rows.value[0] || []
+  return ecdBcSentRequiredFields.flatMap((field) => {
+    const column = header.findIndex((_, index) => field.aliases.includes(normalizedHeaderLabel(index)))
+    if (column < 0) return [field.name]
+    const actualLabel = normalizedHeaderLabel(column)
+    return requiredEcdCellHasValue(actualLabel, rows.value[row]?.[column]) ? [] : [field.name]
+  })
+}
+const isStampedOpsCheckboxDisabled = (row: number, column: number) => {
+  if (isExwFclGsdSentEcdColumn(column)) {
+    return isSentEcdLocked(rows.value[row]?.[column]) || !gsdDispatchPrerequisitesComplete(row)
+  }
+  if (isExwFclEcdBcSentColumn(column)) {
+    return isBcSentLocked(rows.value[row]?.[column]) || missingEcdBcSentFields(row).length > 0
+  }
+  return isManifestSubmitColumn(column) && isBcSentLocked(rows.value[row]?.[column])
+}
 const isSentEcdLocked = (value: any) => isChecked(value) && !String(value ?? '').trim().endsWith('|EDIT')
 const isBcSentLocked = (value: any) => isChecked(value) && !String(value ?? '').trim().endsWith('|EDIT')
 const sentEcdColumnIndex = () => (rows.value[0] || []).findIndex((_, column) =>
@@ -8394,11 +8522,16 @@ const isLinkedImportDownstreamAtaCell = (row: number, column: number) => {
   if (!parsed || parsed.dept === 'ICD' || !['DO', 'DAP', 'DDU', 'DDP'].includes(upperText(parsed.type))) return false
   return !!settings.value?.opsRowLinks?.[String(row)]
 }
+const isAutoAssignedIcdOpsCell = (row: number, column: number) => {
+  const parsed = opsParts.value
+  return row > 0 && parsed?.dept === 'ICD' && ['DAP', 'DDU', 'DDP'].includes(upperText(parsed.type)) && normalizedHeaderLabel(column) === 'ICD OPS'
+}
 const isLockedOpsCell = (row: number, column: number) =>
   normalizedHeaderLabel(column) === 'MODE' ||
   (normalizedHeaderLabel(column) === 'REF#' && opsDeptUpper() !== 'ECD') ||
   (row > 0 && isOpsTimeColumn(column)) ||
   isLockedAfterBcSentDate(row, column) ||
+  isAutoAssignedIcdOpsCell(row, column) ||
   (opsDeptUpper() === 'GSD' && /^(ECD|ICD) OPS$/.test(normalizedHeaderLabel(column))) || (
     !isStandaloneManualOpsRow(row) && (isLockedColumn(column) || isCrossServiceInboundIcdPartyCell(row, column) || isLinkedImportDownstreamAtaCell(row, column))
   )
@@ -8520,7 +8653,7 @@ const formButtonLabels = [
   'EXPENSE/COLLECTION LIST',
   'EXPENSE/COLLECT LIST',
 ]
-const gsdButtonLabels = ['EXTRA SERVICE', 'DEALT INFO', 'REMINDER', 'NOTICE', ...formButtonLabels]
+const gsdButtonLabels = ['EXTRA SERVICE', 'DEALT INFO', 'REMINDER', 'NOTICE', 'NOTES', ...formButtonLabels]
 const isClientLinkColumn = (column: number) => {
   const label = normalizedHeaderLabel(column)
   // Downstream departments receive CLIENT from the linked workflow. Keep the
@@ -8549,21 +8682,25 @@ const isExwFclFreeTextMblColumn = (column: number) =>
   normalizedHeaderLabel(column) === 'MBL NO#'
 const isDoInfoCell = (row: number, column: number) =>
   row > 0 && ['ICD', 'TCD'].includes(opsDeptUpper()) && ['DO INFO', 'DO VALIDITY'].includes(normalizedHeaderLabel(column))
+const canManageDoInfo = () => opsDeptUpper() === 'ICD'
 const doInfoValue = (value: any) => {
   const raw = String(value ?? '').trim()
   const parsed = parseJsonCell(raw, null as any)
   if (parsed && typeof parsed === 'object') return {
     mblNo: String(parsed.mblNo || ''),
     hblNo: String(parsed.hblNo || ''),
-    date: String(parsed.date || parsed.mblDate || parsed.hblDate || '').slice(0, 10),
+    mblDate: String(parsed.mblDate || parsed.date || '').slice(0, 10),
+    hblDate: String(parsed.hblDate || parsed.date || '').slice(0, 10),
     mblFile: parsed.mblFile && typeof parsed.mblFile === 'object' ? parsed.mblFile : emptyDoInfoFile(),
     hblFile: parsed.hblFile && typeof parsed.hblFile === 'object' ? parsed.hblFile : emptyDoInfoFile(),
   }
   const legacyDate = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
-  return { mblNo: '', hblNo: '', date: legacyDate ? `${legacyDate[3]}-${legacyDate[2]}-${legacyDate[1]}` : toDatetimeLocalValue(raw).slice(0, 10), mblFile: emptyDoInfoFile(), hblFile: emptyDoInfoFile() }
+  const date = legacyDate ? `${legacyDate[3]}-${legacyDate[2]}-${legacyDate[1]}` : toDatetimeLocalValue(raw).slice(0, 10)
+  return { mblNo: '', hblNo: '', mblDate: date, hblDate: date, mblFile: emptyDoInfoFile(), hblFile: emptyDoInfoFile() }
 }
 const doInfoDate = (value: any) => {
-  const date = doInfoValue(value).date
+  const info = doInfoValue(value)
+  const date = info.mblDate || info.hblDate
   if (!date) return ''
   const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/)
   return match ? `${match[3]}/${match[2]}/${match[1]}` : date
@@ -8572,19 +8709,47 @@ const openDoInfoModal = (row: number, column: number) => {
   const data = doInfoValue(rows.value[row]?.[column])
   Object.assign(doInfoModal, {
     open: true,
-    editing: !String(rows.value[row]?.[column] ?? '').trim(),
+    editing: canManageDoInfo() && !String(rows.value[row]?.[column] ?? '').trim(),
     row,
     column,
     mblNo: data.mblNo,
     hblNo: data.hblNo,
-    date: data.date,
+    mblDate: data.mblDate,
+    hblDate: data.hblDate,
     mblFile: { ...data.mblFile },
     hblFile: { ...data.hblFile },
   })
 }
 const closeDoInfoModal = () => { doInfoModal.open = false }
+const doInfoHasData = () => !!(
+  doInfoModal.mblNo.trim() || doInfoModal.hblNo.trim() || doInfoModal.mblDate || doInfoModal.hblDate
+  || doInfoModal.mblFile.name || doInfoModal.mblFile.dataUrl || doInfoModal.hblFile.name || doInfoModal.hblFile.dataUrl
+)
+const doInfoCanSave = () => {
+  if (!canManageDoInfo() || !doInfoModal.editing || !doInfoHasData()) return false
+  const hasMbl = !!(doInfoModal.mblNo.trim() || doInfoModal.mblFile.name || doInfoModal.mblFile.dataUrl)
+  const hasHbl = !!(doInfoModal.hblNo.trim() || doInfoModal.hblFile.name || doInfoModal.hblFile.dataUrl)
+  return (!hasMbl || !!doInfoModal.mblDate) && (!hasHbl || !!doInfoModal.hblDate)
+}
+const clearDoInfoModal = async () => {
+  if (!canManageDoInfo() || !doInfoHasData() || doInfoModal.row < 1 || doInfoModal.column < 0) return
+  if (!(await askConfirm('Clear all MBL DO and HBL DO information?', 'Clear DO information'))) return
+  rows.value[doInfoModal.row][doInfoModal.column] = ''
+  mirrorFclLinkedCell(doInfoModal.row, doInfoModal.column)
+  Object.assign(doInfoModal, {
+    editing: true,
+    mblNo: '',
+    hblNo: '',
+    mblDate: '',
+    hblDate: '',
+    mblFile: emptyDoInfoFile(),
+    hblFile: emptyDoInfoFile(),
+  })
+  scheduleSave()
+  showToast('DO information cleared')
+}
 const chooseDoInfoFile = (kind: 'mbl' | 'hbl') => {
-  if (!doInfoModal.editing) return
+  if (!canManageDoInfo() || !doInfoModal.editing) return
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png'
@@ -8631,11 +8796,13 @@ const viewDoInfoFile = (kind: 'mbl' | 'hbl') => {
   }
 }
 const saveDoInfoModal = () => {
-  if (!doInfoModal.editing || doInfoModal.row < 1 || doInfoModal.column < 0 || !doInfoModal.date) return
+  if (!canManageDoInfo() || !doInfoCanSave() || doInfoModal.row < 1 || doInfoModal.column < 0) return
   const value = JSON.stringify({
     mblNo: doInfoModal.mblNo.trim(),
     hblNo: doInfoModal.hblNo.trim(),
-    date: doInfoModal.date,
+    mblDate: doInfoModal.mblDate,
+    hblDate: doInfoModal.hblDate,
+    date: doInfoModal.mblDate || doInfoModal.hblDate,
     mblFile: doInfoModal.mblFile,
     hblFile: doInfoModal.hblFile,
   })
@@ -8775,6 +8942,7 @@ const truckContHasLinkedVolume = (row: number, column: number) => {
 }
 const gsdActionButtonText = (row: number, column: number) => {
   const label = normalizedHeaderLabel(column)
+  if (label === 'NOTES') return String(rows.value[row]?.[column] || '').trim() ? 'DETAIL' : 'ADD+'
   if (label === 'REMINDER' || label === 'NOTICE') return 'VIEW'
   if (label === 'VOLUME') {
     const value = rows.value[row]?.[column]
@@ -8976,7 +9144,37 @@ const recoverLinkedNoticeInbox = async (row: number, column: number) => {
   }
 }
 const handleGsdActionButton = (row: number, column: number) => {
+  if (normalizedHeaderLabel(column) === 'NOTES') {
+    shipmentNotesModal.row = row
+    shipmentNotesModal.column = column
+    shipmentNotesDraft = String(rows.value[row]?.[column] || '')
+    shipmentNotesModal.open = true
+    return
+  }
   openGsdModal(row, column)
+}
+const saveShipmentNotes = () => {
+  const { row, column } = shipmentNotesModal
+  if (row < 1 || column < 0 || !rows.value[row]) return
+  if (rows.value[row][column] === shipmentNotesDraft) return
+  rows.value[row][column] = shipmentNotesDraft
+  scheduleSave()
+}
+const handleShipmentNotesInput = (event: Event) => {
+  shipmentNotesDraft = (event.target as HTMLTextAreaElement).value
+  if (shipmentNotesInputTimer) clearTimeout(shipmentNotesInputTimer)
+  shipmentNotesInputTimer = setTimeout(() => {
+    shipmentNotesInputTimer = null
+    saveShipmentNotes()
+  }, 500)
+}
+const closeShipmentNotesModal = () => {
+  if (shipmentNotesInputTimer) {
+    clearTimeout(shipmentNotesInputTimer)
+    shipmentNotesInputTimer = null
+  }
+  saveShipmentNotes()
+  shipmentNotesModal.open = false
 }
 const parseJsonCell = <T,>(value: any, fallback: T): T => {
   if (!value) return fallback
@@ -9154,8 +9352,7 @@ const recoverLinkedPaymentRequestForFcd = async (row: number, currentValue: any)
   const currentRow = rows.value[row] || []
   const shipmentLink = opsShipmentLink(currentHeader, currentRow, row, settings.value)
   const identity = rowIdentity(currentHeader, currentRow)
-  const recovered: PaymentRequestState[] = []
-  for (const dept of fclStructureSyncPeers('PAYMENT REQUEST')) {
+  const recovered = await Promise.all(fclStructureSyncPeers('PAYMENT REQUEST').map(async (dept): Promise<PaymentRequestState | null> => {
     try {
       const key = opsLeafKey(current.base, current.mode, current.type, dept)
       const sheet = await props.request(`/workbook/sheets/${encodeURIComponent(sheetStorageKey(key))}`)
@@ -9170,15 +9367,16 @@ const recoverLinkedPaymentRequestForFcd = async (row: number, currentValue: any)
       // Compatibility with old generated rows that predate opsRowLinks.
       if (sourceRowIndex < 1 && row < alignedRows.length) sourceRowIndex = row
       const paymentColumn = header.findIndex((label) => ['PAYMENT REQUEST', 'PAYMENT REQUEST APPLICATION'].includes(upperText(label)))
-      if (sourceRowIndex < 1 || paymentColumn < 0) continue
+      if (sourceRowIndex < 1 || paymentColumn < 0) return null
       const payment = paymentRequestFromCell(alignedRows[sourceRowIndex]?.[paymentColumn])
-      if (payment.lines.length || payment.jobNo || payment.refNo || payment.issueFrom || payment.issueBank) recovered.push(payment)
+      return payment.lines.length || payment.jobNo || payment.refNo || payment.issueFrom || payment.issueBank ? payment : null
     } catch (error: any) {
       if (requestStatus(error) !== 404) console.warn(`Could not recover Payment Request from ${dept}`, error)
+      return null
     }
-  }
-  if (!recovered.length) return currentValue
-  const sources = [...recovered, local]
+  }))
+  const sources = [...recovered.filter((payment): payment is PaymentRequestState => payment !== null), local]
+  if (sources.length === 1) return currentValue
   const mergedLines = new Map<string, PaymentLine>()
   sources.forEach((payment) => payment.lines.forEach((line, index) => {
     const key = String(line.id || `${line.chargeName}:${line.payTo}:${line.collectFrom}:${index}`)
@@ -9226,6 +9424,13 @@ const fclStructureSyncPeers = (label: string): FclStructureDept[] => {
   if (!['FCL', 'LCL', 'AIR'].includes(String(opsParts.value?.mode || '').toUpperCase())) return []
   const type = String(opsParts.value?.type || '').toUpperCase()
   const dept = opsDeptUpper()
+  if (label === 'EXTRA SERVICE') {
+    const parsed = opsParts.value!
+    const allDepartments: FclStructureDept[] = ['GSD', 'ECD', 'ICD', 'TCD', 'CCD', 'DCD', 'FCD']
+    return allDepartments.filter((targetDept) =>
+      targetDept !== dept &&
+      opsHeaderFor(parsed.base, parsed.mode, targetDept as any, parsed.type).some((header) => upperText(header) === 'EXTRA SERVICE'))
+  }
   const groups: Record<string, string[]> = {
     'EXW:PAYMENT REQUEST': ['ECD', 'CCD', 'TCD', 'DCD', 'FCD'],
     'FCA:PAYMENT REQUEST': ['ECD', 'TCD', 'DCD', 'FCD'],
@@ -9282,8 +9487,15 @@ const persistPaymentRequest = async (immediate = false) => {
   rows.value[gsdModal.row][gsdModal.column] = hasData ? JSON.stringify({ payment: payload }) : ''
   scheduleSave()
   if (immediate) {
-    await saveSheet()
-    await Promise.all(fclStructureSyncPeers('PAYMENT REQUEST').map((dept) => mirrorExwFclWorkflowCell(dept, 'PAYMENT REQUEST', rows.value[gsdModal.row][gsdModal.column])))
+    const saved = await saveSheet()
+    if (!saved) throw new Error('Could not save Payment Request')
+    const peers = fclStructureSyncPeers('PAYMENT REQUEST')
+    const results = await Promise.all(peers.map((dept) => mirrorExwFclWorkflowCell(dept, 'PAYMENT REQUEST', rows.value[gsdModal.row][gsdModal.column])))
+    const requiredReceiver = opsDeptUpper() === 'FCD' ? 'ECD' : peers.includes('FCD') ? 'FCD' : ''
+    if (requiredReceiver) {
+      const receiverIndex = peers.indexOf(requiredReceiver as FclStructureDept)
+      if (receiverIndex < 0 || results[receiverIndex] !== true) throw new Error(`Could not deliver Payment Request to ${requiredReceiver}`)
+    }
   }
 }
 const paymentInvalidKey = (line: PaymentLine, field: keyof PaymentLine) => `${line.id}:${String(field)}`
@@ -9326,7 +9538,19 @@ const validatePaymentReference = (line: PaymentLine, field: keyof PaymentLine, o
 const paymentLineLocked = (line: PaymentLine) => !!line.sentAt && !line.editing
 const paymentHasSelection = () => gsdModal.payment.lines.some((line) => line.selected)
 const selectedPaymentLines = () => gsdModal.payment.lines.filter((line) => line.selected)
-const paymentCanSendSelection = () => gsdModal.payment.lines.some((line) => line.selected && (!line.sentAt || line.editing))
+const paymentRequiredFields: Array<keyof PaymentLine> = ['chargeName', 'payTo', 'payAt', 'curPay', 'totalPay', 'collectFrom', 'collectAt', 'curCollect', 'totalCollect']
+const paymentLineIsPending = (line: PaymentLine) => (!line.sentAt || line.editing) && paymentLineHasData(line)
+const paymentLineIsReadyToSend = (line: PaymentLine) => {
+  if (!paymentLineIsPending(line) || paymentRequiredFields.some((key) => !String(line[key] || '').trim())) return false
+  return !!optionMatch(paymentChargeOptions.value, line.chargeName) &&
+    !!optionMatch(paymentCountries.value, line.payAt) &&
+    !!optionMatch(paymentCountries.value, line.collectAt) &&
+    !!optionMatch(paymentCurrencies.value, line.curPay) &&
+    !!optionMatch(paymentCurrencies.value, line.curCollect)
+}
+const pendingPaymentLines = () => gsdModal.payment.lines.filter(paymentLineIsPending)
+const readyPaymentLines = () => gsdModal.payment.lines.filter(paymentLineIsReadyToSend)
+const paymentCanSendSelection = () => readyPaymentLines().length > 0
 const isExwFclTcdPaymentNoteLocked = () =>
   !isStandaloneManualOpsRow(gsdModal.row) && isPaymentRequestModal() && ['EXW', 'FCA'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && opsDeptUpper() === 'TCD'
 const isExwFclCcdPaymentNoteLocked = () =>
@@ -9350,24 +9574,51 @@ const paymentNoteBank = (value: string) => {
 }
 const openPaymentNoteModal = (kind: 'DEBIT' | 'CREDIT', lines: Array<{ charge: string; party: string; currency: string; amount: string }>, issueFrom: string, issueBank: string) => {
   const company = paymentNoteCompany(issueFrom)
+  const now = new Date()
+  const pad = (value: number) => String(value).padStart(2, '0')
+  const dateKey = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`
+  const isTx = /TX\s*LOGISTIC/i.test(issueFrom || company.company)
   paymentNoteModal.kind = kind
   paymentNoteModal.company = company.company
   paymentNoteModal.address = company.address
   paymentNoteModal.bank = paymentNoteBank(issueBank)
+  paymentNoteModal.logoMark = isTx ? 'TX' : 'ST'
+  paymentNoteModal.logoText = isTx ? 'TX LOGISTICS' : 'SHOPTRANS'
+  paymentNoteModal.documentNo = `${kind === 'DEBIT' ? 'DN' : 'CN'}-${dateKey}-${String(Date.now() % 10000).padStart(4, '0')}`
+  paymentNoteModal.date = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())}`
+  paymentNoteModal.jobNo = String(gsdModal.payment?.jobNo || gsdModal.form?.job || rowValueByHeader('JOB NO#') || '')
+  paymentNoteModal.refNo = String(gsdModal.payment?.refNo || gsdModal.form?.ref || rowValueByHeader('REF#') || rowValueByHeader('REF NO#') || '')
   paymentNoteModal.lines = lines
   paymentNoteModal.total = lines.reduce((sum, line) => sum + expenseNumber(line.amount), 0).toFixed(2)
   paymentNoteModal.open = true
 }
 const closePaymentNoteModal = () => { paymentNoteModal.open = false }
-const printPaymentNote = () => {
+const paymentNotePrintCss = `*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:'Segoe UI',Arial,sans-serif;color:#0e1512;font-size:12px}.payment-note-document{--acc:#008f4c;--wash:#e8f8ef;padding:0 0 10px}.payment-note-document.dn-credit{--acc:#d97706;--wash:#fdf0e0}.payment-note-topbar{height:6px;background:var(--acc)}.payment-note-head{display:flex;align-items:flex-start;gap:16px;padding:14px 6mm 0}.payment-note-logo{display:flex;align-items:center;flex:none;width:196px;height:46px}.payment-note-logo>b{display:grid;place-items:center;width:40px;height:40px;border-radius:9px;background:#008f4c;color:#fff;font-size:16px}.payment-note-logo>span{display:grid;margin-left:10px}.payment-note-logo strong{font-size:15px}.payment-note-logo small{margin-top:4px;color:#7a847d;font-size:9.5px;font-weight:700;letter-spacing:3px}.payment-note-company-wrap{flex:1;min-width:0}.payment-note-company{font-weight:800;font-size:14px}.payment-note-address{max-width:270px;margin-top:4px;color:#7a847d;font-size:10.5px;line-height:1.5}.payment-note-badge{flex:none;min-width:158px;padding:9px 15px;border:1px solid var(--acc);border-radius:10px;background:var(--wash);text-align:right}.payment-note-badge strong{display:block;color:var(--acc);font-size:16px}.payment-note-badge span{display:block;margin-top:4px;font-size:10px;line-height:1.6}.payment-note-meta{display:flex;gap:26px;padding:14px 6mm 0;font-size:11px}.payment-note-box{min-height:250px;margin:12px 6mm 0;border:1px solid #e4e9e2;border-radius:10px;overflow:hidden}.payment-note-table{width:100%;border-collapse:collapse;font-size:11.5px}.payment-note-table th{padding:9px 12px;background:var(--acc);color:#fff;text-align:left}.payment-note-table td{padding:8px 12px;border-top:1px solid #eef1ef}.payment-note-table th:nth-child(3){text-align:center}.payment-note-table th:last-child,.payment-note-table .amount,.payment-note-table .total-label{text-align:right}.payment-note-table tbody tr:nth-child(even) td{background:#fafbf9}.payment-note-table .total td{border-top:2px solid var(--acc);background:var(--wash);font-weight:800}.payment-note-foot{display:flex;justify-content:space-between;gap:30px;padding:20px 6mm 0;font-size:11px;line-height:1.6}.payment-note-bank{max-width:54%}.payment-note-foot b{display:inline-block;margin-bottom:5px;color:var(--acc);font-size:10px}.payment-note-foot .issuer{text-align:center;min-width:200px}.payment-note-sign-space{height:44px}.payment-note-sign-line{width:172px;margin:0 auto 5px;border-top:1px solid #3a463f}.payment-note-foot .issuer strong{font-size:11px;color:#0e1512}@page{size:A4;margin:12mm}`
+const printPaymentNote = async () => {
   const documentEl = document.getElementById('payment-note-document')
-  if (!documentEl) return
-  const printWindow = window.open('', '_blank', 'width=900,height=700')
-  if (!printWindow) return
-  printWindow.document.write(`<html><head><title>${paymentNoteModal.kind} NOTE</title><style>*{box-sizing:border-box}body{margin:0;padding:12mm;font-family:Arial,Helvetica,sans-serif;color:#111;font-size:12px;font-weight:400}.payment-note-company{text-align:center;font-size:14px;font-weight:700}.payment-note-address{text-align:center;font-size:12px;font-weight:700;margin-top:2px}.payment-note-divider{text-align:center;letter-spacing:4px;margin-top:3px;color:#333}.payment-note-title{text-align:center;font-size:13px;font-weight:700;letter-spacing:.5px;margin:14px 0 10px}.payment-note-box{border:1px solid #444;min-height:300px;padding:12px}.payment-note-box table{width:100%;border-collapse:collapse;font-size:11px}.payment-note-box th,.payment-note-box td{border:1px solid #bbb;padding:4px 7px;font-weight:400}.payment-note-box th{background:#f3f3f3;text-align:center;font-weight:700}.amount,.total-label{text-align:right}.total td{background:#fafafa;font-weight:700}.payment-note-foot{display:flex;justify-content:space-between;gap:24px;margin-top:16px;font-size:11px;line-height:1.55}.issuer{text-align:center}</style></head><body>${documentEl.innerHTML}</body></html>`)
-  printWindow.document.close()
-  printWindow.focus()
-  printWindow.print()
+  if (!documentEl || paymentNoteModal.exporting) return
+  paymentNoteModal.exporting = true
+  try {
+    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')])
+    const canvas = await html2canvas(documentEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false })
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true })
+    const pageWidth = pdf.internal.pageSize.getWidth()
+    const pageHeight = pdf.internal.pageSize.getHeight()
+    const margin = 10
+    const maxWidth = pageWidth - margin * 2
+    const maxHeight = pageHeight - margin * 2
+    const ratio = Math.min(maxWidth / canvas.width, maxHeight / canvas.height)
+    const width = canvas.width * ratio
+    const height = canvas.height * ratio
+    pdf.addImage(canvas.toDataURL('image/jpeg', .96), 'JPEG', (pageWidth - width) / 2, margin, width, height, undefined, 'FAST')
+    const safeNo = paymentNoteModal.documentNo.replace(/[^a-z0-9_-]+/gi, '-')
+    pdf.save(`${safeNo || paymentNoteModal.kind + '-NOTE'}.pdf`)
+  } catch (error) {
+    console.error('Could not export payment note PDF', error)
+    showToast('Could not download PDF')
+  } finally {
+    paymentNoteModal.exporting = false
+  }
 }
 const issuePaymentNote = (kind: 'DEBIT' | 'CREDIT') => {
   const selected = selectedPaymentLines()
@@ -9710,16 +9961,32 @@ const uploadPaymentDocs = (index: number, side: PaymentDocSide) => {
   input.click()
 }
 const sendPaymentRequest = async () => {
-  const selected = gsdModal.payment.lines.filter((line) => line.selected)
-  const target = selected.filter((line) => !line.sentAt || line.editing)
+  const target = readyPaymentLines()
   if (!target.length) {
-    showToast(selected.length ? 'Selected rows were already sent. Click Edit before sending an update.' : 'Select row(s) first')
+    const pending = pendingPaymentLines()
+    if (!pending.length) {
+      showToast('Add a new row or click Edit on a sent row before sending a request')
+      return
+    }
+    const invalid = new Set<string>()
+    pending.forEach((line) => {
+      paymentRequiredFields.forEach((key) => {
+        if (!String(line[key] || '').trim()) invalid.add(paymentInvalidKey(line, key))
+      })
+      if (line.chargeName && !optionMatch(paymentChargeOptions.value, line.chargeName)) invalid.add(paymentInvalidKey(line, 'chargeName'))
+      if (line.payAt && !optionMatch(paymentCountries.value, line.payAt)) invalid.add(paymentInvalidKey(line, 'payAt'))
+      if (line.collectAt && !optionMatch(paymentCountries.value, line.collectAt)) invalid.add(paymentInvalidKey(line, 'collectAt'))
+      if (line.curPay && !optionMatch(paymentCurrencies.value, line.curPay)) invalid.add(paymentInvalidKey(line, 'curPay'))
+      if (line.curCollect && !optionMatch(paymentCurrencies.value, line.curCollect)) invalid.add(paymentInvalidKey(line, 'curCollect'))
+    })
+    paymentInvalidFields.value = invalid
+    showToast('Complete the required fields in the new or edited row(s)')
+    nextTick(() => document.querySelector<HTMLInputElement>('.gsd-payment-modal .pcell.invalid')?.focus())
     return
   }
-  const required: Array<keyof PaymentLine> = ['chargeName', 'payTo', 'payAt', 'curPay', 'totalPay', 'collectFrom', 'collectAt', 'curCollect', 'totalCollect']
   const invalid = new Set<string>()
   target.forEach((line) => {
-    required.forEach((key) => {
+    paymentRequiredFields.forEach((key) => {
       if (!String(line[key] || '').trim()) invalid.add(paymentInvalidKey(line, key))
     })
     if (!optionMatch(paymentChargeOptions.value, line.chargeName)) invalid.add(paymentInvalidKey(line, 'chargeName'))
@@ -9760,7 +10027,16 @@ const sendPaymentRequest = async () => {
       }
     : line)
   await nextTick()
-  await persistPaymentRequest(true)
+  try {
+    await persistPaymentRequest(true)
+    showToast(`${target.length} payment request line(s) sent`)
+  } catch (error: any) {
+    gsdModal.payment.lines.forEach((line) => {
+      if (targetIds.has(line.id)) line.editing = true
+    })
+    persistPaymentRequest()
+    showToast(error?.data?.message || error?.message || 'Could not send Payment Request')
+  }
 }
 const gsdFormFieldsFor = (label: string): GsdFormField[] => {
   if (label === 'PAYMENT REQUEST') return [
@@ -9847,10 +10123,17 @@ const isEditableBcModal = () =>
   normalizedHeaderLabel(bcModal.column) === 'BC SENT'
 const paymentNoteModal = reactive({
   open: false,
+  exporting: false,
   kind: 'DEBIT' as 'DEBIT' | 'CREDIT',
   company: '—',
   address: '',
   bank: '—',
+  logoMark: 'TX',
+  logoText: 'TX LOGISTICS',
+  documentNo: '',
+  date: '',
+  jobNo: '',
+  refNo: '',
   lines: [] as Array<{ charge: string; party: string; currency: string; amount: string }>,
   total: '0.00',
 })
@@ -10085,6 +10368,7 @@ const mirroredEcdVolumeValue = async (row: number) => {
 const openGsdModal = async (row: number, column: number) => {
   const opsTableWrap = document.querySelector<HTMLElement>('.ops-tablewrap')
   const preservedScroll = opsTableWrap ? { left: opsTableWrap.scrollLeft, top: opsTableWrap.scrollTop } : null
+  gsdOpsScrollSnapshot = preservedScroll
   const restoreOpsScroll = () => {
     if (!opsTableWrap || !preservedScroll) return
     nextTick(() => window.requestAnimationFrame(() => {
@@ -10102,13 +10386,15 @@ const openGsdModal = async (row: number, column: number) => {
     if (String(rawValue || '').trim()) rows.value[row][column] = rawValue
   }
   const hasValue = String(rawValue || '').trim() !== ''
-  gsdModal.open = true
-  restoreOpsScroll()
   gsdModal.row = row
   gsdModal.column = column
   gsdModal.kind = label === 'EXTRA SERVICE' ? 'extra' : clientLinkLabels.includes(label) ? 'client' : label === 'DEALT INFO' ? 'dealt' : (label === 'REMINDER' || label === 'NOTICE') ? 'reminder' : label === 'HBL NO#' ? 'hbl' : formButtonLabels.includes(label) ? 'form' : 'generic'
   gsdModal.title = label === 'DEALT INFO' ? 'Dealt info' : (label === 'REMINDER' || label === 'NOTICE') ? 'Notice' : gsdModalTitleFor(label)
   gsdModal.label = label === 'CLIENT' ? 'Client detail' : label === 'DEALT INFO' ? 'Inquiry / cost / quote / remarks' : (label === 'REMINDER' || label === 'NOTICE') ? '' : 'Details'
+  // Assign the complete modal identity before mounting it. Opening first briefly
+  // rendered the previous modal layout and could reset the workbook scroll.
+  gsdModal.open = true
+  restoreOpsScroll()
   gsdModal.loading = label === 'PAYMENT REQUEST' || label === 'EXPENSE/COLLECT LIST' || label === 'EXPENSE/COLLECTION LIST'
   if (label === 'PAYMENT REQUEST') gsdModal.payment = emptyPaymentRequest()
   if (gsdModal.loading) gsdModal.form = {}
@@ -10347,6 +10633,7 @@ const openGsdModal = async (row: number, column: number) => {
           syncSiSubmitFromSources()
         }
         gsdModal.editing = !gsdModal.form.locked
+        restoreOpsScroll()
       } else if (label === 'BILL DETAIL' || label === 'AWB DETAIL') {
         gsdModal.formFields = []
         gsdModal.form = billApprovalFormFromCell(rawText)
@@ -10405,16 +10692,25 @@ const openGsdModal = async (row: number, column: number) => {
           }
         }
         gsdModal.editing = !gsdModal.form.locked
+        restoreOpsScroll()
       } else if (label === 'ARRIVAL NOTICE SENDING' || label === 'ARRIVAL NOTICE DETAIL') {
         gsdModal.formFields = []
-        await loadPaymentReferenceOptions()
         gsdModal.form = arrivalNoticeFormFromCell(rawText)
-        if (!gsdModal.form.paymentBank) {
-          const currency = gsdModal.form.charges?.find((charge: any) => charge?.cur)?.cur || 'VND'
-          selectArrivalNoticeBankForCurrency(currency)
-        } else if (!gsdModal.form.payInst) applyArrivalNoticeBank()
         gsdModal.editing = label === 'ARRIVAL NOTICE SENDING' && !gsdModal.form.locked
         restoreOpsScroll()
+        // Arrival Notice can render immediately. Reference lists are ancillary
+        // and should not block or replace the document view while they load.
+        void loadPaymentReferenceOptions().then(() => {
+          if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
+          if (!gsdModal.form.paymentBank) {
+            const currency = gsdModal.form.charges?.find((charge: any) => charge?.cur)?.cur || 'VND'
+            selectArrivalNoticeBankForCurrency(currency)
+          } else if (!gsdModal.form.payInst) applyArrivalNoticeBank()
+          restoreOpsScroll()
+        }).catch((error) => {
+          console.warn('Could not load Arrival Notice reference data', error)
+          restoreOpsScroll()
+        })
       } else if (label === 'PRE-ALERT SENDING') {
         gsdModal.formFields = []
         gsdModal.form = preAlertFormFromCell(rawText)
@@ -10439,8 +10735,10 @@ const openGsdModal = async (row: number, column: number) => {
       } else if (label === 'EXPENSE/COLLECT LIST' || label === 'EXPENSE/COLLECTION LIST') {
         gsdModal.formFields = []
         try {
-          await loadPaymentReferenceOptions()
-          const linkedPaymentValue = await recoverLinkedPaymentRequestForFcd(row, rawText)
+          const [, linkedPaymentValue] = await Promise.all([
+            loadPaymentReferenceOptions(),
+            recoverLinkedPaymentRequestForFcd(row, rawText),
+          ])
           if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
           if (linkedPaymentValue !== rawText && String(linkedPaymentValue || '').trim()) {
             rows.value[row][column] = linkedPaymentValue
@@ -10492,7 +10790,7 @@ const openGsdModal = async (row: number, column: number) => {
   }
   // SENT ECD locks the complete GSD row. Its buttons remain available for
   // viewing, but no modal may switch to edit mode until SENT ECD is unlocked.
-  if (isSentEcdRowLocked(row)) gsdModal.editing = false
+  if (isSentEcdRowLocked(row) && gsdModal.kind !== 'extra') gsdModal.editing = false
 }
 const closeGsdModal = () => {
   if (isPaymentRequestModal() && !gsdModal.loading) persistPaymentRequest()
@@ -10500,9 +10798,10 @@ const closeGsdModal = () => {
   gsdModal.loading = false
   resetPaymentSearch()
   gsdModal.open = false
+  restoreGsdOpsScroll()
 }
 const enableGsdModalEdit = () => {
-  if (isReadonlyDealtModal() || isSentEcdRowLocked(gsdModal.row)) return
+  if (isReadonlyDealtModal() || (isSentEcdRowLocked(gsdModal.row) && gsdModal.kind !== 'extra')) return
   gsdModal.editing = true
   if (gsdModal.kind === 'dealt') nextTick(() => dealtInquiryInput.value?.focus())
 }
@@ -11404,7 +11703,13 @@ const isExwFclTcdInboundView = () =>
 const isReadonlyTcdBookingDetail = () => !isStandaloneManualOpsRow(bookingDetailModal.row) && (opsDeptUpper() === 'CCD' || isExwFclTcdInboundView())
 const isAirDcdVesselHistoryModal = () => isVesselModal() && isLclExwDcdSheet()
 // AIR/LCL EXW ECD mockup: vessel editor with delay panel, apply-to-all and history table
-const isExwEcdVesselDelayModal = () => isVesselModal() && isExwEcdSheet() && ['FCL', 'LCL', 'AIR'].includes(String(opsParts.value?.mode || '').toUpperCase())
+const isExwEcdVesselDelayModal = () => {
+  if (!isVesselModal() || !['FCL', 'LCL', 'AIR'].includes(upperText(opsParts.value?.mode || ''))) return false
+  const type = upperText(opsParts.value?.type || '')
+  const dept = opsDeptUpper()
+  return (['EXW', 'FCA', 'FCF'].includes(type) && dept === 'ECD')
+    || (['DO', 'DAP', 'DDU', 'DDP'].includes(type) && dept === 'ICD')
+}
 const isExwEcdVesselControlsDisabled = () => isVesselModal() && isAirSheet() && isExwEcdSheet()
 const vesselDelayedOf = (value: any) => {
   const parsed = parseJsonCell(value, null as any)
@@ -11943,11 +12248,17 @@ const persistExpenseCollect = async (immediate = false) => {
   })
   scheduleSave()
   if (immediate) {
-    await saveSheet()
+    const saved = await saveSheet()
+    if (!saved) throw new Error('Could not save Payment Approval feedback')
     // Return approval results through the linked PAYMENT REQUEST cells.
     if (['DCD', 'FCD'].includes(opsDeptUpper())) {
       const payload = rows.value[gsdModal.row][gsdModal.column]
-      await Promise.all(fclStructureSyncPeers('PAYMENT REQUEST').map((dept) => mirrorExwFclWorkflowCell(dept, 'PAYMENT REQUEST', payload)))
+      const peers = fclStructureSyncPeers('PAYMENT REQUEST')
+      const results = await Promise.all(peers.map((dept) => mirrorExwFclWorkflowCell(dept, 'PAYMENT REQUEST', payload)))
+      if (opsDeptUpper() === 'FCD') {
+        const ecdIndex = peers.indexOf('ECD')
+        if (ecdIndex < 0 || results[ecdIndex] !== true) throw new Error('Could not return Payment Approval feedback to ECD')
+      }
     }
   }
 }
@@ -11968,8 +12279,20 @@ const sendExpenseCollectFeedback = async () => {
     line.editing = false
     line.selected = false
   })
-  await persistExpenseCollect(true)
-  showToast('Feedback sent')
+  const targetIds = new Set(selected.map((line: any) => String(line.id)))
+  try {
+    await persistExpenseCollect(true)
+    showToast('Feedback sent')
+  } catch (error: any) {
+    expenseCollectLines().forEach((line: any) => {
+      if (targetIds.has(String(line.id))) {
+        line.editing = true
+        line.selected = true
+      }
+    })
+    persistExpenseCollect()
+    showToast(error?.data?.message || error?.message || 'Could not send feedback to ECD')
+  }
 }
 const toggleExpenseAllVisible = (event: Event) => {
   const checked = !!(event.target as HTMLInputElement).checked
@@ -12168,6 +12491,14 @@ const findVessel = (name: string) => {
 }
 const vesselFormFromCell = (value: any) => {
   const vessel = vesselFromCellValue(value)
+  const storedForm = vesselCellForm(value)
+  const storedHistory = vesselCellHistory(value)
+  const activeTranshipment = storedHistory.find((item: any) =>
+    upperText(item.type || '') === 'T/S' && upperText(item.status || 'APPLIED') !== 'EXPIRED')
+  const storedDelays = Array.isArray(storedForm.delayHistory) ? storedForm.delayHistory : []
+  const activeDelay = [...(storedDelays.length ? storedDelays : storedHistory)]
+    .reverse()
+    .find((item: any) => upperText(item.type || '') === 'DELAY' && upperText(item.status || 'APPLIED') !== 'EXPIRED')
   if (vessel?.name && vessel.imo && !findVessel(vessel.name)) {
     vesselDirectory.value.push({ id: vessel.id || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: vessel.name, imo: vessel.imo })
   }
@@ -12181,15 +12512,15 @@ const vesselFormFromCell = (value: any) => {
     newName: '',
     newImo: '',
     hint: '',
-    delayToggle: false,
-    newEtd: '',
-    newEta: '',
-    delayReason: '',
-    transhipmentToggle: false,
-    tsEtd: '',
-    tsEta: '',
-    tsPlace: '',
-    applyAll: false,
+    delayToggle: !!activeDelay || !!storedForm.delayed,
+    newEtd: String(activeDelay?.etd || ''),
+    newEta: String(activeDelay?.eta || ''),
+    delayReason: String(activeDelay?.reason || storedForm.delayReason || ''),
+    transhipmentToggle: !!activeTranshipment || !!storedForm.transhipment,
+    tsEtd: String(activeTranshipment?.etd || ''),
+    tsEta: String(activeTranshipment?.eta || ''),
+    tsPlace: String(activeTranshipment?.reason || storedForm.transhipmentPlace || ''),
+    applyAll: !!storedForm.applyAll,
     selectedHistoryOrder: 0,
   }
 }
@@ -12200,10 +12531,10 @@ const updateVesselSearch = () => {
   gsdModal.form.hint = ''
 }
 const toggleVesselTranshipment = () => {
-  if (gsdModal.form.transhipmentToggle) gsdModal.form.delayToggle = false
+  // Transhipment and Vessel Delay are independent states and may coexist.
 }
 const toggleVesselDelay = () => {
-  if (gsdModal.form.delayToggle) gsdModal.form.transhipmentToggle = false
+  // Transhipment and Vessel Delay are independent states and may coexist.
 }
 const transhipmentPlaceValid = () => {
   const place = upperText(gsdModal.form.tsPlace || '').trim()
@@ -12214,7 +12545,8 @@ const vesselCanSelect = () => {
   const name = upperText(gsdModal.form.vesselName || '').trim()
   const voyage = upperText(gsdModal.form.voyage || '').trim()
   if (!name || !voyage || !findVessel(name)) return false
-  if (gsdModal.form.transhipmentToggle) return !!(gsdModal.form.tsEtd && gsdModal.form.tsEta && transhipmentPlaceValid())
+  if (gsdModal.form.transhipmentToggle && !(gsdModal.form.tsEtd && gsdModal.form.tsEta && transhipmentPlaceValid())) return false
+  if (gsdModal.form.delayToggle && !(gsdModal.form.newEtd || gsdModal.form.newEta)) return false
   const applied = vesselFromCellValue(rows.value[gsdModal.row]?.[gsdModal.column])
   return !applied || vesselVoyageKey(applied.name, applied.voyage) !== vesselVoyageKey(name, voyage)
 }
@@ -12288,12 +12620,41 @@ const selectVessel = () => {
     showToast('Vessel not found - use Add New')
     return
   }
+  if (isExwEcdVesselDelayModal() && gsdModal.form.delayToggle && !String(gsdModal.form.delayReason || '').trim()) {
+    gsdModal.form.hint = 'Reason is required for Vessel Delay'
+    showToast('Reason is required for Vessel Delay')
+    return
+  }
   const selected = { ...vessel, voyage }
   if (isExwEcdVesselDelayModal()) {
-    const isTranshipment = !!gsdModal.form.transhipmentToggle
-    const applySelection = (row: number) => isTranshipment
-      ? applyVesselTranshipment(row, gsdModal.column, selected, voyage, gsdModal.form.tsEtd, gsdModal.form.tsEta, String(gsdModal.form.tsPlace || '').trim(), row === gsdModal.row ? Number(gsdModal.form.selectedHistoryOrder) || 0 : 0)
-      : applyVesselSelection(row, gsdModal.column, selected, voyage)
+    const applySelection = (row: number) => {
+      applyVesselSelection(row, gsdModal.column, selected, voyage)
+      if (gsdModal.form.transhipmentToggle) {
+        applyVesselTranshipment(
+          row,
+          gsdModal.column,
+          selected,
+          voyage,
+          gsdModal.form.tsEtd,
+          gsdModal.form.tsEta,
+          String(gsdModal.form.tsPlace || '').trim(),
+        )
+      }
+      if (gsdModal.form.delayToggle) {
+        applyVesselDelay(
+          row,
+          gsdModal.column,
+          gsdModal.form.newEtd,
+          gsdModal.form.newEta,
+          String(gsdModal.form.delayReason || '').trim(),
+        )
+      }
+      const savedForm = vesselCellForm(rows.value[row]?.[gsdModal.column])
+      rows.value[row][gsdModal.column] = JSON.stringify({ form: {
+        ...savedForm,
+        applyAll: !!gsdModal.form.applyAll,
+      } })
+    }
     applySelection(gsdModal.row)
     let extra = 0
     if (gsdModal.form.applyAll) {
@@ -12347,17 +12708,22 @@ const vesselSameRows = (name: string, voyage: string) => {
   return out
 }
 const applyVesselSelection = (row: number, column: number, vessel: any, voyage: string) => {
+  const form = vesselCellForm(rows.value[row]?.[column])
   const history = vesselCellHistory(rows.value[row]?.[column])
-  history.forEach((item: any) => { item.status = 'Expired' })
+  history.forEach((item: any) => {
+    if (upperText(item.type || 'SELECT') === 'SELECT') item.status = 'Expired'
+  })
   const order = history.length ? Math.max(...history.map((item: any) => Number(item.order) || 0)) + 1 : 1
   const { etd, eta } = vesselRowEtdEta(row)
   history.push({ order, time: billTimestamp(), type: 'SELECT', name: vessel.name, imo: vessel.imo, voyage, etd, eta, status: 'Applied', reason: '' })
-  rows.value[row][column] = JSON.stringify({ form: { vesselData: { ...vessel, voyage }, history, delayHistory: [], delayed: false, delayReason: '', transhipment: false, transhipmentPlace: '' } })
+  rows.value[row][column] = JSON.stringify({ form: { ...form, vesselData: { ...vessel, voyage }, history } })
 }
 const applyVesselTranshipment = (row: number, column: number, vessel: any, voyage: string, etd: string, eta: string, place: string, editOrder = 0) => {
   const form = vesselCellForm(rows.value[row]?.[column])
   const history = vesselCellHistory(rows.value[row]?.[column])
-  history.forEach((item: any) => { item.status = 'Expired' })
+  history.forEach((item: any) => {
+    if (upperText(item.type || '') === 'T/S') item.status = 'Expired'
+  })
   const editing = editOrder ? history.find((item: any) => Number(item.order) === editOrder && upperText(item.type || '') === 'T/S') : null
   const order = editing ? Number(editing.order) : history.length ? Math.max(...history.map((item: any) => Number(item.order) || 0)) + 1 : 1
   if (editing) Object.assign(editing, { time: billTimestamp(), name: vessel.name, imo: vessel.imo, voyage, etd, eta, status: 'Applied', reason: place })
@@ -12368,7 +12734,7 @@ const applyVesselTranshipment = (row: number, column: number, vessel: any, voyag
   if (etd && etd !== current.etd) rescheduleCutoffForVesselDelay(row, current.etd, etd)
   if (etd && etdIndex >= 0) rows.value[row][etdIndex] = etd
   if (eta && etaIndex >= 0) rows.value[row][etaIndex] = eta
-  rows.value[row][column] = JSON.stringify({ form: { ...form, vesselData: { ...vessel, voyage }, history, delayed: false, delayReason: '', transhipment: true, transhipmentPlace: place } })
+  rows.value[row][column] = JSON.stringify({ form: { ...form, vesselData: { ...vessel, voyage }, history, transhipment: true, transhipmentPlace: place } })
 }
 const rescheduleCutoffForVesselDelay = (row: number, oldEtd: string, newEtd: string) => {
   if (!oldEtd || !newEtd) return
@@ -12410,7 +12776,7 @@ const applyVesselDelay = (row: number, column: number, newEtd: string, newEta: s
   const legacyDelayHistory = history.filter((item: any) => upperText(item.type || '') === 'DELAY').sort((a: any, b: any) => Number(a.order || 0) - Number(b.order || 0))
   const delayHistory = storedDelayHistory.length ? storedDelayHistory : legacyDelayHistory
   const visibleHistory = history.filter((item: any) => upperText(item.type || '') !== 'DELAY')
-  visibleHistory.forEach((item: any) => { item.status = 'Expired' })
+  delayHistory.forEach((item: any) => { item.status = 'Expired' })
   const allOrders = [...visibleHistory, ...delayHistory].map((item: any) => Number(item.order) || 0)
   const order = allOrders.length ? Math.max(...allOrders) + 1 : 1
   const current = vesselRowEtdEta(row)
@@ -12418,13 +12784,13 @@ const applyVesselDelay = (row: number, column: number, newEtd: string, newEta: s
   const eta = newEta || current.eta
   const activeDelay = { order, time: billTimestamp(), type: 'DELAY', name: vessel.name, imo: vessel.imo, voyage: vessel.voyage, etd, eta, status: 'Applied', reason }
   delayHistory.push({ ...activeDelay })
-  visibleHistory.push(activeDelay)
+  const combinedHistory = [...visibleHistory, ...delayHistory]
   const etdIndex = headerIndexOf(['ETD'])
   const etaIndex = headerIndexOf(['ETA'])
   if (newEtd) rescheduleCutoffForVesselDelay(row, current.etd, newEtd)
   if (newEtd && etdIndex >= 0) rows.value[row][etdIndex] = newEtd
   if (newEta && etaIndex >= 0) rows.value[row][etaIndex] = newEta
-  rows.value[row][column] = JSON.stringify({ form: { ...form, vesselData: { ...vessel }, history: visibleHistory, delayHistory, delayed: true, delayReason: reason, transhipment: false, transhipmentPlace: '' } })
+  rows.value[row][column] = JSON.stringify({ form: { ...form, vesselData: { ...vessel }, history: combinedHistory, delayHistory, delayed: true, delayReason: reason } })
 }
 const rollbackVesselDelay = (row: number, column: number) => {
   const form = vesselCellForm(rows.value[row]?.[column])
@@ -12438,11 +12804,12 @@ const rollbackVesselDelay = (row: number, column: number) => {
   delayHistory.pop()
   const previousDelay = delayHistory[delayHistory.length - 1]
   const selectHistory = history.filter((item: any) => upperText(item.type || '') !== 'DELAY')
+  delayHistory.forEach((item: any) => { item.status = 'Expired' })
+  if (previousDelay) previousDelay.status = 'Applied'
   const baseSelection = selectHistory.slice().sort((a: any, b: any) => Number(b.order || 0) - Number(a.order || 0))[0]
   const restored = previousDelay || baseSelection
   if (!restored) return false
-  const visibleHistory = selectHistory.map((item: any) => ({ ...item, status: previousDelay ? 'Expired' : (Number(item.order) === Number(baseSelection.order) ? 'Applied' : 'Expired') }))
-  if (previousDelay) visibleHistory.push({ ...previousDelay, status: 'Applied' })
+  const visibleHistory = [...selectHistory, ...delayHistory]
   const etdIndex = headerIndexOf(['ETD'])
   const etaIndex = headerIndexOf(['ETA'])
   if (restored.etd && etdIndex >= 0) {
@@ -12457,33 +12824,34 @@ const rollbackVesselDelay = (row: number, column: number) => {
     delayHistory,
     delayed: !!previousDelay,
     delayReason: previousDelay ? String(previousDelay.reason || '') : '',
-    transhipment: !previousDelay && upperText(restored.type || '') === 'T/S',
-    transhipmentPlace: !previousDelay && upperText(restored.type || '') === 'T/S' ? String(restored.reason || '') : '',
+    transhipment: selectHistory.some((item: any) => upperText(item.type || '') === 'T/S' && item.status !== 'Expired'),
+    transhipmentPlace: String(selectHistory.find((item: any) => upperText(item.type || '') === 'T/S' && item.status !== 'Expired')?.reason || form.transhipmentPlace || ''),
   } })
   return true
 }
 const vesselDelayCanUpdate = () => {
   const selectedOrder = Number(gsdModal.form.selectedHistoryOrder) || 0
-  if (selectedOrder) {
-    const selected = vesselEcdHistory().find((item: any) => Number(item.order) === selectedOrder)
-    if (selected?.type === 'T/S') return false
-    return true
-  }
-  return !!(gsdModal.form.delayToggle && (gsdModal.form.newEtd || gsdModal.form.newEta) && String(gsdModal.form.delayReason || '').trim())
+  if (selectedOrder) return true
+  return !!(gsdModal.form.delayToggle && (gsdModal.form.newEtd || gsdModal.form.newEta))
 }
 const selectVesselHistory = (item: any) => {
   gsdModal.form.selectedHistoryOrder = Number(item.order) || 0
   gsdModal.form.vesselName = item.name
   gsdModal.form.imo = findVessel(item.name)?.imo || ''
   gsdModal.form.voyage = item.voyage
-  gsdModal.form.delayToggle = item.type === 'DELAY'
-  gsdModal.form.transhipmentToggle = item.type === 'T/S'
-  gsdModal.form.newEtd = item.type === 'DELAY' ? item.etd : ''
-  gsdModal.form.newEta = item.type === 'DELAY' ? item.eta : ''
-  gsdModal.form.delayReason = item.type === 'DELAY' ? item.reason : ''
-  gsdModal.form.tsEtd = item.type === 'T/S' ? item.etd : ''
-  gsdModal.form.tsEta = item.type === 'T/S' ? item.eta : ''
-  gsdModal.form.tsPlace = item.type === 'T/S' ? item.reason : ''
+  // Selecting one history row must not clear another independently applied state.
+  if (item.type === 'DELAY') {
+    gsdModal.form.delayToggle = true
+    gsdModal.form.newEtd = item.etd
+    gsdModal.form.newEta = item.eta
+    gsdModal.form.delayReason = item.reason
+  }
+  if (item.type === 'T/S') {
+    gsdModal.form.transhipmentToggle = true
+    gsdModal.form.tsEtd = item.etd
+    gsdModal.form.tsEta = item.eta
+    gsdModal.form.tsPlace = item.reason
+  }
   gsdModal.form.hint = 'History row selected - press Update to apply changes'
 }
 const canDeleteVesselHistory = (item: any) => item?.type === 'DELAY' || item?.status === 'Expired'
@@ -12521,10 +12889,10 @@ const updateVesselDelay = () => {
     showToast('Select a vessel first')
     return
   }
-  if (!vesselCanSelect()) {
-    gsdModal.form.hint = gsdModal.form.transhipmentToggle
-      ? 'Enter ETD, ETA and select Place of T/S from Reference Data'
-      : 'This vessel and voyage are already applied'
+  const requestedName = upperText(gsdModal.form.vesselName || '').trim()
+  const requestedVoyage = upperText(gsdModal.form.voyage || '').trim()
+  if (!requestedName || !requestedVoyage || !findVessel(requestedName)) {
+    gsdModal.form.hint = 'Select a valid vessel and enter voyage number'
     return
   }
   const selectedOrder = Number(gsdModal.form.selectedHistoryOrder) || 0
@@ -12538,6 +12906,12 @@ const updateVesselDelay = () => {
     }
     const selectedVessel = findVessel(gsdModal.form.vesselName || '') || vessel
     const voyage = upperText(gsdModal.form.voyage || selected.voyage || '').trim()
+    if (selected.type !== 'T/S' && gsdModal.form.transhipmentToggle
+      && (!gsdModal.form.tsEtd || !gsdModal.form.tsEta || !transhipmentPlaceValid())) {
+      gsdModal.form.hint = 'Enter ETD, ETA and a valid Place of T/S'
+      showToast('Complete Transhipment information first')
+      return
+    }
     if (selected.type === 'DELAY' && !gsdModal.form.delayToggle) {
       const relatedRows = gsdModal.form.applyAll ? vesselSameRows(vessel.name, vessel.voyage) : []
       const rolledBack = rollbackVesselDelay(gsdModal.row, gsdModal.column)
@@ -12552,38 +12926,127 @@ const updateVesselDelay = () => {
       showToast(relatedRows.length ? `Latest delay cancelled for ${relatedRows.length + 1} shipment(s)` : 'Latest vessel delay cancelled')
       return
     }
-    history.forEach((item: any) => { item.status = Number(item.order) === selectedOrder ? 'Applied' : 'Expired' })
+    history.forEach((item: any) => {
+      if (upperText(item.type || '') === upperText(selected.type || '') && Number(item.order) !== selectedOrder) item.status = 'Expired'
+    })
+    selected.status = 'Applied'
     selected.name = selectedVessel.name
     selected.imo = selectedVessel.imo
     selected.voyage = voyage
+    if (selected.type === 'T/S') {
+      selected.etd = gsdModal.form.tsEtd || selected.etd
+      selected.eta = gsdModal.form.tsEta || selected.eta
+      selected.reason = String(gsdModal.form.tsPlace || selected.reason || '').trim()
+      form.transhipment = true
+      form.transhipmentPlace = selected.reason
+    }
     if (selected.type === 'DELAY') {
       const currentSchedule = vesselRowEtdEta(gsdModal.row)
       selected.etd = gsdModal.form.newEtd || selected.etd
       selected.eta = gsdModal.form.newEta || selected.eta
       selected.reason = String(gsdModal.form.delayReason || selected.reason || '').trim()
       const delayHistory = Array.isArray(form.delayHistory) ? form.delayHistory.map((item: any) => ({ ...item })) : []
-      const activeDelay = delayHistory[delayHistory.length - 1]
+      delayHistory.forEach((item: any) => { item.status = Number(item.order) === selectedOrder ? 'Applied' : 'Expired' })
+      const activeDelay = delayHistory.find((item: any) => Number(item.order) === selectedOrder)
       if (activeDelay) Object.assign(activeDelay, { ...selected, status: 'Applied' })
       form.delayHistory = delayHistory
       if (selected.etd && selected.etd !== currentSchedule.etd) rescheduleCutoffForVesselDelay(gsdModal.row, currentSchedule.etd, selected.etd)
     }
+    if (selected.type !== 'DELAY' && gsdModal.form.delayToggle) {
+      const currentSchedule = vesselRowEtdEta(gsdModal.row)
+      const delayHistory = Array.isArray(form.delayHistory) && form.delayHistory.length
+        ? form.delayHistory.map((entry: any) => ({ ...entry }))
+        : history.filter((entry: any) => upperText(entry.type || '') === 'DELAY').map((entry: any) => ({ ...entry }))
+      let activeDelay = history.find((item: any) => upperText(item.type || '') === 'DELAY' && upperText(item.status || 'APPLIED') !== 'EXPIRED')
+      if (!activeDelay) {
+        const allOrders = [...history, ...delayHistory].map((entry: any) => Number(entry.order) || 0)
+        const order = allOrders.length ? Math.max(...allOrders) + 1 : 1
+        activeDelay = {
+          order,
+          time: billTimestamp(),
+          type: 'DELAY',
+          name: selectedVessel.name,
+          imo: selectedVessel.imo,
+          voyage,
+          etd: gsdModal.form.newEtd || currentSchedule.etd,
+          eta: gsdModal.form.newEta || currentSchedule.eta,
+          reason: String(gsdModal.form.delayReason || '').trim(),
+          status: 'Applied',
+        }
+        history.push(activeDelay)
+        delayHistory.push({ ...activeDelay })
+      } else {
+        activeDelay.name = selectedVessel.name
+        activeDelay.imo = selectedVessel.imo
+        activeDelay.voyage = voyage
+        activeDelay.etd = gsdModal.form.newEtd || activeDelay.etd
+        activeDelay.eta = gsdModal.form.newEta || activeDelay.eta
+        activeDelay.reason = String(gsdModal.form.delayReason || activeDelay.reason || '').trim()
+        const storedDelay = delayHistory.find((entry: any) => Number(entry.order) === Number(activeDelay.order))
+        if (storedDelay) Object.assign(storedDelay, activeDelay)
+        else delayHistory.push({ ...activeDelay })
+      }
+      form.delayHistory = delayHistory
+      form.delayed = true
+      form.delayReason = activeDelay.reason
+      if (activeDelay.etd && activeDelay.etd !== currentSchedule.etd) rescheduleCutoffForVesselDelay(gsdModal.row, currentSchedule.etd, activeDelay.etd)
+    }
+    if (selected.type !== 'T/S' && gsdModal.form.transhipmentToggle) {
+      let activeTranshipment = history.find((item: any) =>
+        upperText(item.type || '') === 'T/S' && upperText(item.status || 'APPLIED') !== 'EXPIRED')
+      if (!activeTranshipment) {
+        const order = history.length
+          ? Math.max(...history.map((entry: any) => Number(entry.order) || 0)) + 1
+          : 1
+        activeTranshipment = {
+          order,
+          time: billTimestamp(),
+          type: 'T/S',
+          name: selectedVessel.name,
+          imo: selectedVessel.imo,
+          voyage,
+          etd: gsdModal.form.tsEtd,
+          eta: gsdModal.form.tsEta,
+          reason: String(gsdModal.form.tsPlace || '').trim(),
+          status: 'Applied',
+        }
+        history.push(activeTranshipment)
+      } else {
+        activeTranshipment.name = selectedVessel.name
+        activeTranshipment.imo = selectedVessel.imo
+        activeTranshipment.voyage = voyage
+        activeTranshipment.etd = gsdModal.form.tsEtd
+        activeTranshipment.eta = gsdModal.form.tsEta
+        activeTranshipment.reason = String(gsdModal.form.tsPlace || '').trim()
+        activeTranshipment.status = 'Applied'
+      }
+      form.transhipment = true
+      form.transhipmentPlace = activeTranshipment.reason
+    }
     const etdIndex = headerIndexOf(['ETD'])
     const etaIndex = headerIndexOf(['ETA'])
-    if (selected.etd && etdIndex >= 0) rows.value[gsdModal.row][etdIndex] = selected.etd
-    if (selected.eta && etaIndex >= 0) rows.value[gsdModal.row][etaIndex] = selected.eta
+    const scheduleItem = gsdModal.form.delayToggle
+      ? history.find((item: any) => upperText(item.type || '') === 'DELAY' && upperText(item.status || 'APPLIED') !== 'EXPIRED') || selected
+      : selected
+    if (scheduleItem.etd && etdIndex >= 0) rows.value[gsdModal.row][etdIndex] = scheduleItem.etd
+    if (scheduleItem.eta && etaIndex >= 0) rows.value[gsdModal.row][etaIndex] = scheduleItem.eta
     rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ form: {
       ...form,
       vesselData: { ...selectedVessel, voyage },
       history,
-      delayed: selected.type === 'DELAY',
-      delayReason: selected.type === 'DELAY' ? selected.reason : '',
+      delayed: selected.type === 'DELAY' ? true : !!form.delayed,
+      delayReason: selected.type === 'DELAY' ? selected.reason : String(form.delayReason || ''),
+      applyAll: !!gsdModal.form.applyAll,
     } })
     if (gsdModal.form.applyAll && selected.type === 'DELAY') {
       for (const other of vesselSameRows(vessel.name, vessel.voyage)) {
         applyVesselDelay(other, gsdModal.column, selected.etd, selected.eta, selected.reason)
       }
     }
-    gsdModal.form.selectedHistoryOrder = 0
+    // Keep the edited history row selected so subsequent Update clicks keep
+    // editing in place instead of falling through to the add-new-delay path.
+    gsdModal.form.selectedHistoryOrder = selectedOrder
+    gsdModal.form.hint = 'History row updated - you can continue editing this row'
     scheduleSave()
     void saveSheet()
     return
@@ -12597,18 +13060,35 @@ const updateVesselDelay = () => {
     showToast('Reason is required')
     return
   }
+  const selectedVessel = findVessel(requestedName) || vessel
+  const applyTranshipment = (row: number) => {
+    if (!gsdModal.form.transhipmentToggle) return
+    if (!gsdModal.form.tsEtd || !gsdModal.form.tsEta || !transhipmentPlaceValid()) return
+    applyVesselTranshipment(
+      row,
+      gsdModal.column,
+      selectedVessel,
+      requestedVoyage,
+      gsdModal.form.tsEtd,
+      gsdModal.form.tsEta,
+      String(gsdModal.form.tsPlace || '').trim(),
+    )
+  }
+  applyTranshipment(gsdModal.row)
   applyVesselDelay(gsdModal.row, gsdModal.column, gsdModal.form.newEtd, gsdModal.form.newEta, reason)
   let extra = 0
   if (gsdModal.form.applyAll) {
     for (const other of vesselSameRows(vessel.name, vessel.voyage)) {
+      applyTranshipment(other)
       applyVesselDelay(other, gsdModal.column, gsdModal.form.newEtd, gsdModal.form.newEta, reason)
       extra += 1
     }
   }
-  gsdModal.form.delayToggle = false
-  gsdModal.form.newEtd = ''
-  gsdModal.form.newEta = ''
-  gsdModal.form.delayReason = ''
+  const savedForm = vesselCellForm(rows.value[gsdModal.row]?.[gsdModal.column])
+  rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ form: {
+    ...savedForm,
+    applyAll: !!gsdModal.form.applyAll,
+  } })
   scheduleSave()
   void saveSheet()
 }
@@ -12618,9 +13098,9 @@ const vesselEcdHistory = () => {
   const selectHistory = history.filter((item: any) => upperText(item.type || '') !== 'DELAY')
   const storedDelays = Array.isArray(form.delayHistory) ? form.delayHistory : []
   const legacyDelays = history.filter((item: any) => upperText(item.type || '') === 'DELAY')
-  const activeDelay = (storedDelays.length ? storedDelays : legacyDelays).slice().sort((a: any, b: any) => Number(b.order || 0) - Number(a.order || 0))[0]
-  const visibleHistory = activeDelay ? [...selectHistory, { ...activeDelay, status: 'Applied' }] : selectHistory
-  return visibleHistory
+  const delayHistory = (storedDelays.length ? storedDelays : legacyDelays).map((item: any) => ({ ...item }))
+  const visibleHistory = [...selectHistory, ...delayHistory]
+  const mapped = visibleHistory
     .map((item: any) => ({
       order: Number(item.order) || 0,
       time: String(item.time || item.at || ''),
@@ -12632,6 +13112,13 @@ const vesselEcdHistory = () => {
       type: upperText(item.type || '') === 'DELAY' ? 'DELAY' : upperText(item.type || '') === 'T/S' ? 'T/S' : 'SELECT',
       status: String(item.status || '') === 'Expired' ? 'Expired' : 'Applied',
     }))
+  const activeTranshipment = mapped.find((item: any) => item.type === 'T/S' && item.status === 'Applied')
+  const activeDelay = mapped.find((item: any) => item.type === 'DELAY' && item.status === 'Applied')
+  const combined = activeTranshipment && activeDelay
+    && vesselVoyageKey(activeTranshipment.name, activeTranshipment.voyage) === vesselVoyageKey(activeDelay.name, activeDelay.voyage)
+  return mapped
+    .filter((item: any) => !combined || item !== activeTranshipment)
+    .map((item: any) => item === activeDelay && combined ? { ...item, displayTypes: ['T/S', 'DELAY'] } : item)
     .sort((a: any, b: any) => b.order - a.order)
 }
 const pickupFormFromCell = (value: any) => {
@@ -15271,6 +15758,7 @@ const toggleBillNotifySameAsConsignee = () => {
   }
 }
 const billDocumentIssueDate = () => billTimestamp().slice(0, 10)
+const billDocumentCompanyMark = () => upperText(billDocModal.company).includes('SHOPTRANS') ? 'ST' : 'TX'
 const linkedVesselText = (value: any) => {
   const vessel = vesselFromCellValue(value)
   return vessel ? [vessel.name, vessel.voyage].filter(Boolean).join(' / ') : ''
@@ -16978,6 +17466,15 @@ const isDatePopupCell = (row: number, column: number) => {
   if (label === 'ETD' || label === 'ETA') return false
   return cellFormatOf(row, column).type === 'date' || /\b(DATE|ATD|ATA|CUTOFF|CUT OFF|RETURN|PICKUP|VALIDITY)\b/.test(label)
 }
+const isScheduleDateCell = (row: number, column: number) =>
+  row > 0 && ['ETD', 'ETA', 'ATD', 'ATA'].includes(normalizedHeaderLabel(column))
+const canOpenScheduleDate = (row: number, column: number) =>
+  isScheduleDateCell(row, column) && !isLockedOpsCell(row, column) && !isSentEcdRowLocked(row)
+const scheduleDateTitle = (row: number, column: number) => {
+  const label = normalizedHeaderLabel(column)
+  if (!canOpenScheduleDate(row, column)) return `${label} is locked`
+  return `Choose ${label} date`
+}
 const isAtaDateCell = (row: number, column: number) => {
   if (row <= 0) return false
   const label = normalizedHeaderLabel(column)
@@ -17027,7 +17524,7 @@ const isChecked = (value: any) => {
   return ['true', '1', 'yes', 'x', 'checked'].includes(normalized) || normalized.startsWith('true|')
 }
 const canEditCell = (row: number, column: number) =>
-  isEditingCell(row, column) && !isSentEcdRowLocked(row) && !(row === 0 && isDefaultTemplateColumn(column)) && !isLockedOpsCell(row, column) && !isCheckboxCell(row, column) && !isDropdownCell(row, column) && !isActionInfoCell(row, column) && !isTruckInfoCell(row, column) && !isClientLinkCell(row, column) && !isGsdActionButtonCell(row, column) && !isActionSelectCell(row, column)
+  isEditingCell(row, column) && !isSentEcdRowLocked(row) && !(row === 0 && isDefaultTemplateColumn(column)) && !isLockedOpsCell(row, column) && !isScheduleDateCell(row, column) && !isCheckboxCell(row, column) && !isDropdownCell(row, column) && !isActionInfoCell(row, column) && !isTruckInfoCell(row, column) && !isClientLinkCell(row, column) && !isGsdActionButtonCell(row, column) && !isActionSelectCell(row, column)
 const cellClass = (row: number, column: number) => ({
   editing: isEditingCell(row, column),
   bool: isCheckboxCell(row, column),
@@ -17056,6 +17553,11 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
   const input = event.target as HTMLInputElement
   let savedImmediately = false
   if (isExwFclGsdSentEcdColumn(column) && input.checked) {
+    if (!gsdDispatchPrerequisitesComplete(row)) {
+      input.checked = false
+      showToast('Please enter Client and Dealt Info before sending')
+      return
+    }
     input.checked = false
     const sourceKey = activeKey.value
     const sourceCountry = loadedCountryId.value
@@ -17186,6 +17688,12 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
       dispatchLoading.value = ''
     }
   } else if (isExwFclEcdBcSentColumn(column) && input.checked) {
+    const missingFields = missingEcdBcSentFields(row)
+    if (missingFields.length) {
+      input.checked = false
+      showToast(`Please complete required shipment information: ${missingFields.join(', ')}`)
+      return
+    }
     input.checked = false
     savedImmediately = true
     const sourceKey = activeKey.value
@@ -17571,12 +18079,12 @@ const runMirrorExwFclWorkflowCell = async (
   source?: LinkedMirrorSource,
 ) => {
   const parsed = source?.parsed || opsParts.value
-  if (!parsed) return
+  if (!parsed) return false
   const type = String(parsed.type || '').toUpperCase()
   const mode = String(parsed.mode || '').toUpperCase()
   const sourceDept = String(parsed.dept || '').toUpperCase()
   const supported = ['FCL', 'LCL', 'AIR'].includes(mode) && ['EXW', 'FCA', 'FCF', 'DO', 'DAP', 'DDU', 'DDP'].includes(type)
-  if (!supported) return
+  if (!supported) return false
   const targetKey = opsLeafKey(parsed.base, parsed.mode, parsed.type, targetDept as any)
   const sourceHeader = source?.header || (rows.value[0] || []).map((item) => String(item || '').trim())
   const sourceRow = source?.row || rows.value[sourceRowIndex] || []
@@ -17614,7 +18122,7 @@ const runMirrorExwFclWorkflowCell = async (
     let targetColumn = targetLabels.map((candidate) => targetHeader.indexOf(candidate)).find((index) => index >= 0) ?? -1
     if (targetColumn < 0 && label === 'TRUCKING INFO') targetColumn = targetHeader.indexOf('TRUCK & CONT/SEAL INFO')
     if (targetColumn < 0 && label === 'TRUCK & CONT/SEAL INFO') targetColumn = targetHeader.indexOf('TRUCKING INFO')
-    if (targetColumn < 0) return
+    if (targetColumn < 0) return false
     // Older GSD -> ECD transfers may have created the target row without
     // copying JOB NO#/TIME. In that case the row position is the only stable
     // link left; repair its identity while mirroring the changed field.
@@ -17633,7 +18141,7 @@ const runMirrorExwFclWorkflowCell = async (
     if (matchingRow < 1 && sourceDept === 'TCD' && targetDept === 'ECD' && sourceRowIndex > 0 && sourceRowIndex < targetRows.length) {
       matchingRow = sourceRowIndex
     }
-    if (matchingRow < 1) return
+    if (matchingRow < 1) return false
     const wasAlreadyLinked = !!sourceLink && String(targetLinks[String(matchingRow)] || '') === sourceLink
     if (sourceLink) {
       targetSettings.opsRowLinks = { ...targetLinks, [String(matchingRow)]: sourceLink }
@@ -17678,8 +18186,10 @@ const runMirrorExwFclWorkflowCell = async (
         merges: targetSheet.merges || [],
         settings: targetSettings,
       })]] })
+    return true
   } catch (error: any) {
     if (requestStatus(error) !== 404) console.warn(`Could not mirror ${label} to ${targetDept}`, error)
+    return false
   }
 }
 const mirrorExwFclWorkflowCell = (
@@ -18614,6 +19124,9 @@ const transferRowToNextDept = async (rowIndex: number, targetDept?: string, tran
     }
     if (sendingToInitialOpsDept && label === 'NOTICE') return ''
     if (sendingToInitialOpsDept && label === 'ACTION') return 'ACTIVE'
+    // DAP/DDU/DDP ICD ownership is assigned by workload at the destination.
+    // Never carry a selectable/source value from GSD into the ICD worksheet.
+    if (sendingFromGsdToIcdFlow && ['DAP', 'DDU', 'DDP'].includes(upperText(parsed.type)) && label === 'ICD OPS') return ''
     if (['CLEARANCE DETAIL', 'CLEARANCE DETAILS'].includes(label) && sourceCarry.clearanceDetail) return sourceCarry.clearanceDetail
     const sourceIndex = sourceIndexForTarget(label)
     return sourceIndex >= 0 ? sourceRow[sourceIndex] ?? '' : ''
@@ -18897,6 +19410,10 @@ const openAtaDatePopup = (row: number, column: number, event: MouseEvent) => {
   if (isSentEcdRowLocked(row)) return
   openDatePopup(row, column, event.currentTarget as HTMLElement)
 }
+const openScheduleDatePopup = (row: number, column: number, event: MouseEvent) => {
+  if (!canOpenScheduleDate(row, column)) return
+  openDatePopup(row, column, event.currentTarget as HTMLElement)
+}
 const closeDatePopup = () => { datePopup.open = false }
 const shiftDateMonth = (delta: number) => {
   const date = new Date(datePopup.viewYear, datePopup.viewMonth + delta, 1)
@@ -19117,7 +19634,7 @@ const opsCellClass = (row: number, column: number) => ({
   locked: isLockedOpsCell(row, column),
   vdly: ['ETD', 'ETA'].includes(normalizedHeaderLabel(column)) && rowVesselDelayed(row),
   refecd: isRefEcdCell(row, column),
-  'date-cell': isOpsRowDateColumn(column) || isAtaDateCell(row, column) || isDatePopupCell(row, column),
+  'date-cell': isScheduleDateCell(row, column) || isDatePopupCell(row, column),
   'time-cell': isOpsTimeColumn(column),
   'linked-date-changed': linkedDateChanged(row, column),
   'inline-editing': isEditingCell(row, column),
@@ -19126,9 +19643,9 @@ const isOpsConfirmableFreeTextCell = (row: number, column: number) =>
   row > 0 && !isOpsEditingRow(row) && !isLockedOpsCell(row, column) && !isSentEcdRowLocked(row) &&
   !isCheckboxCell(row, column) && !isDropdownCell(row, column) && !isActionSelectCell(row, column) &&
   !isActionInfoCell(row, column) && !isTruckInfoCell(row, column) && !isClientLinkCell(row, column) &&
-  !isGsdActionButtonCell(row, column) && !isDatePopupCell(row, column) && !isOpsTimeColumn(column) && !isRefEcdCell(row, column)
+  !isGsdActionButtonCell(row, column) && !isScheduleDateCell(row, column) && !isDatePopupCell(row, column) && !isOpsTimeColumn(column) && !isRefEcdCell(row, column)
 const handleOpsCellDblClick = async (row: number, column: number, event: MouseEvent) => {
-  if (isDatePopupCell(row, column)) {
+  if (isScheduleDateCell(row, column) || isDatePopupCell(row, column)) {
     openDatePopup(row, column, event.currentTarget as HTMLElement)
     return
   }
@@ -19872,8 +20389,22 @@ onBeforeUnmount(() => {
 .gsd-cda-modal{width:fit-content;max-width:96vw;padding:30px 28px 20px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-cda-modal .gsd-modal-x,.gsd-clr-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-cda-instr{font-size:14px;font-weight:800;color:#1f2a26;margin:10px 40px 6px 0}.gsd-cda-addbar{display:flex;justify-content:flex-start;margin:8px 0 12px}.gsd-cda-table{width:auto;border-collapse:collapse;font-size:13px;color:#33413b}.gsd-cda-table th{padding:8px 10px;border-bottom:1px solid #e1e8e4;text-align:left;font-weight:800;color:#42504b}.gsd-cda-table td{padding:9px 10px;vertical-align:middle}.gsd-cda-table .cda-doc{font-weight:700;color:#1a1a1a;white-space:nowrap}.gsd-cda-table .cda-vf{text-align:center;width:104px}.gsd-cda-table .cda-up{width:372px}.gsd-cda-table .cda-act{width:44px}.gsd-cda-table input[type=checkbox]{width:18px;height:18px;accent-color:#008f4c}.cda-uphead{display:inline-block;width:160px;text-align:center}.cda-up-wrap{display:flex;align-items:center;gap:10px;width:100%}.cda-upcol{display:inline-flex;flex-direction:column;gap:3px;width:160px}.cdaup{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:160px;box-sizing:border-box;border:0;border-radius:8px;background:#1456e0;color:#fff;padding:7px 12px;font-size:12.5px;font-weight:800;white-space:nowrap;cursor:pointer}.cdaup.has{background:#0e9f57}.cdaup:disabled{background:#cfd8e6;cursor:not-allowed}.cdaup svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.cdafn{width:160px;box-sizing:border-box;border:1px solid #e2e8e4;border-radius:5px;background:#fff;padding:2px 7px;color:#44524c;font-size:10.5px;line-height:1.3}.cdaname{width:150px;flex:0 0 150px;box-sizing:border-box;border:1px solid #d6ddd9;border-radius:7px;background:#fff;padding:6px 9px;text-align:center;font-size:12.5px}.cda-rm{border:0;background:transparent;color:#c0392b;font-size:15px;font-weight:900;line-height:1;cursor:pointer}.cda-eye{margin-left:auto}.gsd-cda-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;padding-right:44px}.gsd-cda-actions .edit{background:#e67e22;border-color:#e67e22;color:#fff}.gsd-cda-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-clr-modal{width:1180px;max-width:96vw;max-height:90vh;padding:30px 26px 24px;border-radius:12px;overflow:auto;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-clr-title{text-align:center;font-size:13px;font-weight:900;color:#0e1512;text-transform:uppercase;margin:0 0 8px}.gsd-clr-scroll{overflow:auto;max-height:300px;margin-top:6px}.gsd-clr-table{width:100%;border-collapse:collapse;table-layout:auto;font-size:12.5px;color:#33413b}.gsd-clr-table th,.gsd-clr-table td{border:1px solid #d5ddd9;padding:8px 10px;text-align:center;vertical-align:middle}.gsd-clr-table th{background:#f1f5f3;font-weight:800;color:#33413b;white-space:nowrap}.gsd-clr-table td.clr-ro{background:#f7faf9;color:#5b6a63;font-weight:700}.clr-allcell{width:44px}.clr-declcell{min-width:230px}.clr-dcap{display:inline-flex;align-items:center;gap:8px}.clr-dcapbox{text-align:center}.clr-plus{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;border-radius:6px;background:#008f4c;color:#fff;font-size:16px;font-weight:900;line-height:1;cursor:pointer}.clr-plus.dim{background:#b7c2bc;cursor:not-allowed}.clr-declwrap{display:flex;flex-direction:column;gap:6px;align-items:stretch;max-width:80%;margin:0 auto}.clr-declrow{display:flex;align-items:center;gap:6px}.clr-din{flex:1 1 auto;min-width:120px;border:1px solid #c9d3cf;border-radius:6px;padding:6px 8px;text-align:center;font:inherit}.clr-din.clr-baderr{border-color:#c0392b;background:#fff5f4}.clr-tick{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:0;border-radius:6px;background:#008f4c;color:#fff;font-size:14px;cursor:pointer}.clr-link{flex:1 1 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #cfe0d6;border-radius:6px;background:#eaf6ef;padding:6px 8px;cursor:pointer}.clr-link b{color:#0a6b3b;font-size:12.5px}.clr-link.clr-link-red{background:#fdecea;border-color:#c0392b}.clr-link.clr-link-red b{color:#c0392b}.clr-dots{display:inline-flex;gap:4px}.clr-dot{width:8px;height:8px;border-radius:50%;background:#d0d7de}.clr-dot.on{background:#008f4c}.gsd-clr-panels{display:flex;flex-direction:column;gap:14px;margin-top:14px}.clr-panel{border:1px solid #dfe6e2;border-radius:10px;background:#fff;padding:16px 18px}.clr-phead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;color:#5b6a63;font-size:12px;letter-spacing:.04em}.clr-phead b{margin-left:6px;color:#1f2a26;font-size:13px}.clr-pclose{border:0;background:transparent;color:#8a97a0;font-size:15px;cursor:pointer}.clr-prow{display:flex;align-items:flex-end;flex-wrap:wrap;gap:20px}.clr-fld{display:flex;flex-direction:column;gap:5px}.clr-fld span{font-size:12px;font-weight:800;color:#33413b}.clr-fld input[type=text],.clr-fld input[type=date]{min-width:190px;border:1px solid #c9d3cf;border-radius:7px;padding:7px 9px;font:inherit}.clr-res{display:flex;align-items:center;gap:16px}.clr-rchip{display:inline-flex;align-items:center;border:1.5px solid #cfd8d4;border-radius:20px;background:#fff;padding:7px 14px;color:#5b6a63;font-size:12.5px;cursor:pointer}.clr-rchip.on-green{background:#e8f6ee;border-color:#008f4c;color:#0a6b3b;font-weight:800}.clr-rchip.on-red{background:#fdecea;border-color:#c0392b;color:#c0392b;font-weight:800}.clr-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}.clr-step{display:flex;align-items:center;gap:8px;border:1px solid #d5ddd9;border-radius:8px;background:#fbfdfc;padding:9px 11px}.clr-step.dim{opacity:.5}.clr-step input{width:16px;height:16px;accent-color:#008f4c}.clr-step span{font-size:12px;font-weight:700;color:#33413b}.clr-step em{margin-left:auto;color:#0a6b3b;font-size:11px;font-style:normal;white-space:nowrap}.clr-warn{margin-top:8px;color:#c0392b;font-size:11.5px}.clr-pfoot{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}.clr-pfoot .edit{background:#e67e22;border-color:#e67e22;color:#fff}.clr-pfoot .primary{background:#008f4c;border-color:#008f4c;color:#fff}.clr-empty{height:44px;background:#fff;color:#0e1512;font-weight:800;font-style:italic}
 .gsd-clr-table .clr-declhead,.gsd-clr-table .clr-declcell{width:180px;min-width:180px}
 .gsd-clr-table .clr-declwrap{max-width:100%}
+.gsd-ccd-clr-modal{width:980px;max-width:96vw;padding:28px 22px 20px}
+.gsd-ccd-clr-modal .gsd-clr-table td{padding:6px 8px;font-weight:400}
+.gsd-ccd-clr-modal .gsd-clr-table td.clr-ro{font-weight:400}
+.gsd-ccd-clr-modal .gsd-clr-table .clr-declhead,.gsd-ccd-clr-modal .gsd-clr-table .clr-declcell{width:148px;min-width:148px}
+.gsd-ccd-clr-modal .clr-declwrap{gap:4px}
+.gsd-ccd-clr-modal .clr-declrow{gap:4px}
+.gsd-ccd-clr-modal .clr-plus{width:20px;height:20px;border-radius:5px;--plus-bar-length:8px;--plus-bar-thickness:1.5px}
+.gsd-ccd-clr-modal .clr-tick{width:22px;height:22px;border-radius:5px;font-size:12px}
+.gsd-ccd-clr-modal .clr-link{min-height:28px;box-sizing:border-box;padding:4px 7px;gap:5px;font-weight:400}
+.gsd-ccd-clr-modal .clr-link b{font-size:11.5px;font-weight:400}
+.gsd-ccd-clr-modal .clr-dots{gap:3px}
+.gsd-ccd-clr-modal .clr-dot{width:6px;height:6px}
+.gsd-ccd-clr-modal .clr-din{min-width:92px;padding:4px 6px;font-weight:400}
 .wb-modal-btn.edit:not(:disabled),.gsd-pre-actions .edit:not(:disabled){background:#e67e22;border-color:#e67e22;color:#fff}.wb-modal-btn.edit:hover:not(:disabled),.gsd-pre-actions .edit:hover:not(:disabled){background:#df9950;border-color:#df9950}.prealert-viewer-overlay{z-index:280;background:rgba(10,30,18,.55)}.prealert-viewer-modal{position:relative;width:min(920px,94vw);height:min(720px,88vh);border-radius:12px;padding:0;overflow:hidden;display:flex;flex-direction:column;background:#fff;box-shadow:0 24px 70px rgba(0,0,0,.35)}.prealert-viewer-modal .gsd-modal-x{right:12px;top:12px;z-index:2}.prealert-viewer-head{height:48px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 52px 0 16px;border-bottom:1px solid #e4e9e2}.prealert-viewer-head span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:800;color:#1f2a26}.prealert-viewer-head .wb-modal-btn{height:30px;min-height:30px;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:800}.prealert-viewer-frame{flex:1;width:100%;border:0;background:#f7faf9}
 .ops-ata-btn{width:32px;height:32px;margin:0 auto;border:1px solid #d0d7de;border-radius:6px;background:#fff;color:#33413b;display:grid;place-items:center;cursor:pointer;padding:0}.ops-ata-btn:hover:not(:disabled):not(.has){border-color:#9cc2e8;background:#f8fbff}.ops-ata-btn.has{width:auto;min-width:68px;height:26px;padding:0;border-color:transparent;border-radius:0;background:transparent;color:inherit;white-space:nowrap;font:inherit;font-size:11px;font-weight:400}.ops-ata-btn.has:hover:not(:disabled){border-color:transparent;background:transparent;text-decoration:underline;text-underline-offset:3px}.ops-ata-btn.has:focus-visible{outline:0;text-decoration:underline;text-underline-offset:3px}.ops-ata-btn:disabled{cursor:default}.ops-ata-btn.has:disabled:hover{background:transparent;text-decoration:none}.ops-ata-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ops-schedule-date{display:inline-flex;align-items:center;justify-content:center;min-width:76px;min-height:26px;margin:0 auto;border:0;background:transparent;padding:0 3px;color:inherit;font:inherit;font-size:12px;font-weight:400;line-height:1.35;font-variant-numeric:tabular-nums;white-space:nowrap;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;cursor:pointer}.ops-schedule-date:hover:not(:disabled),.ops-schedule-date:focus-visible{color:#008f4c;text-decoration-thickness:2px;outline:0}.ops-schedule-date:not(.has){color:#7b8780}.ops-schedule-date:disabled{color:#69756f;opacity:1;cursor:not-allowed}.ops-schedule-date.locked:not(.has){color:#9aa39e}
 .dp-grid button:disabled{cursor:not-allowed;opacity:.35;background:#f8faf8;color:#aeb7b0}
 .gsd-expcol-modal{width:min(1220px,96vw);height:min(560px,82vh);padding:0;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;background:#fff}.gsd-expcol-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:13px;z-index:2}.gsd-expcol-modal-body{min-height:0;display:flex;flex:1;flex-direction:column}.expcol-head{position:relative;min-height:52px;padding:12px 48px 9px 14px;border-bottom:1px solid #e0e6df;display:flex;align-items:center;justify-content:center}.expcol-head .pr-meta{position:absolute;left:14px;top:12px;display:flex;align-items:center;gap:26px}.expcol-head .pr-meta span{display:flex;align-items:center;gap:6px;color:#3d4a43;font-size:11px;font-weight:800;white-space:nowrap}.expcol-head .pr-metainp{width:108px;height:24px;border:0;border-bottom:1px solid #d3dacf;background:transparent;padding:0 4px;font:inherit;font-size:12px;outline:none}.expcol-head .pr-title{font-size:13px;font-weight:900;color:#0e1512;text-align:center}.expcol-tools{padding:9px 14px;display:flex;align-items:center;justify-content:space-between;gap:14px;border-bottom:1px solid #e0e6df}.expcol-tools .pr-tleft,.expcol-tools .ec-tright{display:flex;align-items:center;gap:8px;min-width:0}.ec-issue{font-size:11.5px;font-weight:700;color:#33413b;white-space:nowrap}.ec-issinp,.ec-cursel{height:28px;border:1px solid #cfd8d2;border-radius:5px;background:#fff;padding:0 8px;font:inherit;font-size:11.5px;color:#33413b}.ecdebit{background:#008f4c!important;border-color:#008f4c!important;color:#fff!important}.eccredit{background:#d97706!important;border-color:#d97706!important;color:#fff!important}.ecedit{background:#e67e22!important;border-color:#e67e22!important;color:#fff!important}.ecblue{background:#1f7ae0!important;border-color:#1f7ae0!important;color:#fff!important}.expcol-scroll{flex:1;overflow:auto;background:#fff;padding:10px 14px 14px}.expcol-table{width:1840px;border-collapse:collapse;table-layout:fixed;font-size:11px;color:#33413b}.expcol-table th,.expcol-table td{border:1px solid #d8e0d9;padding:5px 6px;text-align:center;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.expcol-table th{height:29px;background:#eef3ee;color:#33413b;font-weight:800}.expcol-table .pcheck{width:34px}.expcol-table input[type=checkbox]{width:14px;height:14px;accent-color:#008f4c}.expcol-table .grp-pay{background:#fff2ee}.expcol-table .grp-col{background:#eef8f1}.expcol-table .grp-fb{background:#f8fbff}.expcol-table .grp-dr{background:#f7fbf8}.ec-sumrow th{height:34px;font-size:11px}.ec-sumin{display:inline-flex;align-items:center;gap:5px}.ec-sum-pay{background:#fff2ee!important}.ec-sum-col{background:#eef8f1!important}.ec-sum-ded{background:#f7fbf8!important}.ec-white{background:#fff!important;text-align:left!important;font-weight:700}.ec-view{height:24px;min-width:54px;border:0;border-radius:4px;background:#1f7ae0;color:#fff;font-size:10.5px;font-weight:800;cursor:pointer}.ec-statussel,.ec-reason{width:100%;height:26px;border:1px solid #d5ddd9;border-radius:4px;background:#fff;padding:0 6px;text-align:center;font:inherit;font-size:11px;outline:none}.ec-statussel.ok{background:#e8f6ee;color:#0a6b3b;font-weight:800}.ec-statussel.reject{background:#fdecea;color:#c0392b;font-weight:800}.ec-statussel.edit{background:#fff4e5;color:#b45f04;font-weight:800}.ec-statussel:disabled,.ec-reason:disabled{background:#f8faf8;color:#647067}.pr-empty{height:60px;color:#7a847d;font-weight:800;font-style:italic;background:#fff!important}
 .gsd-expcol-modal{width:min(1400px,96vw);height:min(620px,86vh)}.gsd-expcol-modal .expcol-scroll{padding:0 14px 14px}.gsd-expcol-modal .expcol-table{width:auto;min-width:100%;table-layout:auto;border-collapse:collapse;font-size:12px}.gsd-expcol-modal .expcol-table th,.gsd-expcol-modal .expcol-table td{padding:6px 12px;border:1px solid #dfe5ea;white-space:nowrap;overflow:visible;text-overflow:clip}.gsd-expcol-modal .expcol-table th{font-weight:700}.gsd-expcol-modal .ec-col-check{width:34px}.gsd-expcol-modal .ec-col-charge{min-width:140px}.gsd-expcol-modal .ec-col-party{min-width:150px}.gsd-expcol-modal .ec-col-place{min-width:92px}.gsd-expcol-modal .ec-col-cur{min-width:80px}.gsd-expcol-modal .ec-col-total{min-width:92px}.gsd-expcol-modal .ec-col-upload{min-width:82px}.gsd-expcol-modal .ec-col-sender{min-width:76px}.gsd-expcol-modal .ec-col-note{min-width:168px}.gsd-expcol-modal .ec-col-date{min-width:118px}.gsd-expcol-modal .ec-col-status{min-width:126px}.gsd-expcol-modal .ec-col-reason{min-width:150px}.gsd-expcol-modal .ec-col-status-details{min-width:160px}.gsd-expcol-modal .ec-col-ready{min-width:156px}.gsd-expcol-modal .ec-cell{display:inline-block;max-width:220px;color:#33414d;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}.gsd-expcol-modal .ec-sumrow td{border:1px solid #dfe5ea;padding:7px 10px;font-size:12px;font-weight:700}.gsd-expcol-modal .ec-sumrow .pcheck{background:#fff}.gsd-expcol-modal .ec-sum-pay{background:#fdecea!important;color:#8a2b21}.gsd-expcol-modal .ec-sum-col{background:#eaf7ef!important;color:#1f6b43}.gsd-expcol-modal .ec-sum-ded{background:#eef1f7!important;color:#3a4656}.gsd-expcol-modal .ec-sumin{gap:8px;font-size:12px}.gsd-expcol-modal .ec-cursel{height:24px;border:1px solid #c7d0d9;border-radius:6px;background:#fff;padding:2px 6px;font-size:12px;font-weight:700;color:#1f2a33}.gsd-expcol-modal .ec-view{height:24px;border:0;border-radius:6px;background:#2f6fed;color:#fff;padding:3px 10px;display:inline-flex;align-items:center;justify-content:center;gap:5px;font-size:11px;font-weight:700}.gsd-expcol-modal .ec-view:hover{background:#2356c9}.gsd-expcol-modal .ecdebit{background:#c0392b!important;border-color:#c0392b!important}.gsd-expcol-modal .ecdebit:hover:not(:disabled){background:#a23227!important}.gsd-expcol-modal .eccredit{background:#008f4c!important;border-color:#008f4c!important}.gsd-expcol-modal .eccredit:hover:not(:disabled){background:#04793f!important}.gsd-expcol-modal .ec-issinp{border:0;border-bottom:1px solid #9aa6b2;border-radius:0;background:transparent;padding:2px 4px;width:140px}.gsd-expcol-modal .ec-statussel{width:124px;height:26px}.gsd-expcol-modal .ec-reason{width:150px;height:26px}.gsd-expcol-modal .ec-white{text-align:center!important}
@@ -19983,6 +20514,7 @@ onBeforeUnmount(() => {
 .gsd-vty.sel{background:#e8f6ee;color:#0a6b3b}
 .gsd-vty.dly{background:#fff4e5;color:#b45f04}
 .gsd-vty.ts{background:#fff0dc;color:#c45f08}
+.gsd-vty-group{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;padding:2px 0}.gsd-vty-group .gsd-vty{min-width:48px!important;margin:0!important}
 .ops-nbadge{display:inline-grid;place-items:center;min-width:14px;height:14px;margin-left:5px;padding:0 3px;border-radius:999px;background:#d63a3a;color:#fff;font-size:9px;font-weight:800;line-height:1}
 /* AIR/LCL — vessel delay panel + history on EXW ECD (mockup #ovs) */
 .gsd-modal.gsd-vessel-ecd-modal{width:min(980px,96vw);max-height:92vh;overflow:auto}
@@ -19999,6 +20531,7 @@ onBeforeUnmount(() => {
 .gsd-vhist-wrap.ecd{margin-top:16px;border-top:1px solid #e4e9e2;padding-top:12px}
 .gsd-vhist-wrap.ecd .gsd-vhist-table th:nth-child(1),.gsd-vhist-wrap.ecd .gsd-vhist-table td:nth-child(1){width:28px;padding-left:4px;padding-right:4px}
 .gsd-vhist-wrap.ecd .gsd-vhist-table th:nth-child(8),.gsd-vhist-wrap.ecd .gsd-vhist-table td:nth-child(8){width:58px;padding-left:4px;padding-right:4px}
+.gsd-vhist-wrap.ecd .gsd-vhist-table th:nth-child(8),.gsd-vhist-wrap.ecd .gsd-vhist-table td:nth-child(8){text-align:center;vertical-align:middle}.gsd-vhist-wrap.ecd .gsd-vhist-table td:nth-child(8) .gsd-vty{display:flex;width:max-content;margin:0 auto}
 .gsd-vhist-wrap.ecd .gsd-vhist-table th:nth-child(10),.gsd-vhist-wrap.ecd .gsd-vhist-table td:nth-child(10){width:62px;padding-left:3px;padding-right:3px}
 .gsd-vhist-wrap.ecd tbody tr{cursor:pointer}.gsd-vhist-wrap.ecd tbody tr:hover td{background:#fff8ed}.gsd-vhist-wrap.ecd tbody tr.selected td{background:#ffefd6;box-shadow:inset 0 1px 0 #f3b562,inset 0 -1px 0 #f3b562}.gsd-vhist-wrap.ecd tbody tr.delay td.vessel-date{color:#e67e22;font-weight:400}
 .vessel-history-actions{white-space:nowrap}.vessel-history-actions button{display:inline-grid;place-items:center;width:24px;height:24px;margin:0 2px;border:0;border-radius:6px;padding:0;color:#fff;cursor:pointer;transition:background-color .16s ease,box-shadow .16s ease,transform .08s ease}.vessel-history-actions button.edit{background:#e67e22}.vessel-history-actions button.edit:hover:not(:disabled){background:#c96512;box-shadow:0 2px 6px rgba(201,101,18,.25)}.vessel-history-actions button.remove{background:#c0392b}.vessel-history-actions button.remove:hover:not(:disabled){background:#9f2f24;box-shadow:0 2px 6px rgba(159,47,36,.25)}.vessel-history-actions button:active:not(:disabled){transform:translateY(1px)}.vessel-history-actions button:disabled{background:#cbd5d1;color:#f5f7f6;cursor:not-allowed;opacity:.7}.vessel-history-actions svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
@@ -20012,7 +20545,7 @@ onBeforeUnmount(() => {
 .clr-plus{--plus-bar-length:10px}.pay-hplus{--plus-bar-length:7px;--plus-bar-thickness:1.5px}
 /* AIR/LCL — delayed vessel highlight on ETD/ETA cells */
 .ops-ms-table td.vdly,.ops-ms-table td.vdly .ops-textcell{color:#e67e22;font-weight:700}
-.ops-ms-table td.linked-date-changed,.sheet-body td.linked-date-changed{background-color:transparent!important;color:#c2410c!important;font-weight:800}.ops-ms-table td.linked-date-changed .ops-textcell,.ops-ms-table td.linked-date-changed .ops-edit-input,.ops-ms-table td.linked-date-changed .ops-ata-btn,.sheet-body td.linked-date-changed .ops-locked-date-text,.sheet-body td.linked-date-changed .ops-ata-btn{color:#c2410c!important;font-weight:800}
+.ops-ms-table td.linked-date-changed,.sheet-body td.linked-date-changed{background-color:transparent!important;color:#c2410c!important;font-weight:800}.ops-ms-table td.linked-date-changed .ops-textcell,.ops-ms-table td.linked-date-changed .ops-edit-input,.ops-ms-table td.linked-date-changed .ops-ata-btn,.ops-ms-table td.linked-date-changed .ops-schedule-date,.sheet-body td.linked-date-changed .ops-locked-date-text,.sheet-body td.linked-date-changed .ops-ata-btn,.sheet-body td.linked-date-changed .ops-schedule-date{color:#c2410c!important;font-weight:800}
 .do-info-overlay{z-index:470!important;background:rgba(10,30,18,.46)!important}.do-info-modal{position:relative;width:700px;max-width:94vw;border:1px solid #cbd5d0;border-radius:12px;background:#fff;padding:62px 54px 24px;box-shadow:0 18px 50px rgba(0,0,0,.28);box-sizing:border-box}.do-info-x{position:absolute;right:12px;top:12px;display:grid;place-items:center;width:24px;height:24px;border:0;border-radius:50%;background:#c0392b;color:#fff;font:800 15px/1 Arial,sans-serif;cursor:pointer}.do-info-row{display:grid;grid-template-columns:96px minmax(0,1fr) 150px 30px 30px;align-items:center;gap:10px;margin:0 0 16px}.do-info-row label{font-size:12.5px;font-weight:700;line-height:1.25;color:#33413b}.do-info-row input{width:100%;height:38px;box-sizing:border-box;border:1px solid #c9d3cf;border-radius:8px;background:#f7faf9;padding:8px 10px;font:inherit;font-size:12.5px;color:#33413b;outline:none}.do-info-row input:focus{border-color:#00c566;box-shadow:0 0 0 2px rgba(0,197,102,.12)}.do-info-row input:disabled{background:#eef2f0;color:#64746d}.do-info-upload,.do-info-view{width:30px!important;height:30px!important;padding:2px!important}.do-info-upload{color:#1680bd!important}.do-info-upload svg,.do-info-view svg{width:19px!important;height:19px!important;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.do-info-upload.has{color:#1b7a43!important}.do-info-view{color:#0f4c81!important}.do-info-upload:disabled{opacity:.35;cursor:not-allowed}.do-info-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.do-info-actions button{height:34px;border:0;border-radius:8px;padding:0 14px;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer}.do-info-actions .save{background:#008f4c;color:#fff}.do-info-actions .edit{background:#e67e22;color:#fff}.do-info-actions .close{background:#64748b;color:#fff}.do-info-actions button:disabled{opacity:.45;cursor:not-allowed}@media(max-width:650px){.do-info-modal{padding:58px 20px 20px}.do-info-row{grid-template-columns:80px minmax(0,1fr) 30px 30px}.do-info-row input[type=date]{grid-column:2}.do-info-row .do-info-upload{grid-column:3;grid-row:1/3}.do-info-row .do-info-view{grid-column:4;grid-row:1/3}}
 .ops-ms-table td.refecd .ops-textcell{color:#8a94a0;font-style:italic;font-weight:600;font-size:10px;text-transform:none}
 .ops-ms-table td.mode-auto,.sheet-body td.mode-auto{background:#e8f3ff!important;color:#1769aa!important;font-weight:800}.ops-ms-table td.mode-manual,.sheet-body td.mode-manual{background:#fff1dc!important;color:#b45f04!important;font-weight:800}.ops-ms-table td.mode-auto .ops-textcell,.ops-ms-table td.mode-manual .ops-textcell{font-weight:800}
@@ -20128,6 +20661,7 @@ onBeforeUnmount(() => {
 .blform .co-name{font-size:19px;font-weight:800;color:#0f4c81;letter-spacing:.4px}
 .blform .co-sub{font-size:10.5px;color:#333;line-height:1.5;margin-top:3px}
 .blform .co-mark{width:52px;height:52px;border:2.5px solid #0f4c81;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:#0f4c81;flex:0 0 auto}
+.blform .co-mark{position:relative;display:block;box-sizing:border-box}.blform .co-mark>span{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);margin:0;text-align:center;font:800 18px/1 Arial,Helvetica,sans-serif;color:#0f4c81}
 .blform .net-line{font-size:8.5px;color:#0f4c81;letter-spacing:.6px;margin-top:4px;font-weight:600;line-height:1.5}
 .blform .doc-title-row{display:flex;justify-content:space-between;align-items:flex-end;margin:10px 0 8px}
 .blform .doc-title{font-size:21px;font-weight:800;letter-spacing:3px;color:#111}
@@ -20177,6 +20711,43 @@ onBeforeUnmount(() => {
 .blform>*:not(.bl-watermark){position:relative;z-index:2}
 .blform .att-del{background:#c0392b;border-color:#c0392b;color:#fff;padding:5px 12px;font-size:11px;border-radius:4px;cursor:pointer;border:none}
 .blform .att-del:hover{background:#a5301f}
+.payment-note-overlay{z-index:410;background:rgba(10,30,18,.42)}
+.payment-note-modal{width:740px;max-width:95vw;max-height:92vh;overflow:auto;padding:0;border-radius:8px;background:#fff;font:12px/1.4 'Segoe UI',Arial,sans-serif;color:#0e1512}
+.payment-note-bar{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid #e4e9e2;background:#fafbf9;color:#7a847d;font-weight:700}.payment-note-bar>div{display:flex;align-items:center;gap:10px}.payment-note-modal .payment-note-pdf{position:static;padding:7px 15px;border:0;border-radius:8px;background:#008f4c;color:#fff;font-size:12px;font-weight:700}.payment-note-modal .gsd-modal-x{position:static;display:grid;width:26px;height:26px;border:0;border-radius:50%;background:#eef1ef;color:#3a463f;place-items:center;box-shadow:none}
+.payment-note-document{--acc:#008f4c;--wash:#e8f8ef;padding:0 0 26px;background:#fff}.payment-note-document.dn-credit{--acc:#d97706;--wash:#fdf0e0}.payment-note-topbar{height:6px;background:var(--acc)}
+.payment-note-head{display:flex;align-items:flex-start;gap:16px;padding:22px 30px 0}.payment-note-logo{display:flex;align-items:center;flex:none;width:196px;height:46px}.payment-note-logo>b{display:grid;width:40px;height:40px;border-radius:9px;background:#008f4c;color:#fff;font-size:16px;place-items:center}.payment-note-logo>span{display:grid;margin-left:10px}.payment-note-logo strong{font-size:15px}.payment-note-logo small{margin-top:4px;color:#7a847d;font-size:9.5px;font-weight:700;letter-spacing:3px}.payment-note-company-wrap{flex:1;min-width:0}.payment-note-company{text-align:left;font-size:14px;font-weight:800}.payment-note-address{max-width:270px;margin-top:4px;color:#7a847d;text-align:left;font-size:10.5px;font-weight:400;line-height:1.5}
+.payment-note-badge{flex:none;min-width:158px;padding:9px 15px;border:1px solid var(--acc);border-radius:10px;background:var(--wash);text-align:right}.payment-note-badge strong{display:block;color:var(--acc);font-size:16px}.payment-note-badge span{display:block;margin-top:4px;font-size:10px;line-height:1.6}.payment-note-meta{display:flex;gap:26px;padding:16px 30px 0;font-size:11px}
+.payment-note-box{min-height:270px;margin:14px 30px 0;padding:0;border:1px solid #e4e9e2;border-radius:10px;overflow:hidden}.payment-note-table{width:100%;border-collapse:collapse;font-size:11.5px}.payment-note-table th{padding:9px 12px;border:0;background:var(--acc);color:#fff;text-align:left}.payment-note-table td{padding:8px 12px;border:0;border-top:1px solid #eef1ef}.payment-note-table th:nth-child(3){text-align:center}.payment-note-table th:last-child,.payment-note-table .amount,.payment-note-table .total-label{text-align:right}.payment-note-table tbody tr:nth-child(even) td{background:#fafbf9}.payment-note-table .total td{border-top:2px solid var(--acc);background:var(--wash);font-weight:800}
+.payment-note-foot{display:flex;justify-content:space-between;gap:30px;margin:0;padding:22px 30px 0;font-size:11px;line-height:1.6}.payment-note-bank{max-width:54%}.payment-note-foot b{display:inline-block;margin-bottom:5px;color:var(--acc);font-size:10px}.payment-note-foot .issuer{flex:none;min-width:200px;text-align:center}.payment-note-sign-space{height:44px}.payment-note-sign-line{width:172px;margin:0 auto 5px;border-top:1px solid #3a463f}.payment-note-foot .issuer strong{color:#0e1512;font-size:11px}
+.payment-note-modal{border:1px solid #008f4c!important;font-family:var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)!important}
+.payment-note-bar{min-height:51px;border-bottom:1px solid #dfe7e1;font-family:var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif);font-size:12px}.payment-note-modal .gsd-modal-x{background:#eef1ef!important;color:#3a463f!important;font-family:Arial,sans-serif!important;font-size:18px!important;font-weight:400!important}
+.payment-note-document{font-family:var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif);font-size:12px}.payment-note-topbar{height:5px}.payment-note-company,.payment-note-logo strong,.payment-note-badge strong,.payment-note-table .total td,.payment-note-foot .issuer strong{font-family:var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}
+.payment-note-table{table-layout:fixed}.payment-note-table th{height:35px;border-right:1px solid rgba(255,255,255,.8)!important;border-bottom:1px solid var(--acc)!important;font-family:var(--mono,'Geist Mono',ui-monospace,Menlo,monospace);font-size:10.5px;font-weight:700;letter-spacing:.02em}.payment-note-table th:last-child{border-right:0!important}.payment-note-table th:nth-child(1){width:27%}.payment-note-table th:nth-child(2){width:33%}.payment-note-table th:nth-child(3){width:21%}.payment-note-table th:nth-child(4){width:19%}.payment-note-table td{font-size:11px}.payment-note-meta,.payment-note-foot{font-size:10.5px}
+.payment-note-bar>span,.payment-note-modal .payment-note-pdf{font-weight:800!important}
+.payment-note-logo>b,.payment-note-logo strong,.payment-note-company,.payment-note-badge strong{font-weight:900!important}
+.payment-note-meta b,.payment-note-table th,.payment-note-table .total td,.payment-note-foot b,.payment-note-foot .issuer strong{font-weight:800!important}
+.payment-note-table th{font-family:var(--mono,'Geist Mono',ui-monospace,Menlo,monospace)!important}
+.payment-note-modal .payment-note-pdf:disabled{opacity:.65;cursor:wait}
+.gsd-expcol-modal{font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif!important}
+.gsd-expcol-modal .expcol-table tbody tr{opacity:1!important}
+.gsd-expcol-modal .expcol-table th,.gsd-expcol-modal .expcol-table td{border-color:#d3dacf!important}
+.gsd-expcol-modal .expcol-table th.grp-pay,.gsd-expcol-modal .expcol-table td.grp-pay,.gsd-expcol-modal .expcol-table td.grp-pay:has(>span.ec-cell){background:#fdecea!important}
+.gsd-expcol-modal .expcol-table th.grp-col,.gsd-expcol-modal .expcol-table td.grp-col,.gsd-expcol-modal .expcol-table td.grp-col:has(>span.ec-cell){background:#eaf7ef!important}
+.gsd-expcol-modal .expcol-table th.grp-fb,.gsd-expcol-modal .expcol-table td.grp-fb,.gsd-expcol-modal .expcol-table td.grp-fb:has(>span.ec-cell){background:#eef1f7!important}
+.gsd-expcol-modal .expcol-table th.grp-dn,.gsd-expcol-modal .expcol-table td.grp-dn,.gsd-expcol-modal .expcol-table td.grp-dn:has(>span.ec-cell){background:#fdf3e7!important}
+.gsd-expcol-modal .expcol-table th.grp-inv,.gsd-expcol-modal .expcol-table td.grp-inv,.gsd-expcol-modal .expcol-table td.grp-inv:has(>span.ec-cell){background:#e9f5ee!important}
+.gsd-expcol-modal .expcol-table th.grp-dr,.gsd-expcol-modal .expcol-table td.grp-dr,.gsd-expcol-modal .expcol-table td.grp-dr:has(>span.ec-cell){background:#eef1f7!important}
+.gsd-expcol-modal .expcol-table td.ec-white,.gsd-expcol-modal .expcol-table td.ec-white:has(>span.ec-cell){background:#fff!important}
+.gsd-expcol-modal .expcol-table .ec-cell{color:#33413b!important;opacity:1!important}
+.gsd-expcol-modal .expcol-table .ec-sumrow th{background:#fff!important;border-color:transparent!important}
+.gsd-expcol-modal .expcol-table .ec-sumrow th.pcheck{background:#fff!important}
+.shipment-notes-overlay{z-index:780;background:rgba(10,30,18,.42)}
+.shipment-notes-modal{position:relative;box-sizing:border-box;width:min(620px,92vw);padding:42px 20px 20px;border-radius:10px;background:#fff;box-shadow:0 20px 55px rgba(10,35,23,.28)}
+.shipment-notes-close{position:absolute;top:10px;right:12px;display:flex;width:25px;height:25px;align-items:center;justify-content:center;border:0;border-radius:50%;background:#c0392b;color:#fff;font:800 19px/1 Arial,sans-serif;cursor:pointer}
+.shipment-notes-close:hover{background:#a93226}
+.shipment-notes-modal textarea{display:block;box-sizing:border-box;width:100%;min-height:190px;resize:vertical;border:1px solid #cbd7d0;border-radius:8px;background:#fff;padding:12px;color:#26312b;font:13px/1.5 var(--sans,'Geist',sans-serif);outline:none}
+.shipment-notes-modal textarea:focus{border-color:#008f4c;box-shadow:0 0 0 2px rgba(0,143,76,.12)}
+.do-info-actions .clear{background:#64748b;color:#fff}.do-info-actions button:disabled{filter:saturate(.45);opacity:.45;cursor:not-allowed}
 </style>
 <style>
 .booking-detail-modal{box-sizing:border-box}.booking-detail-row{grid-template-columns:104px minmax(0,1fr) 36px 24px;column-gap:12px}.booking-doc-wrap{display:flex;align-items:flex-start;gap:16px;margin-bottom:10px}.booking-add-doc{flex:0 0 auto;min-width:88px;padding:0 14px}.booking-doc-list{display:flex;min-width:0;flex:1;flex-direction:column;gap:10px}.booking-detail-row.booking-doc-row{grid-template-columns:minmax(0,1fr) 36px 24px;column-gap:12px;margin:0;padding:0;border:0}.booking-detail-row.booking-doc-row.has-remove{grid-template-columns:minmax(0,1fr) 36px 24px 24px}.booking-remove{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border:0;border-radius:50%;background:#c0392b;color:#fff;font-size:15px;font-weight:800;line-height:1;cursor:pointer}.booking-remove:hover{background:#a23227}.booking-icon,.booking-eye{display:inline-flex;align-items:center;justify-content:center;padding:0}.booking-icon{width:36px;height:36px}.booking-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.booking-eye{width:24px;height:24px;color:#0f4c81}.booking-eye svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.booking-eye:disabled{color:#9aa6a1}
@@ -20305,11 +20876,18 @@ onBeforeUnmount(() => {
 .an-detail-toolbar { display: flex; min-height: 54px; box-sizing: border-box; align-items: center; gap: 14px; border-bottom: 1px solid #dbe4df; padding: 9px 52px 9px 18px; background: #fafcfb; }
 .an-detail-toolbar > label { display: flex; align-items: center; gap: 8px; color: #59655f; font-size: 12px; font-weight: 700; }
 .an-detail-toolbar select { width: 238px; height: 32px; border: 1px solid #c8d5cf; border-radius: 6px; background: #fff; padding: 0 9px; color: #33413b; font-size: 12px; font-weight: 400; }
-.an-detail-toolbar > div { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-.an-detail-toolbar .wb-modal-btn { min-width: 58px; min-height: 32px; padding: 6px 11px; font-size: 11.5px; }
-.an-detail-toolbar .export { border-color: #237bdd; background: #237bdd; color: #fff; }
-.an-detail-toolbar .send { min-width: 112px; border-color: #009457; background: #009457; color: #fff; }
-.an-detail-toolbar .wb-modal-btn:disabled { cursor: default; filter: saturate(.42) brightness(.78); opacity: .72; }
+.an-detail-toolbar-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.an-detail-toolbar .wb-modal-btn { min-width: 58px; min-height: 32px; height:32px; border-radius:7px; padding: 6px 13px; font-size: 12px; font-weight:700; transition:background-color .16s ease,border-color .16s ease,filter .16s ease,opacity .16s ease; }
+.an-detail-toolbar .primary:not(:disabled) { border-color:#009457; background:#009457; color:#fff; }
+.an-detail-toolbar .primary:not(:disabled):hover { border-color:#007f4a; background:#007f4a; }
+.an-detail-toolbar .edit:not(:disabled) { border-color:#d97706; background:#d97706; color:#fff; }
+.an-detail-toolbar .edit:not(:disabled):hover { border-color:#b96104; background:#b96104; }
+.an-detail-toolbar .export:not(:disabled) { border-color: #1f7ae0; background: #1f7ae0; color: #fff; }
+.an-detail-toolbar .export:not(:disabled):hover { border-color:#1768c4; background:#1768c4; }
+.an-detail-toolbar .send { min-width: 112px; }
+.an-detail-toolbar .send:not(:disabled) { border-color: #009457; background: #009457; color: #fff; }
+.an-detail-toolbar .send:not(:disabled):hover { border-color:#007f4a; background:#007f4a; }
+.an-detail-toolbar .wb-modal-btn:disabled { cursor:not-allowed; filter:saturate(.48); opacity:.56; }
 .an-detail-scroll { max-height: calc(100vh - 94px); overflow: auto; padding: 18px 22px 24px; }
 .an-detail-sheet { max-width: 824px; margin: 0 auto; color: #1f2a26; font-size: 13px; font-weight: 400; }
 .an-detail-letterhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 16px; border-bottom: 2px solid #16406e; padding: 0 34px 10px 0; }
@@ -20327,6 +20905,7 @@ onBeforeUnmount(() => {
 .an-detail-description > span { color: #555; font-size: 10.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
 .an-detail-description textarea { box-sizing: border-box; width: 100%; min-height: 58px; border: 1px solid #c9d3cf; border-radius: 7px; background: #f1f5f4; padding: 7px 9px; color: #46524d; font: inherit; font-size: 13px; outline: none; resize: vertical; }
 .an-container-table .an-action-column { width: 30px; padding: 3px; }
+.an-container-table td:not(:first-child):not(.an-action-column){padding:0}
 .an-detail-section-ref { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .an-refbox { display: flex; align-items: center; gap: 6px; color: #59655f; font-size: 10.5px; font-weight: 700; }
 .an-ref-search { position: relative; display: inline-flex; }
@@ -20341,12 +20920,18 @@ onBeforeUnmount(() => {
 .an-refbox button:disabled { background: #dfe5e2; cursor: default; }
 .an-detail-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12px; }.an-detail-table th,.an-detail-table td { border: 1px solid #c9d3cf; padding: 6px; text-align: center; font-weight: 400; }.an-detail-table th { background: #eef2f7; color: #333; font-size: 11px; font-weight: 700; }.an-detail-table th:first-child { width: 28px; }.an-detail-table .empty { height: 34px; color: #9aa6a1; font-style: italic; }
 .an-detail-table input,.an-detail-table select { width: 100%; min-width: 0; box-sizing: border-box; border: 0; border-radius: 0; background: transparent; padding: 3px; color: #33413b; font: inherit; text-align: center; outline: none; }
-.an-detail-table input:disabled,.an-detail-table select:disabled { color: #46524d; opacity: 1; }
+.an-container-table input,.an-container-table select{display:block;width:100%;height:100%;min-height:32px;border:0!important;border-radius:0!important;margin:0;padding:6px 5px;box-shadow:none!important}
+.an-container-table input:not(:disabled),.an-container-table select:not(:disabled){background:#fff;color:#1f2a26}
+.an-container-table input:not(:disabled):focus,.an-container-table select:not(:disabled):focus{box-shadow:inset 0 0 0 2px #00c566}
+.an-container-table input:disabled,.an-container-table select:disabled { background:#edf1ef; color:#87918c; opacity:1; cursor:not-allowed; }
+.an-detail-table:not(.an-container-table) input:disabled,.an-detail-table:not(.an-container-table) select:disabled { color: #46524d; opacity: 1; }
 .an-detail-table .an-total-label { text-align: right; font-weight: 700; }.an-detail-table .an-total-value { text-align: right; font-weight: 700; }
 .an-add-row { margin-top: 8px; border: 0; border-radius: 6px; background: #009457; padding: 7px 12px; color: #fff; font-size: 11.5px; font-weight: 700; cursor: pointer; }
 .an-row-remove { display: inline-grid; width: 21px; height: 21px; place-items: center; border: 0; border-radius: 50%; background: #c9362b; padding: 0; color: #fff; font-size: 16px; line-height: 1; cursor: pointer; }
 .an-detail-table th:last-child:empty,.an-detail-table td:has(.an-row-remove) { display:none; }
-.an-linked-field { background:#eef2f1 !important; color:#66736d !important; }
+.an-linked-field { background:#fff !important; color:#46524d !important; }
+.an-payment-contact textarea{min-height:72px!important;background:#fff!important;color:#46524d!important;resize:vertical!important;overflow:auto;line-height:1.35}
+.an-payment-contact textarea[readonly]{background:#fff!important;opacity:1}
 .an-detail-sign { width: 300px; margin: 26px 0 0 auto; color: #555; text-align: center; font-size: 11px; font-weight: 700; }.an-detail-sign b { display: block; margin-top: 4px; color: #1f2a26; font-size: 12px; }.an-detail-sign strong { display: block; margin-top: 28px; color: #1f2a26; font-size: 12px; }.an-detail-sign em { display:block; margin-top:5px; }.an-sign-line { display:block; margin-top:8px; border-top:1px solid #333; }
 @media (max-width:700px) { .an-detail-g2,.an-detail-g3 { grid-template-columns: 1fr; }.an-detail-letterhead { flex-direction: column; }.an-detail-heading { text-align: left; }.an-detail-table { min-width: 760px; } }
 
@@ -20472,7 +21057,12 @@ onBeforeUnmount(() => {
 .ops-ms-table .ops-client:hover,.ops-ms-table .ops-client:hover b,.ops-ms-table .clival-btn:hover,.ops-ms-table .clival-btn:hover b,.ops-ms-table .ops-pill.linked-value:hover,.ops-ms-table .gsd-btn.linked-value:hover,.ops-ms-table .ops-pill.document-value:hover,.ops-ms-table .gsd-btn.document-value:hover{color:#26312b!important;text-decoration:underline!important;text-underline-offset:2px}
 .ops-ms-table .ops-client:disabled:hover,.ops-ms-table .ops-client:disabled:hover b,.ops-ms-table .clival-btn:disabled:hover,.ops-ms-table .clival-btn:disabled:hover b{cursor:default;text-decoration:none!important}
 /* RefLastBiz results: roomy rows, reference content only (no timestamp column). */
-.gsd-payment-modal .pr-searchinp{height:32px}
+.gsd-payment-modal .pr-searchinp{box-sizing:border-box;height:32px;border:2px solid #718078;background:#fff}
+.gsd-payment-modal .pr-searchinp:hover{border-color:#506158}
+.gsd-payment-modal .pr-searchinp:focus{border-color:#008f4c;box-shadow:0 0 0 2px rgba(0,143,76,.14)}
+.an-refbox input{border:2px solid #718078!important;outline:none}
+.an-refbox input:hover{border-color:#506158!important}
+.an-refbox input:focus{border-color:#008f4c!important;box-shadow:0 0 0 2px rgba(0,143,76,.14)}
 .gsd-payment-modal .pr-searchresults{min-width:360px;max-width:460px;max-height:360px}
 .gsd-payment-modal button.pr-sr-item{min-height:52px;padding:10px 14px;align-items:center;justify-content:flex-start}
 .gsd-payment-modal .pr-sr-info{width:100%;font-size:12px;line-height:1.55}
@@ -20490,7 +21080,7 @@ onBeforeUnmount(() => {
 .ops-ms-table td.time-cell,.ops-ms-table td.time-cell.locked,.sheet-body td.time-cell,.sheet-body td.time-cell.locked{background:inherit!important;color:#26312b!important;font-weight:400!important}
 .ops-ms-table td.time-cell .ops-textcell,.sheet-body td.time-cell .ops-textcell{color:#26312b!important;font-weight:400!important}
 /* Keep date typography consistent across plain, editable, delayed and linked date states. */
-.ops-ms-table td.date-cell,.ops-ms-table td.date-cell .ops-textcell,.ops-ms-table td.date-cell .ops-edit-input,.ops-ms-table td.date-cell .ops-ata-btn,.ops-ms-table td.date-cell .ops-locked-date-text{font-family:inherit!important;font-size:12px!important;font-weight:400!important;line-height:1.35!important;font-variant-numeric:tabular-nums}
+.ops-ms-table td.date-cell,.ops-ms-table td.date-cell .ops-textcell,.ops-ms-table td.date-cell .ops-edit-input,.ops-ms-table td.date-cell .ops-ata-btn,.ops-ms-table td.date-cell .ops-schedule-date,.ops-ms-table td.date-cell .ops-locked-date-text,.sheet-body td.date-cell .ops-schedule-date{font-family:inherit!important;font-size:12px!important;font-weight:400!important;line-height:1.35!important;font-variant-numeric:tabular-nums}
 .gsd-expcol-modal col.ec-col-status{width:150px!important;min-width:150px!important}
 .gsd-expcol-modal col.ec-col-last-feedback{width:190px!important;min-width:190px!important}
 .gsd-expcol-modal .ec-statussel{width:100%!important;min-width:148px!important}
