@@ -316,7 +316,7 @@ const FLAT_COLS: Partial<Record<OpsType, Partial<Record<OpsDept, string[]>>>> = 
   },
   DAP: {
     GSD: ['TIME', 'EXTRA SERVICE', 'JOB NO#', 'ICD OPS', 'CLIENT', 'DEALT INFO', 'NOTICE', 'DAP+', 'SENT ICD', 'ACTION'],
-    ICD: ['TIME', 'BU', 'DEALT INFO', 'EXTRA SERVICE', 'PAYMENT REQUEST', 'NOTICE', 'SALES', 'JOB NO#', 'ICD OPS', 'DAP+', 'CLIENT', 'SHIPPER', 'CNEE', 'ORIGIN AGENT', 'DESTINATION AGENT', 'LINER', 'REF#', 'HBL NO#', 'MBL NO#', 'VOLUME', 'ROUTE', 'VESSEL/VOYAGE', 'ATD', 'ETA', 'PRE-ALERT CONFIRMATION', 'CONT/SEAL INFO', 'DELIVERY DETAIL', 'MANIFEST SUBMIT', 'ARRIVAL NOTICE SENDING', 'ATA', 'DO VALIDITY', 'PICKUP/RETURN STATUS', 'ACTION'],
+    ICD: ['TIME', 'BU', 'DEALT INFO', 'EXTRA SERVICE', 'PAYMENT REQUEST', 'NOTICE', 'SALES', 'JOB NO#', 'ICD OPS', 'DAP+', 'CLIENT', 'SHIPPER', 'CNEE', 'ORIGIN AGENT', 'DESTINATION AGENT', 'LINER', 'REF#', 'HBL NO#', 'MBL NO#', 'VOLUME', 'ROUTE', 'VESSEL/VOYAGE', 'ATD', 'ETA', 'PRE-ALERT CONFIRMATION', 'CONT/SEAL INFO', 'DELIVERY DETAIL', 'MANIFEST SUBMIT', 'ARRIVAL NOTICE SENDING', 'ATA', 'DO VALIDITY', 'PICKUP STATUS', 'ACTION'],
     TCD: ['TIME', 'BU', 'DEALT INFO', 'PAYMENT REQUEST', 'NOTICE', 'SALES', 'ICD OPS', 'TCD OPS', 'CLIENT', 'SHIPPER', 'CNEE', 'DESTINATION AGENT', 'LINER', 'REF#', 'HBL NO#', 'MBL NO#', 'VOLUME', 'ROUTE', 'VESSEL/VOYAGE', 'ATD', 'ATA', 'DELIVERY DETAIL', 'DO VALIDITY', 'TRUCK & CONT/SEAL INFO', 'ACTION'],
     FCD: ['TIME', 'BU', 'DEALT INFO', 'EXPENSE/COLLECT LIST', 'NOTICE', 'SALES', 'ICD OPS', 'DAP+', 'CLIENT', 'SHIPPER', 'CNEE', 'ORIGIN AGENT', 'DESTINATION AGENT', 'LINER', 'REF#', 'HBL NO#', 'MBL NO#', 'ATD', 'ATA', 'VOLUME', 'ROUTE', 'VESSEL/VOYAGE', 'TRUCK & CONT/SEAL INFO', 'ACTION'],
   },
@@ -383,13 +383,19 @@ const opsFlatHeader = (header: string[]): string[] => {
 
 // Lookup the mockup header for a (base, mode, dept) leaf.
 function rawOpsHeaderFor(base: OpsBase, mode: OpsMode, dept: OpsDept, type?: OpsType | null): string[] {
+  // Destination FCD follows the same operational schema as TCD for
+  // DAP/DDU/DDP. Keeping one source schema also lets linked TCD rows align
+  // field-for-field when they are mirrored into FCD.
+  if (dept === 'FCD' && ['DAP', 'DDU', 'DDP'].includes(String(type || '').toUpperCase())) {
+    return rawOpsHeaderFor(base, mode, 'TCD', type)
+  }
   if (mode === 'FCL' && ['DDU', 'DDP'].includes(String(type || '').toUpperCase()) && dept === 'GSD') {
     const flow = `${String(type).toUpperCase()}+`
     return ['TIME', 'EXTRA SERVICE', 'JOB NO#', 'ICD OPS', 'CLIENT', 'DEALT INFO', 'NOTICE', flow, 'SENT ICD', 'ACTION']
   }
   if (mode === 'FCL' && ['DDU', 'DDP'].includes(String(type || '').toUpperCase()) && dept === 'ICD') {
     const flow = `${String(type).toUpperCase()}+`
-    return ['TIME', 'BU', 'DEALT INFO', 'EXTRA SERVICE', 'PAYMENT REQUEST', 'NOTICE', 'SALES', 'JOB NO#', 'ICD OPS', flow, 'CLIENT', 'SHIPPER', 'CNEE', 'ORIGIN AGENT', 'DESTINATION AGENT', 'LINER', 'REF#', 'HBL NO#', 'MBL NO#', 'VOLUME', 'ROUTE', 'VESSEL/VOYAGE', 'ATD', 'ETA', 'PRE-ALERT CONFIRMATION', 'CONT/SEAL INFO', 'DELIVERY DETAIL', 'MANIFEST SUBMIT', 'ARRIVAL NOTICE SENDING', 'ATA', 'DO VALIDITY', 'PICKUP/RETURN STATUS', 'ACTION']
+    return ['TIME', 'BU', 'DEALT INFO', 'EXTRA SERVICE', 'PAYMENT REQUEST', 'NOTICE', 'SALES', 'JOB NO#', 'ICD OPS', flow, 'CLIENT', 'SHIPPER', 'CNEE', 'ORIGIN AGENT', 'DESTINATION AGENT', 'LINER', 'REF#', 'HBL NO#', 'MBL NO#', 'VOLUME', 'ROUTE', 'VESSEL/VOYAGE', 'ATD', 'ETA', 'PRE-ALERT CONFIRMATION', 'CONT/SEAL INFO', 'DELIVERY DETAIL', 'MANIFEST SUBMIT', 'ARRIVAL NOTICE SENDING', 'ATA', 'DO VALIDITY', 'PICKUP STATUS', 'ACTION']
   }
   if (mode === 'FCL' && ['DDU', 'DDP'].includes(String(type || '').toUpperCase()) && dept === 'CCD') {
     const notice = String(type).toUpperCase() === 'DDU' ? ['NOTICE'] : []
@@ -446,16 +452,14 @@ function rawOpsHeaderFor(base: OpsBase, mode: OpsMode, dept: OpsDept, type?: Ops
 
 export function opsHeaderFor(base: OpsBase, mode: OpsMode, dept: OpsDept, type?: OpsType | null): string[] {
   const rawHeader = rawOpsHeaderFor(base, mode, dept, type)
-  // DO VALIDITY is now a shared DO document/date form in the import operation
-  // tabs. Keep the rename at the schema boundary so every mode uses one label.
-  const renamedHeader = ['ICD', 'TCD'].includes(String(dept || '').toUpperCase()) && ['DO', 'DAP', 'DDU', 'DDP'].includes(String(type || '').toUpperCase())
+  const normalizedType = String(type || '').toUpperCase()
+  const mirrorsTcdSchema = String(dept || '').toUpperCase() === 'FCD' &&
+    ['DAP', 'DDU', 'DDP'].includes(normalizedType)
+  // DAP/DDU/DDP use one shared DO INFORMATION form. The date is stored inside
+  // DO INFO, so a second DO VALIDITY column must not be generated downstream.
+  const visibleHeader = ['DAP', 'DDU', 'DDP'].includes(normalizedType)
     ? rawHeader.map((label) => label === 'DO VALIDITY' ? 'DO INFO' : label)
     : rawHeader
-  // DO / ICD no longer displays the document popup column. Keep DO INFO in
-  // DAP/DDU/DDP and in every other department where it is still required.
-  const visibleHeader = String(type || '').toUpperCase() === 'DO' && String(dept || '').toUpperCase() === 'ICD'
-    ? renamedHeader.filter((label) => label !== 'DO INFO')
-    : renamedHeader
   // Downstream worksheets own one assignee column. GSD additionally shows the
   // next department's linked assignee beside its own GSD column.
   const departmentOpsPattern = /^(?:(?:GSD|ECD|ICD|TCD|CCD|DCD|FCD|QCD) OPS|OPS[12]?)$/
@@ -484,14 +488,14 @@ export function opsHeaderFor(base: OpsBase, mode: OpsMode, dept: OpsDept, type?:
         return [...withoutFlow.slice(0, insertAt), 'EXW+', ...withoutFlow.slice(insertAt)]
       })()
     : header
-  const headerWithJobNo = ['TCD', 'CCD'].includes(deptUpper) && !orderedHeader.includes('JOB NO#')
+  const headerWithJobNo = (['TCD', 'CCD'].includes(deptUpper) || mirrorsTcdSchema) && !orderedHeader.includes('JOB NO#')
     ? (() => {
         const salesColumn = orderedHeader.findIndex((label) => label === 'SALES')
         const insertAt = salesColumn >= 0 ? salesColumn + 1 : Math.max(0, orderedHeader.findIndex((label) => label === 'TIME') + 1)
         return [...orderedHeader.slice(0, insertAt), 'JOB NO#', ...orderedHeader.slice(insertAt)]
       })()
     : orderedHeader
-  const headerWithMode = !['TCD', 'CCD', 'DCD'].includes(deptUpper) || headerWithJobNo.includes('MODE')
+  const headerWithMode = (!['TCD', 'CCD', 'DCD'].includes(deptUpper) && !mirrorsTcdSchema) || headerWithJobNo.includes('MODE')
     ? headerWithJobNo
     : (() => {
         const timeColumn = headerWithJobNo.findIndex((label) => label === 'TIME')

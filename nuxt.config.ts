@@ -1,3 +1,8 @@
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const adminRootDir = fileURLToPath(new URL('.', import.meta.url))
+
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   ssr: false,
@@ -31,6 +36,7 @@ export default defineNuxtConfig({
       apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || '',
       apiPort: process.env.NUXT_PUBLIC_API_PORT || '5001',
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || '',
+      epodApiViaProxy: true,
     },
   },
 
@@ -77,5 +83,18 @@ export default defineNuxtConfig({
 
   nitro: {
     preset: 'node-server',
+  },
+
+  hooks: {
+    'pages:extend'(pages) {
+      // ePOD links are generated from the Admin workbook. Expose the public
+      // signing page here as well so the link works even when the customer
+      // website dev server is not running separately.
+      pages.push({
+        name: 'public-epod-token',
+        path: '/epod/:token',
+        file: resolve(adminRootDir, '../SHOPTRANS/pages/epod/[token].vue'),
+      })
+    },
   },
 })

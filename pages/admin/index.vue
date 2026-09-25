@@ -8089,6 +8089,14 @@ const setPage = async (page: string) => {
   state.pageIndex = 0
   if (page === 'fx') state.pageSize = 10
   state.sortKey = ''
+  if (page === 'sales_marketing') {
+    // The initial Operations view intentionally skips Sales & Marketing
+    // reference requests. Load them when the user actually enters Sales so
+    // Ward/Commune, PostalCode and Port dropdowns are populated without a
+    // full page refresh.
+    await Promise.all([loadRecords(), loadSalesListOptions(), loadSalesFeeReferenceRecords()])
+    return
+  }
   await loadRecords()
 }
 const navigateOpsLeaf = async (leafKey: string) => {

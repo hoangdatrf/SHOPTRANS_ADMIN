@@ -245,12 +245,11 @@
                   <span v-else-if="isClientLinkCell(rowIndex, columnIndex)" class="ops-textcell"></span>
                   <button
                     v-else-if="isDoInfoCell(rowIndex, columnIndex)"
-                    v-show="!hideLockedGsdAddAction(rowIndex, !doInfoDate(rows[rowIndex]?.[columnIndex]))"
+                    v-show="!hideLockedGsdAddAction(rowIndex, !doInfoHasValue(rows[rowIndex]?.[columnIndex]))"
                     class="ops-pill"
                     type="button"
-                    :class="{ has: !!doInfoDate(rows[rowIndex]?.[columnIndex]), 'document-value': !!doInfoDate(rows[rowIndex]?.[columnIndex]) }"
                     @click="openDoInfoModal(rowIndex, columnIndex)"
-                  >{{ doInfoDate(rows[rowIndex]?.[columnIndex]) || 'ADD+' }}</button>
+                  >{{ doInfoHasValue(rows[rowIndex]?.[columnIndex]) ? 'DETAIL' : 'ADD+' }}</button>
                   <button
                     v-else-if="isGsdActionButtonCell(rowIndex, columnIndex)"
                     v-show="['EXTRA SERVICE', 'NOTES'].includes(normalizedHeaderLabel(columnIndex)) || !hideLockedGsdAddAction(rowIndex, gsdActionButtonText(rowIndex, columnIndex) === 'ADD+')"
@@ -679,11 +678,10 @@
                     <button
                       v-else-if="isDoInfoCell(rowIndex, columnIndex)"
                       class="gsd-btn"
-                      :class="{ 'document-value': !!doInfoDate(rows[rowIndex]?.[columnIndex]) }"
                       type="button"
                       @mousedown.stop
                       @click.stop="openDoInfoModal(rowIndex, columnIndex)"
-                    >{{ doInfoDate(rows[rowIndex]?.[columnIndex]) || 'ADD+' }}</button>
+                    >{{ doInfoHasValue(rows[rowIndex]?.[columnIndex]) ? 'DETAIL' : 'ADD+' }}</button>
                     <button
                       v-else-if="isGsdActionButtonCell(rowIndex, columnIndex)"
                       class="gsd-btn"
@@ -788,7 +786,7 @@
       </template>
       <button v-else class="ddfoot ddedit" type="button" @click="dropdownPopup.mode = 'edit'">Edit</button>
     </div>
-    <div v-if="datePopup.open" class="datepop on" :class="{ 'modal-datepop': !!datePopup.cutoffField || !!nativePickerInput }" :style="{ left: `${datePopup.left}px`, top: `${datePopup.top}px` }">
+    <div v-if="datePopup.open" class="datepop on" :class="{ 'modal-datepop': !!datePopup.cutoffField || !!nativePickerInput || datePopup.pickupReturnIndex >= 0 }" :style="{ left: `${datePopup.left}px`, top: `${datePopup.top}px` }">
       <div class="dp-head">
         <button type="button" @click="shiftDateMonth(-1)">‹</button>
         <strong>{{ datePopupMonthLabel }}</strong>
@@ -897,6 +895,10 @@
           <input v-model="doInfoModal.mblDate" type="date" :disabled="!doInfoModal.editing || !canManageDoInfo()" />
           <button class="gsd-pre-icon upload do-info-upload" :class="{ has: !!doInfoModal.mblFile.name }" type="button" :disabled="!doInfoModal.editing || !canManageDoInfo()" :title="doInfoModal.mblFile.name || 'Upload MBL DO'" @click="chooseDoInfoFile('mbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg></button>
           <button v-if="doInfoModal.mblFile.dataUrl" class="gsd-pre-icon eye on do-info-view" type="button" title="View MBL DO" @click="viewDoInfoFile('mbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          <div class="do-info-validity">
+            <label for="do-info-validity">Validity:</label>
+            <input id="do-info-validity" v-model="doInfoModal.validity" type="date" :disabled="!doInfoModal.editing || !canManageDoInfo()" />
+          </div>
         </div>
         <div class="do-info-row">
           <label>HBL DO:</label>
@@ -1513,7 +1515,7 @@
                   list="gsd-vessel-options"
                   type="text"
                   autocomplete="off"
-                  :disabled="!gsdModal.editing"
+                  :disabled="!gsdModal.editing || vesselAddInProgress()"
                   @input="updateVesselSearch"
                 />
               </label>
@@ -1524,12 +1526,12 @@
               <label>
                 <span>Voyage number:</span>
                 <input
-                  v-model.trim="gsdModal.form.voyage"
+                  v-model="gsdModal.form.voyage"
                   class="gsd-vessel-input"
                   type="text"
                   autocomplete="off"
-                  :disabled="!gsdModal.editing"
-                  @input="uppercaseVesselField('voyage')"
+                  :disabled="!gsdModal.editing || vesselAddInProgress()"
+                  @blur="uppercaseVesselField('voyage')"
                   @keydown.enter.prevent="selectVessel"
                 />
               </label>
@@ -1540,9 +1542,9 @@
             <div v-if="isExwEcdVesselDelayModal()" class="gsd-vdelay">
               <label class="gsd-vdtog"><input v-model="gsdModal.form.transhipmentToggle" type="checkbox" @change="toggleVesselTranshipment" /> Transhipment</label>
               <div v-if="gsdModal.form.transhipmentToggle" class="gsd-vdbox">
-                <label><span>ETD:</span><input v-model="gsdModal.form.tsEtd" type="date" /></label>
-                <label><span>ETA:</span><input v-model="gsdModal.form.tsEta" type="date" /></label>
-                <label><span>Place of T/S:</span><input v-model.trim="gsdModal.form.tsPlace" type="text" list="gsd-transhipment-places" autocomplete="off" /></label>
+                <label><span>ETD:</span><input v-model="gsdModal.form.tsEtd" type="date" :disabled="vesselTsDetailsLocked()" /></label>
+                <label><span>ETA:</span><input v-model="gsdModal.form.tsEta" type="date" :disabled="vesselTsDetailsLocked()" /></label>
+                <label><span>Place of T/S:</span><input v-model.trim="gsdModal.form.tsPlace" type="text" list="gsd-transhipment-places" autocomplete="off" :disabled="vesselTsDetailsLocked()" /></label>
                 <datalist id="gsd-transhipment-places"><option v-for="place in transhipmentPlaceOptions" :key="place" :value="place" /></datalist>
               </div>
               <label class="gsd-vdtog" :class="{ disabled: isExwEcdVesselControlsDisabled() }"><input v-model="gsdModal.form.delayToggle" type="checkbox" :disabled="isExwEcdVesselControlsDisabled()" @change="toggleVesselDelay" /> Vessel Delay</label>
@@ -1555,7 +1557,7 @@
             </div>
             <div class="gsd-vessel-actions">
               <button v-if="isExwEcdVesselDelayModal()" class="wb-modal-btn primary vessel-update" type="button" :disabled="!vesselDelayCanUpdate()" @click="updateVesselDelay">Update</button>
-              <button v-if="gsdModal.editing" class="wb-modal-btn vessel-add-new" type="button" @click="showVesselAdd">Add New</button>
+              <button v-if="gsdModal.editing" class="wb-modal-btn vessel-add-new" type="button" :disabled="vesselAddInProgress()" @click="showVesselAdd">Add New</button>
               <button v-if="gsdModal.editing" class="wb-modal-btn primary orange vessel-select" type="button" :disabled="!vesselCanSelect()" @click="selectVessel">Select</button>
             </div>
             <div v-if="gsdModal.form.addView" class="gsd-vessel-add">
@@ -1572,7 +1574,7 @@
               <div class="gsd-vessel-hint" :class="{ ok: gsdModal.form.addLocked }">{{ gsdModal.form.hint || '' }}</div>
               <div class="gsd-vessel-actions add">
                 <button class="wb-modal-btn edit" type="button" :disabled="!gsdModal.form.addLocked" @click="editVesselAdd">Edit</button>
-                <button class="wb-modal-btn primary" type="button" @click="saveVesselNew">Save</button>
+                <button class="wb-modal-btn primary" type="button" :disabled="!!gsdModal.form.vesselSaving || !!gsdModal.form.addLocked" @click="saveVesselNew">{{ gsdModal.form.vesselSaving ? 'Saving...' : 'Save' }}</button>
               </div>
             </div>
             <div v-if="isExwEcdVesselDelayModal() && vesselEcdHistory().length" class="gsd-vhist-wrap ecd">
@@ -1778,7 +1780,7 @@
             <div class="gsd-truck-table-wrap">
               <table class="gsd-truck-table">
                 <colgroup v-if="isLclTruckingDetailModal() && isDapFcdSheet()">
-                  <col style="width:44px" />
+                  <col v-if="!isReadonlyTruckContModal()" style="width:44px" />
                   <col style="width:56px" />
                   <col style="width:104px" />
                   <col style="width:260px" />
@@ -1789,7 +1791,7 @@
                   <col style="width:158px" />
                 </colgroup>
                 <colgroup v-else-if="usesTcdTruckStatusTemplate()">
-                  <col style="width:42px" />
+                  <col v-if="!isReadonlyTruckContModal()" style="width:42px" />
                   <col style="width:52px" />
                   <col style="width:78px" />
                   <col style="width:134px" />
@@ -1830,7 +1832,7 @@
                 </colgroup>
                 <thead>
                   <tr v-if="usesTcdTruckStatusTemplate() || isLclTruckingDetailModal()">
-                    <th class="tk-all"><input type="checkbox" aria-label="Select all truck rows" :checked="allTruckContRowsSelected()" :indeterminate.prop="someTruckContRowsSelected()" :disabled="isReadonlyTruckContModal() || gsdModal.editing || !truckContRecords().length" @change="toggleAllTruckContRows" /></th>
+                    <th v-if="!isReadonlyTruckContModal()" class="tk-all"><input type="checkbox" aria-label="Select all truck rows" :checked="allTruckContRowsSelected()" :indeterminate.prop="someTruckContRowsSelected()" :disabled="gsdModal.editing || !truckContRecords().length" @change="toggleAllTruckContRows" /></th>
                     <th>ORDER</th>
                     <th>PU NO#</th>
                     <th><span class="gsd-truck-heading"><span>Truck Comp</span><button v-if="!isReadonlyTruckContModal()" class="gsd-truck-plus" type="button" @click.stop="addTruckCompanyFromModal">+</button></span></th>
@@ -1867,7 +1869,7 @@
                 </thead>
                 <tbody>
                   <tr v-for="(record, index) in truckContRecords()" :key="record.id || index" :class="{ 'truck-row-editing': truckContRowCanEdit(record) }">
-                    <td v-if="!isReadonlyTruckContModal() || isLclTruckingDetailModal()" class="truck-select-cell"><input v-model="record.selected" type="checkbox" :disabled="isReadonlyTruckContModal() || gsdModal.editing" /></td>
+                    <td v-if="!isReadonlyTruckContModal()" class="truck-select-cell"><input v-model="record.selected" type="checkbox" :disabled="gsdModal.editing" /></td>
                     <td class="tk-order">{{ index + 1 }}</td>
                     <td><button class="gsd-pu-link" type="button" @click="openTruckPuDetail(index)">PU{{ String(index + 1).padStart(4, '0') }}</button></td>
                     <td class="truck-company-cell">
@@ -1927,8 +1929,8 @@
               </table>
             </div>
             <div v-if="!isReadonlyTruckContModal()" class="gsd-truck-foot">
-              <button class="wb-modal-btn slate" type="button" :disabled="!gsdModal.editing" @click="cancelTruckContEdit">Cancel</button>
-              <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing || !truckContIsDirty()" @click="saveTruckContDetails">Save</button>
+              <button class="wb-modal-btn slate" type="button" :disabled="!gsdModal.editing || truckDetailsSaving" @click="cancelTruckContEdit">Cancel</button>
+              <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing || !truckContIsDirty() || truckDetailsSaving" @click="saveTruckContDetails">{{ truckDetailsSaving ? 'Saving...' : 'Save' }}</button>
               <button v-if="isTcdTruckContModal()" class="wb-modal-btn primary send" type="button" :disabled="!truckDetailsCanSend()" @click="sendTruckDetailsToShipper">{{ truckDetailsSending ? 'Sending...' : 'Send to Shipper' }}</button>
             </div>
             <datalist id="gsd-truck-company-options">
@@ -1999,6 +2001,43 @@
                 </table>
               </div>
             </template>
+            <template v-else-if="isDestinationIcdPickupStatusModal()">
+              <div class="gsd-prs-table-wrap">
+                <table class="gsd-prs-table gsd-icd-pickup-status-table">
+                  <thead>
+                    <tr>
+                      <th>ORDER</th>
+                      <th>PU NO#</th>
+                      <th>Truck Comp</th>
+                      <th>Container No#</th>
+                      <th>ContType</th>
+                      <th>Seal No#</th>
+                      <th>Driver info</th>
+                      <th>Days after ATA</th>
+                      <th>Pickup Date</th>
+                      <th>Est. Arriving time</th>
+                      <th>Return Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(record, index) in pickupReturnRecords()" :key="record.id || index">
+                      <td class="prs-order">{{ index + 1 }}</td>
+                      <td><button class="gsd-pu-link" type="button" @click="openPickupReturnPuDetail(record, index)">{{ record.puNo || `PU${String(index + 1).padStart(4, '0')}` }}</button></td>
+                      <td class="prs-readonly">{{ record.truckCompany || '—' }}</td>
+                      <td class="prs-readonly">{{ record.containerNo || '—' }}</td>
+                      <td class="prs-readonly">{{ record.contType || '—' }}</td>
+                      <td class="prs-readonly">{{ record.sealNo || '—' }}</td>
+                      <td class="prs-readonly">{{ record.driverInfo || '—' }}</td>
+                      <td class="prs-days">{{ pickupReturnDaysAfterAta(record) }}</td>
+                      <td class="prs-readonly">{{ cutoffDateLabel(record.pickupDate) }}</td>
+                      <td class="prs-readonly">{{ record.arrivingTime || '—' }}</td>
+                      <td class="prs-readonly">{{ cutoffDateLabel(record.returnDate) }}</td>
+                    </tr>
+                    <tr v-if="!pickupReturnRecords().length"><td colspan="11" class="prs-empty">No truck data.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </template>
             <template v-else>
             <div class="gsd-prs-table-wrap">
               <table class="gsd-prs-table">
@@ -2045,9 +2084,9 @@
                     <td v-if="isDupTruckingStatusModal()" class="prs-readonly">{{ record.driverInfo || record.driverName || '' }}</td>
                     <td v-if="isDupTruckingStatusModal()"><input v-model="record.returnDate" class="prs-date" type="date" :disabled="!pickupReturnRowCanEdit(record)" /></td>
                     <td class="prs-days">{{ pickupReturnDaysAfterAta(record) }}</td>
-                    <td><input v-model="record.pickupDate" class="prs-date" type="date" :disabled="!pickupReturnRowCanEdit(record)" /></td>
+                    <td class="prs-date-cell"><button class="prs-date-field" type="button" :disabled="!pickupReturnRowCanEdit(record)" @click.stop="openPickupReturnDatePopup(index, 'pickupDate', $event)"><span>{{ cutoffDateLabel(record.pickupDate) }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button></td>
                     <td v-if="isDupTruckingStatusModal()" class="prs-readonly">{{ record.arrivingTime || record.estimatedArrivingTime || '' }}</td>
-                    <td v-if="!isLclPickupStatusModal() && !isDupTruckingStatusModal()"><input v-model="record.returnDate" class="prs-date" type="date" :disabled="!pickupReturnRowCanEdit(record)" /></td>
+                    <td v-if="!isLclPickupStatusModal() && !isDupTruckingStatusModal()" class="prs-date-cell"><button class="prs-date-field" type="button" :disabled="!pickupReturnRowCanEdit(record)" @click.stop="openPickupReturnDatePopup(index, 'returnDate', $event)"><span>{{ cutoffDateLabel(record.returnDate) }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button></td>
                     <td v-if="isDupTruckingStatusModal()" class="epodcell">
                       <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign })">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -2935,7 +2974,7 @@
           </template>
           <div v-else class="gsd-simple-head">
             <div class="gsd-simple-title">{{ gsdModal.title }}</div>
-            <button v-if="!isArrivalNoticeDetailModal()" class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="enableGsdModalEdit">Edit</button>
+            <button v-if="!isArrivalNoticeDetailModal() && !isReadonlyDownstreamDoInformation()" class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="enableGsdModalEdit">Edit</button>
           </div>
           <div v-if="gsdModal.kind === 'form' && !isArrivalNoticeModal() && !isPaymentRequestModal() && !isCutoffModal() && !isVolumeModal() && !isFreetimeModal() && !isRouteModal() && !isVesselModal() && !isPickupModal() && !isDoContSealModal() && !isTruckContModal() && !isPickupReturnStatusModal() && !isBillApprovalModal() && !isBillReleaseModal() && !isDoReleaseModal() && !isSiSubmitModal() && !isPreAlertConfirmationModal() && !isPreAlertModal() && !isClearanceDocsModal() && !isClearanceDetailsModal() && !isExpenseCollectModal()" class="gsd-form-grid">
             <div v-for="field in gsdModal.formFields" :key="field.key" class="gsd-form-item" :class="{ full: field.type === 'textarea' }">
@@ -2960,7 +2999,7 @@
         <div v-if="gsdModal.kind !== 'client' && gsdModal.kind !== 'reminder' && !isReadonlyDealtModal() && !isArrivalNoticeModal() && !isPaymentRequestModal() && !isCutoffModal() && !isVolumeModal() && !isFreetimeModal() && !isRouteModal() && !isVesselModal() && !isPickupModal() && !isDoContSealModal() && !isTruckContModal() && !isPickupReturnStatusModal() && !isBillApprovalModal() && !isBillReleaseModal() && !isDoReleaseModal() && !isSiSubmitModal() && !isPreAlertConfirmationModal() && !isPreAlertModal() && !isClearanceDocsModal() && !isClearanceDetailsModal() && !isExpenseCollectModal()" class="gsd-modal-actions">
           <button v-if="gsdModal.kind === 'dealt' && !gsdModal.editing && !isReadonlyDealtModal()" type="button" class="wb-modal-btn edit" @click="enableGsdModalEdit">Edit</button>
           <button type="button" class="wb-modal-btn" :class="gsdModal.kind === 'hbl' ? 'hbl-cancel' : 'slate'" @click="closeGsdModal">{{ gsdModal.kind === 'hbl' ? 'Cancel' : 'Close' }}</button>
-          <button v-if="gsdModal.kind !== 'dealt' || gsdModal.editing" type="button" class="wb-modal-btn primary" :disabled="!gsdModal.editing" @click="saveGsdModal">Save</button>
+          <button v-if="(gsdModal.kind !== 'dealt' || gsdModal.editing) && !isReadonlyDownstreamDoInformation()" type="button" class="wb-modal-btn primary" :disabled="!gsdModal.editing" @click="saveGsdModal">Save</button>
         </div>
       </div>
     </div>
@@ -3152,8 +3191,8 @@
           </div>
           <div v-for="(other, otherIndex) in preDocsData().others" :key="`pdc-other-${otherIndex}`" class="pdc-mock-row">
             <span>OTHER</span>
-            <input v-model.trim="other.name" class="pdc-mock-name" type="text" placeholder="docs name" :disabled="!preDocsModal.editing" />
-            <button class="pdc-mock-icon upload" :class="{ has: other.files.length }" type="button" :disabled="!preDocsModal.editing || !other.name.trim()" title="Upload" @click="choosePreDocsFile('other', otherIndex)"><svg viewBox="0 0 24 24"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg><b v-if="other.files.length">({{ other.files.length }})</b></button>
+            <input :value="preDocsOtherDraft(otherIndex, other.name)" class="pdc-mock-name" type="text" placeholder="docs name" :disabled="!preDocsModal.editing" @input="inputPreDocsOtherName(otherIndex, $event)" @blur="flushPreDocsOtherName(otherIndex)" />
+            <button class="pdc-mock-icon upload" :class="{ has: other.files.length }" type="button" :disabled="!preDocsModal.editing || !preDocsOtherDraft(otherIndex, other.name).trim()" title="Upload" @click="choosePreDocsFile('other', otherIndex)"><svg viewBox="0 0 24 24"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg><b v-if="other.files.length">({{ other.files.length }})</b></button>
             <button class="pdc-mock-icon eye" :class="{ on: other.files.length }" type="button" :disabled="!other.files.length" title="View" @click="viewPreDocsFiles(other.files)"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
           </div>
         </div>
@@ -3179,7 +3218,7 @@
             </div>
           </div>
           <div v-for="(o, oi) in preDocsData().others" :key="oi" class="pdc-sec">
-            <label class="pdc-label"><span>OTHER</span><input v-model.trim="o.name" class="pdc-name" type="text" placeholder="Input Name" :disabled="!preDocsModal.editing" /></label>
+            <label class="pdc-label"><span>OTHER</span><input :value="preDocsOtherDraft(oi, o.name)" class="pdc-name" type="text" placeholder="Input Name" :disabled="!preDocsModal.editing" @input="inputPreDocsOtherName(oi, $event)" @blur="flushPreDocsOtherName(oi)" /></label>
             <div class="pdc-files">
               <div v-for="(f, fi) in o.files" :key="fi" class="pdc-file">
                 <button class="pdc-view" type="button" :title="f.name" @click="viewPreDocsFile(f)">{{ f.name }}</button>
@@ -4072,6 +4111,8 @@ const datePopup = reactive({
   viewYear: new Date().getFullYear(),
   viewMonth: new Date().getMonth(),
   cutoffField: '' as '' | 'siDate' | 'cyDate',
+  pickupReturnIndex: -1,
+  pickupReturnField: '' as '' | 'pickupDate' | 'returnDate',
 })
 const cutoffTimePopup = reactive({ open: false, left: 0, top: 0, field: '' as '' | 'siTime' | 'cyTime', hour: '00', minute: '00' })
 const pickerFieldProxy = reactive({ open: false, left: 0, top: 0, width: 0, height: 0, type: 'date' as 'date' | 'time', label: '' })
@@ -4089,6 +4130,7 @@ const doInfoModal = reactive({
   hblNo: '',
   mblDate: '',
   hblDate: '',
+  validity: '',
   mblFile: emptyDoInfoFile(),
   hblFile: emptyDoInfoFile(),
 })
@@ -4338,6 +4380,7 @@ type PickupReturnRecord = {
   id: string
   selected: boolean
   containerNo: string
+  contType?: string
   sealNo: string
   pickupDate: string
   returnDate: string
@@ -4556,6 +4599,7 @@ const truckCompanyDriverMap = ref<Record<string, TruckDriverRecord[]>>({})
 const truckCompanyRecordMap = ref<Record<string, GsdClientRecord>>({})
 const truckCompanyPicker = reactive({ open: false, index: -1 })
 const truckDetailsSending = ref(false)
+const truckDetailsSaving = ref(false)
 let epodStatusTimer: ReturnType<typeof setInterval> | null = null
 const routeDirectory = ref<RouteRecord[]>([])
 const vesselDirectory = ref<VesselRecord[]>([])
@@ -5382,7 +5426,12 @@ const datePopupDays = computed(() => {
   const mondayOffset = (first.getDay() + 6) % 7
   const start = new Date(first)
   start.setDate(first.getDate() - mondayOffset)
-  const current = parseOpsDate(datePopup.cutoffField ? gsdModal.form[datePopup.cutoffField] : nativePickerInput ? nativePickerInput.value : rows.value[datePopup.row]?.[datePopup.column])
+  const pickupReturnRecord = datePopup.pickupReturnIndex >= 0 ? pickupReturnRecords()[datePopup.pickupReturnIndex] : null
+  const current = parseOpsDate(datePopup.cutoffField
+    ? gsdModal.form[datePopup.cutoffField]
+    : datePopup.pickupReturnField && pickupReturnRecord
+      ? pickupReturnRecord[datePopup.pickupReturnField]
+      : nativePickerInput ? nativePickerInput.value : rows.value[datePopup.row]?.[datePopup.column])
   const today = new Date()
   return Array.from({ length: 42 }, (_, index) => {
     const date = new Date(start)
@@ -5560,7 +5609,14 @@ const filteredRowIndexes = computed(() => {
 const visibleRowsLimit = ref(250)
 const visibleRowIndexes = computed(() => filteredRowIndexes.value.slice(0, visibleRowsLimit.value))
 const selectableVisibleRows = computed(() => visibleRowIndexes.value.filter((index) => index > 0))
-const opsBodyRows = computed(() => filteredRowIndexes.value.filter((index) => index > 0))
+const opsBodyRows = computed(() => {
+  const body = filteredRowIndexes.value.filter((index) => index > 0)
+  const editing = opsEditingRow.value
+  if (!editing?.isNew || editing.row <= 0 || editing.row >= rows.value.length) return body
+  // A newly added manual row must stay visible at the top while it is being
+  // completed, regardless of the current sort or any active table filter.
+  return [editing.row, ...body.filter((index) => index !== editing.row)]
+})
 const opsAllVisibleSelected = computed(() => opsBodyRows.value.length > 0 && opsBodyRows.value.every((index) => opsSelectedRows.value.has(index)))
 const recalibrateStatusCounts = () => {
   statusCounts.active = 0
@@ -5610,6 +5666,7 @@ const buildHeaderColumnMap = (existing: string[], target: string[]) => {
       'ORIGIN AGENT': ['ORIGIN AGENT', 'ORIGINAL AGENT'],
       'CUT OFF DETAIL': ['CUT OFF DETAIL', 'CUT OFF DETAILS'],
       'BILL DETAIL': ['BILL DETAIL', 'BILL APPROVAL'],
+      'PICKUP STATUS': ['PICKUP STATUS', 'PICKUP/RETURN STATUS', 'PICKUP / RETURN STATUS'],
   }
   const available = new Map<string, number[]>()
   existing.forEach((label, index) => {
@@ -5953,11 +6010,24 @@ const loadSheet = async () => {
           }
         }
       }
-      // Preserve values created under the former column name while migrating
-      // ICD/TCD worksheets to the DO INFO document popup.
-      if (['ICD', 'TCD'].includes(String(parsed.dept || '').toUpperCase()) && rowsLoaded[0]) {
+      // Merge the former split DO INFO / DO VALIDITY columns before aligning
+      // to the single DO INFO schema. Prefer DO VALIDITY because it already
+      // uses the requested checkbox/date/remarks form; fall back to the older
+      // document payload when the validity cell is empty.
+      if (['ICD', 'TCD', 'CCD', 'ECD', 'FCD'].includes(String(parsed.dept || '').toUpperCase()) && rowsLoaded[0]) {
+        const existingDoInfoIndex = rowsLoaded[0].findIndex((cell) => upperText(cell) === 'DO INFO')
         const legacyDoValidityIndex = rowsLoaded[0].findIndex((cell) => upperText(cell) === 'DO VALIDITY')
-        if (legacyDoValidityIndex >= 0 && target.includes('DO INFO')) rowsLoaded[0][legacyDoValidityIndex] = 'DO INFO'
+        if (target.includes('DO INFO') && !target.includes('DO VALIDITY') && legacyDoValidityIndex >= 0) {
+          if (existingDoInfoIndex >= 0 && existingDoInfoIndex !== legacyDoValidityIndex) {
+            for (let rowIndex = 1; rowIndex < rowsLoaded.length; rowIndex += 1) {
+              const validityValue = rowsLoaded[rowIndex]?.[legacyDoValidityIndex]
+              const infoValue = rowsLoaded[rowIndex]?.[existingDoInfoIndex]
+              rowsLoaded[rowIndex][existingDoInfoIndex] = String(validityValue ?? '').trim() ? validityValue : infoValue
+            }
+          } else {
+            rowsLoaded[0][legacyDoValidityIndex] = 'DO INFO'
+          }
+        }
       }
       const existing = (rowsLoaded[0] || []).map((c) => String(c ?? '').trim())
       const same = existing.length === target.length && existing.every((c, i) => c === target[i])
@@ -5980,7 +6050,6 @@ const loadSheet = async () => {
           .map((m) => [m[0], aligned.oldToNew.get(m[1]), m[2], aligned.oldToNew.get(m[3])])
           .filter((m): m is number[] => m[1] !== undefined && m[3] !== undefined && m[1] < width && m[3] < width)
       }
-
       // Populate the GSD overview from ECD records that already existed before
       // the reverse-link feature was introduced. Prefer the stable shipment
       // link and fall back to JOB NO# for legacy rows without link metadata.
@@ -7677,7 +7746,10 @@ const AIR_STRUCTURE_LOCKS: Record<string, string[]> = {
 }
 const isAirStructureLockedColumn = (column: number) => {
   if (String(opsParts.value?.mode || '').toUpperCase() !== 'AIR') return false
-  const key = String(opsParts.value?.type || '').toUpperCase() + ':' + String(opsParts.value?.dept || '').toUpperCase()
+  const type = String(opsParts.value?.type || '').toUpperCase()
+  const dept = String(opsParts.value?.dept || '').toUpperCase()
+  const schemaDept = dept === 'FCD' && ['DAP', 'DDU', 'DDP'].includes(type) ? 'TCD' : dept
+  const key = `${type}:${schemaDept}`
   // Structure maps use the labels exactly as shown in the workbook. Do not apply
   // UI aliases such as EXW+ -> EFA+ or ORIGIN AGENT -> ORIGINAL AGENT here.
   return (AIR_STRUCTURE_LOCKS[key] || []).includes(headerLabel(column).toUpperCase())
@@ -7718,7 +7790,10 @@ const LCL_STRUCTURE_LOCKS: Record<string, string[]> = {
 }
 const isLclStructureLockedColumn = (column: number) => {
   if (String(opsParts.value?.mode || '').toUpperCase() !== 'LCL') return false
-  const key = String(opsParts.value?.type || '').toUpperCase() + ':' + String(opsParts.value?.dept || '').toUpperCase()
+  const type = String(opsParts.value?.type || '').toUpperCase()
+  const dept = String(opsParts.value?.dept || '').toUpperCase()
+  const schemaDept = dept === 'FCD' && ['DAP', 'DDU', 'DDP'].includes(type) ? 'TCD' : dept
+  const key = `${type}:${schemaDept}`
   return (LCL_STRUCTURE_LOCKS[key] || []).includes(headerLabel(column).toUpperCase())
 }
 const isFclStructureLockedColumn = (column: number) => {
@@ -8398,7 +8473,7 @@ const defaultDropdownOptionsFor = (column: number) => {
   if (label === 'SALES') return ['', ...opsStaffNames.value]
   if (['OPS', 'OPS1', 'OPS2'].includes(label) || /^(GSD|ECD|ICD|TCD|CCD|DCD|FCD) OPS$/.test(label)) return ['', ...departmentStaff]
   if (label === 'TERM') return ['FCL', 'LCL', 'AIR']
-  if (['EFA+', 'EXW+', 'FCA+', 'FCF+'].includes(label)) return ['', 'DO', 'DAP', 'DDU', 'DDP']
+  if (['EFA+', 'EXW+', 'FCA+', 'FCF+'].includes(label)) return ['—', 'DO', 'DAP', 'DDU', 'DDP']
   if (isLclSheet() && ['DO+', 'DUP+'].includes(label)) return ['', 'DAP', 'DDU']
   if (['DO+', 'DAP+', 'DDU+', 'DDP+', 'DUP+'].includes(label)) return ['', 'EXW', 'FCA', 'FCF']
   if (label === 'TYPE') return ['EXW', 'FCA', 'FOB', 'CIF', 'D/O', 'DUP', 'DAP', 'DDP']
@@ -8576,6 +8651,7 @@ const normalizeDropdownOption = (value: any) => {
   const option = String(value ?? '').trim()
   return !option || /^[-–—]+$/.test(option) ? '' : option
 }
+const isForwardingOptionColumn = (column: number) => ['EFA+', 'EXW+', 'FCA+', 'FCF+'].includes(normalizedHeaderLabel(column))
 const uniqueDropdownOptions = (values: any[], includeBlank = false) => {
   const result: string[] = []
   const seen = new Set<string>()
@@ -8600,6 +8676,10 @@ const dropdownOptions = (column: number) => {
   const options = Array.isArray(storedOptions)
     ? storedOptions
     : formatOptions.length ? formatOptions : defaultDropdownOptionsFor(column)
+  if (isForwardingOptionColumn(column)) {
+    const forwardingOptions = options.map((value) => String(value ?? '').trim() || '—')
+    return [...new Set(['—', ...forwardingOptions.filter((value) => value !== '—')])]
+  }
   return uniqueDropdownOptions(options, isOpsStaffColumn(column))
 }
 const canonicalOpsStaffName = (value: any, column: number) => {
@@ -8607,7 +8687,13 @@ const canonicalOpsStaffName = (value: any, column: number) => {
   if (!current || !isOpsStaffColumn(column)) return current
   return dropdownOptions(column).find((option) => option && option.localeCompare(current, undefined, { sensitivity: 'accent' }) === 0) || current
 }
-const opsNativeDropdownValue = (row: number, column: number) => canonicalOpsStaffName(rows.value[row]?.[column], column)
+const opsNativeDropdownValue = (row: number, column: number) => {
+  if (isForwardingOptionColumn(column)) {
+    const current = String(rows.value[row]?.[column] ?? '').trim()
+    return !current || /^[-–—]+$/.test(current) ? '—' : current
+  }
+  return canonicalOpsStaffName(rows.value[row]?.[column], column)
+}
 const opsNativeDropdownOptions = (row: number, column: number) => {
   const options = dropdownOptions(column)
   const current = opsNativeDropdownValue(row, column)
@@ -8665,6 +8751,7 @@ const formButtonLabels = [
   'CUSTOMS CLEARANCE DETAILS',
   'SPECIAL PROCEDURES',
   'DELIVERY SCHEDULE',
+  'DO INFO',
   'DO VALIDITY',
   'D/O VALIDITY',
   'D/O READINESS',
@@ -8695,15 +8782,28 @@ const isClientLinkColumn = (column: number) => {
 const isClientLinkCell = (row: number, column: number) => row > 0 && (
   isStandaloneManualOpsRow(row) ? clientLinkLabels.includes(normalizedHeaderLabel(column)) : isClientLinkColumn(column)
 )
-const canEditClientLinkCell = (row: number, column: number) =>
-  isClientLinkCell(row, column) && !isSentEcdRowLocked(row) && !isCrossServiceInboundIcdPartyCell(row, column) && (!isLockedOpsCell(row, column) || isOpsEditingRow(row))
+const isDestinationIcdPartySelectorCell = (row: number, column: number) => {
+  const parsed = opsParts.value
+  if (row <= 0 || parsed?.dept !== 'ICD' || !['DO', 'DAP', 'DDU', 'DDP'].includes(upperText(parsed.type))) return false
+  return ['SHIPPER', 'CNEE', 'CONSIGNEE', 'ORIGIN AGENT', 'ORIGINAL AGENT', 'DESTINATION AGENT', 'DEST. AGENT', 'LINER', 'AIRLINE', 'AGENT']
+    .includes(normalizedHeaderLabel(column))
+}
+const canEditClientLinkCell = (row: number, column: number) => {
+  if (!isClientLinkCell(row, column)) return false
+  // Destination ICD owns these operational parties even when the shipment row
+  // was linked from the origin service. Keep CLIENT inbound/read-only, while
+  // allowing blank party cells to expose their ADD+ selector immediately.
+  if (isDestinationIcdPartySelectorCell(row, column)) return true
+  return !isSentEcdRowLocked(row) && !isCrossServiceInboundIcdPartyCell(row, column) && (!isLockedOpsCell(row, column) || isOpsEditingRow(row))
+}
 const isExwFclFreeTextMblColumn = (column: number) =>
   ['EXW', 'FCA', 'FCF', 'DO'].includes(String(opsParts.value?.type || '').toUpperCase()) &&
   opsParts.value?.mode === 'FCL' &&
   normalizedHeaderLabel(column) === 'MBL NO#'
 const isDoInfoCell = (row: number, column: number) =>
-  row > 0 && ['ICD', 'TCD'].includes(opsDeptUpper()) && ['DO INFO', 'DO VALIDITY'].includes(normalizedHeaderLabel(column))
+  row > 0 && !['DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type)) && ['ICD', 'TCD', 'CCD', 'ECD', 'FCD'].includes(opsDeptUpper()) && normalizedHeaderLabel(column) === 'DO INFO'
 const canManageDoInfo = () => opsDeptUpper() === 'ICD'
+const doInfoHasValue = (value: any) => !!String(value ?? '').trim()
 const doInfoValue = (value: any) => {
   const raw = String(value ?? '').trim()
   const parsed = parseJsonCell(raw, null as any)
@@ -8712,19 +8812,13 @@ const doInfoValue = (value: any) => {
     hblNo: String(parsed.hblNo || ''),
     mblDate: String(parsed.mblDate || parsed.date || '').slice(0, 10),
     hblDate: String(parsed.hblDate || parsed.date || '').slice(0, 10),
+    validity: String(parsed.validity || '').slice(0, 10),
     mblFile: parsed.mblFile && typeof parsed.mblFile === 'object' ? parsed.mblFile : emptyDoInfoFile(),
     hblFile: parsed.hblFile && typeof parsed.hblFile === 'object' ? parsed.hblFile : emptyDoInfoFile(),
   }
   const legacyDate = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
   const date = legacyDate ? `${legacyDate[3]}-${legacyDate[2]}-${legacyDate[1]}` : toDatetimeLocalValue(raw).slice(0, 10)
-  return { mblNo: '', hblNo: '', mblDate: date, hblDate: date, mblFile: emptyDoInfoFile(), hblFile: emptyDoInfoFile() }
-}
-const doInfoDate = (value: any) => {
-  const info = doInfoValue(value)
-  const date = info.mblDate || info.hblDate
-  if (!date) return ''
-  const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/)
-  return match ? `${match[3]}/${match[2]}/${match[1]}` : date
+  return { mblNo: '', hblNo: '', mblDate: date, hblDate: date, validity: '', mblFile: emptyDoInfoFile(), hblFile: emptyDoInfoFile() }
 }
 const openDoInfoModal = (row: number, column: number) => {
   const data = doInfoValue(rows.value[row]?.[column])
@@ -8737,13 +8831,14 @@ const openDoInfoModal = (row: number, column: number) => {
     hblNo: data.hblNo,
     mblDate: data.mblDate,
     hblDate: data.hblDate,
+    validity: data.validity,
     mblFile: { ...data.mblFile },
     hblFile: { ...data.hblFile },
   })
 }
 const closeDoInfoModal = () => { doInfoModal.open = false }
 const doInfoHasData = () => !!(
-  doInfoModal.mblNo.trim() || doInfoModal.hblNo.trim() || doInfoModal.mblDate || doInfoModal.hblDate
+  doInfoModal.mblNo.trim() || doInfoModal.hblNo.trim() || doInfoModal.mblDate || doInfoModal.hblDate || doInfoModal.validity
   || doInfoModal.mblFile.name || doInfoModal.mblFile.dataUrl || doInfoModal.hblFile.name || doInfoModal.hblFile.dataUrl
 )
 const doInfoCanSave = () => {
@@ -8757,12 +8852,14 @@ const clearDoInfoModal = async () => {
   if (!(await askConfirm('Clear all MBL DO and HBL DO information?', 'Clear DO information'))) return
   rows.value[doInfoModal.row][doInfoModal.column] = ''
   mirrorFclLinkedCell(doInfoModal.row, doInfoModal.column)
+  for (const dept of fclLinkedRecipients()) void mirrorExwFclWorkflowCell(dept, 'DO VALIDITY', '', doInfoModal.row)
   Object.assign(doInfoModal, {
     editing: true,
     mblNo: '',
     hblNo: '',
     mblDate: '',
     hblDate: '',
+    validity: '',
     mblFile: emptyDoInfoFile(),
     hblFile: emptyDoInfoFile(),
   })
@@ -8823,12 +8920,14 @@ const saveDoInfoModal = () => {
     hblNo: doInfoModal.hblNo.trim(),
     mblDate: doInfoModal.mblDate,
     hblDate: doInfoModal.hblDate,
+    validity: doInfoModal.validity,
     date: doInfoModal.mblDate || doInfoModal.hblDate,
     mblFile: doInfoModal.mblFile,
     hblFile: doInfoModal.hblFile,
   })
   rows.value[doInfoModal.row][doInfoModal.column] = value
   mirrorFclLinkedCell(doInfoModal.row, doInfoModal.column)
+  for (const dept of fclLinkedRecipients()) void mirrorExwFclWorkflowCell(dept, 'DO VALIDITY', doInfoModal.validity, doInfoModal.row)
   scheduleSave()
   doInfoModal.editing = false
 }
@@ -8963,6 +9062,7 @@ const truckContHasLinkedVolume = (row: number, column: number) => {
 }
 const gsdActionButtonText = (row: number, column: number) => {
   const label = normalizedHeaderLabel(column)
+  if (label === 'DO INFO' && ['DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type)) && opsDeptUpper() !== 'ICD') return 'DETAIL'
   if (label === 'NOTES') return String(rows.value[row]?.[column] || '').trim() ? 'DETAIL' : 'ADD+'
   if (label === 'REMINDER' || label === 'NOTICE') return 'VIEW'
   if (label === 'VOLUME') {
@@ -9242,6 +9342,7 @@ const gsdModalTitleFor = (label: string) => {
     'CUSTOMS CLEARANCE DETAILS': 'CUSTOMS CLEARANCE DETAILS',
     'SPECIAL PROCEDURES': 'SPECIAL PROCEDURES',
     'DELIVERY SCHEDULE': 'DELIVERY SCHEDULE',
+    'DO INFO': 'DO INFORMATION',
     'DO VALIDITY': 'DO VALIDITY',
     'DO RELEASE': 'DO RELEASE',
     'D/O RELEASE': 'D/O RELEASE',
@@ -10114,8 +10215,8 @@ const gsdFormFieldsFor = (label: string): GsdFormField[] => {
     { key: 'dem', label: 'DEM' },
     { key: 'det', label: 'DET' },
   ]
-  if (label === 'MANIFEST SUBMIT' || label === 'ARRIVAL NOTICE SENDING' || label === 'ARRIVAL NOTICE DETAIL' || label === 'DO VALIDITY' || label === 'D/O VALIDITY' || label === 'D/O READINESS' || label === 'DO RELEASE' || label === 'D/O RELEASE' || label === 'PRE-ALERT RECEIPT') return [
-    { key: 'done', label, type: 'checkbox' },
+  if (label === 'MANIFEST SUBMIT' || label === 'ARRIVAL NOTICE SENDING' || label === 'ARRIVAL NOTICE DETAIL' || label === 'DO INFO' || label === 'DO VALIDITY' || label === 'D/O VALIDITY' || label === 'D/O READINESS' || label === 'DO RELEASE' || label === 'D/O RELEASE' || label === 'PRE-ALERT RECEIPT') return [
+    { key: 'done', label: label === 'DO INFO' ? 'DO INFORMATION' : label, type: 'checkbox' },
     { key: 'date', label: 'Date', type: 'date' },
     { key: 'remarks', label: 'Remarks', type: 'textarea' },
   ]
@@ -10536,6 +10637,13 @@ const openGsdModal = async (row: number, column: number) => {
         const recovered = await recoverLinkedNoticeInbox(row, column)
         if (recovered.length) gsdModal.reminderInboxNotes = recovered
       }
+      const firstUnreadNotice = gsdModal.reminderInboxNotes.find((note) => note.read !== true)
+      if (firstUnreadNotice) {
+        const sourceDept = noticeInboxDeptLabel(firstUnreadNotice)
+        gsdModal.reminderMode = 'view'
+        gsdModal.reminderViewDept = sourceDept
+        markReminderDeptRead(sourceDept)
+      }
       gsdModal.editing = true
     } else if (gsdModal.kind === 'hbl') {
       const parsed = parseJsonCell(rawText, null as any)
@@ -10779,7 +10887,10 @@ const openGsdModal = async (row: number, column: number) => {
         }
       } else if (['PICKUP/RETURN STATUS', 'PICKUP STATUS', 'TRUCKING STATUS'].includes(label)) {
         gsdModal.formFields = []
-        gsdModal.form = pickupReturnFormFromCell(rawText)
+        const linkedTruckValue = label === 'PICKUP STATUS'
+          ? await linkedTcdPickupStatusTruckValue(row, '')
+          : ''
+        gsdModal.form = pickupReturnFormFromCell(rawText, linkedTruckValue)
         const isNewPickupReturn = label === 'PICKUP/RETURN STATUS' && !String(rawText || '').trim()
         if (isNewPickupReturn) gsdModal.form.locked = false
         gsdModal.editing = isNewPickupReturn || !gsdModal.form.locked
@@ -10801,13 +10912,19 @@ const openGsdModal = async (row: number, column: number) => {
       } else {
         const fields = gsdFormFieldsFor(label)
         gsdModal.formFields = fields
-        gsdModal.form = { ...emptyGsdForm(fields), ...(parsed && typeof parsed === 'object' && 'form' in parsed ? (parsed as any).form : {}) }
+        const savedForm = parsed && typeof parsed === 'object' && 'form' in parsed
+          ? (parsed as any).form
+          : label === 'DO INFO' && parsed && typeof parsed === 'object'
+            ? { done: !!((parsed as any).validity || (parsed as any).mblDate || (parsed as any).hblDate), date: String((parsed as any).validity || (parsed as any).mblDate || (parsed as any).hblDate || '').slice(0, 10), remarks: '' }
+            : {}
+        gsdModal.form = { ...emptyGsdForm(fields), ...savedForm }
         if (label === 'MBL NO#' && rawText && !rawText.trim().startsWith('{')) gsdModal.form.mblNo = rawText.trim()
       }
       // The Excel structure files are authoritative for inbound/locked
       // columns. Keep every corresponding modal in read-only mode even when
       // the stored payload has not been marked as locked yet.
       if (isLockedOpsCell(row, column) || isSentEcdRowLocked(row)) gsdModal.editing = false
+      if (label === 'DO INFO' && ['DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type)) && ['TCD', 'CCD'].includes(opsDeptUpper())) gsdModal.editing = false
     } else {
       gsdModal.text = rawText
     }
@@ -10824,8 +10941,13 @@ const closeGsdModal = () => {
   gsdModal.open = false
   restoreGsdOpsScroll()
 }
+const isReadonlyDownstreamDoInformation = () =>
+  normalizedHeaderLabel(gsdModal.column) === 'DO INFO' &&
+  ['DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type)) &&
+  ['TCD', 'CCD'].includes(opsDeptUpper())
 const enableGsdModalEdit = () => {
   if (isReadonlyDealtModal() || (isSentEcdRowLocked(gsdModal.row) && gsdModal.kind !== 'extra')) return
+  if (isReadonlyDownstreamDoInformation()) return
   gsdModal.editing = true
   if (gsdModal.kind === 'dealt') nextTick(() => dealtInquiryInput.value?.focus())
 }
@@ -10974,6 +11096,7 @@ const scopedNoticeDeptTargets = () => {
   const currentType = upperText(parsed.type)
   const currentScope = currentType === pair.originType ? 'O' : currentType === pair.destinationType ? 'D' : ''
   const currentTarget = currentScope ? `${currentScope}${upperText(parsed.dept)}` : ''
+  const hideGsdForManualOps = isManualOpsRow(gsdModal.row) && ['TCD', 'FCD'].includes(upperText(parsed.dept))
   const targets = (type: string, prefix: 'O' | 'D') =>
     opsDeptsFor(opsBaseForType(type as any), type as any)
       .map((dept: any) => upperText(dept))
@@ -10981,8 +11104,9 @@ const scopedNoticeDeptTargets = () => {
       .map((dept: string) => `${prefix}${dept}`)
   return [...targets(pair.originType, 'O'), ...targets(pair.destinationType, 'D')]
     .filter((target) => target !== currentTarget)
-    .filter((target) => target !== 'DGSD')
-    .filter((target) => upperText(parsed.dept) !== 'ICD' || !['OGSD', 'DGSD'].includes(target))
+    .filter((target) => currentScope !== 'D' || target !== 'OGSD')
+    .filter((target) => currentScope !== 'O' || target !== 'DGSD')
+    .filter((target) => !hideGsdForManualOps || !['OGSD', 'DGSD'].includes(target))
 }
 const noticeDeptTarget = (label: string) => {
   const normalized = upperText(label)
@@ -11089,10 +11213,11 @@ const reminderDeptTargets = () => {
 }
 const reminderToday = (date = new Date()) => {
   const part = (value: number) => String(value).padStart(2, '0')
+  const time = `${part(date.getHours())}:${part(date.getMinutes())}`
   if (isLclSheet() && ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase())) {
-    return `${date.getFullYear()}/${part(date.getMonth() + 1)}/${part(date.getDate())}`
+    return `${date.getFullYear()}/${part(date.getMonth() + 1)}/${part(date.getDate())} ${time}`
   }
-  return `${part(date.getDate())}/${part(date.getMonth() + 1)}/${date.getFullYear()}`
+  return `${part(date.getDate())}/${part(date.getMonth() + 1)}/${date.getFullYear()} ${time}`
 }
 const noticeInboxDeptLabel = (note: ReminderNote) => {
   const dept = upperText(note.dept)
@@ -11652,6 +11777,38 @@ const linkedEcdTruckContValue = async (row: number, fallback: any) => {
     return fallback
   }
 }
+const linkedTcdPickupStatusTruckValue = async (row: number, fallback: any) => {
+  const parsed = opsParts.value
+  if (!parsed || opsDeptUpper() !== 'ICD' ||
+    !['DAP', 'DDU', 'DDP'].includes(String(parsed.type || '').toUpperCase())) return fallback
+  const currentHeader = (rows.value[0] || []).map((item) => String(item || '').trim())
+  const currentRow = rows.value[row] || []
+  const sourceLink = opsShipmentLink(currentHeader, currentRow, row, settings.value)
+  try {
+    const sourceKey = opsLeafKey(parsed.base, parsed.mode, parsed.type, 'TCD')
+    const sourceSheet = await props.request(`/workbook/sheets/${encodeURIComponent(sheetStorageKey(sourceKey))}`)
+    const sourceHeader = opsHeaderFor(parsed.base, parsed.mode, 'TCD', parsed.type)
+    const extracted = extractWorkbookRows(Array.isArray(sourceSheet.rows) ? sourceSheet.rows.map((item: any[]) => [...item]) : [], sourceSheet)
+    const sourceRows = alignRowsToHeader(extracted.rows, sourceHeader).rows
+    const sourceLinks = extracted.settings?.opsRowLinks || sourceSheet.settings?.opsRowLinks || {}
+    let linkedRow = sourceLink
+      ? sourceRows.findIndex((_item, index) => index > 0 && String(sourceLinks[String(index)] || '') === sourceLink)
+      : -1
+    if (linkedRow < 1) {
+      const identity = rowIdentity(currentHeader, currentRow)
+      if (identity) linkedRow = sourceRows.findIndex((item, index) => index > 0 && rowIdentity(sourceHeader, item) === identity)
+    }
+    if (linkedRow < 1 && row > 0 && row < sourceRows.length) linkedRow = row
+    const sourceColumn = sourceHeader.findIndex((label) =>
+      ['TRUCK & CONT/SEAL INFO', 'TRUCKS & CONT/SEAL DETAILS', 'TRUCKING INFO'].includes(upperText(label)),
+    )
+    const value = linkedRow > 0 && sourceColumn >= 0 ? sourceRows[linkedRow]?.[sourceColumn] : ''
+    return String(value ?? '').trim() ? value : fallback
+  } catch (error: any) {
+    if (requestStatus(error) !== 404) console.warn('Could not load PICKUP STATUS truck data from TCD', error)
+    return fallback
+  }
+}
 const linkedEcdBillReleaseValue = async (row: number, label: string, fallback: any) => {
   const parsed = opsParts.value
   if (!parsed || opsDeptUpper() !== 'DCD' || !['EXW', 'FCA', 'FCF'].includes(upperText(parsed.type))) return fallback
@@ -11706,23 +11863,28 @@ const isTruckContModal = () => !isDoContSealModal() && isGsdFormModalLabel('TRUC
 const isTcdTruckContModal = () => isTruckContModal() && opsParts.value?.mode === 'FCL' && opsDeptUpper() === 'TCD'
 const showsTruckEpodExport = () => isTcdTruckContModal() &&
   ['DO', 'DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase())
+const isDestinationFcdTruckMirrorModal = () => isTruckContModal() && opsDeptUpper() === 'FCD' &&
+  ['DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase())
 // Origin-service TRUCK & CONT/SEAL INFO uses one consistent table in ECD and
 // every receiving department. TCD still owns Edit/Send actions, but it must
 // not switch these flows to the pickup-status/ePOD table used by DAP/DDU/DDP.
-const usesTcdTruckStatusTemplate = () => isTcdTruckContModal() &&
+const usesTcdTruckStatusTemplate = () =>
+  (isTcdTruckContModal() || (isDestinationFcdTruckMirrorModal() && opsParts.value?.mode === 'FCL')) &&
   !['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase())
 // AIR/LCL mockups: TRUCKING INFO has no Container/Seal columns and uses "Warehouse GateIn Time";
 // it is editable on TCD and a read-only view on every other dept
 const isLclTruckingInfoModal = () => isTruckContModal() && isLclSheet() && normalizedHeaderLabel(gsdModal.column) === 'TRUCKING INFO'
 const isLclTruckingDetailModal = () => isTruckContModal() && isLclSheet() && normalizedHeaderLabel(gsdModal.column) === 'TRUCKING DETAIL'
 const isAirDcdTruckingModal = isLclTruckingInfoModal
-const isReadonlyTruckContModal = () => !isStandaloneManualOpsRow(gsdModal.row) && isTruckContModal() && (
-  (['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && ['ECD', 'CCD', 'DCD', 'FCD'].includes(opsDeptUpper())) ||
-  (['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && isLclSheet() && ['ECD', 'DCD', 'FCD'].includes(opsDeptUpper())) ||
-  (isLclTruckingInfoModal() && opsDeptUpper() !== 'TCD') ||
-  (isLclTruckingDetailModal() && opsDeptUpper() === 'FCD') ||
-  (!isLclSheet() && (isFcaDcdSheet() || isFcaFcdSheet())) ||
-  (opsParts.value?.mode === 'FCL' && (isDapIcdSheet() || isDapFcdSheet() || isDduIcdSheet() || isDupFcdSheet()) && normalizedHeaderLabel(gsdModal.column) === 'TRUCK & CONT/SEAL INFO')
+const isReadonlyTruckContModal = () => isDestinationFcdTruckMirrorModal() || (
+  !isStandaloneManualOpsRow(gsdModal.row) && isTruckContModal() && (
+    (['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && ['ECD', 'CCD', 'DCD', 'FCD'].includes(opsDeptUpper())) ||
+    (['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && isLclSheet() && ['ECD', 'DCD', 'FCD'].includes(opsDeptUpper())) ||
+    (isLclTruckingInfoModal() && opsDeptUpper() !== 'TCD') ||
+    (isLclTruckingDetailModal() && opsDeptUpper() === 'FCD') ||
+    (!isLclSheet() && (isFcaDcdSheet() || isFcaFcdSheet())) ||
+    (opsParts.value?.mode === 'FCL' && (isDapIcdSheet() || isDapFcdSheet() || isDduIcdSheet() || isDupFcdSheet()) && normalizedHeaderLabel(gsdModal.column) === 'TRUCK & CONT/SEAL INFO')
+  )
 )
 const isReadonlyPickupModal = () => !isStandaloneManualOpsRow(gsdModal.row) && isPickupModal() && normalizedHeaderLabel(gsdModal.column) === 'PICKUP DETAIL' && (
   (['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && ['ECD', 'CCD', 'DCD', 'FCD'].includes(opsDeptUpper())) ||
@@ -11797,7 +11959,12 @@ const isAirDupIcdTruckingStatusModal = () => isAirSheet() && isDupIcdSheet() && 
 const isAirDupTcdTruckingStatusModal = () => isAirSheet() && isDupTcdSheet() && isDupTruckingStatusModal()
 const isAirDupFcdTruckingStatusModal = () =>
   isAirSheet() && upperText(opsParts.value?.dept || '') === 'FCD' && isDupTruckingStatusModal()
-const isLclPickupStatusModal = () => isPickupReturnStatusModal() && isLclSheet() && normalizedHeaderLabel(gsdModal.column) === 'PICKUP STATUS'
+const isDestinationIcdPickupStatusModal = () => isPickupReturnStatusModal() &&
+  normalizedHeaderLabel(gsdModal.column) === 'PICKUP STATUS' && opsDeptUpper() === 'ICD' &&
+  ['DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase())
+const isLclPickupStatusModal = () => isPickupReturnStatusModal() && normalizedHeaderLabel(gsdModal.column) === 'PICKUP STATUS' && (
+  isLclSheet() || (opsParts.value?.mode === 'FCL' && ['DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsDeptUpper() === 'ICD')
+)
 const isBillApprovalModal = () => isGsdFormModalLabel('BILL DETAIL', 'BILL APPROVAL', 'AWB DETAIL')
 const isAwbDetailModal = () => isGsdFormModalLabel('AWB DETAIL')
 const hblRequiredForRow = (row: number) => {
@@ -12542,6 +12709,7 @@ const vesselFormFromCell = (value: any) => {
     voyage: vessel?.voyage || '',
     addView: false,
     addLocked: false,
+    vesselSaving: false,
     newName: '',
     newImo: '',
     hint: '',
@@ -12563,8 +12731,27 @@ const updateVesselSearch = () => {
   gsdModal.form.imo = vessel?.imo || ''
   gsdModal.form.hint = ''
 }
+const vesselAddInProgress = () => !!gsdModal.form.addView && !gsdModal.form.addLocked
+const vesselTsDetailsLocked = () => {
+  if (!gsdModal.form.transhipmentToggle || vesselAddInProgress()) return true
+  const name = upperText(gsdModal.form.vesselName || '').trim()
+  const voyage = upperText(gsdModal.form.voyage || '').trim()
+  return !name || !voyage || !findVessel(name)
+}
 const toggleVesselTranshipment = () => {
-  // Transhipment and Vessel Delay are independent states and may coexist.
+  if (!gsdModal.form.transhipmentToggle) return
+  // Keep the vessel and voyage the user may already have selected before
+  // ticking T/S. Only initialise the leg-specific fields; after an applied
+  // entry the common fields are already cleared by resetVesselEntryAfterSelect.
+  gsdModal.form.selectedHistoryOrder = 0
+  gsdModal.form.tsEtd = ''
+  gsdModal.form.tsEta = ''
+  gsdModal.form.tsPlace = ''
+  gsdModal.form.addView = false
+  gsdModal.form.addLocked = false
+  gsdModal.form.hint = vesselTsDetailsLocked()
+    ? 'Select the next vessel and enter voyage number first'
+    : 'Enter ETD, ETA and Place of T/S'
 }
 const toggleVesselDelay = () => {
   // Transhipment and Vessel Delay are independent states and may coexist.
@@ -12619,8 +12806,9 @@ const saveVesselNew = async () => {
     gsdModal.form.hint = 'Vessel already exists in Reference Data'
     return
   }
+  gsdModal.form.vesselSaving = true
   try {
-    await props.request('/records', {
+    const created = await props.request('/records', {
       method: 'POST',
       body: {
         country: 'GLOBAL',
@@ -12630,15 +12818,37 @@ const saveVesselNew = async () => {
         sortOrder: vesselDirectory.value.length + 1,
       },
     })
-    await loadVesselReferenceData()
+    // Keep the picker responsive: the created vessel is already authoritative,
+    // so append it locally instead of downloading the complete directory again.
+    vesselDirectory.value.push({ id: String(created?.id || created?.data?.id || ''), name, imo, voyage: '' })
   } catch (error: any) {
     gsdModal.form.hint = error?.data?.message || error?.message || 'Could not save vessel'
     return
+  } finally {
+    gsdModal.form.vesselSaving = false
   }
   gsdModal.form.vesselName = name
   gsdModal.form.imo = imo
   gsdModal.form.addLocked = true
   gsdModal.form.hint = 'Saved - enter voyage above, then Select'
+  nextTick(() => document.querySelector<HTMLInputElement>('.gsd-vessel-main label:last-child input')?.focus())
+}
+const resetVesselEntryAfterSelect = () => {
+  gsdModal.form.vesselName = ''
+  gsdModal.form.imo = ''
+  gsdModal.form.voyage = ''
+  gsdModal.form.transhipmentToggle = false
+  gsdModal.form.tsEtd = ''
+  gsdModal.form.tsEta = ''
+  gsdModal.form.tsPlace = ''
+  gsdModal.form.delayToggle = false
+  gsdModal.form.newEtd = ''
+  gsdModal.form.newEta = ''
+  gsdModal.form.delayReason = ''
+  gsdModal.form.addView = false
+  gsdModal.form.addLocked = false
+  gsdModal.form.selectedHistoryOrder = 0
+  gsdModal.form.hint = 'Applied - use Transhipment or Vessel Delay to add another event'
 }
 const selectVessel = () => {
   updateVesselSearch()
@@ -12660,8 +12870,11 @@ const selectVessel = () => {
   }
   const selected = { ...vessel, voyage }
   if (isExwEcdVesselDelayModal()) {
+    const currentVessel = vesselFromCellValue(rows.value[gsdModal.row]?.[gsdModal.column])
+    const applyAllRows = gsdModal.form.applyAll && currentVessel
+      ? vesselSameRows(currentVessel.name, currentVessel.voyage)
+      : []
     const applySelection = (row: number) => {
-      applyVesselSelection(row, gsdModal.column, selected, voyage)
       if (gsdModal.form.transhipmentToggle) {
         applyVesselTranshipment(
           row,
@@ -12672,7 +12885,7 @@ const selectVessel = () => {
           gsdModal.form.tsEta,
           String(gsdModal.form.tsPlace || '').trim(),
         )
-      }
+      } else applyVesselSelection(row, gsdModal.column, selected, voyage)
       if (gsdModal.form.delayToggle) {
         applyVesselDelay(
           row,
@@ -12691,7 +12904,7 @@ const selectVessel = () => {
     applySelection(gsdModal.row)
     let extra = 0
     if (gsdModal.form.applyAll) {
-      for (const other of vesselSameRows(selected.name, voyage)) {
+      for (const other of applyAllRows) {
         applySelection(other)
         extra += 1
       }
@@ -12699,7 +12912,7 @@ const selectVessel = () => {
     scheduleSave()
     void saveSheet()
     showToast(extra ? `Vessel applied to ${extra + 1} shipment(s)` : `Vessel selected - ${selected.name} / ${voyage}`)
-    closeGsdModal()
+    resetVesselEntryAfterSelect()
     return
   }
   rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ form: { vesselData: selected } })
@@ -12707,7 +12920,7 @@ const selectVessel = () => {
   scheduleSave()
   void saveSheet()
   showToast(`Vessel selected - ${selected.name} / ${voyage}`)
-  closeGsdModal()
+  resetVesselEntryAfterSelect()
 }
 // ---- AIR/LCL EXW ECD vessel history + delay (mockup `EXW ECD` #ovs) ----
 const vesselCellForm = (value: any) => {
@@ -12748,15 +12961,18 @@ const applyVesselSelection = (row: number, column: number, vessel: any, voyage: 
   })
   const order = history.length ? Math.max(...history.map((item: any) => Number(item.order) || 0)) + 1 : 1
   const { etd, eta } = vesselRowEtdEta(row)
+  const selected = { ...vessel, voyage }
   history.push({ order, time: billTimestamp(), type: 'SELECT', name: vessel.name, imo: vessel.imo, voyage, etd, eta, status: 'Applied', reason: '' })
-  rows.value[row][column] = JSON.stringify({ form: { ...form, vesselData: { ...vessel, voyage }, history } })
+  rows.value[row][column] = JSON.stringify({ form: {
+    ...form,
+    vesselData: selected,
+    originalVesselData: form.originalVesselData?.name ? form.originalVesselData : selected,
+    history,
+  } })
 }
 const applyVesselTranshipment = (row: number, column: number, vessel: any, voyage: string, etd: string, eta: string, place: string, editOrder = 0) => {
   const form = vesselCellForm(rows.value[row]?.[column])
   const history = vesselCellHistory(rows.value[row]?.[column])
-  history.forEach((item: any) => {
-    if (upperText(item.type || '') === 'T/S') item.status = 'Expired'
-  })
   const editing = editOrder ? history.find((item: any) => Number(item.order) === editOrder && upperText(item.type || '') === 'T/S') : null
   const order = editing ? Number(editing.order) : history.length ? Math.max(...history.map((item: any) => Number(item.order) || 0)) + 1 : 1
   if (editing) Object.assign(editing, { time: billTimestamp(), name: vessel.name, imo: vessel.imo, voyage, etd, eta, status: 'Applied', reason: place })
@@ -12767,7 +12983,18 @@ const applyVesselTranshipment = (row: number, column: number, vessel: any, voyag
   if (etd && etd !== current.etd) rescheduleCutoffForVesselDelay(row, current.etd, etd)
   if (etd && etdIndex >= 0) rows.value[row][etdIndex] = etd
   if (eta && etaIndex >= 0) rows.value[row][etaIndex] = eta
-  rows.value[row][column] = JSON.stringify({ form: { ...form, vesselData: { ...vessel, voyage }, history, transhipment: true, transhipmentPlace: place } })
+  const latest = { ...vessel, voyage }
+  const original = form.originalVesselData?.name || form.vesselData?.name
+    ? (form.originalVesselData?.name ? form.originalVesselData : form.vesselData)
+    : latest
+  rows.value[row][column] = JSON.stringify({ form: {
+    ...form,
+    vesselData: latest,
+    originalVesselData: original,
+    history,
+    transhipment: true,
+    transhipmentPlace: place,
+  } })
 }
 const rescheduleCutoffForVesselDelay = (row: number, oldEtd: string, newEtd: string) => {
   if (!oldEtd || !newEtd) return
@@ -12870,9 +13097,19 @@ const vesselDelayCanUpdate = () => {
 const selectVesselHistory = (item: any) => {
   gsdModal.form.selectedHistoryOrder = Number(item.order) || 0
   gsdModal.form.vesselName = item.name
-  gsdModal.form.imo = findVessel(item.name)?.imo || ''
+  gsdModal.form.imo = findVessel(item.name)?.imo || item.imo || ''
   gsdModal.form.voyage = item.voyage
-  // Selecting one history row must not clear another independently applied state.
+  gsdModal.form.addView = false
+  gsdModal.form.addLocked = false
+  gsdModal.form.transhipmentToggle = false
+  gsdModal.form.tsEtd = ''
+  gsdModal.form.tsEta = ''
+  gsdModal.form.tsPlace = ''
+  gsdModal.form.delayToggle = false
+  gsdModal.form.newEtd = ''
+  gsdModal.form.newEta = ''
+  gsdModal.form.delayReason = ''
+  // The selected history row alone drives the fields shown above the table.
   if (item.type === 'DELAY') {
     gsdModal.form.delayToggle = true
     gsdModal.form.newEtd = item.etd
@@ -12887,13 +13124,13 @@ const selectVesselHistory = (item: any) => {
   }
   gsdModal.form.hint = 'History row selected - press Update to apply changes'
 }
-const canDeleteVesselHistory = (item: any) => item?.type === 'DELAY' || item?.status === 'Expired'
+const canDeleteVesselHistory = (_item: any) => true
 const deleteVesselHistory = async (item: any) => {
   if (!canDeleteVesselHistory(item)) return
   const isDelay = item.type === 'DELAY'
   const confirmed = await askConfirm(
     isDelay ? 'Cancel this vessel delay?' : 'Delete this vessel history row?',
-    isDelay ? 'ETD/ETA will roll back to the previous schedule.' : 'This expired history row will be removed.',
+    isDelay ? 'ETD/ETA will roll back to the previous schedule.' : 'This vessel history row will be removed.',
   )
   if (!confirmed) return
   if (isDelay) {
@@ -12902,7 +13139,20 @@ const deleteVesselHistory = async (item: any) => {
     const form = vesselCellForm(rows.value[gsdModal.row]?.[gsdModal.column])
     const history = vesselCellHistory(rows.value[gsdModal.row]?.[gsdModal.column])
       .filter((entry: any) => Number(entry.order) !== Number(item.order))
-    rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ form: { ...form, history } })
+    const vesselEntries = history
+      .filter((entry: any) => ['SELECT', 'T/S'].includes(upperText(entry.type || 'SELECT')))
+      .sort((a: any, b: any) => Number(a.order || 0) - Number(b.order || 0))
+    const originalEntry = vesselEntries.find((entry: any) => upperText(entry.type || 'SELECT') === 'SELECT') || vesselEntries[0]
+    const latestEntry = vesselEntries[vesselEntries.length - 1]
+    const nextForm = {
+      ...form,
+      history,
+      vesselData: latestEntry ? normalizeVesselRecord(latestEntry) : {},
+      originalVesselData: originalEntry ? normalizeVesselRecord(originalEntry) : {},
+      transhipment: vesselEntries.some((entry: any) => upperText(entry.type || '') === 'T/S'),
+      transhipmentPlace: String([...vesselEntries].reverse().find((entry: any) => upperText(entry.type || '') === 'T/S')?.reason || ''),
+    }
+    rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ form: nextForm })
   }
   if (Number(gsdModal.form.selectedHistoryOrder) === Number(item.order)) {
     gsdModal.form.selectedHistoryOrder = 0
@@ -13145,13 +13395,7 @@ const vesselEcdHistory = () => {
       type: upperText(item.type || '') === 'DELAY' ? 'DELAY' : upperText(item.type || '') === 'T/S' ? 'T/S' : 'SELECT',
       status: String(item.status || '') === 'Expired' ? 'Expired' : 'Applied',
     }))
-  const activeTranshipment = mapped.find((item: any) => item.type === 'T/S' && item.status === 'Applied')
-  const activeDelay = mapped.find((item: any) => item.type === 'DELAY' && item.status === 'Applied')
-  const combined = activeTranshipment && activeDelay
-    && vesselVoyageKey(activeTranshipment.name, activeTranshipment.voyage) === vesselVoyageKey(activeDelay.name, activeDelay.voyage)
   return mapped
-    .filter((item: any) => !combined || item !== activeTranshipment)
-    .map((item: any) => item === activeDelay && combined ? { ...item, displayTypes: ['T/S', 'DELAY'] } : item)
     .sort((a: any, b: any) => b.order - a.order)
 }
 const pickupFormFromCell = (value: any) => {
@@ -13583,7 +13827,11 @@ const gsdModalShellStyle = () => {
   if (isPaymentRequestModal()) return shell(usesFullPaymentRequestLayout() ? '1400px' : '1280px', 'min(620px, 86vh)')
   if (isExpenseCollectModal()) return shell('1400px', 'min(620px, 86vh)')
   if (isSiSubmitModal() || isArrivalNoticeModal()) return shell('920px')
-  if (isCutoffModal() || isVolumeModal()) return shell('780px')
+  // Two cutoff groups are exactly 268px each with a 28px gap. A 612px
+  // border-box modal leaves 564px after horizontal padding, so the modal,
+  // Save/footer actions and history table end at the CY/CFS time field.
+  if (isCutoffModal()) return shell('612px')
+  if (isVolumeModal()) return shell('780px')
   if (isFreetimeModal()) return shell('600px')
   if (isRouteModal()) return shell('660px')
   if (isVesselModal()) return shell(isExwEcdVesselDelayModal() || isAirDcdVesselHistoryModal() ? '980px' : '700px')
@@ -13593,6 +13841,7 @@ const gsdModalShellStyle = () => {
   if (isPickupReturnStatusModal()) {
     if (isAirDupTcdTruckingStatusModal() || isAirDupFcdTruckingStatusModal()) return shell('1360px')
     if (isAirDupIcdTruckingStatusModal()) return shell('960px')
+    if (isDestinationIcdPickupStatusModal()) return shell('1360px')
     return shell('920px')
   }
   if (isDoReleaseModal()) return shell('660px')
@@ -14159,7 +14408,18 @@ const truckContSnapshot = (records: TruckContRecord[] = []) => JSON.stringify(re
   epodUrl: String(record.epodUrl || '').trim(),
   epodReceiver: String(record.epodReceiver || '').trim(),
 })))
-const truckContIsDirty = () => truckContSnapshot(truckContRecords()) !== String(gsdModal.form.initialRecords || '')
+const truckContEditBaseline = () => {
+  const editSnapshot = String(gsdModal.form.editRecordsSnapshot || '')
+  if (editSnapshot) {
+    try {
+      return truckContSnapshot(JSON.parse(editSnapshot).map(normalizeTruckContRecord))
+    } catch (error) {
+      console.error('Could not compare Truck & Cont/Seal edit snapshot', error)
+    }
+  }
+  return String(gsdModal.form.initialRecords || '')
+}
+const truckContIsDirty = () => truckContSnapshot(truckContRecords()) !== truckContEditBaseline()
 const truckDetailsCanSend = () => {
   if (gsdModal.editing || truckDetailsSending.value) return false
   const records = truckContRecords()
@@ -14454,21 +14714,32 @@ const saveTruckContDetails = async () => {
     showToast('Please complete all Truck & Cont/Seal fields before saving')
     return
   }
-  gsdModal.form.locked = true
-  persistTruckContCell(false)
-  await saveSheet()
-  if (['EXW', 'FCA', 'FCF', 'DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase()) && ['FCL', 'LCL'].includes(String(opsParts.value?.mode || '').toUpperCase()) && opsDeptUpper() === 'TCD') {
-    await Promise.all(fclTcdMirrorDepts().map((dept) => {
-      const targetLabel = dept === 'ICD' ? 'CONT/SEAL INFO' : dept === 'ECD' ? 'TRUCKING INFO' : 'TRUCK & CONT/SEAL INFO'
-      return mirrorExwFclWorkflowCell(dept, targetLabel, rows.value[gsdModal.row][gsdModal.column])
-    }))
+  truckDetailsSaving.value = true
+  dispatchLoading.value = 'Saving Truck & Cont/Seal details...'
+  try {
+    gsdModal.form.locked = true
+    persistTruckContCell(false)
+    const saved = await saveSheet()
+    if (!saved) {
+      gsdModal.form.locked = false
+      return
+    }
+    if (['EXW', 'FCA', 'FCF', 'DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase()) && ['FCL', 'LCL'].includes(String(opsParts.value?.mode || '').toUpperCase()) && opsDeptUpper() === 'TCD') {
+      await Promise.all(fclTcdMirrorDepts().map((dept) => {
+        const targetLabel = dept === 'ICD' ? 'CONT/SEAL INFO' : dept === 'ECD' ? 'TRUCKING INFO' : 'TRUCK & CONT/SEAL INFO'
+        return mirrorExwFclWorkflowCell(dept, targetLabel, rows.value[gsdModal.row][gsdModal.column])
+      }))
+    }
+    gsdModal.form.initialRecords = truckContSnapshot(truckContRecords())
+    gsdModal.form.editRecordsSnapshot = ''
+    truckContEditingRows.value = new Set()
+    gsdModal.form.editLockedSnapshot = undefined
+    gsdModal.form.editSentAtSnapshot = undefined
+    gsdModal.editing = false
+  } finally {
+    truckDetailsSaving.value = false
+    dispatchLoading.value = ''
   }
-  gsdModal.form.initialRecords = truckContSnapshot(truckContRecords())
-  gsdModal.form.editRecordsSnapshot = ''
-  truckContEditingRows.value = new Set()
-  gsdModal.form.editLockedSnapshot = undefined
-  gsdModal.form.editSentAtSnapshot = undefined
-  gsdModal.editing = false
 }
 const sendTruckDetailsToShipper = async () => {
   if (!truckDetailsCanSend()) return
@@ -14523,11 +14794,7 @@ const escapeEpodHtml = (value: any) => String(value ?? '').replace(/[&<>"']/g, (
 const publicEpodUrl = (token: string) => {
   const configuredSiteUrl = String(runtimeConfig.public.siteUrl || '').trim().replace(/\/+$/, '')
   if (configuredSiteUrl) return `${configuredSiteUrl}/epod/${encodeURIComponent(token)}`
-  const siteOrigin = new URL(window.location.origin)
-  // The local Admin runs on :5002 while the public SHOPTRANS site (which owns
-  // /epod/:token) runs on the default HTTP/HTTPS port.
-  if (siteOrigin.port === '5002') siteOrigin.port = ''
-  return `${siteOrigin.origin}/epod/${encodeURIComponent(token)}`
+  return `${window.location.origin}/epod/${encodeURIComponent(token)}`
 }
 const exportTruckEpod = async () => {
   const records = truckContRecords()
@@ -14690,8 +14957,8 @@ const pickupReturnRecords = () => (Array.isArray(gsdModal.form.records) ? gsdMod
 const airDupIcdTruckingStatusRecords = () => pickupReturnRecords().filter((record) =>
   !!(record.containerNo || record.sealNo || record.pickupDate || record.epodSign),
 )
-const truckRecordsForActiveRow = () => {
-  const truckValue = rowValueByHeader('TRUCK & CONT/SEAL INFO') || rowValueByHeader('CONT/SEAL INFO')
+const truckRecordsForActiveRow = (linkedTruckValue: any = '') => {
+  const truckValue = linkedTruckValue || rowValueByHeader('TRUCK & CONT/SEAL INFO') || rowValueByHeader('CONT/SEAL INFO')
   const trucks = truckContFormFromCell(truckValue).records
   const volumeRows = volumeFormFromCell(rowValueByHeader('VOLUME')).records || []
   const expectedCount = volumeRows.length || trucks.length || 1
@@ -14706,6 +14973,7 @@ const emptyPickupReturnRecord = (index = 0): PickupReturnRecord => ({
   id: `PRS-${Date.now()}-${index}`,
   selected: false,
   containerNo: '',
+  contType: '',
   sealNo: '',
   pickupDate: '',
   returnDate: '',
@@ -14720,9 +14988,10 @@ const normalizePickupReturnRecord = (item: any, fallback?: TruckContRecord, inde
     id: String(item?.id || item?.truckId || fallbackId || `${Date.now()}-${index}`),
     selected: !!item?.selected,
     containerNo: String(item?.containerNo || item?.container || fallback?.container || ''),
+    contType: String(item?.contType || item?.containerType || fallback?.contType || ''),
     sealNo: String(item?.sealNo || item?.seal || fallback?.seal || ''),
-    pickupDate: String(item?.pickupDate || item?.pickup || ''),
-    returnDate: String(item?.returnDate || item?.ret || item?.doExpiration || ''),
+    pickupDate: String(item?.pickupDate || item?.pickup || fallback?.eta1 || ''),
+    returnDate: String(item?.returnDate || item?.ret || item?.doExpiration || fallback?.gdate || ''),
     puNo: String(item?.puNo || `PU${String(index + 1).padStart(4, '0')}`),
     truckCompany: String(item?.truckCompany || item?.truckComp || item?.truck || fallback?.truck || ''),
     driverInfo: String(item?.driverInfo || item?.driverName || item?.driver || fallback?.driver || ''),
@@ -14730,12 +14999,12 @@ const normalizePickupReturnRecord = (item: any, fallback?: TruckContRecord, inde
     epodSign: String(item?.epodSign || fallback?.epodSign || ''),
   }
 }
-const pickupReturnFormFromCell = (value: any) => {
+const pickupReturnFormFromCell = (value: any, linkedTruckValue: any = '') => {
   const parsed = parseJsonCell(value, null as any)
   const form = parsed && typeof parsed === 'object' && 'form' in parsed ? (parsed as any).form || {} : parsed && typeof parsed === 'object' ? parsed : {}
   const savedRecords = Array.isArray(form.records) ? form.records : []
   const savedById = form.byId && typeof form.byId === 'object' ? form.byId : {}
-  const trucks = truckRecordsForActiveRow()
+  const trucks = truckRecordsForActiveRow(linkedTruckValue)
   const records = trucks.map((truck, index) => {
     const id = String(truck.id || `${truck.container || 'PRS'}-${truck.seal || index}`)
     const saved = savedRecords.find((item: any) => String(item?.id || '') === id) || savedById[id] || savedRecords[index] || {}
@@ -16456,6 +16725,8 @@ const addPreAlertDoc = () => {
 const preDocsModal = reactive({ open: false, editing: false })
 const preDocsFileTarget = ref<{ section: 'ci' | 'pl' | 'other'; index: number } | null>(null)
 const preDocsFileInput = ref<HTMLInputElement | null>(null)
+let preDocsOtherDrafts: string[] = []
+const preDocsOtherTimers = new Map<number, ReturnType<typeof setTimeout>>()
 const preDocsData = () => {
   if (!gsdModal.form.preDocs || typeof gsdModal.form.preDocs !== 'object') {
     gsdModal.form.preDocs = { ci: { on: false, files: [] }, pl: { on: false, files: [] }, others: [{ name: '', files: [] }] }
@@ -16463,6 +16734,24 @@ const preDocsData = () => {
   const pd = gsdModal.form.preDocs
   if (!Array.isArray(pd.others) || !pd.others.length) pd.others = [{ name: '', files: [] }]
   return pd
+}
+const preDocsOtherDraft = (index: number, savedName: any) => {
+  if (preDocsOtherDrafts[index] === undefined) preDocsOtherDrafts[index] = String(savedName || '')
+  return preDocsOtherDrafts[index]
+}
+const flushPreDocsOtherName = (index: number) => {
+  const timer = preDocsOtherTimers.get(index)
+  if (timer) clearTimeout(timer)
+  preDocsOtherTimers.delete(index)
+  const other = preDocsData().others[index]
+  if (other) other.name = String(preDocsOtherDrafts[index] ?? other.name ?? '').trim()
+}
+const flushAllPreDocsOtherNames = () => preDocsData().others.forEach((_: any, index: number) => flushPreDocsOtherName(index))
+const inputPreDocsOtherName = (index: number, event: Event) => {
+  preDocsOtherDrafts[index] = (event.target as HTMLInputElement).value
+  const currentTimer = preDocsOtherTimers.get(index)
+  if (currentTimer) clearTimeout(currentTimer)
+  preDocsOtherTimers.set(index, setTimeout(() => flushPreDocsOtherName(index), 220))
 }
 const preDocsFileCount = () => {
   const pd = preDocsData()
@@ -16478,18 +16767,21 @@ const setPreDocsChecked = (section: 'ci' | 'pl', checked: boolean) => {
 }
 const openPreDocsModal = () => {
   if (!isPreAlertModal() || !preAlertReady()) return
-  preDocsData()
+  const pd = preDocsData()
+  preDocsOtherDrafts = pd.others.map((other: any) => String(other.name || ''))
   // Clearance documents follow the parent pre-alert draft state: every
   // unsent draft opens ready for input, while a sent pre-alert is view-only.
   preDocsModal.editing = !!gsdModal.editing
   preDocsModal.open = true
 }
 const closePreDocsModal = () => {
+  flushAllPreDocsOtherNames()
   preDocsModal.open = false
   preDocsModal.editing = false
 }
 const choosePreDocsFile = (section: 'ci' | 'pl' | 'other', index = 0) => {
   if (!preDocsModal.editing) return
+  if (section === 'other') flushPreDocsOtherName(index)
   preDocsFileTarget.value = { section, index }
   preDocsFileInput.value?.click()
 }
@@ -16535,6 +16827,7 @@ const viewPreDocsFiles = (files: any[]) => {
 const addPreDocsOther = () => {
   if (!preDocsModal.editing) return
   preDocsData().others.push({ name: '', files: [] })
+  preDocsOtherDrafts.push('')
 }
 const clearPreDocs = async () => {
   if (!preDocsModal.editing) return
@@ -16543,8 +16836,10 @@ const clearPreDocs = async () => {
   const pd = preDocsData()
   ;[pd.ci, pd.pl, ...pd.others].forEach((bucket: any) => (bucket.files || []).forEach((f: any) => f?.url && URL.revokeObjectURL(f.url)))
   gsdModal.form.preDocs = { ci: { on: false, files: [] }, pl: { on: false, files: [] }, others: [{ name: '', files: [] }] }
+  preDocsOtherDrafts = ['']
 }
 const savePreDocs = () => {
+  flushAllPreDocsOtherNames()
   const pd = preDocsData()
   const missingFile = (pd.ci.on && !pd.ci.files.length) || (pd.pl.on && !pd.pl.files.length) || pd.others.some((other: any) => other.name.trim() && !other.files.length)
   if (missingFile) {
@@ -17986,12 +18281,12 @@ const isFclGsdServiceFlowColumn = (column: number) => {
 }
 const isCrossServiceRecordSourceColumn = (column: number) => {
   const parsed = opsParts.value
+  const type = upperText(parsed?.type || '')
+  const dept = upperText(parsed?.dept || '')
   return ['FCL', 'LCL', 'AIR'].includes(upperText(parsed?.mode || ''))
-    && ['GSD', 'ECD'].includes(upperText(parsed?.dept || ''))
-    && normalizedHeaderLabel(column) === `${upperText(parsed?.type || '')}+`
+    && ['GSD', 'ECD'].includes(dept)
+    && normalizedHeaderLabel(column) === `${type}+`
 }
-const createsCrossServiceRecordOnSelection = (column: number) =>
-  isFclGsdServiceFlowColumn(column) && ['DO', 'DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase())
 const crossServiceLinkId = (row: number) => {
   const existing = crossServiceLinks()[String(row)]?.id
   if (existing) return existing
@@ -17999,7 +18294,7 @@ const crossServiceLinkId = (row: number) => {
   const sourceRow = rows.value[row] || []
   const jobColumn = header.indexOf('JOB NO#')
   const job = jobColumn >= 0 ? String(sourceRow[jobColumn] || '').trim() : ''
-  return `FCL-GSD:${job || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`}`
+  return `CROSS-SERVICE:${job || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`}`
 }
 const syncCrossServiceGsdRow = async (row: number, column: number, createdAt = formatLocalDateTime()) => {
   const parsed = opsParts.value
@@ -18300,9 +18595,9 @@ const fclLinkedRecipients = (): FclStructureDept[] => {
   const type = String(opsParts.value?.type || '').toUpperCase()
   const dept = opsDeptUpper()
   if (dept === 'ICD') {
-    if (type === 'DO') return ['FCD']
-    if (type === 'DAP') return ['TCD', 'FCD']
-    if (['DDU', 'DDP'].includes(type)) return ['CCD', 'TCD', 'FCD']
+    if (type === 'DO') return ['ECD', 'FCD']
+    if (type === 'DAP') return ['ECD', 'TCD', 'FCD']
+    if (['DDU', 'DDP'].includes(type)) return ['ECD', 'CCD', 'TCD', 'FCD']
   }
   if (dept === 'TCD' && ['DAP', 'DDU', 'DDP'].includes(type)) return ['ICD', 'FCD']
   if (dept === 'CCD' && ['DDU', 'DDP'].includes(type)) return ['TCD']
@@ -19317,7 +19612,6 @@ const setDropdownValue = (row: number, column: number, event: Event) => {
     return
   }
   rows.value[row][column] = (event.target as HTMLSelectElement).value
-  if (createsCrossServiceRecordOnSelection(column)) void syncCrossServiceGsdRow(row, column)
   mirrorFclLinkedCell(row, column)
   scheduleSave()
 }
@@ -19355,7 +19649,6 @@ const closeDropdownPopup = () => { dropdownPopup.open = false }
 const selectDropdownOption = (option: string) => {
   if (dropdownPopup.mode === 'edit') return
   rows.value[dropdownPopup.row][dropdownPopup.column] = option
-  if (createsCrossServiceRecordOnSelection(dropdownPopup.column)) void syncCrossServiceGsdRow(dropdownPopup.row, dropdownPopup.column)
   mirrorFclLinkedCell(dropdownPopup.row, dropdownPopup.column)
   scheduleSave()
   closeDropdownPopup()
@@ -19491,7 +19784,18 @@ const openScheduleDatePopup = (row: number, column: number, event: MouseEvent) =
   if (!canOpenScheduleDate(row, column)) return
   openDatePopup(row, column, event.currentTarget as HTMLElement)
 }
-const closeDatePopup = () => { datePopup.open = false }
+const openPickupReturnDatePopup = (index: number, field: 'pickupDate' | 'returnDate', event: MouseEvent) => {
+  const record = pickupReturnRecords()[index]
+  if (!record || !pickupReturnRowCanEdit(record)) return
+  nativePickerInput = null
+  nativePickerType = ''
+  const current = parseOpsDate(record[field]) || new Date()
+  const pos = positionPopupNear(event.currentTarget as HTMLElement, 240)
+  Object.assign(datePopup, { open: true, cutoffField: '', pickupReturnIndex: index, pickupReturnField: field, row: -1, column: -1, left: pos.left, top: pos.top, viewYear: current.getFullYear(), viewMonth: current.getMonth() })
+  closeDropdownPopup()
+  closeCutoffTimePopup()
+}
+const closeDatePopup = () => { datePopup.open = false; datePopup.pickupReturnIndex = -1; datePopup.pickupReturnField = '' }
 const shiftDateMonth = (delta: number) => {
   const date = new Date(datePopup.viewYear, datePopup.viewMonth + delta, 1)
   datePopup.viewYear = date.getFullYear()
@@ -19515,6 +19819,16 @@ const selectDatePopup = (date: Date) => {
     const pad = (part: number) => String(part).padStart(2, '0')
     gsdModal.form[datePopup.cutoffField] = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
     clearCutoffHint()
+    closeDatePopup()
+    return
+  }
+  if (datePopup.pickupReturnIndex >= 0 && datePopup.pickupReturnField) {
+    const record = pickupReturnRecords()[datePopup.pickupReturnIndex]
+    const field = datePopup.pickupReturnField
+    if (record) {
+      const pad = (part: number) => String(part).padStart(2, '0')
+      record[field] = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+    }
     closeDatePopup()
     return
   }
@@ -19560,6 +19874,12 @@ const clearDatePopup = () => {
   if (datePopup.cutoffField) {
     gsdModal.form[datePopup.cutoffField] = ''
     clearCutoffHint()
+    closeDatePopup()
+    return
+  }
+  if (datePopup.pickupReturnIndex >= 0 && datePopup.pickupReturnField) {
+    const record = pickupReturnRecords()[datePopup.pickupReturnIndex]
+    if (record) record[datePopup.pickupReturnField] = ''
     closeDatePopup()
     return
   }
@@ -19803,6 +20123,10 @@ const formatAdminDateDisplay = (value: any) => {
 }
 const displayCell = (value: any, row: number, column: number) => {
   const format = cellFormatOf(row, column)
+  if (row > 0 && isForwardingOptionColumn(column)) {
+    const forwardingValue = String(value ?? '').trim()
+    return !forwardingValue || /^[-–—]+$/.test(forwardingValue) ? '—' : forwardingValue
+  }
   if (row > 0 && isOpsStaffColumn(column)) return canonicalOpsStaffName(value, column)
   if (row > 0 && normalizedHeaderLabel(column) === 'ACTION' && (value == null || value === '')) return 'ACTIVE'
   if (row > 0 && normalizedHeaderLabel(column) === 'MODE' && upperText(value) === 'MANUAL') return 'MANU'
@@ -20410,11 +20734,17 @@ onBeforeUnmount(() => {
 .gsd-air-dup-ccd-cont-modal .gsd-do-cont-table td:first-child{background:#fff;color:#7a8a83}
 .gsd-air-dup-ccd-cont-modal .gsd-do-cont-table td:not(:first-child){background:#eef2f0;color:#5b6a63;font-weight:600}
 .gsd-air-dup-ccd-cont-modal .gsd-do-cont-table .empty{background:#fff;color:#8a97a0;font-weight:400;font-style:normal}
-.truck-company-cell{position:relative}.truck-company-picker{position:absolute;z-index:410;left:8px;top:34px;min-width:180px;max-height:190px;overflow:auto;background:#121a1a;border:1px solid #263736;border-radius:7px;box-shadow:0 18px 38px rgba(0,0,0,.28);padding:6px 0;text-align:left}.truck-company-picker button{display:block;width:100%;height:32px;border:0;background:transparent;color:#eaf6ef;text-align:left;padding:0 14px;font-size:12px;font-weight:800;cursor:pointer}.truck-company-picker button:hover{background:#008f4c;color:#fff}.truck-company-picker-empty{padding:10px 14px;color:#b8c5bf;font-size:12px;font-weight:700;white-space:nowrap}
+.truck-company-cell{position:relative;overflow:visible!important}.gsd-truck-table tr:has(.truck-company-picker){position:relative;z-index:20}.truck-company-picker{position:absolute;z-index:410;left:8px;top:34px;min-width:180px;max-height:190px;overflow:auto;background:#121a1a;border:1px solid #263736;border-radius:7px;box-shadow:0 18px 38px rgba(0,0,0,.28);padding:6px 0;text-align:left}.truck-company-picker button{display:block;width:100%;height:32px;border:0;background:transparent;color:#eaf6ef;text-align:left;padding:0 14px;font-size:12px;font-weight:800;cursor:pointer}.truck-company-picker button:hover{background:#008f4c;color:#fff}.truck-company-picker-empty{padding:10px 14px;color:#b8c5bf;font-size:12px;font-weight:700;white-space:nowrap}
 .gsd-prs-modal{width:920px;max-width:96vw;min-height:420px;padding:28px 20px 22px;border-radius:10px;overflow:hidden;font:12px/1.35 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-prs-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-prs-title{text-align:center;font-size:13px;font-weight:900;color:#0e1512;text-transform:uppercase;margin:0 0 14px}.gsd-prs-table-wrap{overflow-x:hidden;overflow-y:auto;max-height:255px}.gsd-prs-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11.5px;color:#33413b}.gsd-prs-table th,.gsd-prs-table td{border:1px solid #cfd8d2;text-align:center;padding:6px;height:32px}.gsd-prs-table th{background:#eef3ee;color:#66736c;font-family:var(--mono,'Geist Mono',ui-monospace,monospace);font-size:10.5px;font-weight:800;letter-spacing:.02em}.gsd-prs-table td{background:#f8fbfa}.gsd-prs-table input[type=checkbox]{width:15px;height:15px;accent-color:#008f4c}.gsd-prs-table .prs-order{font-weight:700;color:#7a847d;background:#fff}.gsd-prs-table .prs-readonly{color:#33413b;background:#f8fbfa}.gsd-prs-table .prs-days{font-weight:800;color:#1f4ed8}.gsd-prs-table .prs-date{width:100%;height:26px;border:0;background:transparent;text-align:center;font:inherit;font-size:11.5px;color:#33413b;outline:none}.gsd-prs-table .prs-date:focus{background:#fff;box-shadow:inset 0 0 0 2px #00c566;border-radius:4px}.gsd-prs-table .prs-date:disabled{color:#9aa6a1;opacity:1}.gsd-prs-table .prs-empty{height:44px;color:#0e1512;font-weight:800;font-style:italic;background:#fff}.gsd-prs-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.gsd-prs-actions .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:800}.gsd-prs-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-prs-actions .edit{background:#f6c998;border-color:#f6c998;color:#fff}.gsd-prs-actions .wb-modal-btn:disabled{opacity:.55;cursor:not-allowed}
 .gsd-prs-modal:not(.gsd-prs-editing) .gsd-prs-table td,.gsd-prs-modal:not(.gsd-prs-editing) .gsd-prs-table .prs-order,.gsd-prs-modal:not(.gsd-prs-editing) .gsd-prs-table .prs-readonly{background:#eef1ef;color:#7a847d}.gsd-prs-modal:not(.gsd-prs-editing) .gsd-prs-table tbody tr{cursor:pointer}.gsd-prs-editing .gsd-prs-table td{background:#fff}.gsd-prs-editing .gsd-prs-table .prs-date:not(:disabled){background:#fff}
 .gsd-prs-modal .gsd-prs-table .prs-date:not(:disabled),.gsd-prs-modal .gsd-prs-table .prs-date:not(:disabled):focus{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;outline:0!important}
 .gsd-prs-modal .gsd-prs-table input.prs-date:is([type=date],[type=time]){cursor:pointer}
+.gsd-prs-modal .gsd-prs-table td.prs-date-cell{padding:0!important;background:#fff!important}
+.gsd-prs-modal .prs-date-field{display:flex;width:100%;height:100%;min-height:44px;box-sizing:border-box;align-items:center;justify-content:center;gap:10px;border:0;border-radius:0;background:#fff;padding:0 10px;color:#33413b;font:inherit;font-size:11.5px;cursor:pointer;outline:0}
+.gsd-prs-modal .prs-date-field span{border-bottom:1px solid #89958f;padding:1px 2px;font-variant-numeric:tabular-nums}
+.gsd-prs-modal .prs-date-field svg{width:15px;height:15px;flex:0 0 15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.gsd-prs-modal .prs-date-field:hover:not(:disabled){color:#087d43;background:#f8fcfa}
+.gsd-prs-modal .prs-date-field:disabled{background:#fff;color:#9aa6a1;cursor:not-allowed}
 .gsd-prs-editing .gsd-prs-table td.prs-readonly{background:#eef1ef;color:#7a847d;cursor:not-allowed}.gsd-prs-editing .gsd-prs-table td.prs-days{background:#eef1ef}
 .gsd-air-pickup-status-modal{width:880px;max-width:96vw;min-height:0;padding:24px 20px 20px}.gsd-air-pickup-status-modal .gsd-prs-title{margin-bottom:14px}.gsd-air-pickup-status-modal .gsd-prs-table-wrap{max-height:none}.gsd-air-pickup-status-modal .gsd-prs-table th,.gsd-air-pickup-status-modal .gsd-prs-table td{height:32px;padding:5px 8px}.gsd-air-pickup-status-modal .gsd-prs-actions{margin-top:14px}
 .gsd-air-dup-icd-prs-modal{width:960px;max-width:96vw;min-height:0;padding:22px 24px}
@@ -20695,6 +21025,9 @@ onBeforeUnmount(() => {
 .gsd-modal.gsd-mock-pk-modal .pickup-pic-row{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:12px 18px}
 .gsd-modal.gsd-mock-pk-modal .gsd-pickup-row>label.pickup-return-port{flex:0 0 calc((100% - 36px)/1.75 + 18px)}
 .gsd-pickup-modal:not(.gsd-delivery-details-modal) .gsd-pickup-head{position:relative!important;display:block!important;padding-right:300px!important}.gsd-pickup-modal:not(.gsd-delivery-details-modal) .gsd-pickup-status{position:absolute!important;right:48px!important;top:0!important;display:block!important;color:#c0392b!important;font-size:12px!important;font-weight:900!important;text-align:right!important;text-transform:uppercase!important;white-space:nowrap!important}.gsd-pickup-modal:not(.gsd-delivery-details-modal) .gsd-pickup-status.sent{color:#0c6b39!important}
+.gsd-pickup-modal>.gsd-modal-x{z-index:30!important;pointer-events:auto!important;isolation:isolate}
+.gsd-pickup-modal>.gsd-modal-x::before{pointer-events:none!important}
+.gsd-pickup-modal .gsd-pickup-head,.gsd-pickup-modal .gsd-pickup-status{z-index:1;pointer-events:none}
 .ddpop.ops-simple .ddedit{display:none}.ddpop.ops-simple .ddlist{padding-bottom:4px}.ddpop.ops-simple .ddopt{min-height:34px;padding:8px 12px;font-weight:500;color:#24332b}.ddpop.ops-simple .ddopt:first-child{background:#2468c7;color:#fff}.ddpop.ops-simple .ddopt:hover{background:#e8f7ed;color:#087a3d}.ddpop.ops-simple .ddopt:first-child:hover{background:#2468c7;color:#fff}
 .gsd-bill-sent{margin-right:auto;color:#087a3d;font-size:12px;font-weight:800}
 .bill-document-sheet.attached h2{margin:40px 0;color:#0f4c81;letter-spacing:.08em}.bill-document-sheet.attached .attached-content{min-height:820px;border:1px solid #0f4c81;padding:18px;color:#7c8995;white-space:pre-wrap}.bill-document-sheet.attached footer{margin-top:45px}
@@ -20825,15 +21158,23 @@ onBeforeUnmount(() => {
 .gsd-expcol-modal .expcol-table .ec-sumrow th.pcheck{background:#fff!important}
 .shipment-notes-overlay{z-index:780;background:rgba(10,30,18,.42)}
 .shipment-notes-modal{position:relative;box-sizing:border-box;width:min(620px,92vw);padding:42px 20px 20px;border-radius:10px;background:#fff;box-shadow:0 20px 55px rgba(10,35,23,.28)}
-.shipment-notes-close{position:absolute;top:10px;right:12px;display:flex;width:25px;height:25px;align-items:center;justify-content:center;border:0;border-radius:50%;background:#c0392b;color:#fff;font:800 19px/1 Arial,sans-serif;cursor:pointer}
+.shipment-notes-close{position:absolute;top:10px;right:12px;display:grid;width:25px;height:25px;padding:0;place-items:center;border:0;border-radius:50%;background:#c0392b;color:transparent;font-size:0;line-height:0;cursor:pointer}
+.shipment-notes-close::before{content:"";width:10px;height:10px;transform:translateY(3px);background:linear-gradient(45deg,transparent 42%,#fff 42% 58%,transparent 58%),linear-gradient(-45deg,transparent 42%,#fff 42% 58%,transparent 58%);pointer-events:none}
 .shipment-notes-close:hover{background:#a93226}
 .shipment-notes-modal textarea{display:block;box-sizing:border-box;width:100%;min-height:190px;resize:vertical;border:1px solid #cbd7d0;border-radius:8px;background:#fff;padding:12px;color:#26312b;font:13px/1.5 var(--sans,'Geist',sans-serif);outline:none}
 .shipment-notes-modal textarea:focus{border-color:#008f4c;box-shadow:0 0 0 2px rgba(0,143,76,.12)}
 .do-info-actions .clear{background:#64748b;color:#fff}.do-info-actions button:disabled{filter:saturate(.45);opacity:.45;cursor:not-allowed}
+.do-info-modal{width:930px}.do-info-row{grid-template-columns:96px minmax(0,1fr) 150px 30px 30px minmax(210px,auto)}.do-info-row .do-info-upload{grid-column:4}.do-info-row .do-info-view{grid-column:5}.do-info-validity{grid-column:6;display:flex;align-items:center;justify-content:flex-end;gap:9px;min-width:0}.do-info-validity label{flex:0 0 auto}.do-info-validity input{width:145px}.do-info-validity input:disabled{cursor:not-allowed}@media(max-width:760px){.do-info-row{grid-template-columns:80px minmax(0,1fr) 30px 30px}.do-info-row .do-info-upload{grid-column:3;grid-row:1/3}.do-info-row .do-info-view{grid-column:4;grid-row:1/3}.do-info-validity{grid-column:2/5;grid-row:auto;justify-content:flex-start}.do-info-validity input{width:min(180px,100%)}}
 </style>
 <style>
 .booking-detail-modal{box-sizing:border-box}.booking-detail-row{grid-template-columns:104px minmax(0,1fr) 36px 24px;column-gap:12px}.booking-doc-wrap{display:flex;align-items:flex-start;gap:16px;margin-bottom:10px}.booking-add-doc{flex:0 0 auto;min-width:88px;padding:0 14px}.booking-doc-list{display:flex;min-width:0;flex:1;flex-direction:column;gap:10px}.booking-detail-row.booking-doc-row{grid-template-columns:minmax(0,1fr) 36px 24px;column-gap:12px;margin:0;padding:0;border:0}.booking-detail-row.booking-doc-row.has-remove{grid-template-columns:minmax(0,1fr) 36px 24px 24px}.booking-remove{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border:0;border-radius:50%;background:#c0392b;color:#fff;font-size:15px;font-weight:800;line-height:1;cursor:pointer}.booking-remove:hover{background:#a23227}.booking-icon,.booking-eye{display:inline-flex;align-items:center;justify-content:center;padding:0}.booking-icon{width:36px;height:36px}.booking-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.booking-eye{width:24px;height:24px;color:#0f4c81}.booking-eye svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.booking-eye:disabled{color:#9aa6a1}
 .pre-docs-overlay{z-index:460!important;background:rgba(10,30,18,.5)!important}.pdc-modal{position:relative;width:560px;max-width:96vw;overflow:visible}.pdc-close{position:absolute;right:12px;top:12px;z-index:2;display:grid;place-items:center;width:24px;height:24px;padding:0;border:0;border-radius:50%;background:#c0392b;color:#fff;font:800 17px/1 Arial,sans-serif;cursor:pointer}.pdc-close:hover{background:#a23227}.pdc-modal .pdc-title{padding:17px 50px 8px}.pdc-modal>.pdc-body{display:none}.pdc-mock-toolbar{display:flex;justify-content:flex-end;padding:0 18px 4px}.pdc-mock-toolbar .wb-modal-btn{height:32px;min-height:32px;padding:7px 13px;border-radius:7px;font-size:12px;font-weight:800}.pdc-mock-body{padding:0 18px 12px;max-height:60vh;overflow:auto}.pdc-mock-row{display:grid;grid-template-columns:180px 150px 30px 30px;align-items:center;justify-content:center;gap:10px;margin:8px 0}.pdc-mock-row>span{text-align:right;color:#33413b;font-size:12.5px;font-weight:700}.pdc-mock-row>input[type=checkbox]{justify-self:center;width:15px;height:15px;accent-color:#008f4c;cursor:pointer}.pdc-mock-row>input[type=checkbox]:disabled{cursor:not-allowed}.pdc-mock-name{width:100%;height:30px;box-sizing:border-box;border:1px solid #d6ddd9;border-radius:7px;background:#fff;padding:5px 9px;font:inherit;font-size:12px;color:#33413b;outline:none}.pdc-mock-name:focus{border-color:#00c566;box-shadow:inset 0 0 0 1px #00c566}.pdc-mock-name:disabled{background:#eef0f2;color:#8a94a0;cursor:not-allowed}.pdc-mock-icon{display:inline-flex;align-items:center;justify-content:center;gap:2px;width:30px;height:30px;padding:2px;border:0;background:transparent;color:#33413b;cursor:pointer}.pdc-mock-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.pdc-mock-icon.upload.has{color:#1b7a43}.pdc-mock-icon.eye{color:#9aa6a1}.pdc-mock-icon.eye.on{color:#0f4c81}.pdc-mock-icon:disabled{opacity:.35;cursor:not-allowed}.pdc-mock-icon b{font-size:9px}.pdc-modal .wsmodal-foot{background:#fff}.pdc-modal .pdc-edit{background:#e67e22;border-color:#e67e22;color:#fff}.pdc-modal .pdc-edit:disabled{opacity:.45}.pdc-modal .pdc-clear{background:#64748b;border-color:#64748b;color:#fff}.pdc-modal .pdc-clear:disabled{opacity:.45;cursor:not-allowed}
+/* Clearance-doc actions only darken their own colour on hover. */
+.pdc-modal .wsmodal-foot .pdc-edit,.pdc-modal .wsmodal-foot .primary{transition:background-color .16s ease,border-color .16s ease;box-shadow:none;transform:none}
+.pdc-modal .wsmodal-foot .pdc-edit:hover:not(:disabled){background:#bd5708!important;border-color:#bd5708!important;color:#fff!important;box-shadow:none!important;transform:none!important}
+.pdc-modal .wsmodal-foot .primary:hover:not(:disabled){background:#006d3a!important;border-color:#006d3a!important;color:#fff!important;box-shadow:none!important;transform:none!important}
+.pdc-modal .wsmodal-foot .pdc-edit:disabled,.pdc-modal .wsmodal-foot .pdc-edit:disabled:hover{background:#e67e22!important;border-color:#e67e22!important;color:#fff!important;opacity:.45!important;box-shadow:none!important;transform:none!important}
+.pdc-modal .wsmodal-foot .pdc-clear:disabled,.pdc-modal .wsmodal-foot .pdc-clear:disabled:hover{background:#64748b!important;border-color:#64748b!important;color:#fff!important;opacity:.45!important;box-shadow:none!important;transform:none!important}
 /* PRE-ALERT actions keep their semantic colour and use a darker shade on hover. */
 .gsd-prealert-modal .gsd-pre-actions .slate:hover:not(:disabled){background:#51606e!important;border-color:#51606e!important;color:#fff!important}.gsd-prealert-modal .gsd-pre-actions .edit:hover:not(:disabled){background:#c96512!important;border-color:#c96512!important;color:#fff!important}.gsd-prealert-modal .gsd-pre-actions .primary:hover:not(:disabled),.gsd-prealert-modal .pdcbtn:hover:not(:disabled){background:#00773f!important;border-color:#00773f!important;color:#fff!important}.gsd-prealert-modal .gsd-pre-actions .send:hover:not(:disabled){background:#0b3b65!important;border-color:#0b3b65!important;color:#fff!important}.gsd-prealert-modal .gsd-pre-icon:hover:not(:disabled){color:#008f4c!important}.gsd-prealert-modal .gsd-pre-icon.eye.on:hover:not(:disabled){color:#0b3b65!important}.pdc-modal .pdc-edit:hover:not(:disabled){background:#c96512!important;border-color:#c96512!important;color:#fff!important}.pdc-modal .pdc-clear:hover:not(:disabled){background:#51606e!important;border-color:#51606e!important;color:#fff!important}.pdc-modal .primary:hover:not(:disabled){background:#00773f!important;border-color:#00773f!important;color:#fff!important}.pdc-modal .pdc-mock-icon.upload:hover:not(:disabled){color:#008f4c!important}.pdc-modal .pdc-mock-icon.eye.on:hover:not(:disabled){color:#0b3b65!important}.pdc-modal button:disabled:hover{transform:none!important;box-shadow:none!important}
 .gsd-modal.gsd-bill-modal:has(.gsd-release-body){display:block;width:720px;max-width:96vw;height:auto;min-height:0;max-height:calc(100vh - 48px);overflow-y:auto;padding:30px 34px}.gsd-release-body{max-width:600px;margin:0 auto}.gsd-release-title{margin:4px 0 12px;text-align:center;color:#1f2a26;font-size:15px;font-weight:800;text-decoration:underline}.gsd-release-payment{display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;margin:14px 0 8px}.gsd-release-payment label{display:inline-flex;align-items:center;gap:9px;color:#1f2a26;font-size:13.5px;font-weight:700;white-space:nowrap;cursor:pointer}.gsd-release-payment input[type=checkbox],.gsd-release-row>input[type=checkbox]{width:18px;height:18px;accent-color:#008f4c;cursor:pointer}.gsd-release-payment input[type=date]{width:134px;height:36px;border:1px solid #c9d3cf;border-radius:8px;background:#fff;padding:7px 9px;font:inherit;font-size:13px;color:#33413b}.gsd-release-payment input:disabled{background:#f1f5f4;color:#9aa6a1;cursor:not-allowed}.gsd-release-divider{height:1px;margin:16px 0;background:#e2e7e3}.gsd-release-rows{display:flex;flex-direction:column;gap:13px;align-items:flex-start;width:max-content;margin:0 auto}.gsd-release-row{display:flex;align-items:center;gap:11px}.gsd-release-row>span{flex:0 0 116px;color:#1f2a26;font-size:13.5px;font-weight:800}.gsd-release-row>input[type=text]{width:188px;height:38px;border:1px solid #c9d3cf;border-radius:8px;background:#f7faf9;padding:8px 10px;text-align:center;font:inherit;font-size:13px;color:#33413b}.gsd-release-icon,.gsd-release-eye{width:36px;height:36px;border:0;border-radius:8px;background:transparent;color:#9aa6a1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}.gsd-release-icon{border:1px solid #e4e9e2}.gsd-release-icon:hover:not(:disabled){color:#1b7a43}.gsd-release-eye{width:34px;border:1px solid transparent}.gsd-release-icon.has,.gsd-release-eye.on{border-color:#008f4c;background:#eaf8f0;color:#008f4c;box-shadow:0 0 0 1px rgba(0,143,76,.08)}.gsd-release-icon.has:disabled{opacity:1;cursor:not-allowed}.gsd-release-eye.on:hover{background:#dff3e8;color:#006d3a}.gsd-release-icon:disabled,.gsd-release-eye:disabled{opacity:.4;cursor:not-allowed}.release-export{height:34px;min-height:34px;background:#0f4c81!important;border-color:#0f4c81!important;color:#fff!important;border-radius:6px;padding:0 14px;font-size:12px;font-weight:700;letter-spacing:0.02em}.release-export:hover:not(:disabled){background:#0c3e69!important;border-color:#0c3e69!important}.gsd-release-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:20px;padding-top:16px;border-top:1px solid #eceeec;flex-wrap:wrap}.gsd-release-actions .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 15px;font-size:12.5px;font-weight:800}.gsd-release-actions .release-send{background:#0f766e;border-color:#0f766e;color:#fff}.gsd-release-actions .wb-modal-btn:disabled{background:#c7cdc9!important;border-color:#c7cdc9!important;color:#eef1ef!important;cursor:not-allowed}
@@ -21109,6 +21450,8 @@ onBeforeUnmount(() => {
 .truck-driver-actions .select{background:#e67e22;color:#fff}.truck-driver-actions .select:hover:not(:disabled){background:#cf6f1c}.truck-driver-actions .select:disabled{background:#f4c79d;color:#fff;opacity:.55;cursor:not-allowed}
 .truck-driver-table tr.driver-row-editing td:has(input:not([type=checkbox])),.truck-driver-table tr.driver-row-editing td:has(select){padding:0;background:#fff4df}.truck-driver-table tr.driver-row-editing input:not([type=checkbox]),.truck-driver-table tr.driver-row-editing select{display:block;width:100%;height:100%;min-height:36px;box-sizing:border-box;padding:6px 8px;border-radius:0;background:#fff4df}.truck-driver-table tr.driver-row-editing input:focus,.truck-driver-table tr.driver-row-editing select:focus{border-radius:0;background:#fff;box-shadow:inset 0 0 0 2px #f39a12}.truck-driver-table .driver-status-cell.active,.truck-driver-table .driver-status-cell.active select{background:#dff5e8;color:#08743e;font-weight:800}.truck-driver-table .driver-status-cell.inactive,.truck-driver-table .driver-status-cell.inactive select{background:#f2f4f3;color:#7a847d}.truck-driver-name-link{width:100%;border:0;background:transparent;color:#08743e;text-decoration:underline;font:inherit;font-weight:800;cursor:pointer}.truck-driver-name-link:disabled{color:#7a847d;text-decoration:none;cursor:default}.truck-driver-picker-link.empty{color:#008f4c}.truck-driver-picker-link:disabled{color:#9aa6a1;text-decoration:none;cursor:not-allowed}
 .truck-driver-table tr.driver-row-current td{background:#dff5e8!important;box-shadow:inset 0 1px 0 #68c993,inset 0 -1px 0 #68c993}.truck-driver-table tr.driver-row-current td:first-child{box-shadow:inset 3px 0 0 #008f4c,inset 0 1px 0 #68c993,inset 0 -1px 0 #68c993}.truck-driver-table tr.driver-row-current .truck-driver-name-link{color:#006b38}.truck-company-cell{text-align:center!important}.truck-company-cell .truck-company-filter{text-align:center;text-align-last:center;cursor:text}.truck-company-cell>.gsd-pu-link{display:block;width:100%;text-align:center}.truck-company-picker button{text-align:center}
+.gsd-modal.gsd-truck-cont-modal:has(.truck-company-picker){overflow:visible}.gsd-truck-cont-modal:has(.truck-company-picker) .gsd-truck-table-wrap{overflow:visible}.truck-company-picker{max-height:172px;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
+.gsd-truck-foot .wb-modal-btn{transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease}.gsd-truck-foot .primary:disabled,.gsd-truck-foot .primary:disabled:hover{background:#8fd8b7!important;border-color:#8fd8b7!important;box-shadow:none!important;transform:none!important}.gsd-truck-foot .send:hover:not(:disabled){background:#00773f!important;border-color:#00773f!important;color:#fff!important;box-shadow:0 3px 9px rgba(0,119,63,.24)}
 .gsd-pickup-form select{width:100%;height:36px;border:1px solid #d3dacf;border-radius:7px;background:#fff;padding:7px 30px 7px 10px;font:inherit;font-size:12.5px;color:#33413b;outline:none}.gsd-pickup-form select:focus{box-shadow:inset 0 0 0 2px #00c566}.gsd-pickup-form select:disabled{background:#eef4f2;color:#64746d;cursor:not-allowed}.gsd-modal.gsd-mock-pk-modal .gsd-pickup-form select{height:38px;border-color:#c9d3cf;border-radius:8px;font-size:13px}.gsd-modal.gsd-mock-pk-modal .gsd-pickup-form select:focus{box-shadow:none}
 /* Native dropdowns inside worksheet cells: center selected values and popup options. */
 .ops-efa-select,.ops-action-select,.actsel{text-align:center;text-align-last:center}
