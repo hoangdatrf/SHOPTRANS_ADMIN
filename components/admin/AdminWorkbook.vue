@@ -284,7 +284,11 @@
                     :title="scheduleDateTitle(rowIndex, columnIndex)"
                     @click.stop="openScheduleDatePopup(rowIndex, columnIndex, $event)"
                   >
-                    {{ String(rows[rowIndex]?.[columnIndex] || '').trim() ? displayCell(rows[rowIndex]?.[columnIndex], rowIndex, columnIndex) : 'dd/mm/yyyy' }}
+                    <span v-if="String(rows[rowIndex]?.[columnIndex] || '').trim()">{{ displayCell(rows[rowIndex]?.[columnIndex], rowIndex, columnIndex) }}</span>
+                    <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                      <rect x="3" y="4" width="18" height="17" rx="2" />
+                      <path d="M8 2v4M16 2v4M3 10h18" />
+                    </svg>
                   </button>
                   <select
                     v-else-if="isDropdownCell(rowIndex, columnIndex) && !isLockedOpsCell(rowIndex, columnIndex)"
@@ -715,7 +719,11 @@
                       @mousedown.stop
                       @click.stop="openScheduleDatePopup(rowIndex, columnIndex, $event)"
                     >
-                      {{ String(rows[rowIndex]?.[columnIndex] || '').trim() ? displayCell(rows[rowIndex]?.[columnIndex], rowIndex, columnIndex) : 'dd/mm/yyyy' }}
+                      <span v-if="String(rows[rowIndex]?.[columnIndex] || '').trim()">{{ displayCell(rows[rowIndex]?.[columnIndex], rowIndex, columnIndex) }}</span>
+                      <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="3" y="4" width="18" height="17" rx="2" />
+                        <path d="M8 2v4M16 2v4M3 10h18" />
+                      </svg>
                     </button>
                     <button
                       v-else-if="isDropdownCell(rowIndex, columnIndex) && !isLockedOpsCell(rowIndex, columnIndex)"
@@ -979,7 +987,7 @@
         aria-modal="true"
         @mousedown="closePickupBcMenuOnOutside"
       >
-        <button class="gsd-modal-x" type="button" title="Close" @click="closeGsdModal">&times;</button>
+        <button class="gsd-modal-x" type="button" title="Close" aria-label="Close" @pointerup.stop.prevent="closeGsdModal" @click.stop="closeGsdModal">&times;</button>
         <div v-if="gsdModal.loading && (isPaymentRequestModal() || isExpenseCollectModal())" class="payment-loading-screen" role="status" aria-live="polite">
           <AdminLoadingScreen compact message="Loading payment data" detail="Please wait a moment…" />
         </div>
@@ -1246,7 +1254,8 @@
               <button class="wb-modal-btn" :class="{ primary: gsdModal.form.required === 'NO' }" type="button" :disabled="!gsdModal.editing" @click="setHblRequired('NO')">NO</button>
             </div>
             <input
-              v-model.trim="gsdModal.form.hblNo"
+              ref="hblNumberInput"
+              :value="gsdModal.form.hblNo"
               class="gsd-hbl-input"
               type="text"
               placeholder="Enter HBL NO#"
@@ -1764,7 +1773,7 @@
               <button v-if="!isTcdTruckContModal()" class="wb-modal-btn primary" type="button" @click="addTruckContRecord">Add+</button>
               <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || !selectedTruckContIndexes().length" @click="enableTruckContEdit">Edit</button>
               <button class="wb-modal-btn remove" type="button" :disabled="!selectedTruckContIndexes().length" @click="removeSelectedTruckContRecords">Remove -</button>
-              <button v-if="showsTruckEpodExport()" class="wb-modal-btn primary epod" type="button" :disabled="!selectedTruckContIndexes().length" @click="exportTruckEpod">Export ePOD</button>
+              <button v-if="showsTruckEpodExport()" class="wb-modal-btn primary epod" type="button" :disabled="!truckContRecords().length" @click="exportTruckEpod">Export ePOD</button>
             </div>
             <div class="gsd-truck-table-wrap">
               <table class="gsd-truck-table">
@@ -3125,7 +3134,7 @@
     </div>
     <div v-if="preDocsModal.open" class="wb-modal-overlay wsmodal-overlay pre-docs-overlay" @mousedown.self="closePreDocsModal">
       <div class="wsmodal pdc-modal" :class="{ 'gsd-air-aux-modal': isAirSheet() }" role="dialog" aria-modal="true">
-        <button class="pdc-close" type="button" title="Close" @click="closePreDocsModal">&times;</button>
+        <button class="pdc-close" type="button" title="Close" aria-label="Close" @pointerup.stop.prevent="closePreDocsModal" @click.stop="closePreDocsModal">&times;</button>
         <div class="pdc-title">ATTACH DEST. CLEARANCE DOCS</div>
         <div class="pdc-mock-toolbar"><button class="wb-modal-btn primary" type="button" :disabled="!preDocsModal.editing" @click="addPreDocsOther">Add+</button></div>
         <div class="pdc-mock-body">
@@ -3191,7 +3200,7 @@
     <input ref="preDocsFileInput" type="file" multiple hidden @change="handlePreDocsFile" />
     <div v-if="preAlertViewer.open" class="wb-modal-overlay prealert-viewer-overlay" @mousedown.self="closePreAlertViewer">
       <div class="wb-modal prealert-viewer-modal" role="dialog" aria-modal="true">
-        <button class="gsd-modal-x" type="button" title="Close" @click="closePreAlertViewer">&times;</button>
+        <button class="gsd-modal-x" type="button" title="Close" aria-label="Close" @pointerup.stop.prevent="closePreAlertViewer" @click.stop="closePreAlertViewer">&times;</button>
         <div class="prealert-viewer-head">
           <span>{{ preAlertViewer.name || 'Preview' }}</span>
           <button class="wb-modal-btn primary" type="button" @click="openPreAlertViewerInTab">Open in new tab</button>
@@ -3726,6 +3735,7 @@ const props = defineProps<{
   canSwitchCountry?: boolean
   currentUser?: { id?: string; username?: string; displayName?: string; country?: string | null } | null
 }>()
+const runtimeConfig = useRuntimeConfig()
 const emit = defineEmits<{
   (event: 'toggle-sidebar'): void
   (event: 'select-country', country: string): void
@@ -4529,6 +4539,8 @@ const normalizeClientRecord = (record: any): GsdClientRecord => {
 }
 const gsdClientSearchInput = ref<HTMLInputElement | null>(null)
 const dealtInquiryInput = ref<HTMLTextAreaElement | null>(null)
+const hblNumberInput = ref<HTMLInputElement | null>(null)
+let hblNumberDraft = ''
 const dealtFileInput = ref<HTMLInputElement | null>(null)
 const pickupBookingFileInput = ref<HTMLInputElement | null>(null)
 const pickupInvalidFields = ref(new Set<string>())
@@ -7462,9 +7474,13 @@ const onGlobalMouseUp = () => {
   }
 }
 
+const isDirectPickupReturnPicker = (target: EventTarget | null) => target instanceof HTMLInputElement
+  && target.classList.contains('prs-date')
+  && !!target.closest('.gsd-prs-modal')
+
 const onGlobalMouseDown = (event: MouseEvent) => {
   const target = event.target as HTMLElement | null
-  if (isOpsPage.value && target instanceof HTMLInputElement && (['date', 'time', 'datetime-local'].includes(target.type) || target === nativePickerInput) && !target.disabled && !target.readOnly) {
+  if (isOpsPage.value && target instanceof HTMLInputElement && !isDirectPickupReturnPicker(target) && (['date', 'time', 'datetime-local'].includes(target.type) || target === nativePickerInput) && !target.disabled && !target.readOnly) {
     event.preventDefault()
     if (nativePickerInput && target !== nativePickerInput) cancelNativeOperationsPicker()
     const pickerType = target === nativePickerInput ? nativePickerType : target.type as 'date' | 'time' | 'datetime-local'
@@ -7509,7 +7525,7 @@ const onGlobalMouseDown = (event: MouseEvent) => {
 }
 const preventNativeOperationsPicker = (event: MouseEvent) => {
   const target = event.target
-  if (isOpsPage.value && target instanceof HTMLInputElement && (['date', 'time', 'datetime-local'].includes(target.type) || target === nativePickerInput) && !target.disabled) event.preventDefault()
+  if (isOpsPage.value && target instanceof HTMLInputElement && !isDirectPickupReturnPicker(target) && (['date', 'time', 'datetime-local'].includes(target.type) || target === nativePickerInput) && !target.disabled) event.preventDefault()
 }
 
 const onGlobalKeyDown = (event: KeyboardEvent) => {
@@ -8586,7 +8602,12 @@ const dropdownOptions = (column: number) => {
     : formatOptions.length ? formatOptions : defaultDropdownOptionsFor(column)
   return uniqueDropdownOptions(options, isOpsStaffColumn(column))
 }
-const opsNativeDropdownValue = (row: number, column: number) => normalizeDropdownOption(rows.value[row]?.[column])
+const canonicalOpsStaffName = (value: any, column: number) => {
+  const current = normalizeDropdownOption(value)
+  if (!current || !isOpsStaffColumn(column)) return current
+  return dropdownOptions(column).find((option) => option && option.localeCompare(current, undefined, { sensitivity: 'accent' }) === 0) || current
+}
+const opsNativeDropdownValue = (row: number, column: number) => canonicalOpsStaffName(rows.value[row]?.[column], column)
 const opsNativeDropdownOptions = (row: number, column: number) => {
   const options = dropdownOptions(column)
   const current = opsNativeDropdownValue(row, column)
@@ -10529,8 +10550,9 @@ const openGsdModal = async (row: number, column: number) => {
         hblNo: String(savedForm?.hblNo || (value && value !== 'N/A' && !value.startsWith('{') ? value : '')).trim(),
         hint: '',
       }
+      hblNumberDraft = gsdModal.form.hblNo
       gsdModal.editing = true
-      if (required === 'YES') nextTick(() => (document.querySelector('.gsd-hbl-input') as HTMLInputElement | null)?.focus())
+      if (required === 'YES') nextTick(() => hblNumberInput.value?.focus())
     } else if (gsdModal.kind === 'form') {
       const parsed = parseJsonCell(rawText, null as any)
       if (label === 'PAYMENT REQUEST') {
@@ -10715,7 +10737,9 @@ const openGsdModal = async (row: number, column: number) => {
         gsdModal.formFields = []
         gsdModal.form = preAlertFormFromCell(rawText)
         await loadPreAlertDestinationAgent()
-        gsdModal.editing = !gsdModal.form.locked
+        // An unsent pre-alert is still a working draft. Open it ready for
+        // input; only a document that has actually been sent is read-only.
+        gsdModal.editing = !gsdModal.form.sent
       } else if (label === 'PRE-ALERT CONFIRMATION') {
         gsdModal.formFields = []
         gsdModal.form = preAlertConfirmationFormFromCell(rawText)
@@ -11383,13 +11407,22 @@ const setHblRequired = (value: 'YES' | 'NO') => {
   gsdModal.form.hint = ''
   if (value === 'NO') {
     gsdModal.form.hblNo = ''
+    hblNumberDraft = ''
+    if (hblNumberInput.value) hblNumberInput.value.value = ''
   } else {
-    nextTick(() => (document.querySelector('.gsd-hbl-input') as HTMLInputElement | null)?.focus())
+    nextTick(() => hblNumberInput.value?.focus())
   }
 }
-const uppercaseHblInput = () => {
-  gsdModal.form.hblNo = upperText(gsdModal.form.hblNo || '')
-  gsdModal.form.hint = ''
+const uppercaseHblInput = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const start = input.selectionStart
+  const end = input.selectionEnd
+  // Preserve spaces while the user is typing; trim only once on Save.
+  hblNumberDraft = String(input.value ?? '').toUpperCase()
+  if (input.value !== hblNumberDraft) {
+    input.value = hblNumberDraft
+    if (start !== null && end !== null) input.setSelectionRange(start, end)
+  }
 }
 const isCutoffModal = () => isGsdFormModalLabel('CUT OFF DETAILS', 'CUT OFF DETAIL', 'CUTOFF DETAIL')
 const todayIso = () => {
@@ -12096,7 +12129,7 @@ const sendArrivalNotice = async () => {
 }
 const isPreAlertModal = () => isGsdFormModalLabel('PRE-ALERT SENDING')
 const preAlertForwardingOption = () => {
-  for (const label of ['EFA+', 'FCA+', 'FCF+']) {
+  for (const label of ['EFA+', 'EXW+', 'FCA+', 'FCF+']) {
     const value = upperText(rowValueByHeader(label))
     if (value) return value
   }
@@ -14487,10 +14520,22 @@ const escapeEpodHtml = (value: any) => String(value ?? '').replace(/[&<>"']/g, (
   '"': '&quot;',
   "'": '&#39;',
 }[char] || char))
+const publicEpodUrl = (token: string) => {
+  const configuredSiteUrl = String(runtimeConfig.public.siteUrl || '').trim().replace(/\/+$/, '')
+  if (configuredSiteUrl) return `${configuredSiteUrl}/epod/${encodeURIComponent(token)}`
+  const siteOrigin = new URL(window.location.origin)
+  // The local Admin runs on :5002 while the public SHOPTRANS site (which owns
+  // /epod/:token) runs on the default HTTP/HTTPS port.
+  if (siteOrigin.port === '5002') siteOrigin.port = ''
+  return `${siteOrigin.origin}/epod/${encodeURIComponent(token)}`
+}
 const exportTruckEpod = async () => {
-  const selected = selectedTruckContIndexes().map((index) => ({ index, record: truckContRecords()[index] })).filter((item) => item.record)
+  const records = truckContRecords()
+  const selectedIndexes = selectedTruckContIndexes()
+  const exportIndexes = selectedIndexes.length ? selectedIndexes : records.map((_, index) => index)
+  const selected = exportIndexes.map((index) => ({ index, record: records[index] })).filter((item) => item.record)
   if (!selected.length) {
-    showToast('Select row(s) to export ePOD')
+    showToast('No truck/container records to export')
     return
   }
   const jobNo = rowValueByHeader('JOB NO#') || rowValueByHeader('JOB NO') || ''
@@ -14503,7 +14548,7 @@ const exportTruckEpod = async () => {
     } })
     const token = String(result?.data?.token || result?.token || '')
     if (!token) throw new Error('ePOD token was not returned')
-    const publicUrl = `${window.location.origin}/epod/${encodeURIComponent(token)}`
+    const publicUrl = publicEpodUrl(token)
     selected.forEach(({ record }) => { record.epodUrl = publicUrl; record.epodSign = ''; record.epodReceiver = '' })
     persistTruckContCell(false)
     await saveSheet()
@@ -16323,6 +16368,14 @@ const preAlertFormFromCell = (value: any) => {
     if (key && !docs.some((item) => item.key === key)) docs.push(normalizePreAlertDoc(doc, { key, label: 'OTHER', checked: false, name: '', custom: true }))
   })
   const efa = preAlertForwardingOption()
+  const savedPreDocs = form.preDocs && typeof form.preDocs === 'object' ? form.preDocs : {}
+  const preDocs = {
+    ci: { on: !!savedPreDocs.ci?.on, files: Array.isArray(savedPreDocs.ci?.files) ? savedPreDocs.ci.files.map((file: any) => ({ name: String(file?.name || ''), url: String(file?.url || '') })).filter((file: any) => file.name) : [] },
+    pl: { on: !!savedPreDocs.pl?.on, files: Array.isArray(savedPreDocs.pl?.files) ? savedPreDocs.pl.files.map((file: any) => ({ name: String(file?.name || ''), url: String(file?.url || '') })).filter((file: any) => file.name) : [] },
+    others: Array.isArray(savedPreDocs.others) && savedPreDocs.others.length
+      ? savedPreDocs.others.map((item: any) => ({ name: String(item?.name || ''), files: Array.isArray(item?.files) ? item.files.map((file: any) => ({ name: String(file?.name || ''), url: String(file?.url || '') })).filter((file: any) => file.name) : [] }))
+      : [{ name: '', files: [] }],
+  }
   return {
     destAgent: rowValueByHeader('DESTINATION AGENT') || rowValueByHeader('DEST. AGENT') || '....',
     chk: {
@@ -16344,6 +16397,7 @@ const preAlertFormFromCell = (value: any) => {
     sentAt: String(form.sentAt || ''),
     targetService: String(form.targetService || ''),
     locked: !!form.locked,
+    preDocs,
     // FCL uses the separate Attach Dest. Clearance Docs dialog instead of this inline block.
     showDocs: opsParts.value?.mode !== 'FCL' && (efa === 'DDU' || efa === 'DDP') && !(isExwEcdSheet() && opsParts.value?.mode !== 'FCL'),
   }
@@ -16425,7 +16479,9 @@ const setPreDocsChecked = (section: 'ci' | 'pl', checked: boolean) => {
 const openPreDocsModal = () => {
   if (!isPreAlertModal() || !preAlertReady()) return
   preDocsData()
-  preDocsModal.editing = false
+  // Clearance documents follow the parent pre-alert draft state: every
+  // unsent draft opens ready for input, while a sent pre-alert is view-only.
+  preDocsModal.editing = !!gsdModal.editing
   preDocsModal.open = true
 }
 const closePreDocsModal = () => {
@@ -16580,6 +16636,7 @@ const persistPreAlert = (immediate = false) => {
       sentAt: String(gsdModal.form.sentAt || ''),
       targetService: String(gsdModal.form.targetService || ''),
       locked: !!gsdModal.form.locked,
+      preDocs: JSON.parse(JSON.stringify(preDocsData())),
     },
   })
   scheduleSave()
@@ -17377,21 +17434,40 @@ const saveGsdModal = async () => {
       return
     }
     if (required === 'YES') {
-      const hblNo = upperText(String(gsdModal.form.hblNo || '')).trim()
+      const hblNo = upperText(hblNumberDraft).trim()
       if (!hblNo) {
         gsdModal.form.hint = 'Enter the HBL number'
         return
       }
+      gsdModal.form.hblNo = hblNo
       rows.value[gsdModal.row][gsdModal.column] = hblNo
     } else {
       rows.value[gsdModal.row][gsdModal.column] = 'N/A'
     }
-    void mirrorExwFclDocumentNumber('HBL NO#', rows.value[gsdModal.row][gsdModal.column])
-    mirrorFclLinkedCell(gsdModal.row, gsdModal.column)
+    const savedRow = gsdModal.row
+    const savedColumn = gsdModal.column
+    const savedValue = rows.value[savedRow][savedColumn]
+    const savedKey = activeKey.value
+    const savedCountry = loadedCountryId.value
+    const savedPayload = sheetPayload(savedKey, false, savedCountry)
     gsdModal.editing = false
-    scheduleSave()
-    void saveSheet()
     closeGsdModal()
+    // HBL is a single-cell update: reflect it immediately and persist in the
+    // background so the user never waits behind the global Processing screen.
+    void (async () => {
+      const saved = await saveSheet(savedKey, savedPayload, savedCountry)
+      if (!saved) {
+        showToast('Could not save HBL information. Please try again.')
+        return
+      }
+      // These helpers read the currently visible worksheet. Do not let a
+      // quick tab switch mirror the saved HBL through another sheet context.
+      if (!isVisibleSheet(savedKey, savedCountry)) return
+      await Promise.allSettled([
+        mirrorExwFclDocumentNumber('HBL NO#', savedValue, savedRow),
+        Promise.resolve(mirrorFclLinkedCell(savedRow, savedColumn)),
+      ])
+    })()
     return
   } else if (gsdModal.kind === 'form') {
     if (isPaymentRequestModal()) {
@@ -17534,6 +17610,7 @@ const cellClass = (row: number, column: number) => ({
   clientcell: isClientLinkCell(row, column),
   gsdactcell: isGsdActionButtonCell(row, column),
   actcell: isActionSelectCell(row, column),
+  staffcell: isOpsStaffColumn(column),
   lockedsrc: row > 0 && isLockedOpsCell(row, column),
   xfercell: row > 0 && xferColumn() === column,
   'has-note': Boolean(noteText(row, column)),
@@ -19634,6 +19711,7 @@ const opsCellClass = (row: number, column: number) => ({
   locked: isLockedOpsCell(row, column),
   vdly: ['ETD', 'ETA'].includes(normalizedHeaderLabel(column)) && rowVesselDelayed(row),
   refecd: isRefEcdCell(row, column),
+  staffcell: isOpsStaffColumn(column),
   'date-cell': isScheduleDateCell(row, column) || isDatePopupCell(row, column),
   'time-cell': isOpsTimeColumn(column),
   'linked-date-changed': linkedDateChanged(row, column),
@@ -19725,6 +19803,7 @@ const formatAdminDateDisplay = (value: any) => {
 }
 const displayCell = (value: any, row: number, column: number) => {
   const format = cellFormatOf(row, column)
+  if (row > 0 && isOpsStaffColumn(column)) return canonicalOpsStaffName(value, column)
   if (row > 0 && normalizedHeaderLabel(column) === 'ACTION' && (value == null || value === '')) return 'ACTIVE'
   if (row > 0 && normalizedHeaderLabel(column) === 'MODE' && upperText(value) === 'MANUAL') return 'MANU'
   // Linked Client cells can arrive through a generic renderer (for example
@@ -20334,6 +20413,8 @@ onBeforeUnmount(() => {
 .truck-company-cell{position:relative}.truck-company-picker{position:absolute;z-index:410;left:8px;top:34px;min-width:180px;max-height:190px;overflow:auto;background:#121a1a;border:1px solid #263736;border-radius:7px;box-shadow:0 18px 38px rgba(0,0,0,.28);padding:6px 0;text-align:left}.truck-company-picker button{display:block;width:100%;height:32px;border:0;background:transparent;color:#eaf6ef;text-align:left;padding:0 14px;font-size:12px;font-weight:800;cursor:pointer}.truck-company-picker button:hover{background:#008f4c;color:#fff}.truck-company-picker-empty{padding:10px 14px;color:#b8c5bf;font-size:12px;font-weight:700;white-space:nowrap}
 .gsd-prs-modal{width:920px;max-width:96vw;min-height:420px;padding:28px 20px 22px;border-radius:10px;overflow:hidden;font:12px/1.35 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-prs-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-prs-title{text-align:center;font-size:13px;font-weight:900;color:#0e1512;text-transform:uppercase;margin:0 0 14px}.gsd-prs-table-wrap{overflow-x:hidden;overflow-y:auto;max-height:255px}.gsd-prs-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11.5px;color:#33413b}.gsd-prs-table th,.gsd-prs-table td{border:1px solid #cfd8d2;text-align:center;padding:6px;height:32px}.gsd-prs-table th{background:#eef3ee;color:#66736c;font-family:var(--mono,'Geist Mono',ui-monospace,monospace);font-size:10.5px;font-weight:800;letter-spacing:.02em}.gsd-prs-table td{background:#f8fbfa}.gsd-prs-table input[type=checkbox]{width:15px;height:15px;accent-color:#008f4c}.gsd-prs-table .prs-order{font-weight:700;color:#7a847d;background:#fff}.gsd-prs-table .prs-readonly{color:#33413b;background:#f8fbfa}.gsd-prs-table .prs-days{font-weight:800;color:#1f4ed8}.gsd-prs-table .prs-date{width:100%;height:26px;border:0;background:transparent;text-align:center;font:inherit;font-size:11.5px;color:#33413b;outline:none}.gsd-prs-table .prs-date:focus{background:#fff;box-shadow:inset 0 0 0 2px #00c566;border-radius:4px}.gsd-prs-table .prs-date:disabled{color:#9aa6a1;opacity:1}.gsd-prs-table .prs-empty{height:44px;color:#0e1512;font-weight:800;font-style:italic;background:#fff}.gsd-prs-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.gsd-prs-actions .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:800}.gsd-prs-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-prs-actions .edit{background:#f6c998;border-color:#f6c998;color:#fff}.gsd-prs-actions .wb-modal-btn:disabled{opacity:.55;cursor:not-allowed}
 .gsd-prs-modal:not(.gsd-prs-editing) .gsd-prs-table td,.gsd-prs-modal:not(.gsd-prs-editing) .gsd-prs-table .prs-order,.gsd-prs-modal:not(.gsd-prs-editing) .gsd-prs-table .prs-readonly{background:#eef1ef;color:#7a847d}.gsd-prs-modal:not(.gsd-prs-editing) .gsd-prs-table tbody tr{cursor:pointer}.gsd-prs-editing .gsd-prs-table td{background:#fff}.gsd-prs-editing .gsd-prs-table .prs-date:not(:disabled){background:#fff}
+.gsd-prs-modal .gsd-prs-table .prs-date:not(:disabled),.gsd-prs-modal .gsd-prs-table .prs-date:not(:disabled):focus{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;outline:0!important}
+.gsd-prs-modal .gsd-prs-table input.prs-date:is([type=date],[type=time]){cursor:pointer}
 .gsd-prs-editing .gsd-prs-table td.prs-readonly{background:#eef1ef;color:#7a847d;cursor:not-allowed}.gsd-prs-editing .gsd-prs-table td.prs-days{background:#eef1ef}
 .gsd-air-pickup-status-modal{width:880px;max-width:96vw;min-height:0;padding:24px 20px 20px}.gsd-air-pickup-status-modal .gsd-prs-title{margin-bottom:14px}.gsd-air-pickup-status-modal .gsd-prs-table-wrap{max-height:none}.gsd-air-pickup-status-modal .gsd-prs-table th,.gsd-air-pickup-status-modal .gsd-prs-table td{height:32px;padding:5px 8px}.gsd-air-pickup-status-modal .gsd-prs-actions{margin-top:14px}
 .gsd-air-dup-icd-prs-modal{width:960px;max-width:96vw;min-height:0;padding:22px 24px}
@@ -20405,6 +20486,7 @@ onBeforeUnmount(() => {
 .wb-modal-btn.edit:not(:disabled),.gsd-pre-actions .edit:not(:disabled){background:#e67e22;border-color:#e67e22;color:#fff}.wb-modal-btn.edit:hover:not(:disabled),.gsd-pre-actions .edit:hover:not(:disabled){background:#df9950;border-color:#df9950}.prealert-viewer-overlay{z-index:280;background:rgba(10,30,18,.55)}.prealert-viewer-modal{position:relative;width:min(920px,94vw);height:min(720px,88vh);border-radius:12px;padding:0;overflow:hidden;display:flex;flex-direction:column;background:#fff;box-shadow:0 24px 70px rgba(0,0,0,.35)}.prealert-viewer-modal .gsd-modal-x{right:12px;top:12px;z-index:2}.prealert-viewer-head{height:48px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 52px 0 16px;border-bottom:1px solid #e4e9e2}.prealert-viewer-head span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:800;color:#1f2a26}.prealert-viewer-head .wb-modal-btn{height:30px;min-height:30px;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:800}.prealert-viewer-frame{flex:1;width:100%;border:0;background:#f7faf9}
 .ops-ata-btn{width:32px;height:32px;margin:0 auto;border:1px solid #d0d7de;border-radius:6px;background:#fff;color:#33413b;display:grid;place-items:center;cursor:pointer;padding:0}.ops-ata-btn:hover:not(:disabled):not(.has){border-color:#9cc2e8;background:#f8fbff}.ops-ata-btn.has{width:auto;min-width:68px;height:26px;padding:0;border-color:transparent;border-radius:0;background:transparent;color:inherit;white-space:nowrap;font:inherit;font-size:11px;font-weight:400}.ops-ata-btn.has:hover:not(:disabled){border-color:transparent;background:transparent;text-decoration:underline;text-underline-offset:3px}.ops-ata-btn.has:focus-visible{outline:0;text-decoration:underline;text-underline-offset:3px}.ops-ata-btn:disabled{cursor:default}.ops-ata-btn.has:disabled:hover{background:transparent;text-decoration:none}.ops-ata-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .ops-schedule-date{display:inline-flex;align-items:center;justify-content:center;min-width:76px;min-height:26px;margin:0 auto;border:0;background:transparent;padding:0 3px;color:inherit;font:inherit;font-size:12px;font-weight:400;line-height:1.35;font-variant-numeric:tabular-nums;white-space:nowrap;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;cursor:pointer}.ops-schedule-date:hover:not(:disabled),.ops-schedule-date:focus-visible{color:#008f4c;text-decoration-thickness:2px;outline:0}.ops-schedule-date:not(.has){color:#7b8780}.ops-schedule-date:disabled{color:#69756f;opacity:1;cursor:not-allowed}.ops-schedule-date.locked:not(.has){color:#9aa39e}
+.ops-schedule-date:not(.has){width:32px;min-width:32px;height:32px;min-height:32px;border:1px solid #d0d7de;border-radius:6px;background:#fff;padding:0;text-decoration:none}.ops-schedule-date:not(.has):hover:not(:disabled),.ops-schedule-date:not(.has):focus-visible{border-color:#00a85a;background:#f4fbf7;box-shadow:0 0 0 2px rgba(0,168,90,.1)}.ops-schedule-date.has{border:0;background:transparent;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}.ops-schedule-date svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.ops-schedule-date.locked:not(.has){border-color:#dce2df;background:#f4f6f5;color:#9aa39e}
 .dp-grid button:disabled{cursor:not-allowed;opacity:.35;background:#f8faf8;color:#aeb7b0}
 .gsd-expcol-modal{width:min(1220px,96vw);height:min(560px,82vh);padding:0;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;background:#fff}.gsd-expcol-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:13px;z-index:2}.gsd-expcol-modal-body{min-height:0;display:flex;flex:1;flex-direction:column}.expcol-head{position:relative;min-height:52px;padding:12px 48px 9px 14px;border-bottom:1px solid #e0e6df;display:flex;align-items:center;justify-content:center}.expcol-head .pr-meta{position:absolute;left:14px;top:12px;display:flex;align-items:center;gap:26px}.expcol-head .pr-meta span{display:flex;align-items:center;gap:6px;color:#3d4a43;font-size:11px;font-weight:800;white-space:nowrap}.expcol-head .pr-metainp{width:108px;height:24px;border:0;border-bottom:1px solid #d3dacf;background:transparent;padding:0 4px;font:inherit;font-size:12px;outline:none}.expcol-head .pr-title{font-size:13px;font-weight:900;color:#0e1512;text-align:center}.expcol-tools{padding:9px 14px;display:flex;align-items:center;justify-content:space-between;gap:14px;border-bottom:1px solid #e0e6df}.expcol-tools .pr-tleft,.expcol-tools .ec-tright{display:flex;align-items:center;gap:8px;min-width:0}.ec-issue{font-size:11.5px;font-weight:700;color:#33413b;white-space:nowrap}.ec-issinp,.ec-cursel{height:28px;border:1px solid #cfd8d2;border-radius:5px;background:#fff;padding:0 8px;font:inherit;font-size:11.5px;color:#33413b}.ecdebit{background:#008f4c!important;border-color:#008f4c!important;color:#fff!important}.eccredit{background:#d97706!important;border-color:#d97706!important;color:#fff!important}.ecedit{background:#e67e22!important;border-color:#e67e22!important;color:#fff!important}.ecblue{background:#1f7ae0!important;border-color:#1f7ae0!important;color:#fff!important}.expcol-scroll{flex:1;overflow:auto;background:#fff;padding:10px 14px 14px}.expcol-table{width:1840px;border-collapse:collapse;table-layout:fixed;font-size:11px;color:#33413b}.expcol-table th,.expcol-table td{border:1px solid #d8e0d9;padding:5px 6px;text-align:center;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.expcol-table th{height:29px;background:#eef3ee;color:#33413b;font-weight:800}.expcol-table .pcheck{width:34px}.expcol-table input[type=checkbox]{width:14px;height:14px;accent-color:#008f4c}.expcol-table .grp-pay{background:#fff2ee}.expcol-table .grp-col{background:#eef8f1}.expcol-table .grp-fb{background:#f8fbff}.expcol-table .grp-dr{background:#f7fbf8}.ec-sumrow th{height:34px;font-size:11px}.ec-sumin{display:inline-flex;align-items:center;gap:5px}.ec-sum-pay{background:#fff2ee!important}.ec-sum-col{background:#eef8f1!important}.ec-sum-ded{background:#f7fbf8!important}.ec-white{background:#fff!important;text-align:left!important;font-weight:700}.ec-view{height:24px;min-width:54px;border:0;border-radius:4px;background:#1f7ae0;color:#fff;font-size:10.5px;font-weight:800;cursor:pointer}.ec-statussel,.ec-reason{width:100%;height:26px;border:1px solid #d5ddd9;border-radius:4px;background:#fff;padding:0 6px;text-align:center;font:inherit;font-size:11px;outline:none}.ec-statussel.ok{background:#e8f6ee;color:#0a6b3b;font-weight:800}.ec-statussel.reject{background:#fdecea;color:#c0392b;font-weight:800}.ec-statussel.edit{background:#fff4e5;color:#b45f04;font-weight:800}.ec-statussel:disabled,.ec-reason:disabled{background:#f8faf8;color:#647067}.pr-empty{height:60px;color:#7a847d;font-weight:800;font-style:italic;background:#fff!important}
 .gsd-expcol-modal{width:min(1400px,96vw);height:min(620px,86vh)}.gsd-expcol-modal .expcol-scroll{padding:0 14px 14px}.gsd-expcol-modal .expcol-table{width:auto;min-width:100%;table-layout:auto;border-collapse:collapse;font-size:12px}.gsd-expcol-modal .expcol-table th,.gsd-expcol-modal .expcol-table td{padding:6px 12px;border:1px solid #dfe5ea;white-space:nowrap;overflow:visible;text-overflow:clip}.gsd-expcol-modal .expcol-table th{font-weight:700}.gsd-expcol-modal .ec-col-check{width:34px}.gsd-expcol-modal .ec-col-charge{min-width:140px}.gsd-expcol-modal .ec-col-party{min-width:150px}.gsd-expcol-modal .ec-col-place{min-width:92px}.gsd-expcol-modal .ec-col-cur{min-width:80px}.gsd-expcol-modal .ec-col-total{min-width:92px}.gsd-expcol-modal .ec-col-upload{min-width:82px}.gsd-expcol-modal .ec-col-sender{min-width:76px}.gsd-expcol-modal .ec-col-note{min-width:168px}.gsd-expcol-modal .ec-col-date{min-width:118px}.gsd-expcol-modal .ec-col-status{min-width:126px}.gsd-expcol-modal .ec-col-reason{min-width:150px}.gsd-expcol-modal .ec-col-status-details{min-width:160px}.gsd-expcol-modal .ec-col-ready{min-width:156px}.gsd-expcol-modal .ec-cell{display:inline-block;max-width:220px;color:#33414d;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}.gsd-expcol-modal .ec-sumrow td{border:1px solid #dfe5ea;padding:7px 10px;font-size:12px;font-weight:700}.gsd-expcol-modal .ec-sumrow .pcheck{background:#fff}.gsd-expcol-modal .ec-sum-pay{background:#fdecea!important;color:#8a2b21}.gsd-expcol-modal .ec-sum-col{background:#eaf7ef!important;color:#1f6b43}.gsd-expcol-modal .ec-sum-ded{background:#eef1f7!important;color:#3a4656}.gsd-expcol-modal .ec-sumin{gap:8px;font-size:12px}.gsd-expcol-modal .ec-cursel{height:24px;border:1px solid #c7d0d9;border-radius:6px;background:#fff;padding:2px 6px;font-size:12px;font-weight:700;color:#1f2a33}.gsd-expcol-modal .ec-view{height:24px;border:0;border-radius:6px;background:#2f6fed;color:#fff;padding:3px 10px;display:inline-flex;align-items:center;justify-content:center;gap:5px;font-size:11px;font-weight:700}.gsd-expcol-modal .ec-view:hover{background:#2356c9}.gsd-expcol-modal .ecdebit{background:#c0392b!important;border-color:#c0392b!important}.gsd-expcol-modal .ecdebit:hover:not(:disabled){background:#a23227!important}.gsd-expcol-modal .eccredit{background:#008f4c!important;border-color:#008f4c!important}.gsd-expcol-modal .eccredit:hover:not(:disabled){background:#04793f!important}.gsd-expcol-modal .ec-issinp{border:0;border-bottom:1px solid #9aa6b2;border-radius:0;background:transparent;padding:2px 4px;width:140px}.gsd-expcol-modal .ec-statussel{width:124px;height:26px}.gsd-expcol-modal .ec-reason{width:150px;height:26px}.gsd-expcol-modal .ec-white{text-align:center!important}
@@ -20752,6 +20834,8 @@ onBeforeUnmount(() => {
 <style>
 .booking-detail-modal{box-sizing:border-box}.booking-detail-row{grid-template-columns:104px minmax(0,1fr) 36px 24px;column-gap:12px}.booking-doc-wrap{display:flex;align-items:flex-start;gap:16px;margin-bottom:10px}.booking-add-doc{flex:0 0 auto;min-width:88px;padding:0 14px}.booking-doc-list{display:flex;min-width:0;flex:1;flex-direction:column;gap:10px}.booking-detail-row.booking-doc-row{grid-template-columns:minmax(0,1fr) 36px 24px;column-gap:12px;margin:0;padding:0;border:0}.booking-detail-row.booking-doc-row.has-remove{grid-template-columns:minmax(0,1fr) 36px 24px 24px}.booking-remove{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border:0;border-radius:50%;background:#c0392b;color:#fff;font-size:15px;font-weight:800;line-height:1;cursor:pointer}.booking-remove:hover{background:#a23227}.booking-icon,.booking-eye{display:inline-flex;align-items:center;justify-content:center;padding:0}.booking-icon{width:36px;height:36px}.booking-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.booking-eye{width:24px;height:24px;color:#0f4c81}.booking-eye svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.booking-eye:disabled{color:#9aa6a1}
 .pre-docs-overlay{z-index:460!important;background:rgba(10,30,18,.5)!important}.pdc-modal{position:relative;width:560px;max-width:96vw;overflow:visible}.pdc-close{position:absolute;right:12px;top:12px;z-index:2;display:grid;place-items:center;width:24px;height:24px;padding:0;border:0;border-radius:50%;background:#c0392b;color:#fff;font:800 17px/1 Arial,sans-serif;cursor:pointer}.pdc-close:hover{background:#a23227}.pdc-modal .pdc-title{padding:17px 50px 8px}.pdc-modal>.pdc-body{display:none}.pdc-mock-toolbar{display:flex;justify-content:flex-end;padding:0 18px 4px}.pdc-mock-toolbar .wb-modal-btn{height:32px;min-height:32px;padding:7px 13px;border-radius:7px;font-size:12px;font-weight:800}.pdc-mock-body{padding:0 18px 12px;max-height:60vh;overflow:auto}.pdc-mock-row{display:grid;grid-template-columns:180px 150px 30px 30px;align-items:center;justify-content:center;gap:10px;margin:8px 0}.pdc-mock-row>span{text-align:right;color:#33413b;font-size:12.5px;font-weight:700}.pdc-mock-row>input[type=checkbox]{justify-self:center;width:15px;height:15px;accent-color:#008f4c;cursor:pointer}.pdc-mock-row>input[type=checkbox]:disabled{cursor:not-allowed}.pdc-mock-name{width:100%;height:30px;box-sizing:border-box;border:1px solid #d6ddd9;border-radius:7px;background:#fff;padding:5px 9px;font:inherit;font-size:12px;color:#33413b;outline:none}.pdc-mock-name:focus{border-color:#00c566;box-shadow:inset 0 0 0 1px #00c566}.pdc-mock-name:disabled{background:#eef0f2;color:#8a94a0;cursor:not-allowed}.pdc-mock-icon{display:inline-flex;align-items:center;justify-content:center;gap:2px;width:30px;height:30px;padding:2px;border:0;background:transparent;color:#33413b;cursor:pointer}.pdc-mock-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.pdc-mock-icon.upload.has{color:#1b7a43}.pdc-mock-icon.eye{color:#9aa6a1}.pdc-mock-icon.eye.on{color:#0f4c81}.pdc-mock-icon:disabled{opacity:.35;cursor:not-allowed}.pdc-mock-icon b{font-size:9px}.pdc-modal .wsmodal-foot{background:#fff}.pdc-modal .pdc-edit{background:#e67e22;border-color:#e67e22;color:#fff}.pdc-modal .pdc-edit:disabled{opacity:.45}.pdc-modal .pdc-clear{background:#64748b;border-color:#64748b;color:#fff}.pdc-modal .pdc-clear:disabled{opacity:.45;cursor:not-allowed}
+/* PRE-ALERT actions keep their semantic colour and use a darker shade on hover. */
+.gsd-prealert-modal .gsd-pre-actions .slate:hover:not(:disabled){background:#51606e!important;border-color:#51606e!important;color:#fff!important}.gsd-prealert-modal .gsd-pre-actions .edit:hover:not(:disabled){background:#c96512!important;border-color:#c96512!important;color:#fff!important}.gsd-prealert-modal .gsd-pre-actions .primary:hover:not(:disabled),.gsd-prealert-modal .pdcbtn:hover:not(:disabled){background:#00773f!important;border-color:#00773f!important;color:#fff!important}.gsd-prealert-modal .gsd-pre-actions .send:hover:not(:disabled){background:#0b3b65!important;border-color:#0b3b65!important;color:#fff!important}.gsd-prealert-modal .gsd-pre-icon:hover:not(:disabled){color:#008f4c!important}.gsd-prealert-modal .gsd-pre-icon.eye.on:hover:not(:disabled){color:#0b3b65!important}.pdc-modal .pdc-edit:hover:not(:disabled){background:#c96512!important;border-color:#c96512!important;color:#fff!important}.pdc-modal .pdc-clear:hover:not(:disabled){background:#51606e!important;border-color:#51606e!important;color:#fff!important}.pdc-modal .primary:hover:not(:disabled){background:#00773f!important;border-color:#00773f!important;color:#fff!important}.pdc-modal .pdc-mock-icon.upload:hover:not(:disabled){color:#008f4c!important}.pdc-modal .pdc-mock-icon.eye.on:hover:not(:disabled){color:#0b3b65!important}.pdc-modal button:disabled:hover{transform:none!important;box-shadow:none!important}
 .gsd-modal.gsd-bill-modal:has(.gsd-release-body){display:block;width:720px;max-width:96vw;height:auto;min-height:0;max-height:calc(100vh - 48px);overflow-y:auto;padding:30px 34px}.gsd-release-body{max-width:600px;margin:0 auto}.gsd-release-title{margin:4px 0 12px;text-align:center;color:#1f2a26;font-size:15px;font-weight:800;text-decoration:underline}.gsd-release-payment{display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;margin:14px 0 8px}.gsd-release-payment label{display:inline-flex;align-items:center;gap:9px;color:#1f2a26;font-size:13.5px;font-weight:700;white-space:nowrap;cursor:pointer}.gsd-release-payment input[type=checkbox],.gsd-release-row>input[type=checkbox]{width:18px;height:18px;accent-color:#008f4c;cursor:pointer}.gsd-release-payment input[type=date]{width:134px;height:36px;border:1px solid #c9d3cf;border-radius:8px;background:#fff;padding:7px 9px;font:inherit;font-size:13px;color:#33413b}.gsd-release-payment input:disabled{background:#f1f5f4;color:#9aa6a1;cursor:not-allowed}.gsd-release-divider{height:1px;margin:16px 0;background:#e2e7e3}.gsd-release-rows{display:flex;flex-direction:column;gap:13px;align-items:flex-start;width:max-content;margin:0 auto}.gsd-release-row{display:flex;align-items:center;gap:11px}.gsd-release-row>span{flex:0 0 116px;color:#1f2a26;font-size:13.5px;font-weight:800}.gsd-release-row>input[type=text]{width:188px;height:38px;border:1px solid #c9d3cf;border-radius:8px;background:#f7faf9;padding:8px 10px;text-align:center;font:inherit;font-size:13px;color:#33413b}.gsd-release-icon,.gsd-release-eye{width:36px;height:36px;border:0;border-radius:8px;background:transparent;color:#9aa6a1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}.gsd-release-icon{border:1px solid #e4e9e2}.gsd-release-icon:hover:not(:disabled){color:#1b7a43}.gsd-release-eye{width:34px;border:1px solid transparent}.gsd-release-icon.has,.gsd-release-eye.on{border-color:#008f4c;background:#eaf8f0;color:#008f4c;box-shadow:0 0 0 1px rgba(0,143,76,.08)}.gsd-release-icon.has:disabled{opacity:1;cursor:not-allowed}.gsd-release-eye.on:hover{background:#dff3e8;color:#006d3a}.gsd-release-icon:disabled,.gsd-release-eye:disabled{opacity:.4;cursor:not-allowed}.release-export{height:34px;min-height:34px;background:#0f4c81!important;border-color:#0f4c81!important;color:#fff!important;border-radius:6px;padding:0 14px;font-size:12px;font-weight:700;letter-spacing:0.02em}.release-export:hover:not(:disabled){background:#0c3e69!important;border-color:#0c3e69!important}.gsd-release-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:20px;padding-top:16px;border-top:1px solid #eceeec;flex-wrap:wrap}.gsd-release-actions .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 15px;font-size:12.5px;font-weight:800}.gsd-release-actions .release-send{background:#0f766e;border-color:#0f766e;color:#fff}.gsd-release-actions .wb-modal-btn:disabled{background:#c7cdc9!important;border-color:#c7cdc9!important;color:#eef1ef!important;cursor:not-allowed}
 .gsd-release-later{display:contents}.gsd-modal.gsd-do-release-modal{width:660px;max-width:96vw;padding:22px 26px}.gsd-do-release-modal .gsd-release-body{max-width:none;margin:0}.gsd-do-release-modal .gsd-release-title{margin:2px 0 10px;text-align:left;font-size:14px;font-weight:800;letter-spacing:.02em}.gsd-do-release-modal .gsd-release-payment{justify-content:center;gap:26px;flex-wrap:nowrap;margin:6px 0 14px}.gsd-do-release-modal .gsd-release-payment label{gap:10px;font-size:14px;font-weight:400}.gsd-do-release-modal .gsd-release-later{display:inline-flex;align-items:center;gap:12px;flex-wrap:nowrap}.gsd-do-release-modal .gsd-release-payment input[type=date]{width:150px;flex:0 0 150px}.gsd-do-release-modal .gsd-release-divider{margin:14px 0}.gsd-do-release-modal .gsd-release-rows{gap:12px;margin:0 auto}.gsd-do-release-modal .gsd-release-row>span{order:1;flex:0 0 120px;text-align:right;font-size:13px;font-weight:400}.gsd-do-release-modal .gsd-release-row>input[type=checkbox]{order:2}.gsd-do-release-modal .gsd-release-row>input[type=text]{order:3;width:200px;background:#fff}.gsd-do-release-modal .gsd-release-row>.gsd-release-icon{order:4;width:34px;height:34px;border:0;background:#1f7ae0;color:#fff}.gsd-do-release-modal .gsd-release-row>.gsd-release-icon:hover:not(:disabled){background:#1666c2;color:#fff}.gsd-do-release-modal .gsd-release-row>.gsd-release-eye{order:5;color:#9aa6a1}.gsd-do-release-modal .gsd-release-row>.release-export{order:4;height:34px;min-height:34px;border-radius:8px;background:#1f7ae0!important;border-color:#1f7ae0!important;padding:8px 18px;font-size:13px;font-weight:700}.gsd-do-release-modal .gsd-release-actions{margin-top:20px;padding-top:14px;gap:8px}.gsd-do-release-modal .gsd-release-actions .wb-modal-btn{font-size:13px;font-weight:700}@media(max-width:640px){.gsd-do-release-modal .gsd-release-payment{flex-wrap:wrap}.gsd-do-release-modal .gsd-release-later{flex-wrap:wrap;justify-content:center}}
 .gsd-modal.gsd-do-release-modal{width:760px}.gsd-do-release-modal .gsd-release-rows{width:100%;max-width:650px;align-items:stretch}.gsd-do-release-modal .gsd-release-row{display:grid;grid-template-columns:100px 18px 180px 34px 30px 54px 140px;align-items:center;justify-content:center;column-gap:8px;width:100%}.gsd-do-release-modal .gsd-release-row>span{grid-column:1;grid-row:1;order:initial;min-width:0;text-align:right}.gsd-do-release-modal .gsd-release-row>input[type=checkbox]{grid-column:2;grid-row:1;order:initial;margin:0}.gsd-do-release-modal .gsd-release-row>input[type=text]{grid-column:3;grid-row:1;order:initial;box-sizing:border-box;width:180px}.gsd-do-release-modal .gsd-release-row>.gsd-release-icon{grid-column:4;grid-row:1;order:initial}.gsd-do-release-modal .gsd-release-row>.gsd-release-eye{grid-column:5;grid-row:1;order:initial}.gsd-do-release-modal .gsd-release-row>.release-export{grid-column:4/6;grid-row:1;order:initial;justify-self:start}.gsd-do-release-modal .do-validity-label{grid-column:6;grid-row:1;color:#1f2a26;font-size:13px;font-weight:400;line-height:1.2;text-align:right}.gsd-do-release-modal .do-validity-date{grid-column:7;grid-row:1;box-sizing:border-box;width:140px;height:38px;border:1px solid #c9d3cf;border-radius:8px;background:#fff;padding:7px 9px;color:#33413b;font:inherit;font-size:13px;cursor:pointer}.gsd-do-release-modal .do-validity-date.ops-picker-proxy{grid-column:7!important;grid-row:1!important}.gsd-do-release-modal .do-validity-date:hover:not(:disabled){border-color:#7ea795}.gsd-do-release-modal .do-validity-date:disabled{border-color:#dce3df;background:#eef2f1;color:#9aa6a1;cursor:not-allowed}.gsd-do-release-modal .gsd-release-row>input.gsd-release-auto-date{border:1px dashed #c5d0ca;background:#eef2f1;color:#66736d;cursor:default}.gsd-do-release-modal .gsd-release-row>.gsd-release-icon:not(.has):not(:disabled){border:1px solid #8eb9e8;background:#eaf3fd;color:#1f6fbd}.gsd-do-release-modal .gsd-release-row>.gsd-release-icon.has{border:1px solid #087d43;background:#087d43;color:#fff;box-shadow:0 0 0 2px rgba(8,125,67,.14)}.gsd-do-release-modal .gsd-release-row>.gsd-release-icon.has:hover:not(:disabled){border-color:#066b39;background:#066b39;color:#fff}.gsd-do-release-modal .gsd-release-row>.gsd-release-icon:disabled{border:1px solid #d9dfdc;background:#eef1f0;color:#a5afaa;opacity:1}.gsd-do-release-modal .gsd-release-row>.gsd-release-icon.has:disabled{border-color:#087d43;background:#087d43;color:#fff;box-shadow:0 0 0 2px rgba(8,125,67,.14)}.gsd-do-release-modal .gsd-release-row>.gsd-release-eye.on{border-color:#69c491;background:#e7f7ee;color:#087d43}@media(max-width:760px){.gsd-modal.gsd-do-release-modal{width:96vw}.gsd-do-release-modal .gsd-release-row{grid-template-columns:90px 18px minmax(145px,180px) 34px 30px}.gsd-do-release-modal .do-validity-label{grid-column:1;grid-row:2;margin-top:8px}.gsd-do-release-modal .do-validity-date,.gsd-do-release-modal .do-validity-date.ops-picker-proxy{grid-column:3/6!important;grid-row:2!important;margin-top:8px;width:100%}}
@@ -20783,6 +20867,34 @@ onBeforeUnmount(() => {
   background: #c7cdc9 !important;
   border-color: #c7cdc9 !important;
   color: #eef1ef !important;
+}
+.gsd-do-release-modal .release-export {
+  transition: background-color .16s ease, border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+.gsd-do-release-modal .release-export:hover:not(:disabled) {
+  background: #1666c2 !important;
+  border-color: #1666c2 !important;
+  box-shadow: 0 5px 12px rgba(31, 122, 224, .28);
+  transform: translateY(-1px);
+}
+.gsd-do-release-modal .release-export:active:not(:disabled) {
+  box-shadow: 0 2px 5px rgba(31, 122, 224, .22);
+  transform: translateY(0);
+}
+.gsd-truck-toolbar .epod {
+  width:auto;
+  flex:0 0 auto;
+  transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease;
+}
+.gsd-truck-toolbar .epod:hover:not(:disabled) {
+  background:#00773f;
+  border-color:#00773f;
+  box-shadow:0 5px 12px rgba(0,143,76,.24);
+  transform:translateY(-1px);
+}
+.gsd-truck-toolbar .epod:active:not(:disabled) {
+  box-shadow:0 2px 5px rgba(0,143,76,.18);
+  transform:translateY(0);
 }
 .gsd-extra-option input,
 .gsd-extra-other input[type="checkbox"],
@@ -20887,7 +20999,11 @@ onBeforeUnmount(() => {
 .an-detail-toolbar .send { min-width: 112px; }
 .an-detail-toolbar .send:not(:disabled) { border-color: #009457; background: #009457; color: #fff; }
 .an-detail-toolbar .send:not(:disabled):hover { border-color:#007f4a; background:#007f4a; }
-.an-detail-toolbar .wb-modal-btn:disabled { cursor:not-allowed; filter:saturate(.48); opacity:.56; }
+.an-detail-toolbar .wb-modal-btn:disabled { cursor:not-allowed; filter:none; opacity:1; box-shadow:none; transform:none; }
+.an-detail-toolbar .primary:disabled { border-color:#00643b; background:#00643b; color:rgba(255,255,255,.62); }
+.an-detail-toolbar .edit:disabled { border-color:#a65305; background:#a65305; color:rgba(255,255,255,.62); }
+.an-detail-toolbar .export:disabled { border-color:#1557a0; background:#1557a0; color:rgba(255,255,255,.62); }
+.an-detail-toolbar .send:disabled { border-color:#00643b; background:#00643b; color:rgba(255,255,255,.62); }
 .an-detail-scroll { max-height: calc(100vh - 94px); overflow: auto; padding: 18px 22px 24px; }
 .an-detail-sheet { max-width: 824px; margin: 0 auto; color: #1f2a26; font-size: 13px; font-weight: 400; }
 .an-detail-letterhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 16px; border-bottom: 2px solid #16406e; padding: 0 34px 10px 0; }
@@ -20997,6 +21113,7 @@ onBeforeUnmount(() => {
 /* Native dropdowns inside worksheet cells: center selected values and popup options. */
 .ops-efa-select,.ops-action-select,.actsel{text-align:center;text-align-last:center}
 .ops-efa-select option,.ops-action-select option,.actsel option{text-align:center}
+.ops-ms-table td.staffcell,.ops-ms-table td.staffcell .ops-textcell,.ops-ms-table td.staffcell .ops-efa-select,.sheet-body td.staffcell,.sheet-body td.staffcell .cell-select{ text-transform:none!important }
 .an-payment-contact{align-items:start}.an-payment-contact>label{display:grid;grid-template-rows:auto 32px minmax(66px,auto);align-content:start;row-gap:4px}.an-payment-contact select{display:block;width:100%;height:32px;box-sizing:border-box;border:1px solid #c9d3cf;border-radius:7px;background:#fff;padding:0 30px 0 9px;color:#46524d;font:inherit;font-size:12.5px;outline:none}.an-payment-contact select:disabled{background:#f1f5f4;color:#64746d;opacity:1}.an-payment-contact textarea{height:66px;min-height:66px}.an-contact-spacer{display:block;width:100%;height:32px;box-sizing:border-box}
 .an-print-sheet{position:fixed!important;left:-10000px!important;top:0!important;width:824px!important;max-width:none!important;margin:0!important;padding:0!important;background:#fff!important;overflow:visible!important}.an-print-sheet .an-payment-contact>label{grid-template-rows:auto auto}.an-print-sheet .an-contact-spacer{display:none}.an-print-sheet .an-print-value{display:flex;align-items:center;box-sizing:border-box;width:100%;min-height:34px;border:1px solid #c9d3cf;border-radius:7px;background:#f1f5f4;padding:1px 9px 7px;color:#46524d;font:inherit;font-size:13px;line-height:1.1;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}.an-print-sheet .an-print-textarea{display:block;min-height:54px;padding-top:4px;padding-bottom:10px;line-height:1.25}.an-print-sheet .an-cargo-summary .an-print-textarea{display:flex;min-height:34px;align-items:center;padding-top:1px;padding-bottom:7px;line-height:1.1}.an-print-sheet .an-detail-remarks .an-print-textarea{min-height:76px}.an-print-sheet .an-add-row,.an-print-sheet .an-row-remove{display:none!important}.an-print-sheet .an-detail-table th:last-child:empty{display:none}.an-print-sheet .an-detail-table td{height:auto;overflow:visible}.an-print-sheet .an-detail-table .an-print-value{min-height:24px;justify-content:center;border:0;border-radius:0;background:transparent;padding:1px 3px 5px;line-height:1.1;text-align:center;white-space:pre-wrap}.an-print-sheet .an-detail-g2,.an-print-sheet .an-detail-g3{align-items:start}
 /* FCD Payment Approval: inherited request data is read-only/darker; FCD feedback fields fill the cell. */
@@ -21073,8 +21190,8 @@ onBeforeUnmount(() => {
 @keyframes payment-loading-wave{0%,100%{transform:scaleY(.55);opacity:.45}50%{transform:scaleY(1);opacity:1}}
 /* PAYMENT REQUEST: keep the checkbox column fixed while the wide table scrolls. */
 /* Operations MODE/TIME are immutable metadata and should read as plain text. */
-.ops-ms-table td.vdly,.sheet-body td.vdly{background:#fff1dc!important;color:#c45f08!important;font-weight:700!important}
-.ops-ms-table td.vdly .ops-textcell,.sheet-body td.vdly .ops-textcell{color:#c45f08!important;font-weight:700!important}
+.ops-ms-table td.vdly,.sheet-body td.vdly{background:transparent!important;color:#c45f08!important;font-weight:400!important}
+.ops-ms-table td.vdly .ops-textcell,.ops-ms-table td.vdly .ops-schedule-date,.sheet-body td.vdly .ops-textcell,.sheet-body td.vdly .ops-schedule-date{color:#c45f08!important;font-weight:400!important}
 .ops-ms-table td.mode-auto,.ops-ms-table td.mode-manual,.sheet-body td.mode-auto,.sheet-body td.mode-manual{background:transparent!important;color:#26312b!important;font-weight:400!important}
 .ops-ms-table td.mode-auto .ops-textcell,.ops-ms-table td.mode-manual .ops-textcell,.sheet-body td.mode-auto .ops-textcell,.sheet-body td.mode-manual .ops-textcell{color:#26312b!important;font-weight:400!important}
 .ops-ms-table td.time-cell,.ops-ms-table td.time-cell.locked,.sheet-body td.time-cell,.sheet-body td.time-cell.locked{background:inherit!important;color:#26312b!important;font-weight:400!important}
