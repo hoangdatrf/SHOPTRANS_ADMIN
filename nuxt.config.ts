@@ -1,7 +1,9 @@
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { existsSync } from 'node:fs'
 
 const adminRootDir = fileURLToPath(new URL('.', import.meta.url))
+const publicEpodPage = resolve(adminRootDir, '../SHOPTRANS/pages/epod/[token].vue')
 
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
@@ -89,11 +91,14 @@ export default defineNuxtConfig({
     'pages:extend'(pages) {
       // ePOD links are generated from the Admin workbook. Expose the public
       // signing page here as well so the link works even when the customer
-      // website dev server is not running separately.
+      // website dev server is not running separately. Production may deploy
+      // SHOPTRANS_ADMIN without the sibling SHOPTRANS checkout, so never add
+      // a Nuxt page whose source file is absent.
+      if (!existsSync(publicEpodPage)) return
       pages.push({
         name: 'public-epod-token',
         path: '/epod/:token',
-        file: resolve(adminRootDir, '../SHOPTRANS/pages/epod/[token].vue'),
+        file: publicEpodPage,
       })
     },
   },
