@@ -987,7 +987,7 @@
         }"
         role="dialog"
         aria-modal="true"
-        @mousedown="closePickupBcMenuOnOutside"
+        @mousedown="closePickupBcMenuOnOutside($event); clearVesselHistorySelectionOnBlank($event)"
       >
         <button class="gsd-modal-x" type="button" title="Close" aria-label="Close" @pointerup.stop.prevent="closeGsdModal" @click.stop="closeGsdModal">&times;</button>
         <div v-if="gsdModal.loading && (isPaymentRequestModal() || isExpenseCollectModal())" class="payment-loading-screen" role="status" aria-live="polite">
@@ -12703,25 +12703,26 @@ const vesselFormFromCell = (value: any) => {
     vesselDirectory.value.push({ id: vessel.id || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: vessel.name, imo: vessel.imo })
   }
   const found = vessel?.name ? findVessel(vessel.name) : null
+  const startsWithBlankEntry = isExwEcdVesselDelayModal()
   return {
-    vesselName: vessel?.name || '',
-    imo: found?.imo || vessel?.imo || '',
-    voyage: vessel?.voyage || '',
+    vesselName: startsWithBlankEntry ? '' : vessel?.name || '',
+    imo: startsWithBlankEntry ? '' : found?.imo || vessel?.imo || '',
+    voyage: startsWithBlankEntry ? '' : vessel?.voyage || '',
     addView: false,
     addLocked: false,
     vesselSaving: false,
     newName: '',
     newImo: '',
     hint: '',
-    delayToggle: !!activeDelay || !!storedForm.delayed,
-    newEtd: String(activeDelay?.etd || ''),
-    newEta: String(activeDelay?.eta || ''),
-    delayReason: String(activeDelay?.reason || storedForm.delayReason || ''),
-    transhipmentToggle: !!activeTranshipment || !!storedForm.transhipment,
-    tsEtd: String(activeTranshipment?.etd || ''),
-    tsEta: String(activeTranshipment?.eta || ''),
-    tsPlace: String(activeTranshipment?.reason || storedForm.transhipmentPlace || ''),
-    applyAll: !!storedForm.applyAll,
+    delayToggle: startsWithBlankEntry ? false : !!activeDelay || !!storedForm.delayed,
+    newEtd: startsWithBlankEntry ? '' : String(activeDelay?.etd || ''),
+    newEta: startsWithBlankEntry ? '' : String(activeDelay?.eta || ''),
+    delayReason: startsWithBlankEntry ? '' : String(activeDelay?.reason || storedForm.delayReason || ''),
+    transhipmentToggle: startsWithBlankEntry ? false : !!activeTranshipment || !!storedForm.transhipment,
+    tsEtd: startsWithBlankEntry ? '' : String(activeTranshipment?.etd || ''),
+    tsEta: startsWithBlankEntry ? '' : String(activeTranshipment?.eta || ''),
+    tsPlace: startsWithBlankEntry ? '' : String(activeTranshipment?.reason || storedForm.transhipmentPlace || ''),
+    applyAll: false,
     selectedHistoryOrder: 0,
   }
 }
@@ -12740,6 +12741,15 @@ const vesselTsDetailsLocked = () => {
 }
 const toggleVesselTranshipment = () => {
   if (!gsdModal.form.transhipmentToggle) return
+  if (Number(gsdModal.form.selectedHistoryOrder) > 0) {
+    gsdModal.form.vesselName = ''
+    gsdModal.form.imo = ''
+    gsdModal.form.voyage = ''
+    gsdModal.form.delayToggle = false
+    gsdModal.form.newEtd = ''
+    gsdModal.form.newEta = ''
+    gsdModal.form.delayReason = ''
+  }
   // Keep the vessel and voyage the user may already have selected before
   // ticking T/S. Only initialise the leg-specific fields; after an applied
   // entry the common fields are already cleared by resetVesselEntryAfterSelect.
@@ -12754,7 +12764,19 @@ const toggleVesselTranshipment = () => {
     : 'Enter ETD, ETA and Place of T/S'
 }
 const toggleVesselDelay = () => {
-  // Transhipment and Vessel Delay are independent states and may coexist.
+  if (!gsdModal.form.delayToggle || Number(gsdModal.form.selectedHistoryOrder) <= 0) return
+  gsdModal.form.selectedHistoryOrder = 0
+  gsdModal.form.vesselName = ''
+  gsdModal.form.imo = ''
+  gsdModal.form.voyage = ''
+  gsdModal.form.transhipmentToggle = false
+  gsdModal.form.tsEtd = ''
+  gsdModal.form.tsEta = ''
+  gsdModal.form.tsPlace = ''
+  gsdModal.form.newEtd = ''
+  gsdModal.form.newEta = ''
+  gsdModal.form.delayReason = ''
+  gsdModal.form.hint = 'Select the vessel and enter the new delay information'
 }
 const transhipmentPlaceValid = () => {
   const place = upperText(gsdModal.form.tsPlace || '').trim()
@@ -12845,10 +12867,18 @@ const resetVesselEntryAfterSelect = () => {
   gsdModal.form.newEtd = ''
   gsdModal.form.newEta = ''
   gsdModal.form.delayReason = ''
+  gsdModal.form.applyAll = false
   gsdModal.form.addView = false
   gsdModal.form.addLocked = false
   gsdModal.form.selectedHistoryOrder = 0
   gsdModal.form.hint = 'Applied - use Transhipment or Vessel Delay to add another event'
+}
+const clearVesselHistorySelectionOnBlank = (event: MouseEvent) => {
+  if (!isExwEcdVesselDelayModal()) return
+  const target = event.target as HTMLElement | null
+  if (!target || target.closest('input, button, label, table, textarea, select, .datepop, .cutoff-timepop')) return
+  resetVesselEntryAfterSelect()
+  gsdModal.form.hint = ''
 }
 const selectVessel = () => {
   updateVesselSearch()
