@@ -37,7 +37,7 @@ export default defineNuxtConfig({
     public: {
       apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || '',
       apiPort: process.env.NUXT_PUBLIC_API_PORT || '5001',
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || '',
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://shoptrans.net',
       epodApiViaProxy: true,
     },
   },

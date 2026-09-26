@@ -14792,9 +14792,8 @@ const escapeEpodHtml = (value: any) => String(value ?? '').replace(/[&<>"']/g, (
   "'": '&#39;',
 }[char] || char))
 const publicEpodUrl = (token: string) => {
-  const configuredSiteUrl = String(runtimeConfig.public.siteUrl || '').trim().replace(/\/+$/, '')
-  if (configuredSiteUrl) return `${configuredSiteUrl}/epod/${encodeURIComponent(token)}`
-  return `${window.location.origin}/epod/${encodeURIComponent(token)}`
+  const configuredSiteUrl = String(runtimeConfig.public.siteUrl || 'https://shoptrans.net').trim().replace(/\/+$/, '')
+  return `${configuredSiteUrl || 'https://shoptrans.net'}/epod/${encodeURIComponent(token)}`
 }
 const exportTruckEpod = async () => {
   const records = truckContRecords()
@@ -14906,7 +14905,10 @@ const showTruckCompanyDetail = async (name: string) => {
 const openEpodSignDetail = (record: TruckContRecord) => {
   if (!record.epodSign) return
   if (record.epodUrl) {
-    window.open(record.epodUrl, '_blank', 'noopener,noreferrer')
+    // Existing worksheet records may still contain the former Admin origin.
+    // Keep their token but always open the current public website domain.
+    const token = String(record.epodUrl).split('/epod/')[1]?.split(/[?#]/)[0]
+    window.open(token ? publicEpodUrl(decodeURIComponent(token)) : record.epodUrl, '_blank', 'noopener,noreferrer')
     return
   }
   epodSignDetail.container = record.container || ''
