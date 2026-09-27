@@ -2359,7 +2359,7 @@
               <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
               <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="enablePreAlertEdit">Edit</button>
               <button class="wb-modal-btn primary" type="button" :disabled="!preAlertCanSave()" @click="savePreAlert">Save</button>
-              <button class="wb-modal-btn send" type="button" :disabled="gsdModal.editing || gsdModal.form.sent" @click="sendPreAlert">{{ gsdModal.form.sent ? 'SENT TO DEST. AGENT' : 'Send to Dest. Agent' }}</button>
+              <button class="wb-modal-btn send" type="button" :disabled="gsdModal.editing" @click="sendPreAlert">{{ gsdModal.form.sent ? 'SYNC TO DEST. AGENT' : 'Send to Dest. Agent' }}</button>
             </div>
             <input ref="preAlertFileInput" type="file" hidden @change="handlePreAlertFile" />
           </template>
@@ -17020,7 +17020,9 @@ const crossServiceSourceSnapshot = async (row: number) => {
       ))
       if (!match) continue
       header.forEach((label, index) => {
-        if (String(match[index] ?? '').trim()) values.set(label, match[index])
+        // The open ECD row is authoritative. Related department sheets only
+        // fill fields that ECD does not have; they must never overwrite it.
+        if (!values.has(label) && String(match[index] ?? '').trim()) values.set(label, match[index])
       })
     } catch (error: any) {
       if (requestStatus(error) !== 404) console.warn(`Could not collect ${dept} data for destination record`, error)
@@ -17054,15 +17056,18 @@ const sendPreAlert = async () => {
     showToast(`Select the destination service in ${upperText(opsParts.value?.type || 'SERVICE')}+ before sending`)
     return
   }
+  const alreadySent = !!gsdModal.form.sent
   const destinationCell = preAlertSourceCell('DESTINATION AGENT', 'DEST. AGENT')
   const destinationEmail = linkedEntityEmail(destinationCell)
-  if (!destinationEmail) {
+  if (!alreadySent && !destinationEmail) {
     showToast('Destination Agent does not have an email in Traders & Suppliers')
     return
   }
-  const ok = await askConfirm('Send pre-alert to destination agent?', '', { okText: 'YES', cancelText: 'NO', tone: 'remove' })
+  const ok = await askConfirm(alreadySent ? 'Sync this shipment to destination operations?' : 'Send pre-alert to destination agent?', '', { okText: 'YES', cancelText: 'NO', tone: 'remove' })
   if (!ok) return
-  dispatchLoading.value = `Creating ${targetService} record and sending pre-alert...`
+  dispatchLoading.value = alreadySent
+    ? `Syncing ${targetService} ICD record...`
+    : `Creating ${targetService} ICD record and sending pre-alert...`
   try {
     const source = opsParts.value
     if (!source) throw new Error('The current Operations sheet is invalid')
@@ -17070,11 +17075,12 @@ const sendPreAlert = async () => {
     const collectedSource = await crossServiceSourceSnapshot(gsdModal.row)
     const sourceHeader = collectedSource.header
     const sourceRow = collectedSource.row
+    const targetBase = opsBaseForType(targetService as any)
     // Overseas pre-alert enters the import workflow directly at ICD. It is
     // already a real shipment, so creating an intermediate GSD record would
     // duplicate the job and does not match the requested operation flow.
     const linked = await transferRowToNextDept(gsdModal.row, 'ICD', sentAt, false, {
-      key: opsLeafKey(source.base, source.mode, targetService as any, 'GSD'),
+      key: opsLeafKey(targetBase, source.mode, targetService as any, 'GSD'),
       country: loadedCountryId.value,
       header: sourceHeader,
       row: sourceRow,
@@ -17085,6 +17091,10 @@ const sendPreAlert = async () => {
       },
     })
     if (!linked) throw new Error(`Could not create the linked ${targetService} record`)
+    if (alreadySent) {
+      showToast(`${targetService} ICD record synced from ${upperText(source.type)} ECD`)
+      return
+    }
     const result = await props.request('/workbook/send-pre-alert-email', {
       method: 'POST',
       body: {
@@ -19492,6 +19502,7 @@ const transferRowToNextDept = async (rowIndex: number, targetDept?: string, tran
     const aliases: Record<string, string[]> = {
       'EFA+': ['EFA+', 'FCF+', 'EXW+'],
       'ORIGIN AGENT': ['ORIGIN AGENT', 'ORIGINAL AGENT'],
+      'DESTINATION AGENT': ['DESTINATION AGENT', 'DEST. AGENT'],
       'CUT OFF DETAIL': ['CUT OFF DETAIL', 'CUT OFF DETAILS'],
       'BILL DETAIL': ['BILL DETAIL', 'BILL APPROVAL'],
       'ARRIVAL NOTICE DETAIL': ['ARRIVAL NOTICE DETAIL', 'ARRIVAL NOTICE SENDING'],
