@@ -451,8 +451,19 @@ function rawOpsHeaderFor(base: OpsBase, mode: OpsMode, dept: OpsDept, type?: Ops
 }
 
 export function opsHeaderFor(base: OpsBase, mode: OpsMode, dept: OpsDept, type?: OpsType | null): string[] {
-  const rawHeader = rawOpsHeaderFor(base, mode, dept, type)
+  let rawHeader = rawOpsHeaderFor(base, mode, dept, type)
   const normalizedType = String(type || '').toUpperCase()
+  const normalizedDept = String(dept || '').toUpperCase()
+  // DCD is consolidated into ECD for origin-forwarding shipments. Keep the
+  // legacy DCD schema readable, while exposing its DCD-only workflow fields
+  // directly on ECD. SI SUBMIT must sit immediately before BILL/AWB DETAIL.
+  if (normalizedDept === 'ECD' && ['EXW', 'FCA', 'FCF'].includes(normalizedType)) {
+    const detailIndex = rawHeader.findIndex((label) => ['BILL DETAIL', 'AWB DETAIL'].includes(label))
+    if (!rawHeader.includes('SI SUBMIT')) {
+      const insertAt = detailIndex >= 0 ? detailIndex : Math.max(0, rawHeader.length - 1)
+      rawHeader = [...rawHeader.slice(0, insertAt), 'SI SUBMIT', ...rawHeader.slice(insertAt)]
+    }
+  }
   const mirrorsTcdSchema = String(dept || '').toUpperCase() === 'FCD' &&
     ['DAP', 'DDU', 'DDP'].includes(normalizedType)
   // DAP/DDU/DDP use one shared DO INFORMATION form. The date is stored inside
@@ -479,7 +490,7 @@ export function opsHeaderFor(base: OpsBase, mode: OpsMode, dept: OpsDept, type?:
         if (!departmentOpsPattern.test(String(label).toUpperCase())) return [...result, label]
         return index === firstOpsColumn ? [...result, `${String(dept).toUpperCase()} OPS`] : result
       }, [])
-  const deptUpper = String(dept || '').toUpperCase()
+  const deptUpper = normalizedDept
   const orderedHeader = deptUpper === 'GSD' && String(type || '').toUpperCase() === 'EXW' && header.includes('EXW+')
     ? (() => {
         const withoutFlow = header.filter((label) => label !== 'EXW+')

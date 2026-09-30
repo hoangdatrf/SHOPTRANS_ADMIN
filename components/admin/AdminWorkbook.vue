@@ -3810,10 +3810,13 @@ let opsStaffLoading: Promise<void> | null = null
 // Ops tab state follows the mockup leaf key format.
 const opsParts = computed(() => parseOpsKey(activeKey.value || ''))
 const orderedOpsDepts = (base: any, type: any, mode?: string) => {
+  const withoutDcd = (depts: string[]) => ['EXW', 'FCA', 'FCF'].includes(String(type || '').trim().toUpperCase())
+    ? depts.filter((dept) => dept !== 'DCD')
+    : depts
   if (base === 'EFA' && type === 'EXW' && mode === 'FCL') {
-    return ['GSD', 'ECD', 'TCD', 'CCD', 'DCD', 'FCD']
+    return withoutDcd(['GSD', 'ECD', 'TCD', 'CCD', 'DCD', 'FCD'])
   }
-  return opsDeptsFor(base, type)
+  return withoutDcd(opsDeptsFor(base, type))
 }
 const systemOpsDepts = new Set(['GSD', 'ECD', 'ICD', 'TCD', 'CCD', 'DCD', 'FCD'])
 const opsTypeTabs = computed<{ key: string; label: string }[]>(() => {
@@ -3883,6 +3886,10 @@ const selectDept = (key: string) => {
 }
 watch(opsParts, (p) => {
   if (p) {
+    if (p.dept === 'DCD' && ['EXW', 'FCA', 'FCF'].includes(String(p.type || '').trim().toUpperCase())) {
+      goOpsLeaf(opsLeafKey(p.base, p.mode, p.type, 'ECD'))
+      return
+    }
     activeDept.value = p.dept
     activeStatus.value = p.status
   }
@@ -5992,6 +5999,7 @@ const loadSheet = async () => {
     let mergesLoaded: number[][] = extracted.merges
     let rowHeightsLoaded: Record<string, number> = extracted.rowHeights
     let settingsLoaded: Record<string, any> = extracted.settings
+    let mergedLegacyDcdData = false
 
     // For ops leaves, align row 0 with the per-(base,mode,dept) header from
     // the mockup so column counts match when the user switches Dept tabs.
@@ -6054,6 +6062,48 @@ const loadSheet = async () => {
         mergesLoaded = mergesLoaded
           .map((m) => [m[0], aligned.oldToNew.get(m[1]), m[2], aligned.oldToNew.get(m[3])])
           .filter((m): m is number[] => m[1] !== undefined && m[3] !== undefined && m[1] < width && m[3] < width)
+      }
+      // DCD was consolidated into ECD. Import the DCD-owned workflow values
+      // from legacy sheets so existing SI/Bill work remains available after
+      // the DCD tab disappears. ECD values win when both sides already have data.
+      if (parsed.dept === 'ECD' && ['EXW', 'FCA', 'FCF'].includes(upperText(parsed.type))) {
+        try {
+          const dcdLeaf = opsLeafKey(parsed.base, parsed.mode, parsed.type, 'DCD')
+          const dcdKey = opsStatusKey(dcdLeaf, parsed.status)
+          const dcdSheet = await props.request(`/workbook/sheets/${encodeURIComponent(sheetStorageKey(dcdKey, requestedCountry))}`)
+          const dcdHeader = opsHeaderFor(parsed.base, parsed.mode, 'DCD', parsed.type)
+          const dcdExtracted = extractWorkbookRows(Array.isArray(dcdSheet?.rows) ? dcdSheet.rows.map((row: any[]) => [...row]) : [], dcdSheet)
+          const dcdRows = alignRowsToHeader(dcdExtracted.rows, dcdHeader).rows
+          const ecdLinks = settingsLoaded?.opsRowLinks || {}
+          const dcdLinks = dcdExtracted.settings?.opsRowLinks || dcdSheet?.settings?.opsRowLinks || {}
+          const migratedLabels = ['SI SUBMIT', 'BILL DETAIL', 'AWB DETAIL', 'BILL RELEASE', 'AWB RELEASE', 'PAYMENT REQUEST']
+          rowsLoaded.forEach((ecdRow, ecdRowIndex) => {
+            if (ecdRowIndex < 1) return
+            const shipmentLink = String(ecdLinks[String(ecdRowIndex)] || '').trim()
+            const dcdRowIndex = dcdRows.findIndex((dcdRow, index) => index > 0 && (
+              (shipmentLink && String(dcdLinks[String(index)] || '').trim() === shipmentLink)
+              || ['REF#', 'JOB NO#', 'HBL NO#', 'MBL NO#'].some((label) => {
+                const ecdColumn = target.indexOf(label)
+                const dcdColumn = dcdHeader.indexOf(label)
+                const ecdValue = ecdColumn >= 0 ? clientCellText(ecdRow[ecdColumn]) || String(ecdRow[ecdColumn] || '').trim() : ''
+                const dcdValue = dcdColumn >= 0 ? clientCellText(dcdRow[dcdColumn]) || String(dcdRow[dcdColumn] || '').trim() : ''
+                return !!ecdValue && ecdValue === dcdValue
+              })
+            ))
+            if (dcdRowIndex < 1) return
+            for (const label of migratedLabels) {
+              const ecdColumn = target.indexOf(label)
+              const dcdColumn = dcdHeader.indexOf(label)
+              if (ecdColumn < 0 || dcdColumn < 0 || String(ecdRow[ecdColumn] || '').trim()) continue
+              const legacyValue = dcdRows[dcdRowIndex]?.[dcdColumn]
+              if (!String(legacyValue || '').trim()) continue
+              ecdRow[ecdColumn] = legacyValue
+              mergedLegacyDcdData = true
+            }
+          })
+        } catch (error: any) {
+          if (requestStatus(error) !== 404) console.warn('Could not merge legacy DCD workflow into ECD', error)
+        }
       }
       // Populate the GSD overview from ECD records that already existed before
       // the reverse-link feature was introduced. Prefer the stable shipment
@@ -6187,6 +6237,7 @@ const loadSheet = async () => {
     formatting.value = formattingLoaded
     merges.value = mergesLoaded
     settings.value = settingsLoaded
+    if (mergedLegacyDcdData) scheduleSave()
     sanitizeOpsStructuralSettings()
     recalibrateStatusCounts()
     const loadedUpdatedAt = responseUpdatedAt(sheet)
@@ -9556,11 +9607,12 @@ const fclStructureSyncPeers = (label: string): FclStructureDept[] => {
   if (!['FCL', 'LCL', 'AIR'].includes(String(opsParts.value?.mode || '').toUpperCase())) return []
   const type = String(opsParts.value?.type || '').toUpperCase()
   const dept = opsDeptUpper()
+  const activePeer = (peer: string) => peer !== dept && (!['EXW', 'FCA', 'FCF'].includes(type) || peer !== 'DCD')
   if (label === 'EXTRA SERVICE') {
     const parsed = opsParts.value!
     const allDepartments: FclStructureDept[] = ['GSD', 'ECD', 'ICD', 'TCD', 'CCD', 'DCD', 'FCD']
     return allDepartments.filter((targetDept) =>
-      targetDept !== dept &&
+      activePeer(targetDept) &&
       opsHeaderFor(parsed.base, parsed.mode, targetDept as any, parsed.type).some((header) => upperText(header) === 'EXTRA SERVICE'))
   }
   const groups: Record<string, string[]> = {
@@ -9602,15 +9654,15 @@ const fclStructureSyncPeers = (label: string): FclStructureDept[] => {
   }
   const peers = groups[`${type}:${label}`] || []
   if (String(opsParts.value?.mode || '').toUpperCase() === 'AIR' && type === 'FCA' && label === 'PAYMENT REQUEST') {
-    return peers.filter((peer) => peer !== dept && ['ECD', 'TCD', 'DCD', 'FCD'].includes(peer)) as FclStructureDept[]
+    return peers.filter((peer) => activePeer(peer) && ['ECD', 'TCD', 'DCD', 'FCD'].includes(peer)) as FclStructureDept[]
   }
   if (String(opsParts.value?.mode || '').toUpperCase() === 'AIR' && type === 'FCF' && label === 'PAYMENT REQUEST') {
-    return peers.filter((peer) => peer !== dept && ['ECD', 'DCD', 'FCD'].includes(peer)) as FclStructureDept[]
+    return peers.filter((peer) => activePeer(peer) && ['ECD', 'DCD', 'FCD'].includes(peer)) as FclStructureDept[]
   }
   if (String(opsParts.value?.mode || '').toUpperCase() === 'AIR' && ['DDU', 'DDP'].includes(type) && label === 'PAYMENT REQUEST') {
-    return peers.filter((peer) => peer !== dept && ['ICD', 'CCD', 'TCD', 'FCD'].includes(peer)) as FclStructureDept[]
+    return peers.filter((peer) => activePeer(peer) && ['ICD', 'CCD', 'TCD', 'FCD'].includes(peer)) as FclStructureDept[]
   }
-  return peers.filter((peer) => peer !== dept) as FclStructureDept[]
+  return peers.filter(activePeer) as FclStructureDept[]
 }
 const persistPaymentRequest = async (immediate = false) => {
   if (!rows.value[gsdModal.row]) return
@@ -10787,7 +10839,7 @@ const openGsdModal = async (row: number, column: number) => {
           gsdModal.form.exportBl = ''
           gsdModal.form.exportFcr = ''
         }
-        if (opsDeptUpper() === 'DCD') {
+        if (['ECD', 'DCD'].includes(opsDeptUpper())) {
           const siColumn = (rows.value[0] || []).findIndex((_, index) => normalizedHeaderLabel(index) === 'SI SUBMIT')
           if (siColumn >= 0) {
             const siForm = siSubmitFormFromCell(rows.value[row]?.[siColumn])
@@ -11115,6 +11167,7 @@ const scopedNoticeDeptTargets = () => {
       .filter((dept: string) => !!dept)
       .map((dept: string) => `${prefix}${dept}`)
   return [...targets(pair.originType, 'O'), ...targets(pair.destinationType, 'D')]
+    .filter((target) => target !== 'ODCD')
     .filter((target) => target !== currentTarget)
     .filter((target) => currentScope !== 'D' || target !== 'OGSD')
     .filter((target) => currentScope !== 'O' || target !== 'DGSD')
@@ -12061,12 +12114,12 @@ const billReleasePaymentReady = () => {
   return selectedExactlyOne && (!gsdModal.form.collectLater || !!String(gsdModal.form.deadline || '').trim())
 }
 const isSiSubmitModal = () => isGsdFormModalLabel('SI SUBMIT')
-const isFclExwDcdSiModal = () => isSiSubmitModal() && opsParts.value?.mode === 'FCL' && ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsDeptUpper() === 'DCD'
+const isFclExwDcdSiModal = () => isSiSubmitModal() && opsParts.value?.mode === 'FCL' && ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && ['ECD', 'DCD'].includes(opsDeptUpper())
 // SI Submit is maintained at DCD for every origin-forwarding FCL service.
 // Container/seal identity comes from the linked workflow in EXW/FCA/FCF;
 // users only complete the cargo quantities and measurements here.
-const isLinkedFclDcdSiModal = () => isSiSubmitModal() && opsParts.value?.mode === 'FCL' && opsDeptUpper() === 'DCD'
-const isDcdBillDetailModal = () => isBillApprovalModal() && opsDeptUpper() === 'DCD'
+const isLinkedFclDcdSiModal = () => isSiSubmitModal() && opsParts.value?.mode === 'FCL' && ['ECD', 'DCD'].includes(opsDeptUpper())
+const isDcdBillDetailModal = () => isBillApprovalModal() && ['ECD', 'DCD'].includes(opsDeptUpper())
 const isPreAlertConfirmationModal = () => isGsdFormModalLabel('PRE-ALERT CONFIRMATION')
 const isAirDoIcdPreAlertConfirmationModal = () =>
   isAirSheet() && (isDoIcdSheet() || isDapIcdSheet()) && isPreAlertConfirmationModal()
