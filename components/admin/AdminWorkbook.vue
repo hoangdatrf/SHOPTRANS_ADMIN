@@ -965,6 +965,7 @@
           'gsd-ecd-bill-detail-readonly': isReadonlyExwFclEcdBillDetail(),
           'gsd-do-release-modal': isDoReleaseModal(),
           'gsd-si-modal': isSiSubmitModal(),
+          'gsd-si-compact': isSiSubmitModal() && !!gsdModal.form.notSubmittedByShoptrans,
           'gsd-ecd-bill-release-modal': isEcdBillReleaseModal(),
           'gsd-pc-modal': isPreAlertConfirmationModal(),
           'gsd-arrival-detail-modal': isArrivalNoticeModal(),
@@ -1664,7 +1665,11 @@
                 <label><span>{{ isDeliveryDetailsModal() ? 'Delivery date:' : 'Pickup date:' }}</span><input v-model="gsdModal.form.pickupDate" type="date" lang="en-ZA" :min="todayIso()" :disabled="!pickupCanEdit()" :class="{ pkbad: pickupInvalidFields.has('pickupDate') }" @input="clearPickupInvalid('pickupDate')" /></label>
                 <label><span>{{ isDeliveryDetailsModal() ? 'Delivery time:' : 'Pickup time:' }}</span><input v-model="gsdModal.form.pickupTime" type="time" lang="en-ZA" :disabled="!pickupCanEdit()" :class="{ pkbad: pickupInvalidFields.has('pickupTime') }" @input="clearPickupInvalid('pickupTime')" /></label>
                 <label v-if="isDeliveryDetailsModal()" class="delivery-from-port"><span>PickUpFromPort:</span><input v-model.trim="gsdModal.form.fromPort" type="text" :disabled="!pickupCanEdit()" @input="uppercasePickupField('fromPort')" /></label>
-                <label v-else-if="isExwFcaPickupModal()" class="pickup-return-port"><span>ReturnToPort:</span><select v-model="gsdModal.form.returnPort" :disabled="!pickupCanEdit()"><option value="">-- SELECT PORT --</option><option v-for="port in pickupPortOptions" :key="port.value" :value="port.value">{{ port.label }}</option></select></label>
+                <label v-else-if="isExwFcaPickupModal()" class="pickup-return-port">
+                  <span>{{ pickupReturnLabel() }}:</span>
+                  <input v-model.trim="gsdModal.form.returnPort" :disabled="!pickupCanEdit()" list="pickup-return-options" autocomplete="off" :placeholder="pickupReturnPlaceholder()" :class="{ pkbad: pickupInvalidFields.has('returnPort') }" @input="clearPickupInvalid('returnPort')" @change="validatePickupReturnOption" />
+                  <datalist id="pickup-return-options"><option v-for="option in pickupReturnOptions()" :key="option.value" :value="option.value">{{ option.label }}</option></datalist>
+                </label>
                 <label v-else class="gsd-pickup-check" :class="{ bad: pickupInvalidFields.has('noRestriction') }"><input v-model="gsdModal.form.noRestriction" type="checkbox" :disabled="!pickupCanEdit()" @change="clearPickupInvalid('noRestriction')" /> <em>No Vehicle Access Restrictions</em></label>
                 <span v-if="!isDeliveryDetailsModal() && isReadonlyPickupModal() && !isExwFcaPickupModal()" class="gsd-pickup-booking">
                   <span class="booking-label">Booking</span>
@@ -2113,14 +2118,15 @@
           </template>
           <template v-else-if="isSiSubmitModal()">
             <div class="si-toolbar">
-              <label class="si-company"><span>Company:</span><select v-model="gsdModal.form.company" :disabled="!gsdModal.editing"><option value="tx">TX LOGISTICS VIETNAM CO., LTD</option><option value="shoptrans">SHOPTRANS VIETNAM CO., LTD</option></select></label>
-              <div class="si-toolbar-actions">
+              <label class="si-company"><span>Company:</span><select v-model="gsdModal.form.company" :disabled="!gsdModal.editing || gsdModal.form.notSubmittedByShoptrans"><option value="tx">TX LOGISTICS VIETNAM CO., LTD</option><option value="shoptrans">SHOPTRANS VIETNAM CO., LTD</option></select></label>
+              <label class="si-not-submitted"><input v-model="gsdModal.form.notSubmittedByShoptrans" type="checkbox" @change="toggleSiNotSubmitted" /><span>Not submitted by {{ siCompanyShortName() }}</span></label>
+              <div v-if="!gsdModal.form.notSubmittedByShoptrans" class="si-toolbar-actions">
                 <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing" @click="saveSiSubmit">Save</button>
                 <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="enableSiSubmitEdit">Edit</button>
-                <button class="wb-modal-btn si-export" type="button" :disabled="!gsdModal.form.locked || siExportingPdf" @click="exportSiSubmitPdf">{{ siExportingPdf ? 'Exporting...' : 'Export PDF' }}</button>
+                <button class="wb-modal-btn si-export" type="button" :disabled="!gsdModal.form.locked || gsdModal.form.notSubmittedByShoptrans || siExportingPdf" @click="exportSiSubmitPdf">{{ siExportingPdf ? 'Exporting...' : 'Export PDF' }}</button>
               </div>
             </div>
-            <div class="si-scroll"><div class="si-sheet">
+            <fieldset v-if="!gsdModal.form.notSubmittedByShoptrans" class="si-body-fieldset" :disabled="siBodyDisabled()"><div class="si-scroll"><div class="si-sheet">
               <div class="si-letterhead">
                 <div><div class="si-lh-name">{{ siCompanyName() }}</div><div class="si-lh-addr">3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam</div><div class="si-lh-contact">Tel: 84.028-35470468&nbsp;&nbsp;&nbsp;Fax: 84.028-35470469</div></div>
                 <div class="si-title-block"><div class="si-doc-title">SHIPPING INSTRUCTION</div><div class="si-doc-sub">SEA FCL</div></div>
@@ -2142,7 +2148,7 @@
               <label class="si-f"><span>Special Instructions</span><textarea v-model="gsdModal.form.specialInst" rows="3" :disabled="!gsdModal.editing"></textarea></label>
               <div class="si-signature"><div>ARRANGED BY</div><b>{{ siCompanyName() }}</b><span></span><strong>NGUYEN HUU PHUOC</strong><em v-if="gsdModal.form.signedAt" class="si-signed-stamp">✓ Signed · {{ gsdModal.form.signedAt }}</em></div>
               <input ref="siMarksFileInput" type="file" hidden @change="handleSiMarksFile" />
-            </div></div>
+            </div></div></fieldset>
           </template>
           <template v-else-if="isBillApprovalModal() || isBillReleaseModal() || isDoReleaseModal()">
             <template v-if="isEcdBillReleaseModal() || isDoReleaseModal()">
@@ -2589,7 +2595,7 @@
               <div v-for="decl in openClearanceDeclarations()" :key="decl.id" class="clr-panel">
                 <div class="clr-phead"><span>DECLARATION: <b>{{ decl.no || '' }}</b></span><button type="button" class="clr-pclose" @click="toggleClearancePanel(decl.id)">×</button></div>
                 <div class="clr-prow">
-                  <label class="clr-fld"><span>Declaration number</span><input v-model.trim="decl.no" type="text" readonly /></label>
+                  <label class="clr-fld"><span>Declaration number</span><input v-model.trim="decl.no" type="text" :readonly="decl.locked" /></label>
                   <label class="clr-fld"><span>Date</span><span v-if="isDupTcdClearanceDetailsModal()" class="roval" :class="{ 'ro-empty': !decl.date }">{{ formatCutoffDate(decl.date) || '-' }}</span><input v-else v-model="decl.date" type="date" :disabled="decl.locked" /></label>
                   <div class="clr-fld result">
                     <span>Result</span>
@@ -4616,9 +4622,10 @@ let epodStatusTimer: ReturnType<typeof setInterval> | null = null
 const routeDirectory = ref<RouteRecord[]>([])
 const vesselDirectory = ref<VesselRecord[]>([])
 const transhipmentPlaceOptions = ref<string[]>([])
-type PickupReferenceOption = { value: string, label: string, city?: string, ward?: string }
+type PickupReferenceOption = { value: string, label: string, city?: string, ward?: string, type?: string }
 const pickupPostalOptions = ref<PickupReferenceOption[]>([])
 const pickupPortOptions = ref<PickupReferenceOption[]>([])
+const pickupWarehouseOptions = ref<PickupReferenceOption[]>([])
 let pickupReferencesLoaded = false
 const defaultClientCountries = ['VIETNAM', 'CHINA', 'UNITED STATES', 'JAPAN', 'SOUTH KOREA', 'SINGAPORE', 'THAILAND', 'MALAYSIA', 'INDONESIA', 'PHILIPPINES', 'INDIA', 'HONG KONG', 'TAIWAN', 'CAMBODIA', 'LAOS', 'MYANMAR', 'AUSTRALIA', 'GERMANY', 'FRANCE', 'UNITED KINGDOM', 'NETHERLANDS', 'ITALY', 'SPAIN', 'CANADA', 'UNITED ARAB EMIRATES', 'BANGLADESH']
 const paymentCurrencies = ref(['USD', 'VND', 'EUR', 'CNY'])
@@ -5255,9 +5262,10 @@ const openTruckDriverList = async () => {
 const loadPickupReferenceData = async () => {
   if (pickupReferencesLoaded) return
   try {
-    const [countriesResponse, portsResponse, legacyPostalResponse] = await Promise.all([
+    const [countriesResponse, portsResponse, warehousesResponse, legacyPostalResponse] = await Promise.all([
       props.request('/records?country=GLOBAL&page=ref_countries&limit=1000'),
       props.request('/records?country=GLOBAL&page=ref_ports&limit=1000'),
+      props.request('/records?country=GLOBAL&page=ref_warehouses&limit=1000'),
       props.request('/records?country=GLOBAL&page=ref_postalcode&limit=1000'),
     ])
     const itemsOf = (response: any) => Array.isArray(response?.items) ? response.items : Array.isArray(response?.data?.items) ? response.data.items : []
@@ -5287,6 +5295,16 @@ const loadPickupReferenceData = async () => {
       const label = name && code ? `${name} (${code})` : name || code
       return { value: label, label }
     }).filter((item: PickupReferenceOption) => item.value && !portSeen.has(item.value) && !!portSeen.add(item.value))
+      .sort((a: PickupReferenceOption, b: PickupReferenceOption) => a.label.localeCompare(b.label))
+    const warehouseSeen = new Set<string>()
+    pickupWarehouseOptions.value = itemsOf(warehousesResponse).map((item: any) => {
+      const data = item?.data || {}
+      const code = upperText(data.portcode || data.code || '')
+      const name = upperText(data.whname || data.name || '')
+      const type = upperText(data.whtype || data.warehouseType || data.type || '')
+      const label = name && code ? `${name} (${code})` : name || code
+      return { value: label, label, type }
+    }).filter((item: PickupReferenceOption) => item.value && !warehouseSeen.has(`${item.type}:${item.value}`) && !!warehouseSeen.add(`${item.type}:${item.value}`))
       .sort((a: PickupReferenceOption, b: PickupReferenceOption) => a.label.localeCompare(b.label))
     pickupReferencesLoaded = true
   } catch (error) {
@@ -5678,6 +5696,7 @@ const buildHeaderColumnMap = (existing: string[], target: string[]) => {
       'ORIGIN AGENT': ['ORIGIN AGENT', 'ORIGINAL AGENT'],
       'CUT OFF DETAIL': ['CUT OFF DETAIL', 'CUT OFF DETAILS'],
       'BILL DETAIL': ['BILL DETAIL', 'BILL APPROVAL'],
+      'MASTER SI SUBMIT': ['MASTER SI SUBMIT', 'SI SUBMIT'],
       'PICKUP STATUS': ['PICKUP STATUS', 'PICKUP/RETURN STATUS', 'PICKUP / RETURN STATUS'],
   }
   const available = new Map<string, number[]>()
@@ -6076,7 +6095,7 @@ const loadSheet = async () => {
           const dcdRows = alignRowsToHeader(dcdExtracted.rows, dcdHeader).rows
           const ecdLinks = settingsLoaded?.opsRowLinks || {}
           const dcdLinks = dcdExtracted.settings?.opsRowLinks || dcdSheet?.settings?.opsRowLinks || {}
-          const migratedLabels = ['SI SUBMIT', 'BILL DETAIL', 'AWB DETAIL', 'BILL RELEASE', 'AWB RELEASE', 'PAYMENT REQUEST']
+          const migratedLabels = ['MASTER SI SUBMIT', 'BILL DETAIL', 'AWB DETAIL', 'BILL RELEASE', 'AWB RELEASE', 'PAYMENT REQUEST']
           rowsLoaded.forEach((ecdRow, ecdRowIndex) => {
             if (ecdRowIndex < 1) return
             const shipmentLink = String(ecdLinks[String(ecdRowIndex)] || '').trim()
@@ -7873,7 +7892,7 @@ const isFclStructureLockedColumn = (column: number) => {
     return locked.includes(label)
   }
   if (dept === 'CCD') return ['TIME', 'BU', 'DEALT INFO', 'SALES', 'ECD OPS', 'ICD OPS', 'CLIENT', 'SHIPPER', 'CNEE', 'LINER', 'BC NO#', 'REF#', 'HBL NO#', 'MBL NO#', 'ETD', 'ETA', 'CUTOFF DETAIL', 'CUT OFF DETAIL', 'VOLUME', 'ROUTE', 'VESSEL/VOYAGE', 'PICKUP DETAIL', 'TRUCK & CONT/SEAL INFO', 'TRUCKING INFO', 'ATD', 'ATA', 'DO VALIDITY', 'CONT/SEAL INFO'].includes(label)
-  if (dept === 'DCD') return !['PAYMENT REQUEST', 'NOTICE', 'DCD OPS', 'SI SUBMIT', 'BILL DETAIL', 'BILL RELEASE', 'ACTION'].includes(label)
+  if (dept === 'DCD') return !['PAYMENT REQUEST', 'NOTICE', 'DCD OPS', 'SI SUBMIT', 'MASTER SI SUBMIT', 'BILL DETAIL', 'BILL RELEASE', 'ACTION'].includes(label)
   if (dept === 'FCD') return !['EXPENSE/COLLECT LIST', 'NOTICE', 'ACTION'].includes(label)
   return false
 }
@@ -8768,6 +8787,7 @@ const clientLinkLabels = ['CLIENT', 'SHIPPER', 'CNEE', 'ORIGIN AGENT', 'ORIGINAL
 const formButtonLabels = [
   'PAYMENT REQUEST',
   'SI SUBMIT',
+  'MASTER SI SUBMIT',
   'BC NO#',
   'HBL NO#',
   'MBL NO#',
@@ -9372,6 +9392,7 @@ const gsdModalTitleFor = (label: string) => {
   const titles: Record<string, string> = {
     'PAYMENT REQUEST': 'PAYMENT REQUEST APPLICATION',
     'SI SUBMIT': 'SI SUBMIT',
+    'MASTER SI SUBMIT': 'MASTER SI SUBMIT',
     'HBL NO#': 'HBL NO#',
     'CUT OFF DETAILS': 'CUT OFF DETAILS',
     'CUT OFF DETAIL': 'CUT OFF DETAIL',
@@ -10817,7 +10838,7 @@ const openGsdModal = async (row: number, column: number) => {
         gsdModal.form.initialRecords = truckContSnapshot(gsdModal.form.records)
         gsdModal.editing = false
         void loadTruckCompanyOptions()
-      } else if (label === 'SI SUBMIT') {
+      } else if (['SI SUBMIT', 'MASTER SI SUBMIT'].includes(label)) {
         gsdModal.formFields = []
         gsdModal.form = siSubmitFormFromCell(rawText)
         if (isLinkedFclDcdSiModal()) {
@@ -10840,7 +10861,7 @@ const openGsdModal = async (row: number, column: number) => {
           gsdModal.form.exportFcr = ''
         }
         if (['ECD', 'DCD'].includes(opsDeptUpper())) {
-          const siColumn = (rows.value[0] || []).findIndex((_, index) => normalizedHeaderLabel(index) === 'SI SUBMIT')
+          const siColumn = (rows.value[0] || []).findIndex((_, index) => ['SI SUBMIT', 'MASTER SI SUBMIT'].includes(normalizedHeaderLabel(index)))
           if (siColumn >= 0) {
             const siForm = siSubmitFormFromCell(rows.value[row]?.[siColumn])
             gsdModal.form.siSubmitted = !!siForm.locked
@@ -10970,7 +10991,10 @@ const openGsdModal = async (row: number, column: number) => {
         if (isDupCcdClearanceDetailsModal()) {
           gsdModal.form.linkedContSealValue = await linkedCcdContSealValue(row, rowValueByHeader('CONT/SEAL INFO'))
         }
-        if (isSimpleCcdClearanceDetailsModal()) gsdModal.form.openId = ''
+        // Open the popup in its compact overview state. Declaration details
+        // are shown only after the user explicitly clicks a declaration row.
+        gsdModal.form.openId = ''
+        gsdModal.form.selected = {}
         syncClearanceRowsFromSource()
         gsdModal.editing = !isDupTcdClearanceDetailsModal()
       } else {
@@ -12113,7 +12137,7 @@ const billReleasePaymentReady = () => {
   const selectedExactlyOne = !!gsdModal.form.allCollected !== !!gsdModal.form.collectLater
   return selectedExactlyOne && (!gsdModal.form.collectLater || !!String(gsdModal.form.deadline || '').trim())
 }
-const isSiSubmitModal = () => isGsdFormModalLabel('SI SUBMIT')
+const isSiSubmitModal = () => isGsdFormModalLabel('SI SUBMIT', 'MASTER SI SUBMIT')
 const isFclExwDcdSiModal = () => isSiSubmitModal() && opsParts.value?.mode === 'FCL' && ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && ['ECD', 'DCD'].includes(opsDeptUpper())
 // SI Submit is maintained at DCD for every origin-forwarding FCL service.
 // Container/seal identity comes from the linked workflow in EXW/FCA/FCF;
@@ -12167,7 +12191,7 @@ const arrivalNoticeDetail = () => {
   const appliedPreAlertFreetime = (preAlert.history || []).find((item: any) => upperText(item?.status) === 'APPLIED') || preAlert.history?.[0]
   const latestFreetime = freetimeFormFromCell(rowValueByHeader('FREETIME CONFIRMATION')).records
     .sort((left: FreetimeRecord, right: FreetimeRecord) => Number(right.ts || 0) - Number(left.ts || 0))[0]
-  const siSubmit = siSubmitFormFromCell(rowValueByHeader('SI SUBMIT'))
+  const siSubmit = siSubmitFormFromCell(rowValueByHeader('MASTER SI SUBMIT') || rowValueByHeader('SI SUBMIT'))
   const contSeal = doContSealFormFromCell(rowValueByHeader('CONT/SEAL INFO') || rowValueByHeader('TRUCK & CONT/SEAL INFO')).records
   const volumes = volumeFormFromCell(rowValueByHeader('VOLUME')).records
   const hblNo = linkedDocumentNumber(rowValueByHeader('HBL NO#'))
@@ -13791,11 +13815,36 @@ const applyPickupPostalSelection = () => {
   clearPickupInvalid('city')
   clearPickupInvalid('ward')
 }
+const pickupReturnLabel = () => String(opsParts.value?.mode || '').toUpperCase() === 'FCL' ? 'ReturnToPort' : 'ReturnToWareHouse'
+const pickupReturnPlaceholder = () => String(opsParts.value?.mode || '').toUpperCase() === 'FCL' ? '-- SELECT OR TYPE PORT --' : '-- SELECT OR TYPE WAREHOUSE --'
+const pickupReturnOptions = () => {
+  const mode = String(opsParts.value?.mode || '').toUpperCase()
+  if (mode === 'LCL') return pickupWarehouseOptions.value.filter((option) => upperText(option.type) === 'CFS')
+  if (mode === 'AIR') return pickupWarehouseOptions.value.filter((option) => ['BONDED', 'BOUNDED'].includes(upperText(option.type)))
+  return pickupPortOptions.value
+}
+const validatePickupReturnOption = () => {
+  const value = String(gsdModal.form.returnPort || '').trim()
+  if (!value) return
+  const matched = pickupReturnOptions().find((option) => upperText(option.value) === upperText(value))
+  if (matched) {
+    gsdModal.form.returnPort = matched.value
+    clearPickupInvalid('returnPort')
+    return
+  }
+  gsdModal.form.returnPort = ''
+  pickupInvalidFields.value = new Set([...pickupInvalidFields.value, 'returnPort'])
+  showToast(`Select ${pickupReturnLabel()} from Reference Data`)
+}
 const ensurePickupReferenceValues = () => {
   const zip = String(gsdModal.form.zip || '').trim()
   const returnPort = String(gsdModal.form.returnPort || '').trim()
   if (zip && !pickupPostalOptions.value.some((item) => item.value === zip)) pickupPostalOptions.value.unshift({ value: zip, label: zip })
-  if (returnPort && !pickupPortOptions.value.some((item) => item.value === returnPort)) pickupPortOptions.value.unshift({ value: returnPort, label: returnPort })
+  if (!returnPort || pickupReturnOptions().some((item) => upperText(item.value) === upperText(returnPort))) return
+  const mode = String(opsParts.value?.mode || '').toUpperCase()
+  if (mode === 'LCL') pickupWarehouseOptions.value.unshift({ value: returnPort, label: returnPort, type: 'CFS' })
+  else if (mode === 'AIR') pickupWarehouseOptions.value.unshift({ value: returnPort, label: returnPort, type: 'BONDED' })
+  else pickupPortOptions.value.unshift({ value: returnPort, label: returnPort })
 }
 const clientRecordFromCell = (value: any): GsdClientRecord | null => {
   const parsed = parseJsonCell(value, null as any)
@@ -13917,6 +13966,8 @@ const validatePickupDetails = () => {
   })
   const pickupDate = String(gsdModal.form.pickupDate || '')
   if (pickupDate && pickupDate < todayIso()) invalid.add('pickupDate')
+  const returnValue = String(gsdModal.form.returnPort || '').trim()
+  if (isExwFcaPickupModal() && returnValue && !pickupReturnOptions().some((option) => upperText(option.value) === upperText(returnValue))) invalid.add('returnPort')
   if (!gsdModal.form.noRestriction) invalid.add('noRestriction')
   pickupInvalidFields.value = invalid
   if (pickupDate && pickupDate < todayIso()) {
@@ -13925,6 +13976,10 @@ const validatePickupDetails = () => {
   }
   if (required.some((key) => invalid.has(key))) {
     showToast('Please fill all fields')
+    return false
+  }
+  if (invalid.has('returnPort')) {
+    showToast(`Select ${pickupReturnLabel()} from Reference Data`)
     return false
   }
   if (invalid.has('noRestriction')) {
@@ -14128,7 +14183,8 @@ const gsdModalShellStyle = () => {
 
   if (isPaymentRequestModal()) return shell(usesFullPaymentRequestLayout() ? '1400px' : '1280px', 'min(620px, 86vh)')
   if (isExpenseCollectModal()) return shell('1400px', 'min(620px, 86vh)')
-  if (isSiSubmitModal() || isArrivalNoticeModal()) return shell('920px')
+  if (isSiSubmitModal()) return shell('920px', gsdModal.form.notSubmittedByShoptrans ? '76px' : 'calc(100vh - 40px)')
+  if (isArrivalNoticeModal()) return shell('920px')
   // Two cutoff groups are exactly 268px each with a 28px gap. A 612px
   // border-box modal leaves 564px after horizontal padding, so the modal,
   // Save/footer actions and history table end at the CY/CFS time field.
@@ -14159,7 +14215,7 @@ const gsdModalShellStyle = () => {
   if (isClearanceDetailsModal()) {
     if (isSimpleCcdClearanceDetailsModal()) return shell('780px')
     if (isDupTcdClearanceDetailsModal()) return shell('760px')
-    return shell('1180px')
+    return shell('800px')
   }
   return shell('620px')
 }
@@ -15553,6 +15609,7 @@ const siSubmitFormFromCell = (value: any) => {
     marksFile: saved.marksFile || null,
     unit: String(saved.unit || 'PACKAGES'),
     specialInst: String(saved.specialInst || ''),
+    notSubmittedByShoptrans: !!saved.notSubmittedByShoptrans,
     submittedAt: String(saved.submittedAt || ''),
     signedAt: String(saved.signedAt || ''),
     locked: !!(saved.locked ?? saved._saved),
@@ -15564,6 +15621,19 @@ const uppercaseSiPort = (field: 'pol' | 'pod') => {
   gsdModal.form[field] = String(gsdModal.form[field] || '').toUpperCase()
 }
 const siCompanyName = () => gsdModal.form.company === 'shoptrans' ? 'SHOPTRANS VIETNAM CO., LTD' : 'TX LOGISTICS VIETNAM CO., LTD'
+const siCompanyShortName = () => gsdModal.form.company === 'shoptrans' ? 'SHOPTRANS' : 'TX'
+const siBodyDisabled = () => !gsdModal.editing || !!gsdModal.form.notSubmittedByShoptrans
+const toggleSiNotSubmitted = () => {
+  if (gsdModal.form.notSubmittedByShoptrans) {
+    gsdModal.form.submittedAt = ''
+    gsdModal.form.signedAt = ''
+  } else {
+    syncSiSubmitFromSources()
+  }
+  rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ form: { ...gsdModal.form }, _saved: true })
+  scheduleSave()
+  void saveSheet()
+}
 const siSubmitContainers = () => Array.isArray(gsdModal.form.containers) ? gsdModal.form.containers : []
 const rawSiSourceValue = (label: string) => {
   const target = upperText(label).trim()
@@ -15634,7 +15704,7 @@ const syncSiSubmitFromSources = () => {
   // `locked` only controls whether the submitted SI can be edited. Linked
   // shipment fields must still refresh whenever the modal is opened; otherwise
   // an older saved SI keeps blank/stale ETD and route values forever.
-  if (!isLinkedFclDcdSiModal()) return
+  if (!isLinkedFclDcdSiModal() || gsdModal.form.notSubmittedByShoptrans) return
   const shipper = siClientTextFromSource(rawSiSourceValue('SHIPPER'))
   const consignee = siClientTextFromSource(rawSiSourceValue('CNEE'))
   if (gsdModal.form.copyShipper && shipper) gsdModal.form.shipper = shipper
@@ -15714,8 +15784,13 @@ const enableSiSubmitEdit = () => {
 }
 const saveSiSubmit = () => {
   gsdModal.form.locked = true
-  if (!gsdModal.form.submittedAt) gsdModal.form.submittedAt = billTimestamp()
-  gsdModal.form.signedAt = billTimestamp()
+  if (gsdModal.form.notSubmittedByShoptrans) {
+    gsdModal.form.submittedAt = ''
+    gsdModal.form.signedAt = ''
+  } else {
+    if (!gsdModal.form.submittedAt) gsdModal.form.submittedAt = billTimestamp()
+    gsdModal.form.signedAt = billTimestamp()
+  }
   rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ form: { ...gsdModal.form }, _saved: true })
   gsdModal.editing = false
   scheduleSave()
@@ -16604,7 +16679,7 @@ const printBillDocument = async (download: boolean | Event = true): Promise<Blob
   return null
 }
 const deliveryOrderSourceSi = () => {
-  const column = (rows.value[0] || []).findIndex((_: any, index: number) => normalizedHeaderLabel(index) === 'SI SUBMIT')
+  const column = (rows.value[0] || []).findIndex((_: any, index: number) => ['SI SUBMIT', 'MASTER SI SUBMIT'].includes(normalizedHeaderLabel(index)))
   return column >= 0 ? siSubmitFormFromCell(rows.value[gsdModal.row]?.[column]) : siSubmitFormFromCell(null)
 }
 const newDeliveryOrderContainer = (source: any = {}) => ({ id: String(source.id || `DO-CONT-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`), contNo: String(source.contNo || ''), contType: String(source.contType || ''), sealNo: String(source.sealNo || ''), qty: String(source.qty || ''), gw: String(source.gw || ''), mea: String(source.mea || '') })
@@ -21245,6 +21320,37 @@ onBeforeUnmount(() => {
 .gsd-ccd-clr-modal .clr-dots{gap:3px}
 .gsd-ccd-clr-modal .clr-dot{width:6px;height:6px}
 .gsd-ccd-clr-modal .clr-din{min-width:92px;padding:4px 6px;font-weight:400}
+/* Compact clearance detail layout: keep every field visible without an oversized modal. */
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal){width:800px;max-width:96vw;padding:26px 18px 18px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-scroll{display:flex;justify-content:center}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-table{width:100%;min-width:0;table-layout:fixed;font-size:11.5px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-table th,.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-table td{padding:6px 7px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-allcell{width:26px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-allcell input{width:13px;height:13px;margin:0}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-table:not(.gsd-clr-view-table) th:nth-child(2){width:44px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-table:not(.gsd-clr-view-table) th:nth-child(3){width:52px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-table:not(.gsd-clr-view-table) th:nth-child(4){width:68px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-table:not(.gsd-clr-view-table) th:nth-child(5){width:112px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-table:not(.gsd-clr-view-table) th:nth-child(6){width:82px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-view-table th:nth-child(1){width:44px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-view-table th:nth-child(2){width:52px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-view-table th:nth-child(3){width:68px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-view-table th:nth-child(4){width:112px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-view-table th:nth-child(5){width:82px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-declhead,.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-declcell{width:148px;min-width:148px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-panel{padding:14px 16px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-prow{gap:16px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-fld input[type=text],.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-fld input[type=date]{min-width:170px}
+.gsd-clr-modal .clr-fld input[readonly]{background:#f4f7f5;color:#718078}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-res{gap:10px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-rchip{padding:7px 12px;font-size:12px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-steps{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;margin-top:12px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-step{box-sizing:border-box;flex:1 1 0;width:0;min-width:0;gap:4px;padding:6px}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-step:nth-child(3){flex-grow:1.3}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-step:nth-child(4){flex-grow:1.45}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-step input{width:14px;height:14px;flex:0 0 14px;margin:0}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-step span{font-size:10.5px;white-space:nowrap}
+.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-step em{font-size:9.5px;white-space:nowrap}
 .wb-modal-btn.edit:not(:disabled),.gsd-pre-actions .edit:not(:disabled){background:#e67e22;border-color:#e67e22;color:#fff}.wb-modal-btn.edit:hover:not(:disabled),.gsd-pre-actions .edit:hover:not(:disabled){background:#df9950;border-color:#df9950}.prealert-viewer-overlay{z-index:280;background:rgba(10,30,18,.55)}.prealert-viewer-modal{position:relative;width:min(920px,94vw);height:min(720px,88vh);border-radius:12px;padding:0;overflow:hidden;display:flex;flex-direction:column;background:#fff;box-shadow:0 24px 70px rgba(0,0,0,.35)}.prealert-viewer-modal .gsd-modal-x{right:12px;top:12px;z-index:2}.prealert-viewer-head{height:48px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 52px 0 16px;border-bottom:1px solid #e4e9e2}.prealert-viewer-head span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:800;color:#1f2a26}.prealert-viewer-head .wb-modal-btn{height:30px;min-height:30px;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:800}.prealert-viewer-frame{flex:1;width:100%;border:0;background:#f7faf9}
 .ops-ata-btn{width:32px;height:32px;margin:0 auto;border:1px solid #d0d7de;border-radius:6px;background:#fff;color:#33413b;display:grid;place-items:center;cursor:pointer;padding:0}.ops-ata-btn:hover:not(:disabled):not(.has){border-color:#9cc2e8;background:#f8fbff}.ops-ata-btn.has{width:auto;min-width:68px;height:26px;padding:0;border-color:transparent;border-radius:0;background:transparent;color:inherit;white-space:nowrap;font:inherit;font-size:11px;font-weight:400}.ops-ata-btn.has:hover:not(:disabled){border-color:transparent;background:transparent;text-decoration:underline;text-underline-offset:3px}.ops-ata-btn.has:focus-visible{outline:0;text-decoration:underline;text-underline-offset:3px}.ops-ata-btn:disabled{cursor:default}.ops-ata-btn.has:disabled:hover{background:transparent;text-decoration:none}.ops-ata-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .ops-schedule-date{display:inline-flex;align-items:center;justify-content:center;min-width:76px;min-height:26px;margin:0 auto;border:0;background:transparent;padding:0 3px;color:inherit;font:inherit;font-size:12px;font-weight:400;line-height:1.35;font-variant-numeric:tabular-nums;white-space:nowrap;text-decoration:none;text-underline-offset:3px;cursor:pointer}.ops-schedule-date:hover:not(:disabled){color:#008f4c;text-decoration:underline;text-decoration-thickness:2px}.ops-schedule-date:focus-visible{color:#008f4c;outline:0}.ops-schedule-date:not(.has){color:#7b8780}.ops-schedule-date:disabled{color:#69756f;opacity:1;cursor:not-allowed}.ops-schedule-date.locked:not(.has){color:#9aa39e}
@@ -21711,15 +21817,17 @@ onBeforeUnmount(() => {
 }
 .gsd-si-modal > .gsd-modal-x { top: 13px; right: 13px; z-index: 4; }
 .gsd-si-modal .si-toolbar { flex: 0 0 auto; min-height: 56px; display: flex; align-items: center; gap: 14px; padding: 10px 52px 10px 16px; border-bottom: 1px solid #e4e9e2; background: #fafbf9; }
+.gsd-si-modal.gsd-si-compact .si-toolbar{min-height:76px;border-bottom:0}
 .gsd-si-modal .si-company { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .gsd-si-modal .si-company span { color: #7a847d; font-size: 12px; font-weight: 700; }
 .gsd-si-modal .si-company select { max-width: 260px; height: 34px; border: 1px solid #d3dacf; border-radius: 8px; background: #fff; padding: 0 10px; color: #0e1512; font: inherit; font-size: 12.5px; font-weight: 600; outline: none; }
 .gsd-si-modal .si-company select:disabled { background: #f1f5f4; color: #7a847d; }
+.gsd-si-modal .si-not-submitted{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:0 10px;border:1px solid #d3dacf;border-radius:8px;background:#fff;color:#33413b;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer}.gsd-si-modal .si-not-submitted input{width:16px;height:16px;flex:0 0 16px;margin:0;accent-color:#008f4c;cursor:pointer}.gsd-si-modal .si-not-submitted:has(input:checked){border-color:#008f4c;background:#eaf8f0;color:#08713d}.gsd-si-modal .si-not-submitted:has(input:disabled){cursor:not-allowed;opacity:.72}.gsd-si-modal .si-not-submitted input:disabled{cursor:not-allowed}
 .gsd-si-modal .si-toolbar-actions { display: flex; gap: 8px; margin-left: auto; }
 .gsd-si-modal .si-toolbar-actions .wb-modal-btn { min-height: 32px; height: 32px; border-radius: 7px; padding: 6px 13px; font-size: 12px; font-weight: 700; }
 .gsd-si-modal .si-toolbar-actions .edit:not(:disabled) { background: #d97706; border-color: #d97706; }
 .gsd-si-modal .si-toolbar-actions .si-export { background: #1f7ae0; border-color: #1f7ae0; color: #fff; }
-.gsd-si-modal .si-scroll { flex: 1 1 auto; overflow: auto; padding: 18px 22px 24px; }
+.gsd-si-modal .si-body-fieldset{display:flex;flex:1 1 auto;flex-direction:column;min-width:0;min-height:0;margin:0;border:0;padding:0;overflow:hidden}.gsd-si-modal .si-body-fieldset:disabled .si-sheet{opacity:.55}.gsd-si-modal .si-scroll { flex: 1 1 auto;min-width:0;min-height:0;overflow-x:hidden;overflow-y:auto;padding:18px 22px 24px;scrollbar-gutter:stable }
 .gsd-si-modal .si-sheet { max-width: 824px; margin: 0 auto; color: #1f2a26; }
 .gsd-si-modal .si-letterhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #16406e; }
 .gsd-si-modal .si-lh-name { color: #111; font-size: 15px; font-weight: 800; }

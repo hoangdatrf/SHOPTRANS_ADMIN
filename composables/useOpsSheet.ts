@@ -456,14 +456,15 @@ export function opsHeaderFor(base: OpsBase, mode: OpsMode, dept: OpsDept, type?:
   const normalizedDept = String(dept || '').toUpperCase()
   // DCD is consolidated into ECD for origin-forwarding shipments. Keep the
   // legacy DCD schema readable, while exposing its DCD-only workflow fields
-  // directly on ECD. SI SUBMIT must sit immediately before BILL/AWB DETAIL.
+  // directly on ECD. MASTER SI SUBMIT must sit immediately before BILL/AWB DETAIL.
   if (normalizedDept === 'ECD' && ['EXW', 'FCA', 'FCF'].includes(normalizedType)) {
     const detailIndex = rawHeader.findIndex((label) => ['BILL DETAIL', 'AWB DETAIL'].includes(label))
-    if (!rawHeader.includes('SI SUBMIT')) {
+    if (!rawHeader.includes('SI SUBMIT') && !rawHeader.includes('MASTER SI SUBMIT')) {
       const insertAt = detailIndex >= 0 ? detailIndex : Math.max(0, rawHeader.length - 1)
-      rawHeader = [...rawHeader.slice(0, insertAt), 'SI SUBMIT', ...rawHeader.slice(insertAt)]
+      rawHeader = [...rawHeader.slice(0, insertAt), 'MASTER SI SUBMIT', ...rawHeader.slice(insertAt)]
     }
   }
+  rawHeader = rawHeader.map((label) => label === 'SI SUBMIT' ? 'MASTER SI SUBMIT' : label)
   const mirrorsTcdSchema = String(dept || '').toUpperCase() === 'FCD' &&
     ['DAP', 'DDU', 'DDP'].includes(normalizedType)
   // DAP/DDU/DDP use one shared DO INFORMATION form. The date is stored inside
