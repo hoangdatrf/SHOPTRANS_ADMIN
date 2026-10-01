@@ -3009,7 +3009,7 @@
 
         <div v-if="gsdModal.kind !== 'client' && gsdModal.kind !== 'reminder' && !isReadonlyDealtModal() && !isArrivalNoticeModal() && !isPaymentRequestModal() && !isCutoffModal() && !isVolumeModal() && !isFreetimeModal() && !isRouteModal() && !isVesselModal() && !isPickupModal() && !isDoContSealModal() && !isTruckContModal() && !isPickupReturnStatusModal() && !isBillApprovalModal() && !isBillReleaseModal() && !isDoReleaseModal() && !isSiSubmitModal() && !isPreAlertConfirmationModal() && !isPreAlertModal() && !isClearanceDocsModal() && !isClearanceDetailsModal() && !isExpenseCollectModal()" class="gsd-modal-actions">
           <button v-if="gsdModal.kind === 'dealt' && !gsdModal.editing && !isReadonlyDealtModal()" type="button" class="wb-modal-btn edit" @click="enableGsdModalEdit">Edit</button>
-          <button type="button" class="wb-modal-btn" :class="gsdModal.kind === 'hbl' ? 'hbl-cancel' : 'slate'" @click="closeGsdModal">{{ gsdModal.kind === 'hbl' ? 'Cancel' : 'Close' }}</button>
+          <button type="button" class="wb-modal-btn" :class="gsdModal.kind === 'hbl' ? 'hbl-cancel' : 'slate'" @click="closeGsdModal">{{ gsdModal.kind === 'hbl' && gsdModal.editing ? 'Cancel' : 'Close' }}</button>
           <button v-if="(gsdModal.kind !== 'dealt' || gsdModal.editing) && !isReadonlyDownstreamDoInformation()" type="button" class="wb-modal-btn primary" :disabled="!gsdModal.editing" @click="saveGsdModal">Save</button>
         </div>
       </div>
@@ -3248,16 +3248,6 @@
       </div>
     </div>
     <input ref="preDocsFileInput" type="file" hidden @change="handlePreDocsFile" />
-    <div v-if="preAlertViewer.open" class="wb-modal-overlay prealert-viewer-overlay" @mousedown.self="closePreAlertViewer">
-      <div class="wb-modal prealert-viewer-modal" role="dialog" aria-modal="true">
-        <button class="gsd-modal-x" type="button" title="Close" aria-label="Close" @pointerup.stop.prevent="closePreAlertViewer" @click.stop="closePreAlertViewer">&times;</button>
-        <div class="prealert-viewer-head">
-          <span>{{ preAlertViewer.name || 'Preview' }}</span>
-          <button class="wb-modal-btn primary" type="button" @click="openPreAlertViewerInTab">Open in new tab</button>
-        </div>
-        <iframe v-if="preAlertViewer.url" class="prealert-viewer-frame" :src="preAlertViewer.url" title="Pre-alert file preview"></iframe>
-      </div>
-    </div>
     <div v-if="billDocModal.open" class="wb-modal-overlay bill-doc-overlay">
       <div class="bill-doc-modal blmou" :class="{ 'bill-doc-readonly': billDocModal.readonly }" role="dialog" aria-modal="true">
         <div class="bl-toolbar">
@@ -4237,23 +4227,56 @@ const uploadAdminAttachment = async (file: File) => {
     size: Number(uploaded?.size || file.size || 0),
   }
 }
-const viewAdminAttachment = async (url: string) => {
+const browserViewableAttachment = (nameOrUrl: string, mimeType = '') => {
+  const clean = String(nameOrUrl || '').split(/[?#]/)[0]
+  const extension = clean.includes('.') ? clean.slice(clean.lastIndexOf('.') + 1).toLowerCase() : ''
+  if (/^(application\/pdf|image\/|text\/|audio\/|video\/)/i.test(mimeType)) return true
+  return ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'txt', 'csv', 'json', 'xml', 'html', 'htm', 'mp3', 'wav', 'mp4', 'webm'].includes(extension)
+}
+const downloadAttachmentBlob = (blob: Blob, filename: string) => {
+  const objectUrl = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = objectUrl
+  anchor.download = filename || 'attachment'
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+}
+const viewAdminAttachment = async (url: string, filename = '', mimeType = '') => {
   const attachmentUrl = String(url || '').trim()
   if (!attachmentUrl) return
-  if (!attachmentUrl.startsWith('/attachments/')) {
-    window.open(attachmentUrl, '_blank', 'noopener,noreferrer')
-    return
-  }
-  const preview = window.open('', '_blank')
+  const displayName = String(filename || attachmentUrl.split(/[?#]/)[0].split('/').pop() || 'attachment')
+  const canOpenInBrowser = browserViewableAttachment(displayName || attachmentUrl, mimeType)
+  const preview = canOpenInBrowser ? window.open('', '_blank') : null
   try {
-    const file = await props.request(attachmentUrl, { responseType: 'blob' })
-    const objectUrl = URL.createObjectURL(file instanceof Blob ? file : new Blob([file]))
+    let blob: Blob
+    if (attachmentUrl.startsWith('/attachments/')) {
+      const file = await props.request(attachmentUrl, { responseType: 'blob' })
+      blob = file instanceof Blob ? file : new Blob([file], { type: mimeType || 'application/octet-stream' })
+    } else if (attachmentUrl.startsWith('data:') || attachmentUrl.startsWith('blob:')) {
+      blob = await fetch(attachmentUrl).then((response) => response.blob())
+    } else if (canOpenInBrowser) {
+      if (preview) preview.location.href = attachmentUrl
+      else window.open(attachmentUrl, '_blank', 'noopener,noreferrer')
+      return
+    } else {
+      blob = await fetch(attachmentUrl).then((response) => {
+        if (!response.ok) throw new Error('Could not download the attachment')
+        return response.blob()
+      })
+    }
+    if (!canOpenInBrowser) {
+      downloadAttachmentBlob(blob, displayName)
+      return
+    }
+    const objectUrl = URL.createObjectURL(blob)
     if (preview) preview.location.href = objectUrl
     else window.open(objectUrl, '_blank', 'noopener,noreferrer')
     window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
   } catch (error: any) {
     preview?.close()
-    showToast(String(error?.data?.message || error?.message || 'Could not open the attachment'))
+    showToast(String(error?.data?.message || error?.message || (canOpenInBrowser ? 'Could not open the attachment' : 'Could not download the attachment')))
   }
 }
 type PaymentOptionKind = 'charge' | 'party' | 'collect' | 'currency'
@@ -4647,7 +4670,6 @@ const paymentSearchResults = ref<Array<{ row: number; jobNo: string; refNo: stri
 const paymentHistoryPicker = reactive<any>({ open: false, row: -1, sourceColumn: -1, mode: 'payment', jobNo: '', refNo: '', lines: [] })
 let clientSearchRun = 0
 const preAlertFileTarget = ref('')
-const preAlertViewer = reactive({ open: false, url: '', name: '' })
 const billExportMenuOpen = ref(false)
 const billDocModal = reactive<any>({ open: false, readonly: false, isRelease: false, exportingPdf: false, billType: 'ORIGINAL B/L', kind: 'B/L', company: 'TX LOGISTICS VIETNAM CO.,LTD', copySi: false, locked: false, attachments: 0, savedAt: '', signedAt: '', docNo: '', refNo: '', shipper: '', consignee: '', notify: '', notifyBackup: '', sameAsConsignee: false, preCarriage: '', receipt: '', vessel: '', pol: '', pod: '', delivery: '', marks: '', packages: '', goodsDescription: '', grossWeight: '', measurement: '', freightCharges: '', freightPayableAt: '', originalCount: '', placeOfIssue: '', dateOfIssue: '', shippedOnBoardDate: '' })
 const deliveryOrderModal = reactive<any>({ open: false, editing: false, exporting: false, form: {} })
@@ -8964,30 +8986,7 @@ const chooseDoInfoFile = (kind: 'mbl' | 'hbl') => {
 const viewDoInfoFile = (kind: 'mbl' | 'hbl') => {
   const file = kind === 'mbl' ? doInfoModal.mblFile : doInfoModal.hblFile
   if (!file.dataUrl) return
-  if (file.dataUrl.startsWith('/attachments/')) { void viewAdminAttachment(file.dataUrl); return }
-  let previewUrl = file.dataUrl
-  let objectUrl = ''
-  try {
-    if (file.dataUrl.startsWith('data:')) {
-      const comma = file.dataUrl.indexOf(',')
-      if (comma < 0) throw new Error('Invalid uploaded file')
-      const metadata = file.dataUrl.slice(5, comma)
-      const encoded = file.dataUrl.slice(comma + 1)
-      const mime = metadata.split(';')[0] || file.type || 'application/octet-stream'
-      const binary = metadata.includes(';base64') ? window.atob(encoded) : decodeURIComponent(encoded)
-      const bytes = new Uint8Array(binary.length)
-      for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index)
-      objectUrl = URL.createObjectURL(new Blob([bytes], { type: mime }))
-      previewUrl = objectUrl
-    }
-    const preview = window.open(previewUrl, '_blank')
-    if (preview) preview.opener = null
-    else throw new Error('Popup blocked')
-    if (objectUrl) window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
-  } catch {
-    if (objectUrl) URL.revokeObjectURL(objectUrl)
-    showToast('Could not open this file. Please upload it again or allow pop-ups.')
-  }
+  void viewAdminAttachment(file.dataUrl, file.name, file.type)
 }
 const saveDoInfoModal = () => {
   if (!canManageDoInfo() || !doInfoCanSave() || doInfoModal.row < 1 || doInfoModal.column < 0) return
@@ -10102,36 +10101,7 @@ const viewPaymentDoc = (line: PaymentLine, side: PaymentDocSide) => {
     showToast('This legacy attachment has no saved file content. Please upload it again.')
     return
   }
-  if (attachment.url.startsWith('/attachments/')) {
-    void viewAdminAttachment(attachment.url)
-    return
-  }
-  try {
-    let viewUrl = attachment.url
-    let shouldRevoke = false
-    if (viewUrl.startsWith('data:')) {
-      const separator = viewUrl.indexOf(',')
-      if (separator < 0) throw new Error('Invalid attachment data')
-      const header = viewUrl.slice(5, separator)
-      const encoded = viewUrl.slice(separator + 1)
-      const isBase64 = header.includes(';base64')
-      const mimeType = header.split(';')[0] || attachment.type || 'application/octet-stream'
-      const binary = isBase64 ? atob(encoded) : decodeURIComponent(encoded)
-      const bytes = new Uint8Array(binary.length)
-      for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index)
-      viewUrl = URL.createObjectURL(new Blob([bytes], { type: mimeType }))
-      shouldRevoke = true
-    }
-    const opened = window.open(viewUrl, '_blank')
-    if (!opened) {
-      if (shouldRevoke) URL.revokeObjectURL(viewUrl)
-      showToast('Browser blocked the file viewer. Please allow pop-ups and try again.')
-      return
-    }
-    if (shouldRevoke) window.setTimeout(() => URL.revokeObjectURL(viewUrl), 60_000)
-  } catch {
-    showToast('Could not open this file. Please remove it and upload again.')
-  }
+  void viewAdminAttachment(attachment.url, attachment.name, attachment.type)
 }
 const removePaymentDoc = (line: PaymentLine, side: PaymentDocSide) => {
   if (paymentLineLocked(line)) return
@@ -10489,8 +10459,8 @@ const uploadBookingNumber = () => {
   bookingDetailInput.value?.click()
 }
 const viewBookingDocument = (index: number) => {
-  const url = bookingDetailModal.documents[index]?.url
-  if (url) void viewBookingAttachment(url)
+  const document = bookingDetailModal.documents[index]
+  if (document?.url) void viewBookingAttachment(document.url, document.name)
 }
 const removeBookingDocument = (index: number) => {
   if (bookingDetailModal.documents.length === 1) {
@@ -10524,12 +10494,12 @@ const onBookingDetailFile = async (event: Event) => {
     input.value = ''
   }
 }
-const viewBookingAttachment = async (url: string) => {
+const viewBookingAttachment = async (url: string, filename = '') => {
   const attachmentUrl = String(url || '').trim()
   if (!attachmentUrl) return
-  await viewAdminAttachment(attachmentUrl)
+  await viewAdminAttachment(attachmentUrl, filename)
 }
-const viewBookingDetailFile = () => { if (bookingDetailModal.url) void viewBookingAttachment(bookingDetailModal.url) }
+const viewBookingDetailFile = () => { if (bookingDetailModal.url) void viewBookingAttachment(bookingDetailModal.url, bookingDetailModal.documentName) }
 const saveBookingDetail = () => {
   const documents = bookingDetailModal.documents.filter((document) => document.name.trim() || document.url)
   if (!bookingDetailModal.number && !documents.length) {
@@ -13796,7 +13766,7 @@ const closePickupBcMenuOnOutside = (event: MouseEvent) => {
     details.open = false
   })
 }
-const openPickupBcFile = (file: { name: string; url: string }) => { if (file.url) void viewBookingAttachment(file.url) }
+const openPickupBcFile = (file: { name: string; url: string }) => { if (file.url) void viewBookingAttachment(file.url, file.name) }
 const clearPickupInvalid = (key: string) => {
   if (!pickupInvalidFields.value.has(key)) return
   const next = new Set(pickupInvalidFields.value)
@@ -13900,7 +13870,7 @@ const pickupHasInput = () => {
 }
 const openPickupBooking = () => {
   const url = String(gsdModal.form.bookingUrl || '').trim()
-  if (url) void viewAdminAttachment(url)
+  if (url) void viewAdminAttachment(url, String(gsdModal.form.booking || ''))
 }
 const choosePickupBookingFile = () => {
   if (!pickupCanEdit() || !gsdModal.form.uploadBooking) return
@@ -14312,7 +14282,7 @@ const handleClearanceDocFile = async (event: Event) => {
 }
 const viewClearanceDocFile = (key: string) => {
   const doc = clearanceDocs().find((item) => item.key === key)
-  if (doc?.url) void viewAdminAttachment(doc.url)
+  if (doc?.url) void viewAdminAttachment(doc.url, String(doc.displayName || doc.file || ''))
 }
 const persistClearanceDocs = (immediate = false) => {
   rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ form: { docs: clearanceDocs(), locked: !!gsdModal.form.locked } })
@@ -15773,7 +15743,7 @@ const handleSiMarksFile = async (event: Event) => {
 }
 const viewSiMarksFile = () => {
   const url = String(gsdModal.form.marksFile?.url || '')
-  if (url) void viewAdminAttachment(url)
+  if (url) void viewAdminAttachment(url, String(gsdModal.form.marksFile?.name || ''))
   else showToast(String(gsdModal.form.marksFile?.name || 'No file'))
 }
 const removeSiMarksFile = () => { if (gsdModal.editing) gsdModal.form.marksFile = null }
@@ -16460,7 +16430,7 @@ const saveBillApproval = async () => {
 }
 const viewBillDetailFile = (file: any) => {
   const url = String(file?.url || '').trim()
-  if (url) void viewAdminAttachment(url)
+  if (url) void viewAdminAttachment(url, String(file?.name || ''), String(file?.type || file?.mimeType || ''))
   else showToast(String(file?.name || 'Attachment'))
 }
 const billDocValue = (key: string) => String(billDocModal[key] || '')
@@ -17277,7 +17247,7 @@ const removePreDocsFile = (section: 'ci' | 'pl' | 'other', fileIndex: number, in
 const viewPreDocsFile = (file: any) => {
   const url = String(file?.url || '')
   if (!url) { showToast('Upload this file again to preview it'); return }
-  void viewAdminAttachment(url)
+  void viewAdminAttachment(url, String(file?.name || ''), String(file?.type || file?.mimeType || ''))
 }
 const viewPreDocsFiles = (files: any[]) => {
   const available = (Array.isArray(files) ? files : []).filter((file) => String(file?.url || ''))
@@ -17285,7 +17255,7 @@ const viewPreDocsFiles = (files: any[]) => {
     showToast('Upload this file again to preview it')
     return
   }
-  available.forEach((file) => { void viewAdminAttachment(String(file.url)) })
+  available.forEach((file) => { void viewAdminAttachment(String(file.url), String(file?.name || ''), String(file?.type || file?.mimeType || '')) })
 }
 const addPreDocsOther = () => {
   if (!preDocsModal.editing) return
@@ -17346,25 +17316,7 @@ const viewPreAlertFile = async (key: string) => {
     showToast(name ? 'Upload this file again to preview it' : 'No file uploaded')
     return
   }
-  try {
-    let previewUrl = url
-    if (url.startsWith('/attachments/')) {
-      const data = await props.request(url, { responseType: 'blob' })
-      previewUrl = URL.createObjectURL(data instanceof Blob ? data : new Blob([data]))
-    }
-    if (preAlertViewer.url.startsWith('blob:')) URL.revokeObjectURL(preAlertViewer.url)
-    preAlertViewer.name = name
-    preAlertViewer.url = previewUrl
-    preAlertViewer.open = true
-  } catch (error: any) { showToast(String(error?.data?.message || error?.message || 'Could not open the document')) }
-}
-const closePreAlertViewer = () => {
-  if (preAlertViewer.url.startsWith('blob:')) URL.revokeObjectURL(preAlertViewer.url)
-  preAlertViewer.open = false
-  preAlertViewer.url = ''
-}
-const openPreAlertViewerInTab = () => {
-  if (preAlertViewer.url) window.open(preAlertViewer.url, '_blank', 'noopener,noreferrer')
+  await viewAdminAttachment(url, name)
 }
 const preAlertValidate = () => {
   const missing: string[] = []
@@ -17527,25 +17479,43 @@ const sendPreAlert = async () => {
       })
       if (!linked) throw new Error(`Could not create the linked ${targetService} ICD record`)
     }
+    const isAir = upperText(source.mode) === 'AIR'
+    const routeCell = rowValueByHeader('ROUTE')
+    const routeData = routeFromCellValue(routeCell)
+    const routeCode = routeData?.polCode && routeData?.podCode ? routeLabel(routeData) : String(routeCell || '').trim()
+    const vesselCell = rowValueByHeader('VESSEL/VOYAGE')
+    const originalVessel = vesselOriginalFromCell(vesselCell)
+    const vesselVoyage = originalVessel?.name
+      ? [originalVessel.name, originalVessel.voyage].filter(Boolean).join(' / ')
+      : emailCellDisplayValue('VESSEL/VOYAGE', vesselCell)
+    const carrierCell = isAir
+      ? (rowValueByHeader('AIRLINE') || rowValueByHeader('CARRIER'))
+      : (rowValueByHeader('LINER') || rowValueByHeader('CARRIER'))
+    const houseNo = isAir
+      ? rowValueByHeader('HAWB NO#')
+      : emailCellDisplayValue('HBL NO#', rowValueByHeader('HBL NO#'))
+    const masterNo = isAir ? rowValueByHeader('MAWB NO#') : rowValueByHeader('MBL NO#')
+    const movement = isAir ? rowValueByHeader('FLIGHT NO#') : vesselVoyage
     const result = await props.request('/workbook/send-pre-alert-email', {
       method: 'POST',
       body: {
         to: destinationEmail,
         destinationAgent: gsdModal.form.destAgent || clientCellText(destinationCell),
         jobNo: rowValueByHeader('JOB NO#') || rowValueByHeader('REF#'),
+        mode: source.mode,
         shipmentType: `${source.mode} ${source.type}`,
         service: hasDestinationService ? targetService : '',
+        routeCode,
         details: {
-          client: emailCellDisplayValue('CLIENT', rowValueByHeader('CLIENT')),
-          shipper: emailCellDisplayValue('SHIPPER', rowValueByHeader('SHIPPER')),
-          cnee: emailCellDisplayValue('CNEE', rowValueByHeader('CNEE')),
-          originAgent: emailCellDisplayValue('ORIGIN AGENT', rowValueByHeader('ORIGINAL AGENT') || rowValueByHeader('ORIGIN AGENT')),
-          carrier: emailCellDisplayValue('LINER', rowValueByHeader('LINER') || rowValueByHeader('AIRLINE')),
+          client: clientCellText(rowValueByHeader('CLIENT')),
+          shipper: clientCellTitle(rowValueByHeader('SHIPPER')) || clientCellText(rowValueByHeader('SHIPPER')),
+          cnee: clientCellTitle(rowValueByHeader('CNEE')) || clientCellText(rowValueByHeader('CNEE')),
+          carrier: clientCellTitle(carrierCell) || clientCellText(carrierCell),
           bookingNo: emailCellDisplayValue('BC NO#', rowValueByHeader('BC NO#')),
-          refNo: rowValueByHeader('REF#'), hblNo: emailCellDisplayValue('HBL NO#', rowValueByHeader('HBL NO#')) || rowValueByHeader('HAWB NO#'),
-          mblNo: rowValueByHeader('MBL NO#') || rowValueByHeader('MAWB NO#'), etd: rowValueByHeader('ETD'),
-          eta: rowValueByHeader('ETA'), route: emailCellDisplayValue('ROUTE', rowValueByHeader('ROUTE')),
-          vessel: emailCellDisplayValue('VESSEL/VOYAGE', rowValueByHeader('VESSEL/VOYAGE')) || rowValueByHeader('FLIGHT NO#'),
+          refNo: rowValueByHeader('REF#'), hblNo: houseNo,
+          mblNo: masterNo, etd: rowValueByHeader('ETD'),
+          eta: rowValueByHeader('ETA'), route: emailCellDisplayValue('ROUTE', routeCell), routeCode,
+          vessel: movement,
           volume: emailCellDisplayValue('VOLUME', rowValueByHeader('VOLUME')), remarks: gsdModal.form.remarks,
         },
         documents: [
@@ -17920,7 +17890,7 @@ const viewDealtFile = (file: { name: string; url?: string }) => {
     showToast(`${file?.name || 'This file'} was saved before file preview was supported. Please upload it again`)
     return
   }
-  void viewBookingAttachment(String(file.url))
+  void viewBookingAttachment(String(file.url), file.name)
 }
 const removeDealtFile = (index: number) => {
   if (!gsdModal.editing) return
@@ -18242,9 +18212,8 @@ const saveGsdModal = async () => {
     const savedCountry = loadedCountryId.value
     const savedPayload = sheetPayload(savedKey, false, savedCountry)
     gsdModal.editing = false
-    closeGsdModal()
     // HBL is a single-cell update: reflect it immediately and persist in the
-    // background so the user never waits behind the global Processing screen.
+    // background while keeping the modal open in its locked/read-only state.
     void (async () => {
       const saved = await saveSheet(savedKey, savedPayload, savedCountry)
       if (!saved) {
@@ -21351,7 +21320,7 @@ onBeforeUnmount(() => {
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-step input{width:14px;height:14px;flex:0 0 14px;margin:0}
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-step span{font-size:10.5px;white-space:nowrap}
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-step em{font-size:9.5px;white-space:nowrap}
-.wb-modal-btn.edit:not(:disabled),.gsd-pre-actions .edit:not(:disabled){background:#e67e22;border-color:#e67e22;color:#fff}.wb-modal-btn.edit:hover:not(:disabled),.gsd-pre-actions .edit:hover:not(:disabled){background:#df9950;border-color:#df9950}.prealert-viewer-overlay{z-index:280;background:rgba(10,30,18,.55)}.prealert-viewer-modal{position:relative;width:min(920px,94vw);height:min(720px,88vh);border-radius:12px;padding:0;overflow:hidden;display:flex;flex-direction:column;background:#fff;box-shadow:0 24px 70px rgba(0,0,0,.35)}.prealert-viewer-modal .gsd-modal-x{right:12px;top:12px;z-index:2}.prealert-viewer-head{height:48px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 52px 0 16px;border-bottom:1px solid #e4e9e2}.prealert-viewer-head span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:800;color:#1f2a26}.prealert-viewer-head .wb-modal-btn{height:30px;min-height:30px;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:800}.prealert-viewer-frame{flex:1;width:100%;border:0;background:#f7faf9}
+.wb-modal-btn.edit:not(:disabled),.gsd-pre-actions .edit:not(:disabled){background:#e67e22;border-color:#e67e22;color:#fff}.wb-modal-btn.edit:hover:not(:disabled),.gsd-pre-actions .edit:hover:not(:disabled){background:#df9950;border-color:#df9950}
 .ops-ata-btn{width:32px;height:32px;margin:0 auto;border:1px solid #d0d7de;border-radius:6px;background:#fff;color:#33413b;display:grid;place-items:center;cursor:pointer;padding:0}.ops-ata-btn:hover:not(:disabled):not(.has){border-color:#9cc2e8;background:#f8fbff}.ops-ata-btn.has{width:auto;min-width:68px;height:26px;padding:0;border-color:transparent;border-radius:0;background:transparent;color:inherit;white-space:nowrap;font:inherit;font-size:11px;font-weight:400}.ops-ata-btn.has:hover:not(:disabled){border-color:transparent;background:transparent;text-decoration:underline;text-underline-offset:3px}.ops-ata-btn.has:focus-visible{outline:0;text-decoration:underline;text-underline-offset:3px}.ops-ata-btn:disabled{cursor:default}.ops-ata-btn.has:disabled:hover{background:transparent;text-decoration:none}.ops-ata-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .ops-schedule-date{display:inline-flex;align-items:center;justify-content:center;min-width:76px;min-height:26px;margin:0 auto;border:0;background:transparent;padding:0 3px;color:inherit;font:inherit;font-size:12px;font-weight:400;line-height:1.35;font-variant-numeric:tabular-nums;white-space:nowrap;text-decoration:none;text-underline-offset:3px;cursor:pointer}.ops-schedule-date:hover:not(:disabled){color:#008f4c;text-decoration:underline;text-decoration-thickness:2px}.ops-schedule-date:focus-visible{color:#008f4c;outline:0}.ops-schedule-date:not(.has){color:#7b8780}.ops-schedule-date:disabled{color:#69756f;opacity:1;cursor:not-allowed}.ops-schedule-date.locked:not(.has){color:#9aa39e}
 .ops-schedule-date:not(.has){width:32px;min-width:32px;height:32px;min-height:32px;border:1px solid #d0d7de;border-radius:6px;background:#fff;padding:0;text-decoration:none}.ops-schedule-date:not(.has):hover:not(:disabled),.ops-schedule-date:not(.has):focus-visible{border-color:#00a85a;background:#f4fbf7;box-shadow:0 0 0 2px rgba(0,168,90,.1)}.ops-schedule-date.has{border:0;background:transparent;text-decoration:none}.ops-schedule-date svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.ops-schedule-date.locked:not(.has){border-color:#dce2df;background:#f4f6f5;color:#9aa39e}
