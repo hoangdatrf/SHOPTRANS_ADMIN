@@ -1275,7 +1275,7 @@
             <div class="gsd-hbl-hint">{{ gsdModal.form.hint || '' }}</div>
           </template>
           <template v-else-if="isCutoffModal()">
-            <div v-if="!isCcdCutoffModal()" class="gsd-cutoff-form">
+            <div v-if="!isCcdCutoffModal() && !isGsdModalWorkflowLocked()" class="gsd-cutoff-form">
               <div class="gsd-cutoff-block">
                 <div class="gsd-cutoff-label">SI CUTOFF</div>
                 <div class="gsd-cutoff-inputs">
@@ -1291,15 +1291,16 @@
                 </div>
               </div>
             </div>
-            <div v-if="!isCcdCutoffModal()" class="gsd-cutoff-savebar">
+            <div v-if="!isCcdCutoffModal() && !isGsdModalWorkflowLocked()" class="gsd-cutoff-savebar">
               <button class="wb-modal-btn primary" type="button" :disabled="!cutoffHasInput()" @click="saveCutoffRecord">Save</button>
             </div>
-            <div v-if="!isCcdCutoffModal()" class="gsd-cutoff-hint">{{ gsdModal.form.hint || '' }}</div>
+            <div v-if="!isCcdCutoffModal() && !isGsdModalWorkflowLocked()" class="gsd-cutoff-hint">{{ gsdModal.form.hint || '' }}</div>
             <div class="gsd-cutoff-history gsd-five-row-scroll">
               <table class="gsd-cutoff-table">
                 <thead>
                   <tr>
-                    <th colspan="3">SI CUTOFF</th>
+                    <th>STT</th>
+                    <th colspan="2">SI CUTOFF</th>
                     <th colspan="2">{{ isLclSheet() ? 'CFS CUTOFF' : 'CY CUTOFF' }}</th>
                     <th>STATUS</th>
                   </tr>
@@ -1320,13 +1321,13 @@
               </table>
             </div>
             <div class="gsd-cutoff-footer">
-              <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
+              <button class="wb-modal-btn slate gsd-locked-review-action" type="button" @click="closeGsdModal">Close</button>
               <button v-if="!isCcdCutoffModal()" class="wb-modal-btn edit" type="button" :disabled="!gsdModal.form.selectedId" @click="editCutoffRecord">Edit</button>
               <button v-if="!isCcdCutoffModal()" class="wb-modal-btn cancel" type="button" :disabled="!gsdModal.form.selectedId" @click="removeCutoffRecord">Remove</button>
             </div>
           </template>
           <template v-else-if="isVolumeModal()">
-            <div v-if="!isCcdVolumeModal()" class="gsd-volume-form" :class="{ lcl: isLclSheet() }">
+            <div v-if="!isCcdVolumeModal() && !isGsdModalWorkflowLocked()" class="gsd-volume-form" :class="{ lcl: isLclSheet() }">
               <div class="gsd-volume-block">
                 <div class="gsd-volume-label">VOLUME</div>
                 <input v-model.trim="gsdModal.form.volume" type="number" min="1" step="1" placeholder="Qty" @input="clearRecordHint" />
@@ -1373,10 +1374,10 @@
                 </div>
               </div>
             </div>
-            <div v-if="!isCcdVolumeModal()" class="gsd-record-savebar">
+            <div v-if="!isCcdVolumeModal() && !isGsdModalWorkflowLocked()" class="gsd-record-savebar">
               <button class="wb-modal-btn primary" type="button" :disabled="!volumeHasInput()" @click="saveVolumeRecord">Save</button>
             </div>
-            <div v-if="!isCcdVolumeModal()" class="gsd-record-hint" :class="{ editing: !!gsdModal.form.editId }">{{ gsdModal.form.hint || '' }}</div>
+            <div v-if="!isCcdVolumeModal() && !isGsdModalWorkflowLocked()" class="gsd-record-hint" :class="{ editing: !!gsdModal.form.editId }">{{ gsdModal.form.hint || '' }}</div>
             <div class="gsd-record-history gsd-five-row-scroll">
               <table class="gsd-record-table volume">
                 <thead>
@@ -1403,7 +1404,7 @@
               </table>
             </div>
             <div class="gsd-record-footer">
-              <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
+              <button class="wb-modal-btn slate gsd-locked-review-action" type="button" @click="closeGsdModal">Close</button>
               <button v-if="!isCcdVolumeModal()" class="wb-modal-btn edit" type="button" :disabled="!gsdModal.form.selectedId" @click="editVolumeRecord">{{ gsdModal.form.editId ? 'Editing...' : 'Edit' }}</button>
               <button v-if="!isCcdVolumeModal()" class="wb-modal-btn cancel" type="button" :disabled="!gsdModal.form.selectedId" @click="removeVolumeRecord">Remove</button>
             </div>
@@ -1445,7 +1446,7 @@
           </template>
           <template v-else-if="isRouteModal()">
             <div v-if="gsdModal.form.view !== 'add'" class="gsd-route-search">
-              <div class="gsd-route-head">ROUTE <button v-if="gsdModal.editing" class="gsd-plusmini" type="button" title="Add new route" @click="showRouteAdd">+</button></div>
+              <div class="gsd-route-head">ROUTE <button class="gsd-plusmini gsd-route-reference-add" type="button" title="Add new route" @click="showRouteAdd">+</button></div>
               <label class="gsd-route-field">
                 <span>Route</span>
                 <input
@@ -1468,7 +1469,7 @@
                 <button v-if="gsdModal.editing" class="wb-modal-btn primary" type="button" :disabled="!gsdModal.form.routeOk" @click="saveRouteSelection">Save</button>
               </div>
             </div>
-            <div v-else class="gsd-route-add">
+            <div v-else class="gsd-route-add gsd-route-reference-maintenance">
               <div class="gsd-route-grid">
                 <label><span>POL</span><input v-model.trim="gsdModal.form.pol" type="text" @input="uppercaseRouteAdd('pol')" /></label>
                 <label><span>COUNTRY/AREA</span><select v-model="gsdModal.form.polC" @change="uppercaseRouteAdd('polC')"><option value="">Select country/area</option><option v-for="country in routeCountryOptions" :key="`route-pol-${country}`" :value="country">{{ country }}</option></select></label>
@@ -1512,7 +1513,7 @@
             </div>
           </template>
           <template v-else-if="isVesselModal()">
-            <div class="gsd-vessel-main">
+            <div v-if="!isGsdModalWorkflowLocked()" class="gsd-vessel-main">
               <label>
                 <span>Search Vessel:</span>
                 <input
@@ -1543,10 +1544,10 @@
                 />
               </label>
             </div>
-            <datalist id="gsd-vessel-options">
+            <datalist v-if="!isGsdModalWorkflowLocked()" id="gsd-vessel-options">
               <option v-for="vessel in availableVesselOptions()" :key="vessel.name" :value="vessel.name">IMO {{ vessel.imo }}</option>
             </datalist>
-            <div v-if="isExwEcdVesselDelayModal()" class="gsd-vdelay">
+            <div v-if="isExwEcdVesselDelayModal() && !isGsdModalWorkflowLocked()" class="gsd-vdelay">
               <label class="gsd-vdtog" :class="{ disabled: vesselTranshipmentDisabled() }"><input v-model="gsdModal.form.transhipmentToggle" type="checkbox" :disabled="vesselTranshipmentDisabled()" @change="toggleVesselTranshipment" /> Transhipment</label>
               <div v-if="gsdModal.form.transhipmentToggle" class="gsd-vdbox">
                 <label><span>ETD:</span><button class="gsd-vessel-date" type="button" :disabled="vesselTsDetailsLocked()" @click="openVesselDatePopup('tsEtd', $event)"><span :class="{ placeholder: !gsdModal.form.tsEtd }">{{ cutoffDateLabel(gsdModal.form.tsEtd) }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button></label>
@@ -1562,12 +1563,12 @@
               </div>
               <label class="gsd-vapall" :class="{ disabled: isExwEcdVesselControlsDisabled() }"><input v-model="gsdModal.form.applyAll" type="checkbox" :disabled="isExwEcdVesselControlsDisabled()" /> Apply to all shipments on the same vessel &amp; voyage</label>
             </div>
-            <div class="gsd-vessel-actions">
+            <div v-if="!isGsdModalWorkflowLocked()" class="gsd-vessel-actions">
               <button v-if="isExwEcdVesselDelayModal() && Number(gsdModal.form.selectedHistoryOrder) > 0" class="wb-modal-btn primary vessel-update" type="button" :disabled="!vesselDelayCanUpdate()" @click="updateVesselDelay">Update</button>
               <button v-if="gsdModal.editing && Number(gsdModal.form.selectedHistoryOrder) <= 0 && !gsdModal.form.addLocked" class="wb-modal-btn vessel-add-new" type="button" :disabled="vesselAddInProgress()" @click="showVesselAdd">Add New</button>
               <button v-if="gsdModal.editing && Number(gsdModal.form.selectedHistoryOrder) <= 0" class="wb-modal-btn primary orange vessel-select" type="button" :disabled="!vesselCanSelect()" @click="selectVessel">Select</button>
             </div>
-            <div v-if="gsdModal.form.addView" class="gsd-vessel-add">
+            <div v-if="gsdModal.form.addView && !isGsdModalWorkflowLocked()" class="gsd-vessel-add">
               <div class="gsd-vessel-add-grid">
                 <label>
                   <span>Vessel Name:</span>
@@ -2597,29 +2598,28 @@
                 </tbody>
               </table>
             </div>
-            <div v-if="!isReadonlyFullClearanceDetailModal()" class="gsd-clr-panels">
+            <div class="gsd-clr-panels">
               <div v-for="decl in openClearanceDeclarations()" :key="decl.id" class="clr-panel">
                 <div class="clr-phead"><span>DECLARATION: <b>{{ decl.no || '' }}</b></span><button type="button" class="clr-pclose" @click="toggleClearancePanel(decl.id)">×</button></div>
                 <div class="clr-prow">
-                  <label class="clr-fld"><span>Declaration number</span><input v-model.trim="decl.no" type="text" :readonly="decl.locked" /></label>
-                  <label class="clr-fld"><span>Date</span><span v-if="isDupTcdClearanceDetailsModal()" class="roval" :class="{ 'ro-empty': !decl.date }">{{ formatCutoffDate(decl.date) || '-' }}</span><input v-else v-model="decl.date" type="date" :disabled="decl.locked" /></label>
+                  <label class="clr-fld"><span>Declaration number</span><input v-model.trim="decl.no" type="text" :readonly="decl.locked || isClearanceViewOnly()" /></label>
+                  <label class="clr-fld"><span>Date</span><input v-model="decl.date" type="date" :disabled="decl.locked || isClearanceViewOnly()" /></label>
                   <div class="clr-fld result">
                     <span>Result</span>
-                    <span v-if="isDupTcdClearanceDetailsModal()" class="roval" :class="{ 'ro-empty': !decl.result }">{{ decl.result || '-' }}</span>
-                    <div v-else class="clr-res">
-                      <button type="button" class="clr-rchip" :class="{ 'on-green': decl.result === 'Not inspected' }" :disabled="decl.locked" @click="decl.result = 'Not inspected'">Not inspected</button>
-                      <button type="button" class="clr-rchip" :class="{ 'on-red': decl.result === 'Inspected' }" :disabled="decl.locked" @click="decl.result = 'Inspected'">ⓘ Inspected</button>
+                    <div class="clr-res">
+                      <button type="button" class="clr-rchip" :class="{ 'on-green': decl.result === 'Not inspected' }" :disabled="decl.locked || isClearanceViewOnly()" @click="decl.result = 'Not inspected'">Not inspected</button>
+                      <button type="button" class="clr-rchip" :class="{ 'on-red': decl.result === 'Inspected' }" :disabled="decl.locked || isClearanceViewOnly()" @click="decl.result = 'Inspected'">ⓘ Inspected</button>
                     </div>
                   </div>
                 </div>
                 <div class="clr-steps">
-                  <label class="clr-step" :class="{ dim: isDupTcdClearanceDetailsModal() }"><input v-model="decl.tax" type="checkbox" :disabled="isDupTcdClearanceDetailsModal() || decl.locked" @change="stampClearanceStep(decl, 'tax')" /><span>Tax paid</span><em>{{ decl.taxAt }}</em></label>
-                  <label class="clr-step" :class="{ dim: isDupTcdClearanceDetailsModal() }"><input v-model="decl.fee" type="checkbox" :disabled="isDupTcdClearanceDetailsModal() || decl.locked" @change="stampClearanceStep(decl, 'fee')" /><span>Fee paid</span><em>{{ decl.feeAt }}</em></label>
-                  <label class="clr-step" :class="{ dim: isDupTcdClearanceDetailsModal() || !decl.tax || !decl.fee }"><input v-model="decl.cleared" type="checkbox" :disabled="isDupTcdClearanceDetailsModal() || decl.locked || !decl.tax || !decl.fee" @change="stampClearanceStep(decl, 'cleared')" /><span>Customs cleared</span><em>{{ decl.clearedAt }}</em></label>
-                  <label class="clr-step" :class="{ dim: isDupTcdClearanceDetailsModal() || !decl.cleared }"><input v-model="decl.docs" type="checkbox" :disabled="isDupTcdClearanceDetailsModal() || decl.locked || !decl.cleared" @change="stampClearanceStep(decl, 'docs')" /><span>Documents returned</span><em>{{ decl.docsAt }}</em></label>
+                  <label class="clr-step"><input v-model="decl.tax" type="checkbox" :disabled="isClearanceViewOnly() || decl.locked" @change="stampClearanceStep(decl, 'tax')" /><span>Tax paid</span><em>{{ decl.taxAt }}</em></label>
+                  <label class="clr-step"><input v-model="decl.fee" type="checkbox" :disabled="isClearanceViewOnly() || decl.locked" @change="stampClearanceStep(decl, 'fee')" /><span>Fee paid</span><em>{{ decl.feeAt }}</em></label>
+                  <label class="clr-step" :class="{ dim: !decl.tax || !decl.fee }"><input v-model="decl.cleared" type="checkbox" :disabled="isClearanceViewOnly() || decl.locked || !decl.tax || !decl.fee" @change="stampClearanceStep(decl, 'cleared')" /><span>Customs cleared</span><em>{{ decl.clearedAt }}</em></label>
+                  <label class="clr-step" :class="{ dim: !decl.cleared }"><input v-model="decl.docs" type="checkbox" :disabled="isClearanceViewOnly() || decl.locked || !decl.cleared" @change="stampClearanceStep(decl, 'docs')" /><span>Documents returned</span><em>{{ decl.docsAt }}</em></label>
                 </div>
-                <div v-if="!isDupTcdClearanceDetailsModal() && (!decl.tax || !decl.fee)" class="clr-warn">Tax and Fee must be checked before Customs cleared.</div>
-                <div v-if="!isDupTcdClearanceDetailsModal()" class="clr-pfoot">
+                <div v-if="!isClearanceViewOnly() && (!decl.tax || !decl.fee)" class="clr-warn">Tax and Fee must be checked before Customs cleared.</div>
+                <div v-if="!isClearanceViewOnly()" class="clr-pfoot">
                   <button class="wb-modal-btn slate" type="button" @click="removeClearanceDeclaration(decl.id)">Clear</button>
                   <button class="wb-modal-btn edit" type="button" :disabled="!decl.locked" @click="decl.locked = false">Edit</button>
                   <button class="wb-modal-btn primary" type="button" :disabled="!clearanceDeclarationCanSave(decl)" @click="saveClearanceDeclaration(decl)">Save</button>
@@ -14353,6 +14353,7 @@ const isDapTcdClearanceDetailsModal = () => isClearanceDetailsModal() && isDapTc
 const isReadonlyFullClearanceDetailModal = () => !isStandaloneManualOpsRow(gsdModal.row) && (isDapTcdClearanceDetailsModal() || (isClearanceDetailsModal() && isFclDduTcdSheet()))
 const isDupCcdClearanceDetailsModal = () => isClearanceDetailsModal() && isDupCcdSheet()
 const isDupTcdClearanceDetailsModal = () => isClearanceDetailsModal() && isDupTcdSheet()
+const isClearanceViewOnly = () => isDupTcdClearanceDetailsModal() || isReadonlyFullClearanceDetailModal()
 const linkedTcdClearanceValue = async (row: number, fallback: any) => {
   const parsed = opsParts.value
   if (!parsed || parsed.dept !== 'TCD' || !['DDU', 'DDP'].includes(upperText(parsed.type))) return fallback
@@ -22470,7 +22471,14 @@ onBeforeUnmount(() => {
 /* A confirmed workflow checkbox makes the complete row read-only. Modal
    content remains available for review, while every mutating action is hidden. */
 .gsd-workflow-locked input,.gsd-workflow-locked select,.gsd-workflow-locked textarea{pointer-events:none!important}
-.gsd-workflow-locked button:not(.gsd-modal-x):not(.ec-view):not(.gsd-eye-btn):not(.gsd-pre-icon.eye):not([class*="export"]):not([title^="View"]){display:none!important}
+.gsd-workflow-locked button:not(.gsd-modal-x):not(.ec-view):not(.gsd-eye-btn):not(.gsd-pre-icon.eye):not(.gsd-locked-review-action):not(.gsd-route-reference-add):not([class*="export"]):not([title^="View"]){display:none!important}
+/* Locked shipment rows remain read-only, but maintaining the shared Route
+   directory is independent from changing shipment data. */
+.gsd-workflow-locked .gsd-route-reference-maintenance input,.gsd-workflow-locked .gsd-route-reference-maintenance select{pointer-events:auto!important}
+.gsd-workflow-locked .gsd-route-reference-maintenance button{display:inline-flex!important}
+.gsd-workflow-locked.gsd-cutoff-modal .gsd-cutoff-history{border-top:0;padding-top:0}
+.gsd-workflow-locked.gsd-volume-modal .gsd-record-history{border-top:0;padding-top:0}
+.gsd-workflow-locked.gsd-vessel-modal .gsd-vhist-wrap.ecd{margin-top:0;border-top:0;padding-top:0}
 .do-document-overlay{z-index:760!important;background:rgba(20,30,26,.5)!important}.do-document-modal{width:900px;max-width:96vw;height:94vh;display:flex;flex-direction:column;overflow:hidden;border-radius:10px;background:#eef1f4;box-shadow:0 20px 60px rgba(0,0,0,.32)}.do-document-toolbar{display:flex;justify-content:flex-end;gap:8px;padding:10px 14px;background:#fff;border-bottom:1px solid #dce3df}.do-document-toolbar .wb-modal-btn{height:34px;padding:0 14px}.do-document-close{width:25px;height:25px;margin-left:4px;border:0;border-radius:50%;background:#c0392b;color:#fff;font-size:18px;font-weight:800;line-height:1;cursor:pointer}.do-document-scroll{flex:1;overflow:auto;padding:18px}.do-document-sheet{box-sizing:border-box;width:760px;min-height:1060px;margin:0 auto;padding:44px 50px;background:#fff;color:#26312b;font:12px/1.35 Arial,sans-serif;box-shadow:0 2px 9px rgba(0,0,0,.14)}.do-document-head{display:flex;justify-content:space-between;gap:20px;padding-bottom:12px;border-bottom:2px solid #0f4c81;color:#0f4c81}.do-document-head>div:first-child{display:flex;flex-direction:column;max-width:460px}.do-document-head b{font-size:15px}.do-document-head span{font-size:9px;color:#495852}.do-document-head>div:last-child{text-align:right}.do-document-head strong{display:block;font-size:20px;letter-spacing:.04em}.do-document-head small{font-size:10px;font-weight:800}.do-document-sheet label{display:grid;gap:4px;margin-top:12px}.do-document-sheet label>span,.do-doc-section{color:#0f4c81;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}.do-document-sheet input,.do-document-sheet textarea{box-sizing:border-box;width:100%;border:1px solid #c9d3cf;border-radius:5px;background:#fff;padding:7px 9px;color:#26312b;font:12px Arial,sans-serif;outline:none;resize:vertical}.do-document-sheet input{height:34px}.do-document-sheet textarea{min-height:54px}.do-document-sheet input:disabled,.do-document-sheet textarea:disabled{background:#f1f5f4;color:#46534d;opacity:1}.do-doc-grid{display:grid;gap:14px}.do-doc-grid.two{grid-template-columns:1fr 1fr}.do-doc-grid.three{grid-template-columns:repeat(3,1fr)}.do-doc-section{margin-top:22px;padding-bottom:5px;border-bottom:1px solid #8fa9be;font-size:11px}.do-doc-table{width:100%;margin-top:8px;border-collapse:collapse;table-layout:fixed}.do-doc-table th,.do-doc-table td{border:1px solid #c7d3dc;padding:0;text-align:center}.do-doc-table th{height:27px;background:#eef3f7;color:#0f4c81;font-size:9px}.do-doc-table th:first-child{width:30px}.do-doc-table input{height:30px;border:0;border-radius:0;text-align:center}.do-doc-add{margin-top:7px;border:0;border-radius:5px;background:#008f4c;color:#fff;padding:5px 10px;font-size:10px;font-weight:800;cursor:pointer}.do-doc-bottom{margin-top:16px}.do-doc-sign{display:grid;grid-template-columns:1fr 1fr;gap:54px;margin-top:52px;text-align:center;color:#526159;font-size:10px}.do-doc-sign>div{display:flex;flex-direction:column;align-items:center}.do-doc-sign b{margin-top:3px;color:#26312b;font-size:11px}.do-doc-sign i{display:block;width:100%;height:48px;border-bottom:1px solid #26312b}.do-doc-sign strong{margin-top:6px;color:#26312b;font-size:11px}@media(max-width:820px){.do-document-sheet{width:720px}.do-document-scroll{padding:10px}}
 .do-document-actions .wb-modal-btn.primary{border-color:#00c566;background:#00c566;color:#fff}.do-document-actions .wb-modal-btn.edit{border-color:#e67e22;background:#e67e22;color:#fff}.do-document-actions .wb-modal-btn.export{border-color:#237bdd;background:#237bdd;color:#fff}.do-document-actions .wb-modal-btn:disabled{filter:saturate(.42) brightness(.78);cursor:not-allowed}.do-doc-sign>div{display:grid;grid-template-rows:14px 18px 49px 18px;align-items:center}.do-doc-sign b,.do-doc-sign strong{display:block;margin:0}.do-doc-sign i{height:48px;align-self:start}.do-sign-placeholder{visibility:hidden}
 .do-document-modal{width:920px}.do-document-scroll{padding:18px 22px 24px}.do-document-sheet{width:min(824px,100%)}@media(max-width:820px){.do-document-sheet{width:100%}}

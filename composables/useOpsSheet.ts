@@ -467,9 +467,9 @@ export function opsHeaderFor(base: OpsBase, mode: OpsMode, dept: OpsDept, type?:
   rawHeader = rawHeader.map((label) => label === 'SI SUBMIT' ? 'MASTER SI SUBMIT' : label)
   const mirrorsTcdSchema = String(dept || '').toUpperCase() === 'FCD' &&
     ['DAP', 'DDU', 'DDP'].includes(normalizedType)
-  // DAP/DDU/DDP use one shared DO INFORMATION form. The date is stored inside
+  // Import workflows use one shared DO INFORMATION form. The date is stored inside
   // DO INFO, so a second DO VALIDITY column must not be generated downstream.
-  const visibleHeader = ['DAP', 'DDU', 'DDP'].includes(normalizedType)
+  const visibleHeader = ['DO', 'DAP', 'DDU', 'DDP'].includes(normalizedType)
     ? rawHeader.map((label) => label === 'DO VALIDITY' ? 'DO INFO' : label)
     : rawHeader
   // Downstream worksheets own one assignee column. GSD additionally shows the
