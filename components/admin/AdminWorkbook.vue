@@ -887,13 +887,13 @@
       </div>
     </div>
     <div v-if="doInfoModal.open" class="wb-modal-overlay do-info-overlay" @mousedown.self="closeDoInfoModal">
-      <div class="do-info-modal" role="dialog" aria-modal="true" aria-label="DO information">
+      <div class="do-info-modal" :class="{ editing: doInfoModal.editing }" role="dialog" aria-modal="true" aria-label="DO information">
         <button class="do-info-x" type="button" aria-label="Close" @click="closeDoInfoModal">×</button>
         <div class="do-info-row">
-          <label>Upload<br>MBL DO:</label>
-          <input v-model="doInfoModal.mblNo" type="text" :disabled="!doInfoModal.editing || !canManageDoInfo()" />
-          <input v-model="doInfoModal.mblDate" type="date" :disabled="!doInfoModal.editing || !canManageDoInfo()" />
-          <button class="gsd-pre-icon upload do-info-upload" :class="{ has: !!doInfoModal.mblFile.name }" type="button" :disabled="!doInfoModal.editing || !canManageDoInfo()" :title="doInfoModal.mblFile.name || 'Upload MBL DO'" @click="chooseDoInfoFile('mbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg></button>
+          <label class="do-info-choice"><input v-model="doInfoModal.mblEnabled" type="checkbox" :disabled="!doInfoModal.editing || !canManageDoInfo()" @change="toggleDoInfoKind('mbl')" /><span>Upload<br>MBL DO:</span></label>
+          <input v-model="doInfoModal.mblNo" type="text" placeholder="MBL DO No#" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.mblEnabled" />
+          <input v-model="doInfoModal.mblDate" type="date" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.mblEnabled" />
+          <button class="gsd-pre-icon upload do-info-upload" :class="{ has: !!doInfoModal.mblFile.name }" type="button" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.mblEnabled" :title="doInfoModal.mblFile.name || 'Upload MBL DO'" @click="chooseDoInfoFile('mbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg></button>
           <button v-if="doInfoModal.mblFile.dataUrl" class="gsd-pre-icon eye on do-info-view" type="button" title="View MBL DO" @click="viewDoInfoFile('mbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
           <div class="do-info-validity">
             <label for="do-info-validity">Validity:</label>
@@ -901,10 +901,10 @@
           </div>
         </div>
         <div class="do-info-row">
-          <label>HBL DO:</label>
-          <input v-model="doInfoModal.hblNo" type="text" :disabled="!doInfoModal.editing || !canManageDoInfo()" />
-          <input v-model="doInfoModal.hblDate" type="date" :disabled="!doInfoModal.editing || !canManageDoInfo()" />
-          <button class="gsd-pre-icon upload do-info-upload" :class="{ has: !!doInfoModal.hblFile.name }" type="button" :disabled="!doInfoModal.editing || !canManageDoInfo()" :title="doInfoModal.hblFile.name || 'Upload HBL DO'" @click="chooseDoInfoFile('hbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg></button>
+          <label class="do-info-choice"><input v-model="doInfoModal.hblEnabled" type="checkbox" :disabled="!doInfoModal.editing || !canManageDoInfo()" @change="toggleDoInfoKind('hbl')" /><span>HBL DO:</span></label>
+          <input v-model="doInfoModal.hblNo" type="text" placeholder="HBL DO No#" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.hblEnabled" />
+          <input v-model="doInfoModal.hblDate" type="date" placeholder="dd/mm/yyyy" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.hblEnabled" />
+          <button class="gsd-pre-icon upload do-info-upload" :class="{ has: !!doInfoModal.hblFile.name }" type="button" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.hblEnabled" :title="doInfoModal.hblFile.name || 'Upload HBL DO'" @click="chooseDoInfoFile('hbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg></button>
           <button v-if="doInfoModal.hblFile.dataUrl" class="gsd-pre-icon eye on do-info-view" type="button" title="View HBL DO" @click="viewDoInfoFile('hbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
         <div v-if="canManageDoInfo()" class="do-info-actions">
@@ -1968,7 +1968,7 @@
                       <td><input v-model="record.pickupDate" class="prs-date" type="date" :disabled="isAirDupFcdTruckingStatusModal() || !gsdModal.editing" /></td>
                       <td><input v-model="record.arrivingTime" class="prs-date" type="time" :disabled="isAirDupFcdTruckingStatusModal() || !gsdModal.editing" /></td>
                       <td class="epodcell">
-                        <button v-if="isAirDupFcdTruckingStatusModal()" class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign })"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                        <button v-if="isAirDupFcdTruckingStatusModal()" class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign, epodUrl: record.epodUrl })"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
                         <span v-else class="roval" :class="{ 'ro-empty': !record.epodSign }">{{ record.epodSign || '' }}</span>
                       </td>
                     </tr>
@@ -1999,7 +1999,7 @@
                       <td class="prs-days">{{ pickupReturnDaysAfterAta(record) }}</td>
                       <td><input :value="record.pickupDate" class="prs-date" type="date" disabled /></td>
                       <td class="epodcell">
-                        <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign })">
+                        <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign, epodUrl: record.epodUrl })">
                           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>
                       </td>
@@ -2025,6 +2025,7 @@
                       <th>Pickup Date</th>
                       <th>Est. Arriving time</th>
                       <th>Return Date</th>
+                      <th>ePOD Sign</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2040,8 +2041,13 @@
                       <td class="prs-readonly">{{ cutoffDateLabel(record.pickupDate) }}</td>
                       <td class="prs-readonly">{{ record.arrivingTime || '—' }}</td>
                       <td class="prs-readonly">{{ cutoffDateLabel(record.returnDate) }}</td>
+                      <td class="epodcell">
+                        <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign, epodUrl: record.epodUrl })">
+                          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                      </td>
                     </tr>
-                    <tr v-if="!pickupReturnRecords().length"><td colspan="11" class="prs-empty">No truck data.</td></tr>
+                    <tr v-if="!pickupReturnRecords().length"><td colspan="12" class="prs-empty">No truck data.</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -2096,7 +2102,7 @@
                     <td v-if="isDupTruckingStatusModal()" class="prs-readonly">{{ record.arrivingTime || record.estimatedArrivingTime || '' }}</td>
                     <td v-if="!isLclPickupStatusModal() && !isDupTruckingStatusModal()" class="prs-date-cell"><button class="prs-date-field" type="button" :disabled="!pickupReturnRowCanEdit(record)" @click.stop="openPickupReturnDatePopup(index, 'returnDate', $event)"><span>{{ cutoffDateLabel(record.returnDate) }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button></td>
                     <td v-if="isDupTruckingStatusModal()" class="epodcell">
-                      <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign })">
+                      <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign, epodUrl: record.epodUrl })">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
                       </button>
                     </td>
@@ -2377,6 +2383,7 @@
             <div class="gsd-cda-addbar">
               <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing" @click="addClearanceOtherDoc">Add+</button>
             </div>
+            <div class="gsd-cda-scroll">
             <table class="gsd-cda-table">
               <colgroup>
                 <col />
@@ -2417,11 +2424,12 @@
                     </span>
                   </td>
                   <td class="cda-act">
-                    <button v-if="doc.custom && clearanceDocs().filter((item) => item.custom).length > 1 && gsdModal.editing" class="cda-rm" type="button" title="Remove" @click="removeClearanceOtherDoc(doc.key)">×</button>
+                    <button v-if="doc.custom" class="cda-rm" type="button" :disabled="!gsdModal.editing" :title="gsdModal.editing ? 'Remove' : 'Click Edit to remove this document'" @click.stop="removeClearanceOtherDoc(doc.key)">×</button>
                   </td>
                 </tr>
               </tbody>
             </table>
+            </div>
             <div class="gsd-cda-actions">
               <button class="wb-modal-btn slate" type="button" @click="cancelClearanceDocs">Cancel All</button>
               <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || !clearanceDocsAnyChecked()" @click="enableClearanceDocsEdit">Edit</button>
@@ -4132,11 +4140,14 @@ const doInfoModal = reactive({
   editing: false,
   row: -1,
   column: -1,
+  mblEnabled: false,
+  hblEnabled: false,
   mblNo: '',
   hblNo: '',
   mblDate: '',
   hblDate: '',
   validity: '',
+  remarks: '',
   mblFile: emptyDoInfoFile(),
   hblFile: emptyDoInfoFile(),
 })
@@ -4428,6 +4439,7 @@ type PickupReturnRecord = {
   driverInfo?: string
   arrivingTime?: string
   epodSign?: string
+  epodUrl?: string
 }
 const emptyGsdForm = (fields: GsdFormField[]) => fields.reduce((acc, field) => {
   acc[field.key] = field.type === 'checkbox' ? false : field.type === 'select' ? field.options?.[0] || '' : ''
@@ -8937,24 +8949,30 @@ const isExwFclFreeTextMblColumn = (column: number) =>
   opsParts.value?.mode === 'FCL' &&
   normalizedHeaderLabel(column) === 'MBL NO#'
 const isDoInfoCell = (row: number, column: number) =>
-  row > 0 && !['DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type)) && ['ICD', 'TCD', 'CCD', 'ECD', 'FCD'].includes(opsDeptUpper()) && normalizedHeaderLabel(column) === 'DO INFO'
+  row > 0 && ['ICD', 'TCD', 'CCD', 'ECD', 'FCD'].includes(opsDeptUpper()) && normalizedHeaderLabel(column) === 'DO INFO'
 const canManageDoInfo = () => opsDeptUpper() === 'ICD'
 const doInfoHasValue = (value: any) => !!String(value ?? '').trim()
 const doInfoValue = (value: any) => {
   const raw = String(value ?? '').trim()
   const parsed = parseJsonCell(raw, null as any)
-  if (parsed && typeof parsed === 'object') return {
-    mblNo: String(parsed.mblNo || ''),
-    hblNo: String(parsed.hblNo || ''),
-    mblDate: String(parsed.mblDate || parsed.date || '').slice(0, 10),
-    hblDate: String(parsed.hblDate || parsed.date || '').slice(0, 10),
-    validity: String(parsed.validity || '').slice(0, 10),
-    mblFile: parsed.mblFile && typeof parsed.mblFile === 'object' ? parsed.mblFile : emptyDoInfoFile(),
-    hblFile: parsed.hblFile && typeof parsed.hblFile === 'object' ? parsed.hblFile : emptyDoInfoFile(),
+  if (parsed && typeof parsed === 'object') {
+    const data = parsed.form && typeof parsed.form === 'object' ? parsed.form : parsed
+    return {
+      mblEnabled: data.mblEnabled !== false && !!(data.mblEnabled || data.mblNo || data.mblDate || data.mblFile?.name || data.mblFile?.dataUrl),
+      hblEnabled: data.hblEnabled !== false && !!(data.hblEnabled || data.hblNo || data.hblDate || data.hblFile?.name || data.hblFile?.dataUrl),
+      mblNo: String(data.mblNo || ''),
+      hblNo: String(data.hblNo || ''),
+      mblDate: String(data.mblDate || '').slice(0, 10),
+      hblDate: String(data.hblDate || '').slice(0, 10),
+      validity: String(data.validity || data.date || '').slice(0, 10),
+      remarks: String(data.remarks || ''),
+      mblFile: data.mblFile && typeof data.mblFile === 'object' ? data.mblFile : emptyDoInfoFile(),
+      hblFile: data.hblFile && typeof data.hblFile === 'object' ? data.hblFile : emptyDoInfoFile(),
+    }
   }
   const legacyDate = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
   const date = legacyDate ? `${legacyDate[3]}-${legacyDate[2]}-${legacyDate[1]}` : toDatetimeLocalValue(raw).slice(0, 10)
-  return { mblNo: '', hblNo: '', mblDate: date, hblDate: date, validity: '', mblFile: emptyDoInfoFile(), hblFile: emptyDoInfoFile() }
+  return { mblEnabled: false, hblEnabled: false, mblNo: '', hblNo: '', mblDate: '', hblDate: '', validity: date, remarks: '', mblFile: emptyDoInfoFile(), hblFile: emptyDoInfoFile() }
 }
 const openDoInfoModal = (row: number, column: number) => {
   const data = doInfoValue(rows.value[row]?.[column])
@@ -8963,25 +8981,39 @@ const openDoInfoModal = (row: number, column: number) => {
     editing: canManageDoInfo() && !String(rows.value[row]?.[column] ?? '').trim(),
     row,
     column,
+    mblEnabled: data.mblEnabled,
+    hblEnabled: data.hblEnabled,
     mblNo: data.mblNo,
     hblNo: data.hblNo,
     mblDate: data.mblDate,
     hblDate: data.hblDate,
     validity: data.validity,
+    remarks: data.remarks,
     mblFile: { ...data.mblFile },
     hblFile: { ...data.hblFile },
   })
 }
 const closeDoInfoModal = () => { doInfoModal.open = false }
 const doInfoHasData = () => !!(
-  doInfoModal.mblNo.trim() || doInfoModal.hblNo.trim() || doInfoModal.mblDate || doInfoModal.hblDate || doInfoModal.validity
+  doInfoModal.mblEnabled || doInfoModal.hblEnabled || doInfoModal.mblNo.trim() || doInfoModal.hblNo.trim() || doInfoModal.mblDate || doInfoModal.hblDate || doInfoModal.validity
   || doInfoModal.mblFile.name || doInfoModal.mblFile.dataUrl || doInfoModal.hblFile.name || doInfoModal.hblFile.dataUrl
 )
 const doInfoCanSave = () => {
   if (!canManageDoInfo() || !doInfoModal.editing || !doInfoHasData()) return false
-  const hasMbl = !!(doInfoModal.mblNo.trim() || doInfoModal.mblFile.name || doInfoModal.mblFile.dataUrl)
-  const hasHbl = !!(doInfoModal.hblNo.trim() || doInfoModal.hblFile.name || doInfoModal.hblFile.dataUrl)
-  return (!hasMbl || !!doInfoModal.mblDate) && (!hasHbl || !!doInfoModal.hblDate)
+  return (!doInfoModal.mblEnabled || !!doInfoModal.mblDate) && (!doInfoModal.hblEnabled || !!doInfoModal.hblDate)
+}
+const toggleDoInfoKind = (kind: 'mbl' | 'hbl') => {
+  const enabled = kind === 'mbl' ? doInfoModal.mblEnabled : doInfoModal.hblEnabled
+  if (enabled) return
+  if (kind === 'mbl') {
+    doInfoModal.mblNo = ''
+    doInfoModal.mblDate = ''
+    doInfoModal.mblFile = emptyDoInfoFile()
+  } else {
+    doInfoModal.hblNo = ''
+    doInfoModal.hblDate = ''
+    doInfoModal.hblFile = emptyDoInfoFile()
+  }
 }
 const clearDoInfoModal = async () => {
   if (!canManageDoInfo() || !doInfoHasData() || doInfoModal.row < 1 || doInfoModal.column < 0) return
@@ -8991,11 +9023,14 @@ const clearDoInfoModal = async () => {
   for (const dept of fclLinkedRecipients()) void mirrorExwFclWorkflowCell(dept, 'DO VALIDITY', '', doInfoModal.row)
   Object.assign(doInfoModal, {
     editing: true,
+    mblEnabled: false,
+    hblEnabled: false,
     mblNo: '',
     hblNo: '',
     mblDate: '',
     hblDate: '',
     validity: '',
+    remarks: '',
     mblFile: emptyDoInfoFile(),
     hblFile: emptyDoInfoFile(),
   })
@@ -9004,6 +9039,7 @@ const clearDoInfoModal = async () => {
 }
 const chooseDoInfoFile = (kind: 'mbl' | 'hbl') => {
   if (!canManageDoInfo() || !doInfoModal.editing) return
+  if ((kind === 'mbl' && !doInfoModal.mblEnabled) || (kind === 'hbl' && !doInfoModal.hblEnabled)) return
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png'
@@ -9029,11 +9065,14 @@ const viewDoInfoFile = (kind: 'mbl' | 'hbl') => {
 const saveDoInfoModal = () => {
   if (!canManageDoInfo() || !doInfoCanSave() || doInfoModal.row < 1 || doInfoModal.column < 0) return
   const value = JSON.stringify({
+    mblEnabled: doInfoModal.mblEnabled,
+    hblEnabled: doInfoModal.hblEnabled,
     mblNo: doInfoModal.mblNo.trim(),
     hblNo: doInfoModal.hblNo.trim(),
     mblDate: doInfoModal.mblDate,
     hblDate: doInfoModal.hblDate,
     validity: doInfoModal.validity,
+    remarks: doInfoModal.remarks,
     date: doInfoModal.mblDate || doInfoModal.hblDate,
     mblFile: doInfoModal.mblFile,
     hblFile: doInfoModal.hblFile,
@@ -12202,7 +12241,7 @@ const isAirDupFcdTruckingStatusModal = () =>
   isAirSheet() && upperText(opsParts.value?.dept || '') === 'FCD' && isDupTruckingStatusModal()
 const isDestinationIcdPickupStatusModal = () => isPickupReturnStatusModal() &&
   normalizedHeaderLabel(gsdModal.column) === 'PICKUP STATUS' && opsDeptUpper() === 'ICD' &&
-  ['DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase())
+  ['DO', 'DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase())
 const isLclPickupStatusModal = () => isPickupReturnStatusModal() && normalizedHeaderLabel(gsdModal.column) === 'PICKUP STATUS' && (
   isLclSheet() || (opsParts.value?.mode === 'FCL' && ['DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsDeptUpper() === 'ICD')
 )
@@ -14485,9 +14524,15 @@ const addClearanceOtherDoc = () => {
   clearanceDocs().push({ key: `ot${Date.now()}${count}`, label: '', verified: false, file: '', url: '', displayName: '', custom: true })
 }
 const removeClearanceOtherDoc = async (key: string) => {
+  if (!gsdModal.editing) return
   const ok = await askConfirm('Are you sure to remove?', '', { okText: 'OK', cancelText: 'Cancel', tone: 'remove' })
   if (!ok) return
-  gsdModal.form.docs = clearanceDocs().filter((doc) => doc.key !== key)
+  const docs = clearanceDocs()
+  const index = docs.findIndex((doc) => doc.custom && doc.key === key)
+  if (index < 0) return
+  docs.splice(index, 1)
+  if (clearanceDocUploadTarget.value === key) clearanceDocUploadTarget.value = ''
+  showToast('Document removed')
 }
 const chooseClearanceDocFile = (key: string) => {
   clearanceDocUploadTarget.value = key
@@ -15592,6 +15637,7 @@ const normalizePickupReturnRecord = (item: any, fallback?: TruckContRecord, inde
     driverInfo: String(item?.driverInfo || item?.driverName || item?.driver || fallback?.driver || ''),
     arrivingTime: String(item?.arrivingTime || item?.estimatedArrivingTime || item?.eta || item?.eta2 || fallback?.eta2 || ''),
     epodSign: String(item?.epodSign || fallback?.epodSign || ''),
+    epodUrl: String(item?.epodUrl || fallback?.epodUrl || ''),
   }
 }
 const pickupReturnFormFromCell = (value: any, linkedTruckValue: any = '') => {
@@ -15714,6 +15760,7 @@ const persistPickupReturnStatus = (immediate = false) => {
         driverInfo: record.driverInfo || '',
         arrivingTime: record.arrivingTime || '',
         epodSign: record.epodSign || '',
+        epodUrl: record.epodUrl || '',
       })),
       locked: !!gsdModal.form.locked,
     },
@@ -21600,7 +21647,7 @@ onBeforeUnmount(() => {
 .bd-foot .edit:not(:disabled){background:#e67e22;border-color:#e67e22;color:#fff}
 @media(max-width:720px){.gsd-modal.gsd-bill-modal:has(.bd-body){padding:30px 18px 22px}.bd-row{flex-wrap:wrap}.bd-lab{flex-basis:130px}.bd-date{width:170px;flex-basis:170px}.bd-foot{width:100%}}
 .gsd-prealert-modal{width:486px;max-width:96vw;max-height:90vh;overflow-y:auto;padding:30px 28px 22px;border-radius:12px;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-prealert-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-pre-title{font-weight:800;font-size:14px;color:#1f2a26;margin:0 0 12px}.gsd-pre-dest{font-weight:700;font-size:13px;color:#33413b;margin:0 0 14px 14px}.gsd-pre-section{display:flex;flex-direction:column;align-items:center}.gsd-pre-row{display:flex;align-items:center;gap:12px;margin:9px 0}.gsd-pre-row.doc{width:440px;justify-content:flex-start}.gsd-pre-label{width:150px;text-align:right;font-weight:800;font-size:12.5px;color:#33413b;flex:none}.gsd-pre-row.doc .gsd-pre-label{width:170px}.gsd-pre-check{width:18px;height:18px;flex:none;accent-color:#008f4c;cursor:pointer}.gsd-pre-date,.gsd-pre-other{width:150px;height:38px;flex:none;text-align:center;padding:8px 10px;border:1px solid #c9d3cf;border-radius:8px;font:inherit;color:#33413b;background:#f7faf9;outline:none}.gsd-pre-other{text-align:left}.gsd-pre-icon{flex:none;border:none;background:none;cursor:pointer;color:#33413b;padding:2px;display:inline-flex;align-items:center;justify-content:center;line-height:0}.gsd-pre-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.gsd-pre-icon.upload.has{color:#1b7a43}.gsd-pre-icon.eye{opacity:.3;color:#9aa6a1;cursor:default}.gsd-pre-icon.eye.on{opacity:1;color:#0f4c81;cursor:pointer}.gsd-pre-icon:disabled{opacity:.4;cursor:not-allowed}.gsd-pre-divider{border-top:1px solid #e4eae7;margin:14px 0}.gsd-pre-doc-head{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 8px}.gsd-pre-doc-head span{font-weight:800;font-size:13px;color:#1f2a26}.gsd-pre-doc-head .wb-modal-btn{height:32px;min-height:32px;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:800}.gsd-pre-remarks{display:block;margin:6px 0 0}.gsd-pre-remarks span{display:block;font-weight:800;font-size:13px;color:#1f2a26;margin:0 0 6px}.gsd-pre-remarks textarea{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid #c9d3cf;border-radius:8px;font:inherit;color:#33413b;resize:vertical;outline:none}.gsd-pre-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}.gsd-pre-actions .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:800}.gsd-pre-actions .edit{background:#f6c998;border-color:#f6c998;color:#fff}.gsd-pre-actions .send{background:#0f4c81;border-color:#0f4c81;color:#fff}.gsd-pre-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-pre-actions .wb-modal-btn:disabled{opacity:.55;cursor:not-allowed}
-.gsd-cda-modal{width:fit-content;max-width:96vw;padding:30px 28px 20px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-cda-modal .gsd-modal-x,.gsd-clr-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-cda-instr{font-size:14px;font-weight:800;color:#1f2a26;margin:10px 40px 6px 0}.gsd-cda-addbar{display:flex;justify-content:flex-start;margin:8px 0 12px}.gsd-cda-table{width:auto;border-collapse:collapse;font-size:13px;color:#33413b}.gsd-cda-table th{padding:8px 10px;border-bottom:1px solid #e1e8e4;text-align:left;font-weight:800;color:#42504b}.gsd-cda-table td{padding:9px 10px;vertical-align:middle}.gsd-cda-table .cda-doc{font-weight:700;color:#1a1a1a;white-space:nowrap}.gsd-cda-table .cda-vf{text-align:center;width:104px}.gsd-cda-table .cda-up{width:372px}.gsd-cda-table .cda-act{width:44px}.gsd-cda-table input[type=checkbox]{width:18px;height:18px;accent-color:#008f4c}.cda-uphead{display:inline-block;width:160px;text-align:center}.cda-up-wrap{display:flex;align-items:center;gap:10px;width:100%}.cda-upcol{display:inline-flex;flex-direction:column;gap:3px;width:160px}.cdaup{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:160px;box-sizing:border-box;border:0;border-radius:8px;background:#1456e0;color:#fff;padding:7px 12px;font-size:12.5px;font-weight:800;white-space:nowrap;cursor:pointer}.cdaup.has{background:#0e9f57}.cdaup:disabled{background:#cfd8e6;cursor:not-allowed}.cdaup svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.cdafn{width:160px;box-sizing:border-box;border:1px solid #e2e8e4;border-radius:5px;background:#fff;padding:2px 7px;color:#44524c;font-size:10.5px;line-height:1.3}.cdaname{width:150px;flex:0 0 150px;box-sizing:border-box;border:1px solid #d6ddd9;border-radius:7px;background:#fff;padding:6px 9px;text-align:center;font-size:12.5px}.cda-rm{border:0;background:transparent;color:#c0392b;font-size:15px;font-weight:900;line-height:1;cursor:pointer}.cda-eye{margin-left:auto}.gsd-cda-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;padding-right:44px}.gsd-cda-actions .edit{background:#e67e22;border-color:#e67e22;color:#fff}.gsd-cda-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-clr-modal{width:1180px;max-width:96vw;max-height:90vh;padding:30px 26px 24px;border-radius:12px;overflow:auto;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-clr-title{text-align:center;font-size:13px;font-weight:900;color:#0e1512;text-transform:uppercase;margin:0 0 8px}.gsd-clr-scroll{overflow:auto;max-height:300px;margin-top:6px}.gsd-clr-table{width:100%;border-collapse:collapse;table-layout:auto;font-size:12.5px;color:#33413b}.gsd-clr-table th,.gsd-clr-table td{border:1px solid #d5ddd9;padding:8px 10px;text-align:center;vertical-align:middle}.gsd-clr-table th{background:#f1f5f3;font-weight:800;color:#33413b;white-space:nowrap}.gsd-clr-table td.clr-ro{background:#f7faf9;color:#5b6a63;font-weight:700}.clr-allcell{width:44px}.clr-declcell{min-width:230px}.clr-dcap{display:inline-flex;align-items:center;gap:8px}.clr-dcapbox{text-align:center}.clr-plus{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;border-radius:6px;background:#008f4c;color:#fff;font-size:16px;font-weight:900;line-height:1;cursor:pointer}.clr-plus.dim{background:#b7c2bc;cursor:not-allowed}.clr-declwrap{display:flex;flex-direction:column;gap:6px;align-items:stretch;max-width:80%;margin:0 auto}.clr-declrow{display:flex;align-items:center;gap:6px}.clr-din{flex:1 1 auto;min-width:120px;border:1px solid #c9d3cf;border-radius:6px;padding:6px 8px;text-align:center;font:inherit}.clr-din.clr-baderr{border-color:#c0392b;background:#fff5f4}.clr-tick{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:0;border-radius:6px;background:#008f4c;color:#fff;font-size:14px;cursor:pointer}.clr-link{flex:1 1 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #cfe0d6;border-radius:6px;background:#eaf6ef;padding:6px 8px;cursor:pointer}.clr-link b{color:#0a6b3b;font-size:12.5px}.clr-link.clr-link-red{background:#fdecea;border-color:#c0392b}.clr-link.clr-link-red b{color:#c0392b}.clr-dots{display:inline-flex;gap:4px}.clr-dot{width:8px;height:8px;border-radius:50%;background:#d0d7de}.clr-dot.on{background:#008f4c}.gsd-clr-panels{display:flex;flex-direction:column;gap:14px;margin-top:14px}.clr-panel{border:1px solid #dfe6e2;border-radius:10px;background:#fff;padding:16px 18px}.clr-phead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;color:#5b6a63;font-size:12px;letter-spacing:.04em}.clr-phead b{margin-left:6px;color:#1f2a26;font-size:13px}.clr-pclose{border:0;background:transparent;color:#8a97a0;font-size:15px;cursor:pointer}.clr-prow{display:flex;align-items:flex-end;flex-wrap:wrap;gap:20px}.clr-fld{display:flex;flex-direction:column;gap:5px}.clr-fld span{font-size:12px;font-weight:800;color:#33413b}.clr-fld input[type=text],.clr-fld input[type=date]{min-width:190px;border:1px solid #c9d3cf;border-radius:7px;padding:7px 9px;font:inherit}.clr-res{display:flex;align-items:center;gap:16px}.clr-rchip{display:inline-flex;align-items:center;border:1.5px solid #cfd8d4;border-radius:20px;background:#fff;padding:7px 14px;color:#5b6a63;font-size:12.5px;cursor:pointer}.clr-rchip.on-green{background:#e8f6ee;border-color:#008f4c;color:#0a6b3b;font-weight:800}.clr-rchip.on-red{background:#fdecea;border-color:#c0392b;color:#c0392b;font-weight:800}.clr-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}.clr-step{display:flex;align-items:center;gap:8px;border:1px solid #d5ddd9;border-radius:8px;background:#fbfdfc;padding:9px 11px}.clr-step.dim{opacity:.5}.clr-step input{width:16px;height:16px;accent-color:#008f4c}.clr-step span{font-size:12px;font-weight:700;color:#33413b}.clr-step em{margin-left:auto;color:#0a6b3b;font-size:11px;font-style:normal;white-space:nowrap}.clr-warn{margin-top:8px;color:#c0392b;font-size:11.5px}.clr-pfoot{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}.clr-pfoot .edit{background:#e67e22;border-color:#e67e22;color:#fff}.clr-pfoot .primary{background:#008f4c;border-color:#008f4c;color:#fff}.clr-empty{height:44px;background:#fff;color:#0e1512;font-weight:800;font-style:italic}
+.gsd-cda-modal{width:fit-content;max-width:96vw;padding:30px 28px 20px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-cda-modal .gsd-modal-x,.gsd-clr-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-cda-instr{font-size:14px;font-weight:800;color:#1f2a26;margin:10px 40px 6px 0}.gsd-cda-addbar{display:flex;justify-content:flex-start;margin:8px 0 12px}.gsd-cda-scroll{max-height:320px;overflow-x:hidden;overflow-y:auto;scrollbar-gutter:stable}.gsd-cda-table{width:auto;border-collapse:separate;border-spacing:0;font-size:13px;color:#33413b}.gsd-cda-table th{position:sticky;top:0;z-index:2;padding:8px 10px;border-bottom:1px solid #e1e8e4;background:#fff;text-align:left;font-weight:800;color:#42504b}.gsd-cda-table td{padding:9px 10px;vertical-align:middle}.gsd-cda-table .cda-doc{font-weight:700;color:#1a1a1a;white-space:nowrap}.gsd-cda-table .cda-vf{text-align:center;width:104px}.gsd-cda-table .cda-up{width:372px}.gsd-cda-table .cda-act{width:44px}.gsd-cda-table input[type=checkbox]{width:18px;height:18px;accent-color:#008f4c}.cda-uphead{display:inline-block;width:160px;text-align:center}.cda-up-wrap{display:flex;align-items:center;gap:10px;width:100%}.cda-upcol{display:inline-flex;flex-direction:column;gap:3px;width:160px}.cdaup{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:160px;box-sizing:border-box;border:0;border-radius:8px;background:#1456e0;color:#fff;padding:7px 12px;font-size:12.5px;font-weight:800;white-space:nowrap;cursor:pointer}.cdaup.has{background:#0e9f57}.cdaup:disabled{background:#cfd8e6;cursor:not-allowed}.cdaup svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.cdafn{width:160px;box-sizing:border-box;border:1px solid #e2e8e4;border-radius:5px;background:#fff;padding:2px 7px;color:#44524c;font-size:10.5px;line-height:1.3}.cdaname{width:150px;flex:0 0 150px;box-sizing:border-box;border:1px solid #d6ddd9;border-radius:7px;background:#fff;padding:6px 9px;text-align:center;font-size:12.5px}.cda-rm{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;padding:0;border:0;border-radius:50%;background:transparent;color:#c0392b;font-size:15px;font-weight:900;line-height:1;cursor:pointer}.cda-rm:hover{background:#fdecea;color:#a72c21}.cda-eye{margin-left:auto}.gsd-cda-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;padding-right:44px}.gsd-cda-actions .edit{background:#e67e22;border-color:#e67e22;color:#fff}.gsd-cda-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-clr-modal{width:1180px;max-width:96vw;max-height:90vh;padding:30px 26px 24px;border-radius:12px;overflow:auto;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-clr-title{text-align:center;font-size:13px;font-weight:900;color:#0e1512;text-transform:uppercase;margin:0 0 8px}.gsd-clr-scroll{overflow:auto;max-height:300px;margin-top:6px}.gsd-clr-table{width:100%;border-collapse:collapse;table-layout:auto;font-size:12.5px;color:#33413b}.gsd-clr-table th,.gsd-clr-table td{border:1px solid #d5ddd9;padding:8px 10px;text-align:center;vertical-align:middle}.gsd-clr-table th{background:#f1f5f3;font-weight:800;color:#33413b;white-space:nowrap}.gsd-clr-table td.clr-ro{background:#f7faf9;color:#5b6a63;font-weight:700}.clr-allcell{width:44px}.clr-declcell{min-width:230px}.clr-dcap{display:inline-flex;align-items:center;gap:8px}.clr-dcapbox{text-align:center}.clr-plus{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;border-radius:6px;background:#008f4c;color:#fff;font-size:16px;font-weight:900;line-height:1;cursor:pointer}.clr-plus.dim{background:#b7c2bc;cursor:not-allowed}.clr-declwrap{display:flex;flex-direction:column;gap:6px;align-items:stretch;max-width:80%;margin:0 auto}.clr-declrow{display:flex;align-items:center;gap:6px}.clr-din{flex:1 1 auto;min-width:120px;border:1px solid #c9d3cf;border-radius:6px;padding:6px 8px;text-align:center;font:inherit}.clr-din.clr-baderr{border-color:#c0392b;background:#fff5f4}.clr-tick{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:0;border-radius:6px;background:#008f4c;color:#fff;font-size:14px;cursor:pointer}.clr-link{flex:1 1 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #cfe0d6;border-radius:6px;background:#eaf6ef;padding:6px 8px;cursor:pointer}.clr-link b{color:#0a6b3b;font-size:12.5px}.clr-link.clr-link-red{background:#fdecea;border-color:#c0392b}.clr-link.clr-link-red b{color:#c0392b}.clr-dots{display:inline-flex;gap:4px}.clr-dot{width:8px;height:8px;border-radius:50%;background:#d0d7de}.clr-dot.on{background:#008f4c}.gsd-clr-panels{display:flex;flex-direction:column;gap:14px;margin-top:14px}.clr-panel{border:1px solid #dfe6e2;border-radius:10px;background:#fff;padding:16px 18px}.clr-phead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;color:#5b6a63;font-size:12px;letter-spacing:.04em}.clr-phead b{margin-left:6px;color:#1f2a26;font-size:13px}.clr-pclose{border:0;background:transparent;color:#8a97a0;font-size:15px;cursor:pointer}.clr-prow{display:flex;align-items:flex-end;flex-wrap:wrap;gap:20px}.clr-fld{display:flex;flex-direction:column;gap:5px}.clr-fld span{font-size:12px;font-weight:800;color:#33413b}.clr-fld input[type=text],.clr-fld input[type=date]{min-width:190px;border:1px solid #c9d3cf;border-radius:7px;padding:7px 9px;font:inherit}.clr-res{display:flex;align-items:center;gap:16px}.clr-rchip{display:inline-flex;align-items:center;border:1.5px solid #cfd8d4;border-radius:20px;background:#fff;padding:7px 14px;color:#5b6a63;font-size:12.5px;cursor:pointer}.clr-rchip.on-green{background:#e8f6ee;border-color:#008f4c;color:#0a6b3b;font-weight:800}.clr-rchip.on-red{background:#fdecea;border-color:#c0392b;color:#c0392b;font-weight:800}.clr-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}.clr-step{display:flex;align-items:center;gap:8px;border:1px solid #d5ddd9;border-radius:8px;background:#fbfdfc;padding:9px 11px}.clr-step.dim{opacity:.5}.clr-step input{width:16px;height:16px;accent-color:#008f4c}.clr-step span{font-size:12px;font-weight:700;color:#33413b}.clr-step em{margin-left:auto;color:#0a6b3b;font-size:11px;font-style:normal;white-space:nowrap}.clr-warn{margin-top:8px;color:#c0392b;font-size:11.5px}.clr-pfoot{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}.clr-pfoot .edit{background:#e67e22;border-color:#e67e22;color:#fff}.clr-pfoot .primary{background:#008f4c;border-color:#008f4c;color:#fff}.clr-empty{height:44px;background:#fff;color:#0e1512;font-weight:800;font-style:italic}
 .gsd-clr-table .clr-declhead,.gsd-clr-table .clr-declcell{width:180px;min-width:180px}
 .gsd-clr-table .clr-declwrap{max-width:100%}
 .gsd-ccd-clr-modal{width:980px;max-width:96vw;padding:28px 22px 20px}
@@ -22003,7 +22050,10 @@ onBeforeUnmount(() => {
 .shipment-notes-modal textarea{display:block;box-sizing:border-box;width:100%;min-height:190px;resize:vertical;border:1px solid #cbd7d0;border-radius:8px;background:#fff;padding:12px;color:#26312b;font:13px/1.5 var(--sans,'Geist',sans-serif);outline:none}
 .shipment-notes-modal textarea:focus{border-color:#008f4c;box-shadow:0 0 0 2px rgba(0,143,76,.12)}
 .do-info-actions .clear{background:#64748b;color:#fff}.do-info-actions button:disabled{filter:saturate(.45);opacity:.45;cursor:not-allowed}
-.do-info-modal{width:930px}.do-info-row{grid-template-columns:96px minmax(0,1fr) 150px 30px 30px minmax(210px,auto)}.do-info-row .do-info-upload{grid-column:4}.do-info-row .do-info-view{grid-column:5}.do-info-validity{grid-column:6;display:flex;align-items:center;justify-content:flex-end;gap:9px;min-width:0}.do-info-validity label{flex:0 0 auto}.do-info-validity input{width:145px}.do-info-validity input:disabled{cursor:not-allowed}@media(max-width:760px){.do-info-row{grid-template-columns:80px minmax(0,1fr) 30px 30px}.do-info-row .do-info-upload{grid-column:3;grid-row:1/3}.do-info-row .do-info-view{grid-column:4;grid-row:1/3}.do-info-validity{grid-column:2/5;grid-row:auto;justify-content:flex-start}.do-info-validity input{width:min(180px,100%)}}
+.do-info-modal{width:822px}.do-info-row{grid-template-columns:86px 190px 140px 26px 26px 194px;gap:10px}.do-info-modal.editing .do-info-row input:not(:disabled):not([type=checkbox]){background:#fff;color:#26312b}.do-info-row .do-info-upload{grid-column:4}.do-info-row .do-info-view{grid-column:5}.do-info-validity{grid-column:6;display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}.do-info-validity label{flex:0 0 auto}.do-info-validity input{width:130px}.do-info-validity input:disabled{cursor:not-allowed}@media(max-width:880px){.do-info-modal{width:94vw}.do-info-row{grid-template-columns:80px minmax(0,1fr) 30px 30px}.do-info-row .do-info-upload{grid-column:3;grid-row:1/3}.do-info-row .do-info-view{grid-column:4;grid-row:1/3}.do-info-validity{grid-column:2/5;grid-row:auto;justify-content:flex-start}.do-info-validity input{width:min(180px,100%)}}
+.do-info-choice{display:flex;align-items:center;gap:9px;cursor:pointer}.do-info-choice input[type=checkbox]{flex:0 0 auto;width:18px;height:18px;margin:0;padding:0;border-radius:3px;accent-color:#008f4c}.do-info-choice span{display:block}.do-info-choice:has(input:disabled){cursor:not-allowed}
+.gsd-cda-modal .cda-rm:disabled{display:inline-flex!important;background:transparent!important;color:#c0392b!important;opacity:.35!important;cursor:not-allowed!important}
+.gsd-cda-modal .gsd-cda-table{width:610px;table-layout:fixed}.gsd-cda-modal .gsd-cda-table col:first-child{width:160px}.gsd-cda-modal .gsd-cda-table .cda-vf{width:62px}.gsd-cda-modal .gsd-cda-table .cda-up{width:342px}.gsd-cda-modal .gsd-cda-table .cda-act{width:46px}.gsd-cda-modal .cda-up-wrap{gap:7px}.gsd-cda-modal .cdaname{width:130px;flex-basis:130px}.gsd-cda-modal .cda-upcol,.gsd-cda-modal .cdaup,.gsd-cda-modal .cdafn{width:140px}.gsd-cda-modal .cda-uphead{width:140px}.gsd-cda-modal .cda-eye{width:24px;margin-left:0}.gsd-cda-modal td.cda-act,.gsd-cda-modal th:last-child{padding-left:10px;padding-right:10px;text-align:center}
 </style>
 <style>
 .booking-detail-modal{box-sizing:border-box}.booking-detail-row{grid-template-columns:104px minmax(0,1fr) 36px 24px;column-gap:12px}.booking-doc-wrap{display:flex;align-items:flex-start;gap:16px;margin-bottom:10px}.booking-add-doc{flex:0 0 auto;min-width:88px;padding:0 14px}.booking-doc-list{display:flex;min-width:0;flex:1;flex-direction:column;gap:10px}.booking-detail-row.booking-doc-row{grid-template-columns:minmax(0,1fr) 36px 24px;column-gap:12px;margin:0;padding:0;border:0}.booking-detail-row.booking-doc-row.has-remove{grid-template-columns:minmax(0,1fr) 36px 24px 24px}.booking-remove{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border:0;border-radius:50%;background:#c0392b;color:#fff;font-size:15px;font-weight:800;line-height:1;cursor:pointer}.booking-remove:hover{background:#a23227}.booking-icon,.booking-eye{display:inline-flex;align-items:center;justify-content:center;padding:0}.booking-icon{width:36px;height:36px}.booking-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.booking-eye{width:24px;height:24px;color:#0f4c81}.booking-eye svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.booking-eye:disabled{color:#9aa6a1}
