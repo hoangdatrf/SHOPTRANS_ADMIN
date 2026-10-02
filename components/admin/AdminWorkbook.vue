@@ -305,7 +305,7 @@
                     </option>
                   </select>
                   <input
-                    v-else-if="isOpsEditingRow(rowIndex) && !isLockedOpsCell(rowIndex, columnIndex) && !isSentEcdRowLocked(rowIndex)"
+                    v-else-if="isOpsEditingRow(rowIndex) && !isLockedOpsCell(rowIndex, columnIndex) && !isWorkflowLockedOpsCell(rowIndex, columnIndex)"
                     class="ops-edit-input"
                     :class="{ time: isOpsTimeColumn(columnIndex), date: isOpsRowDateColumn(columnIndex), 'has-date-value': isOpsRowDateColumn(columnIndex) && !!opsEditInputValue(rows[rowIndex]?.[columnIndex], columnIndex) }"
                     :type="isOpsTimeColumn(columnIndex) ? 'datetime-local' : isOpsRowDateColumn(columnIndex) ? 'date' : 'text'"
@@ -985,6 +985,7 @@
           'gsd-air-payment-modal': isPaymentRequestModal() && isAirSheet(),
           'gsd-air-fca-tcd-payment-modal': isPaymentRequestModal() && isAirSheet() && isFcaTcdSheet(),
           'gsd-expcol-modal': isExpenseCollectModal(),
+          'gsd-workflow-locked': isGsdModalWorkflowLocked(),
         }"
         role="dialog"
         aria-modal="true"
@@ -2639,12 +2640,12 @@
                 <button class="pay-edit" type="button" :disabled="!paymentCanEditSelection()" @click="editPaymentLines">Edit ✎</button>
                 <button v-if="usesFullPaymentRequestLayout()" class="pay-copy" type="button" :disabled="!paymentHasSelection()" @click="copyPaymentLines">Copy</button>
                 <button class="pay-cancel" type="button" :disabled="!paymentHasSelection()" @click="cancelPaymentLines">Cancel</button>
-                <template v-if="usesFullPaymentRequestLayout()">
+                <template v-if="usesFullPaymentRequestLayout() && opsDeptUpper() !== 'FCD'">
                   <span class="pr-searchwrap">
                     <span class="pr-searchlbl">RefLastBiz:</span>
                     <input v-model.trim="paymentSearchRef" class="pr-searchinp" type="search" autocomplete="off" placeholder="JOB NO# / REF NO#" @focus="openPaymentHistoryFilter" @input="openPaymentHistoryFilter" @keydown.escape="paymentSearchOpen = false" />
                     <span class="pr-searchresults" :class="{ show: paymentSearchOpen }">
-                      <button v-for="match in paymentSearchResults" :key="`${match.row}-${match.refNo}-${match.jobNo}`" class="pr-sr-item" type="button" @mousedown.prevent="selectPaymentHistoryMatch(match.row)">
+                      <button v-for="match in paymentSearchResults" :key="match.id" class="pr-sr-item" type="button" @mousedown.prevent="selectPaymentHistoryMatch(match)">
                         <span class="pr-sr-info"><b>{{ match.jobNo || '—' }}</b><br />REF: {{ match.refNo || '—' }} · {{ match.lineCount }} line(s)</span>
                       </button>
                       <span v-if="!paymentSearchResults.length" class="pr-sr-empty">No previous Job No matches your search.</span>
@@ -2812,13 +2813,13 @@
                 <div class="pr-tleft">
                   <span class="ec-issue">
                     Issue Debit Note/Credit Note from:
-                    <select v-model="gsdModal.form.issueFrom" class="ec-issinp">
+                    <select v-model="gsdModal.form.issueFrom" class="ec-issinp" @change="persistExpenseCollect()">
                       <option value="">—</option>
                       <option>TX LOGISTICS VIET NAM CO., LTD</option>
                       <option>SHOPTRANS VIET NAM CO., LTD</option>
                     </select>
                     , by bank:
-                    <select v-model="gsdModal.form.issueBank" class="ec-issinp">
+                    <select v-model="gsdModal.form.issueBank" class="ec-issinp" @change="persistExpenseCollect()">
                       <option value="">—</option>
                       <option v-for="bank in paymentBankOptions" :key="bank" :value="bank">{{ bank }}</option>
                     </select>
@@ -2867,19 +2868,19 @@
                     <tr class="ec-sumrow">
                       <th colspan="7" class="ec-sum-pay">
                         <span class="ec-sumin">CURRENCY:
-                          <select v-model="gsdModal.form.payCurrency" class="ec-cursel"><option v-for="cur in expenseCurrencies" :key="cur">{{ cur }}</option></select>
+                          <select v-model="gsdModal.form.payCurrency" class="ec-cursel" @change="persistExpenseCollect()"><option v-for="cur in expenseCurrencies" :key="cur">{{ cur }}</option></select>
                           &nbsp; TOTAL PAYMENT: <b>{{ expenseTotal('pay') }}</b>
                         </span>
                       </th>
                       <th colspan="5" class="ec-sum-col">
                         <span class="ec-sumin">CURRENCY:
-                          <select v-model="gsdModal.form.collectCurrency" class="ec-cursel"><option v-for="cur in expenseCurrencies" :key="cur">{{ cur }}</option></select>
+                          <select v-model="gsdModal.form.collectCurrency" class="ec-cursel" @change="persistExpenseCollect()"><option v-for="cur in expenseCurrencies" :key="cur">{{ cur }}</option></select>
                           &nbsp; TOTAL COLLECTION: <b>{{ expenseTotal('collect') }}</b>
                         </span>
                       </th>
                       <th colspan="5" class="ec-sum-ded">
                         <span class="ec-sumin">CURRENCY:
-                          <select v-model="gsdModal.form.deductCurrency" class="ec-cursel"><option v-for="cur in expenseCurrencies" :key="cur">{{ cur }}</option></select>
+                          <select v-model="gsdModal.form.deductCurrency" class="ec-cursel" @change="persistExpenseCollect()"><option v-for="cur in expenseCurrencies" :key="cur">{{ cur }}</option></select>
                           &nbsp; DEDUCTED AMOUNT: <b>{{ expenseDeductedTotal() }}</b>
                         </span>
                       </th>
@@ -2919,14 +2920,14 @@
                       <td class="grp-fb"><span class="ec-cell" :title="line.reqDate">{{ line.reqDate }}</span></td>
                       <td class="grp-fb"><span class="ec-cell ec-last-feedback" :title="line.lastFeedback">{{ line.lastFeedback || '-' }}</span></td>
                       <td class="ec-status grp-fb">
-                        <select v-model="line.status" class="ec-statussel" :class="expenseStatusClass(line.status)" :disabled="!!line.statusDetails && !line.editing">
+                        <select v-model="line.status" class="ec-statussel" :class="expenseStatusClass(line.status)" :disabled="!!line.statusDetails && !line.editing" @change="persistExpenseCollect()">
                           <option value="">-</option>
                           <option>Approved</option>
                           <option>Rejected</option>
                           <option>Request Edit</option>
                         </select>
                       </td>
-                      <td class="grp-fb"><input v-model.trim="line.reason" class="ec-reason" placeholder="Enter reason" :disabled="!!line.statusDetails && !line.editing" /></td>
+                      <td class="grp-fb"><input v-model.trim="line.reason" class="ec-reason" placeholder="Enter reason" :disabled="!!line.statusDetails && !line.editing" @input="persistExpenseCollect()" /></td>
                       <template v-if="expenseCollectShowsDebitInvoiceColumns()">
                         <td class="grp-dn"><input v-model.trim="line.ednNo" class="ec-fcd-input" :disabled="!!line.statusDetails && !line.editing" @input="line.ednNo = upperText(line.ednNo); persistExpenseCollect()" /></td>
                         <td class="grp-dn"><input v-model="line.ednDate" class="ec-fcd-input" type="date" :disabled="!!line.statusDetails && !line.editing" @input="persistExpenseCollect()" /></td>
@@ -2974,7 +2975,7 @@
                 <label class="an-detail-description"><span>Description</span><textarea v-model="gsdModal.form.description" :disabled="!gsdModal.editing" rows="2"></textarea></label>
                 <div class="an-detail-g3 an-cargo-summary"><label><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" :class="{ 'an-linked-field': arrivalNoticeIsCrossLinked() }" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" rows="1"></textarea></label><label><span>QTY</span><input :value="arrivalNoticeTotals().qty" readonly /></label><label><span>Unit</span><input v-model="gsdModal.form.unit" :disabled="!gsdModal.editing" /></label></div>
                 <div class="an-detail-g2"><label><span>GW (KG)</span><input :value="arrivalNoticeTotals().gw" readonly /></label><label><span>MEA. (CBM)</span><input :value="arrivalNoticeTotals().mea" readonly /></label></div>
-                <div class="an-detail-section an-detail-section-ref"><span>Charges Due</span><span class="an-refbox"><label>RefLastBiz:</label><span class="an-ref-search"><input v-model.trim="gsdModal.form.refLastBiz" :disabled="!gsdModal.editing" placeholder="JOB NO# / REF NO#" autocomplete="off" @input="searchArrivalPaymentHistory" @keydown.escape="paymentSearchOpen = false" /><span class="pr-searchresults" :class="{ show: paymentSearchOpen }"><button v-for="match in paymentSearchResults" :key="`an-${match.row}-${match.refNo}-${match.jobNo}`" class="pr-sr-item" type="button" @mousedown.prevent="selectArrivalPaymentHistoryMatch(match.row)"><span class="pr-sr-info"><b>{{ match.jobNo || '—' }}</b><br />REF: {{ match.refNo || '—' }} · {{ match.lineCount }} line(s)</span></button><span v-if="!paymentSearchResults.length" class="pr-sr-empty">No previous Job No matches your search.</span></span></span><button type="button" :disabled="!gsdModal.editing" @click="openArrivalPaymentHistoryFilter">Search</button></span></div>
+                <div class="an-detail-section an-detail-section-ref"><span>Charges Due</span><span class="an-refbox"><label>RefLastBiz:</label><span class="an-ref-search"><input v-model.trim="gsdModal.form.refLastBiz" :disabled="!gsdModal.editing" placeholder="JOB NO# / REF NO#" autocomplete="off" @input="searchArrivalPaymentHistory" @keydown.escape="paymentSearchOpen = false" /><span class="pr-searchresults" :class="{ show: paymentSearchOpen }"><button v-for="match in paymentSearchResults" :key="`an-${match.id}`" class="pr-sr-item" type="button" @mousedown.prevent="selectArrivalPaymentHistoryMatch(match)"><span class="pr-sr-info"><b>{{ match.jobNo || '—' }}</b><br />REF: {{ match.refNo || '—' }} · {{ match.lineCount }} line(s)</span></button><span v-if="!paymentSearchResults.length" class="pr-sr-empty">No previous Job No matches your search.</span></span></span><button type="button" :disabled="!gsdModal.editing" @click="openArrivalPaymentHistoryFilter">Search</button></span></div>
                 <table class="an-detail-table"><thead><tr><th>#</th><th>Charge Name</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>CUR</th><th>Tax (%)</th><th>Total Price</th></tr></thead><tbody><tr v-for="(charge, index) in gsdModal.form.charges" :key="charge.key || index"><td>{{ index + 1 }}</td><td><select v-model="charge.chargeName" :disabled="!gsdModal.editing"><option value="">— Select —</option><option v-for="name in paymentChargeOptions" :key="name" :value="name">{{ name }}</option></select></td><td><input v-model="charge.qty" :disabled="!gsdModal.editing" /></td><td><input v-model="charge.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="charge.unitPrice" :disabled="!gsdModal.editing" @input="charge.unitPrice = sanitizeMoneyInput(charge.unitPrice)" @blur="charge.unitPrice = formatMoneyValue(charge.unitPrice)" /></td><td><select v-model="charge.cur" :disabled="!gsdModal.editing" @change="selectArrivalNoticeBankForCurrency(charge.cur)"><option>VND</option><option>USD</option></select></td><td><input v-model="charge.taxRate" :disabled="!gsdModal.editing" /></td><td>{{ arrivalNoticeChargeTotal(charge) }}</td></tr><tr v-if="!gsdModal.form.charges.length"><td colspan="8" class="empty">No charge data</td></tr></tbody><tfoot><tr><td colspan="7" class="an-total-label">Total Tax Amount</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().tax }}</td></tr><tr><td colspan="7" class="an-total-label">Total Charge</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().total }}</td></tr></tfoot></table>
                 <button v-if="gsdModal.editing" class="an-add-row" type="button" @click="addArrivalCharge">+ Add Charge</button>
                 <div class="an-detail-g2 an-payment-contact"><label><span>Payment Instruction</span><select v-model="gsdModal.form.paymentBank" :disabled="!gsdModal.editing" @change="applyArrivalNoticeBank"><option value="">— Select bank —</option><option v-for="bank in paymentBankOptions" :key="bank" :value="bank">{{ bank }}</option></select><textarea v-model="gsdModal.form.payInst" readonly rows="3"></textarea></label><label><span>Contact for Cargo Release</span><i class="an-contact-spacer" aria-hidden="true"></i><textarea v-model="gsdModal.form.contact" readonly rows="3"></textarea></label></div>
@@ -4666,7 +4667,9 @@ const paymentBankOptions = ref<string[]>([])
 const paymentBankDetails = ref<Record<string, { bankName: string; currency: string; accountName: string; accountNumber: string; swift: string }>>({})
 const paymentSearchRef = ref('')
 const paymentSearchOpen = ref(false)
-const paymentSearchResults = ref<Array<{ row: number; jobNo: string; refNo: string; lineCount: number; time: string }>>([])
+type PaymentHistoryMatch = { id: string; row: number; jobNo: string; refNo: string; lineCount: number; time: string; payload: PaymentRequestState }
+const paymentSearchResults = ref<PaymentHistoryMatch[]>([])
+let paymentHistorySearchRun = 0
 const paymentHistoryPicker = reactive<any>({ open: false, row: -1, sourceColumn: -1, mode: 'payment', jobNo: '', refNo: '', lines: [] })
 let clientSearchRun = 0
 const preAlertFileTarget = ref('')
@@ -6064,6 +6067,12 @@ const loadSheet = async () => {
           }
         }
       }
+      // Destination-service GSD sheets now dispatch both their own ICD work
+      // and any selected export-side service from one checkbox.
+      if (parsed.dept === 'GSD' && ['DO', 'DAP', 'DDU', 'DDP'].includes(upperText(parsed.type)) && rowsLoaded[0]) {
+        const legacySentIndex = rowsLoaded[0].findIndex((cell) => upperText(cell) === 'SENT ICD')
+        if (legacySentIndex >= 0) rowsLoaded[0][legacySentIndex] = 'SENT E/ICD'
+      }
       // Merge the former split DO INFO / DO VALIDITY columns before aligning
       // to the single DO INFO schema. Prefer DO VALIDITY because it already
       // uses the requested checkbox/date/remarks form; fall back to the older
@@ -7376,7 +7385,7 @@ const clearSelection = () => {
   for (let r = rect.r1; r <= rect.r2; r++) {
     for (let c = rect.c1; c <= rect.c2; c++) {
       if (r === 0 && isDefaultTemplateColumn(c)) continue
-      if (isLockedOpsCell(r, c)) continue
+      if (isLockedOpsCell(r, c) || isWorkflowLockedOpsCell(r, c)) continue
       if (rows.value[r]) rows.value[r][c] = ''
     }
   }
@@ -7434,6 +7443,10 @@ const beginEditCell = async (row: number, col: number) => {
     showToast('Row locked after SENT ECD. Use the Edit icon at SENT ECD to unlock it.')
     return
   }
+  if (isBcSentBookingCellLocked(row, col)) {
+    showToast('Cell locked after BC SENT. Use the Edit icon at BC SENT to unlock it.')
+    return
+  }
   if (isCheckboxCell(row, col)) return
   if (isActionSelectCell(row, col)) return
   if (isDropdownCell(row, col)) {
@@ -7472,7 +7485,7 @@ const finishEditCell = (row: number, col: number, event: Event) => {
   if (editingCell.value?.row !== row || editingCell.value?.column !== col) return
   editingCell.value = null
   if (row === 0 && isDefaultTemplateColumn(col)) return
-  if (isLockedOpsCell(row, col) || isSentEcdRowLocked(row)) return
+  if (isLockedOpsCell(row, col) || isWorkflowLockedOpsCell(row, col)) return
   normalizeRows()
   const rawValue = (event.target as HTMLElement)?.innerText ?? ''
   const value = row > 0 && isOpsMoneyColumn(col) && rawValue.trim() ? formatMoneyValue(rawValue) : rawValue
@@ -7498,7 +7511,7 @@ const pasteTextAtSelection = async (text: string) => {
       const targetCol = startCol + c
       if (targetCol < columnCount.value) {
         if (targetRow === 0 && isDefaultTemplateColumn(targetCol)) continue
-        if (isLockedOpsCell(targetRow, targetCol)) continue
+        if (isLockedOpsCell(targetRow, targetCol) || isWorkflowLockedOpsCell(targetRow, targetCol)) continue
         if (!rows.value[targetRow]) rows.value[targetRow] = Array(columnCount.value).fill('')
         rows.value[targetRow][targetCol] = cols[c]
       }
@@ -8582,7 +8595,7 @@ const defaultDropdownOptionsFor = (column: number) => {
 }
 const isSentCheckboxColumn = (column: number) => /^SENT\s+/.test(normalizedHeaderLabel(column))
 const isExwFclGsdSentEcdColumn = (column: number) =>
-  isExwFclGsdSheet() && ['SENT ECD', 'SENT ICD'].includes(normalizedHeaderLabel(column))
+  isExwFclGsdSheet() && ['SENT ECD', 'SENT ICD', 'SENT E/ICD'].includes(normalizedHeaderLabel(column))
 const isExwFclEcdBcSentColumn = (column: number) =>
   (isExwEcdSheet() || isFcaEcdSheet() || isFcfEcdSheet()) && normalizedHeaderLabel(column) === 'BC SENT'
 const isManifestSubmitColumn = (column: number) =>
@@ -8679,7 +8692,7 @@ const isStampedOpsCheckboxDisabled = (row: number, column: number) => {
 const isSentEcdLocked = (value: any) => isChecked(value) && !String(value ?? '').trim().endsWith('|EDIT')
 const isBcSentLocked = (value: any) => isChecked(value) && !String(value ?? '').trim().endsWith('|EDIT')
 const sentEcdColumnIndex = () => (rows.value[0] || []).findIndex((_, column) =>
-  ['SENT ECD', 'SENT ICD'].includes(normalizedHeaderLabel(column)))
+  ['SENT ECD', 'SENT ICD', 'SENT E/ICD'].includes(normalizedHeaderLabel(column)))
 const isSentEcdRowLocked = (row: number) => {
   if (row <= 0 || !isExwFclGsdSheet()) return false
   const column = sentEcdColumnIndex()
@@ -8691,6 +8704,24 @@ const isBcSentRowLocked = (row: number) => {
   const column = bcSentColumnIndex()
   return column >= 0 && isBcSentLocked(rows.value[row]?.[column])
 }
+const isGsdModalWorkflowLocked = () => {
+  const label = normalizedHeaderLabel(gsdModal.column)
+  // Communication/support cells stay usable after dispatch. They do not alter
+  // the shipment data snapshot that was confirmed by SENT ECD.
+  if (['EXTRA SERVICE', 'NOTICE', 'NOTES', 'REMINDER'].includes(label)) return false
+  if (isSentEcdRowLocked(gsdModal.row)) return true
+  if (!isBcSentRowLocked(gsdModal.row)) return false
+  // BC SENT only freezes the booking fields that were validated and sent.
+  // Later workflow cells and unrelated modals must remain editable.
+  return ecdBcSentRequiredFields.some((field) => field.aliases.includes(label))
+}
+const isBcSentBookingCellLocked = (row: number, column: number) => {
+  if (!isBcSentRowLocked(row)) return false
+  const label = normalizedHeaderLabel(column)
+  return ecdBcSentRequiredFields.some((field) => field.aliases.includes(label))
+}
+const isWorkflowLockedOpsCell = (row: number, column: number) =>
+  isSentEcdRowLocked(row) || isBcSentBookingCellLocked(row, column)
 const isLockedAfterBcSentDate = (row: number, column: number) =>
   isBcSentRowLocked(row) && ['ETD', 'ETA'].includes(normalizedHeaderLabel(column))
 const hideLockedGsdAddAction = (row: number, isAddAction: boolean) =>
@@ -9440,7 +9471,7 @@ const clientRoleForLabel = (label: string) => {
 const gsdModalLabels = () => [normalizedHeaderLabel(gsdModal.column), upperText(gsdModal.title)].filter(Boolean)
 const isGsdFormModalLabel = (...labels: string[]) => gsdModal.kind === 'form' && labels.some((label) => gsdModalLabels().includes(upperText(label)))
 const isWideGsdForm = (title: string) => ['PAYMENT REQUEST APPLICATION', 'PICKUP DETAILS', 'DELIVERY DETAILS', 'TRUCKS & CONT/SEAL DETAILS', 'TRUCKING INFO', 'PRE-ALERT SENDING', 'PICKUP / RETURN STATUS', 'CLEARANCE DOCS APPROVAL', 'CLEARANCE DETAILS', 'PAYMENT APPROVAL', 'AWB DETAIL'].includes(upperText(title))
-const isPaymentRequestModal = () => isGsdFormModalLabel('PAYMENT REQUEST APPLICATION')
+const isPaymentRequestModal = () => opsDeptUpper() !== 'FCD' && isGsdFormModalLabel('PAYMENT REQUEST APPLICATION')
 // Every PAYMENT REQUEST uses the current EXW template. The former service-type
 // split left FCF and several AIR/FCL sheets on the obsolete readiness layout.
 const usesFullPaymentRequestLayout = () => isPaymentRequestModal()
@@ -9572,6 +9603,10 @@ const recoverLinkedPaymentRequestForFcd = async (row: number, currentValue: any)
       const paymentColumn = header.findIndex((label) => ['PAYMENT REQUEST', 'PAYMENT REQUEST APPLICATION'].includes(upperText(label)))
       if (sourceRowIndex < 1 || paymentColumn < 0) return null
       const payment = paymentRequestFromCell(alignedRows[sourceRowIndex]?.[paymentColumn])
+      // FCD must only recover requests that were explicitly sent. Draft lines
+      // saved in another department are private to that department until the
+      // user clicks Send request.
+      payment.lines = payment.lines.filter((line) => !!String(line.sentAt || line.reqDate || '').trim())
       return payment.lines.length || payment.jobNo || payment.refNo || payment.issueFrom || payment.issueBank ? payment : null
     } catch (error: any) {
       if (requestStatus(error) !== 404) console.warn(`Could not recover Payment Request from ${dept}`, error)
@@ -9581,7 +9616,7 @@ const recoverLinkedPaymentRequestForFcd = async (row: number, currentValue: any)
   const sources = [...recovered.filter((payment): payment is PaymentRequestState => payment !== null), local]
   if (sources.length === 1) return currentValue
   const mergedLines = new Map<string, PaymentLine>()
-  sources.forEach((payment) => payment.lines.forEach((line, index) => {
+  sources.forEach((payment, sourceIndex) => payment.lines.forEach((line, index) => {
     const key = String(line.id || `${line.chargeName}:${line.payTo}:${line.collectFrom}:${index}`)
     const incoming = normalizePaymentLine(line)
     const existing = mergedLines.get(key)
@@ -9591,7 +9626,12 @@ const recoverLinkedPaymentRequestForFcd = async (row: number, currentValue: any)
     // it was processed last.
     const incomingStamp = String(incoming.sentAt || incoming.reqDate || '')
     const existingStamp = String(existing?.sentAt || existing?.reqDate || '')
-    if (!existing || incomingStamp > existingStamp || (incomingStamp === existingStamp && !existing.statusDetails && !!incoming.statusDetails)) {
+    const isLocalFcdCopy = sourceIndex === sources.length - 1
+    if (
+      !existing ||
+      incomingStamp > existingStamp ||
+      (incomingStamp === existingStamp && (isLocalFcdCopy || (!existing.statusDetails && !!incoming.statusDetails)))
+    ) {
       mergedLines.set(key, incoming)
     }
   }))
@@ -9684,7 +9724,8 @@ const fclStructureSyncPeers = (label: string): FclStructureDept[] => {
   }
   return peers.filter(activePeer) as FclStructureDept[]
 }
-const persistPaymentRequest = async (immediate = false) => {
+const persistPaymentRequest = async (immediate = false, syncAfterSend = false) => {
+  if (isGsdModalWorkflowLocked()) return
   if (!rows.value[gsdModal.row]) return
   const payload = paymentPayload()
   const hasData = String(payload.jobNo || payload.refNo || payload.issueFrom || payload.issueBank || '').trim() || payload.lines.some((line) => paymentLineHasData(line as PaymentLine))
@@ -9693,12 +9734,18 @@ const persistPaymentRequest = async (immediate = false) => {
   if (immediate) {
     const saved = await saveSheet()
     if (!saved) throw new Error('Could not save Payment Request')
-    const peers = fclStructureSyncPeers('PAYMENT REQUEST')
-    const results = await Promise.all(peers.map((dept) => mirrorExwFclWorkflowCell(dept, 'PAYMENT REQUEST', rows.value[gsdModal.row][gsdModal.column])))
-    const requiredReceiver = opsDeptUpper() === 'FCD' ? 'ECD' : peers.includes('FCD') ? 'FCD' : ''
-    if (requiredReceiver) {
-      const receiverIndex = peers.indexOf(requiredReceiver as FclStructureDept)
-      if (receiverIndex < 0 || results[receiverIndex] !== true) throw new Error(`Could not deliver Payment Request to ${requiredReceiver}`)
+    if (syncAfterSend) {
+      const peers = fclStructureSyncPeers('PAYMENT REQUEST')
+      const sentPayload = JSON.stringify({ payment: {
+        ...payload,
+        lines: payload.lines.filter((line) => !!String(line.sentAt || line.reqDate || '').trim()),
+      } })
+      const results = await Promise.all(peers.map((dept) => mirrorExwFclWorkflowCell(dept, 'PAYMENT REQUEST', sentPayload)))
+      const requiredReceiver = opsDeptUpper() === 'FCD' ? 'ECD' : peers.includes('FCD') ? 'FCD' : ''
+      if (requiredReceiver) {
+        const receiverIndex = peers.indexOf(requiredReceiver as FclStructureDept)
+        if (receiverIndex < 0 || results[receiverIndex] !== true) throw new Error(`Could not deliver Payment Request to ${requiredReceiver}`)
+      }
     }
   }
 }
@@ -9860,32 +9907,63 @@ const paymentRequestHistoryColumn = () => {
   if (!isArrivalNoticeModal()) return gsdModal.column
   return (rows.value[0] || []).findIndex((_: any, column: number) => ['PAYMENT REQUEST', 'EXPENSE/COLLECT LIST', 'EXPENSE/COLLECTION LIST'].includes(normalizedHeaderLabel(column)))
 }
-const searchPaymentHistory = (sourceColumn = paymentRequestHistoryColumn()) => {
+const searchPaymentHistory = async (sourceColumn = paymentRequestHistoryColumn()) => {
+  const searchRun = ++paymentHistorySearchRun
   const term = paymentSearchRef.value.trim().toLowerCase()
   if (sourceColumn < 0) {
     paymentSearchResults.value = []
     return
   }
-  const header = (rows.value[0] || []).map((value: any) => upperText(value))
-  const timeColumn = header.indexOf('TIME')
-  const matches: Array<{ row: number; jobNo: string; refNo: string; lineCount: number; time: string }> = []
-  rows.value.forEach((row, index) => {
-    if (index === 0 || index === gsdModal.row) return
-    const payload = paymentRequestFromCell(row?.[sourceColumn])
-    if (!payload.lines.length && !payload.jobNo && !payload.refNo) return
-    if (!term || (payload.jobNo || '').toLowerCase().includes(term) || (payload.refNo || '').toLowerCase().includes(term)) {
-      matches.push({ row: index, jobNo: payload.jobNo, refNo: payload.refNo, lineCount: payload.lines.length, time: timeColumn >= 0 ? String(row?.[timeColumn] || '') : '' })
-    }
-  })
+  const matches: PaymentHistoryMatch[] = []
+  const appendMatches = (sourceRows: any[][], header: string[], paymentColumn: number, sourceId: string, skipCurrentRow = false) => {
+    const timeColumn = header.findIndex((value) => upperText(value) === 'TIME')
+    sourceRows.forEach((row, index) => {
+      if (index === 0 || (skipCurrentRow && index === gsdModal.row)) return
+      const payload = paymentRequestFromCell(row?.[paymentColumn])
+      // RefLastBiz is a source of reusable charge lines. Jobs without any line
+      // are not useful here even when their Job/Ref fields have values.
+      if (!payload.lines.length) return
+      if (!term || (payload.jobNo || '').toLowerCase().includes(term) || (payload.refNo || '').toLowerCase().includes(term)) {
+        matches.push({
+          id: `${sourceId}:${index}`,
+          row: index,
+          jobNo: payload.jobNo,
+          refNo: payload.refNo,
+          lineCount: payload.lines.length,
+          time: timeColumn >= 0 ? String(row?.[timeColumn] || '') : '',
+          payload,
+        })
+      }
+    })
+  }
+  const currentHeader = (rows.value[0] || []).map((value: any) => String(value ?? '').trim())
+  appendMatches(rows.value, currentHeader, sourceColumn, activeKey.value, true)
+  const current = opsParts.value
+  if (current && ['EXW', 'FCA', 'FCF'].includes(upperText(current.type))) {
+    await Promise.all(['EXW', 'FCA', 'FCF'].filter((type) => type !== upperText(current.type)).map(async (type) => {
+      try {
+        const key = opsLeafKey(current.base, current.mode, type as any, current.dept as any)
+        const sheet = await props.request(`/workbook/sheets/${encodeURIComponent(sheetStorageKey(key))}`)
+        const header = opsHeaderFor(current.base, current.mode, current.dept as any, type as any)
+        const extracted = extractWorkbookRows(Array.isArray(sheet?.rows) ? sheet.rows.map((item: any[]) => [...item]) : [], sheet)
+        const alignedRows = alignRowsToHeader(extracted.rows, header).rows
+        const paymentColumn = header.findIndex((label) => ['PAYMENT REQUEST', 'PAYMENT REQUEST APPLICATION'].includes(upperText(label)))
+        if (paymentColumn >= 0) appendMatches(alignedRows, header, paymentColumn, key)
+      } catch (error: any) {
+        if (requestStatus(error) !== 404) console.warn(`Could not load RefLastBiz history from ${type}`, error)
+      }
+    }))
+  }
+  if (searchRun !== paymentHistorySearchRun) return
   paymentSearchResults.value = matches.reverse().slice(0, 50)
 }
 const openPaymentHistoryFilter = () => {
   paymentSearchOpen.value = true
   searchPaymentHistory()
 }
-const selectPaymentHistoryMatch = (rowIndex: number) => {
+const selectPaymentHistoryMatch = (match: PaymentHistoryMatch) => {
   paymentSearchOpen.value = false
-  openPaymentHistoryPicker(rowIndex, gsdModal.column, 'payment')
+  openPaymentHistoryPicker(match, 'payment')
 }
 const openArrivalPaymentHistoryFilter = () => {
   paymentSearchRef.value = String(gsdModal.form.refLastBiz || '')
@@ -9899,18 +9977,18 @@ const searchArrivalPaymentHistory = () => {
     searchPaymentHistory(paymentRequestHistoryColumn())
   }
 }
-const selectArrivalPaymentHistoryMatch = (rowIndex: number) => {
+const selectArrivalPaymentHistoryMatch = (match: PaymentHistoryMatch) => {
   paymentSearchOpen.value = false
-  openPaymentHistoryPicker(rowIndex, paymentRequestHistoryColumn(), 'arrival')
+  openPaymentHistoryPicker(match, 'arrival')
 }
 const paymentKnown = (value: any, options: string[]) => !String(value || '').trim() || options.some((option) => upperText(option) === upperText(value))
 const paymentPartyKnown = (value: any) => paymentKnown(value, paymentPartyOptions.value)
 const paymentCollectKnown = (value: any) => paymentKnown(value, paymentCollectOptions.value)
 const paymentCurrencyKnown = (value: any) => paymentKnown(value, paymentCurrencies.value)
-const openPaymentHistoryPicker = (rowIndex: number, sourceColumn = gsdModal.column, mode: 'payment' | 'arrival' = 'payment') => {
-  const payload = paymentRequestFromCell(rows.value[rowIndex]?.[sourceColumn])
-  paymentHistoryPicker.row = rowIndex
-  paymentHistoryPicker.sourceColumn = sourceColumn
+const openPaymentHistoryPicker = (match: PaymentHistoryMatch, mode: 'payment' | 'arrival' = 'payment') => {
+  const payload = match.payload
+  paymentHistoryPicker.row = match.row
+  paymentHistoryPicker.sourceColumn = -1
   paymentHistoryPicker.mode = mode
   paymentHistoryPicker.jobNo = payload.jobNo
   paymentHistoryPicker.refNo = payload.refNo
@@ -10203,7 +10281,7 @@ const sendPaymentRequest = async () => {
     : line)
   await nextTick()
   try {
-    await persistPaymentRequest(true)
+    await persistPaymentRequest(true, true)
     showToast(`${target.length} payment request line(s) sent`)
   } catch (error: any) {
     gsdModal.payment.lines.forEach((line) => {
@@ -10716,7 +10794,7 @@ const openGsdModal = async (row: number, column: number) => {
       if (required === 'YES') nextTick(() => hblNumberInput.value?.focus())
     } else if (gsdModal.kind === 'form') {
       const parsed = parseJsonCell(rawText, null as any)
-      if (label === 'PAYMENT REQUEST') {
+      if (label === 'PAYMENT REQUEST' && opsDeptUpper() !== 'FCD') {
         try {
           await loadPaymentReferenceOptions()
           if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
@@ -10919,7 +10997,7 @@ const openGsdModal = async (row: number, column: number) => {
           ]
         }
         gsdModal.editing = (isAirDoIcdPreAlertConfirmationModal() || isAirDupCompactPreAlertConfirmationModal() || isFclDduCcdPreAlertConfirmationModal()) ? true : !gsdModal.form.locked
-      } else if (label === 'EXPENSE/COLLECT LIST' || label === 'EXPENSE/COLLECTION LIST') {
+      } else if (label === 'EXPENSE/COLLECT LIST' || label === 'EXPENSE/COLLECTION LIST' || (label === 'PAYMENT REQUEST' && opsDeptUpper() === 'FCD')) {
         gsdModal.formFields = []
         try {
           const [, linkedPaymentValue] = await Promise.all([
@@ -10981,18 +11059,24 @@ const openGsdModal = async (row: number, column: number) => {
       // The Excel structure files are authoritative for inbound/locked
       // columns. Keep every corresponding modal in read-only mode even when
       // the stored payload has not been marked as locked yet.
-      if (isLockedOpsCell(row, column) || isSentEcdRowLocked(row)) gsdModal.editing = false
+      if (isLockedOpsCell(row, column) || isGsdModalWorkflowLocked()) gsdModal.editing = false
       if (label === 'DO INFO' && ['DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type)) && ['TCD', 'CCD'].includes(opsDeptUpper())) gsdModal.editing = false
     } else {
       gsdModal.text = rawText
     }
   }
-  // SENT ECD locks the complete GSD row. Its buttons remain available for
-  // viewing, but no modal may switch to edit mode until SENT ECD is unlocked.
-  if (isSentEcdRowLocked(row) && gsdModal.kind !== 'extra') gsdModal.editing = false
+  // Confirmed workflow checkboxes make the modal review-only until the row is
+  // explicitly unlocked from the worksheet.
+  if (isGsdModalWorkflowLocked()) {
+    gsdModal.editing = false
+    gsdModal.payment.lines.forEach((line) => { line.editing = false })
+    if (Array.isArray(gsdModal.form.lines)) gsdModal.form.lines.forEach((line: any) => { line.editing = false })
+  }
 }
 const closeGsdModal = () => {
-  if (isPaymentRequestModal() && !gsdModal.loading) persistPaymentRequest()
+  if (isPaymentRequestModal() && !gsdModal.loading) {
+    persistPaymentRequest()
+  }
   gsdModalLoadId += 1
   gsdModal.loading = false
   resetPaymentSearch()
@@ -11004,7 +11088,7 @@ const isReadonlyDownstreamDoInformation = () =>
   ['DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type)) &&
   ['TCD', 'CCD'].includes(opsDeptUpper())
 const enableGsdModalEdit = () => {
-  if (isReadonlyDealtModal() || (isSentEcdRowLocked(gsdModal.row) && gsdModal.kind !== 'extra')) return
+  if (isReadonlyDealtModal() || isGsdModalWorkflowLocked()) return
   if (isReadonlyDownstreamDoInformation()) return
   gsdModal.editing = true
   if (gsdModal.kind === 'dealt') nextTick(() => dealtInquiryInput.value?.focus())
@@ -11018,8 +11102,35 @@ const openNewClientForm = () => {
   }
   loadClientOptionLists()
 }
-const backToClientSearch = () => {
+const clientBackUnlinksCurrentRole = () => [
+  'CLIENT',
+  'SHIPPER',
+  'CNEE',
+  'ORIGIN AGENT',
+  'ORIGINAL AGENT',
+  'DESTINATION AGENT',
+  'DEST. AGENT',
+  'LINER',
+].includes(normalizedHeaderLabel(gsdModal.column))
+const backToClientSearch = async () => {
   const canChangeLink = canEditClientLinkCell(gsdModal.row, gsdModal.column)
+  if (canChangeLink && clientBackUnlinksCurrentRole() && rows.value[gsdModal.row]) {
+    const currentValue = rows.value[gsdModal.row][gsdModal.column]
+    if (String(currentValue ?? '').trim()) {
+      dispatchLoading.value = `Removing linked ${gsdModal.clientRole || 'record'}...`
+      try {
+        rows.value[gsdModal.row][gsdModal.column] = ''
+        const saved = await saveSheet()
+        if (!saved) {
+          showToast(`Could not remove linked ${gsdModal.clientRole || 'record'}`)
+          return
+        }
+        await mirrorFclLinkedCell(gsdModal.row, gsdModal.column)
+      } finally {
+        dispatchLoading.value = ''
+      }
+    }
+  }
   gsdModal.clientView = 'search'
   gsdModal.selectedClient = null
   gsdModal.text = ''
@@ -12419,7 +12530,7 @@ const preAlertUsesDestClearanceDocs = () => ['DDU', 'DDP'].includes(preAlertForw
 const preAlertShowsDestClearanceDocs = () => {
   return preAlertUsesDestClearanceDocs()
 }
-const isExpenseCollectModal = () => isGsdFormModalLabel('EXPENSE/COLLECT LIST', 'EXPENSE/COLLECTION LIST', 'PAYMENT APPROVAL')
+const isExpenseCollectModal = () => isGsdFormModalLabel('EXPENSE/COLLECT LIST', 'EXPENSE/COLLECTION LIST', 'PAYMENT APPROVAL') || (opsDeptUpper() === 'FCD' && isGsdFormModalLabel('PAYMENT REQUEST', 'PAYMENT REQUEST APPLICATION'))
 const isCcdCutoffModal = () => !isStandaloneManualOpsRow(gsdModal.row) && isCutoffModal() && (isExwCcdSheet() || isExwTcdSheet() || isExwDcdSheet() || isExwFcdSheet() || isFcaTcdSheet() || isFcaDcdSheet() || isFcaFcdSheet() || isFcfDcdSheet())
 const isDapTcdVolumeDetailModal = () => isVolumeModal() && isDapTcdSheet()
 const isReadonlyTcdVolumeModal = () => isVolumeModal() && opsDeptUpper() === 'TCD'
@@ -12543,7 +12654,8 @@ const expenseStamp = () => {
   const pad = (value: number) => String(value).padStart(2, '0')
   return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
-const persistExpenseCollect = async (immediate = false) => {
+const persistExpenseCollect = async (immediate = false, syncAfterFeedback = false) => {
+  if (isGsdModalWorkflowLocked()) return
   if (!rows.value[gsdModal.row]) return
   rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({
     form: {
@@ -12562,10 +12674,18 @@ const persistExpenseCollect = async (immediate = false) => {
     const saved = await saveSheet()
     if (!saved) throw new Error('Could not save Payment Approval feedback')
     // Return approval results through the linked PAYMENT REQUEST cells.
-    if (['DCD', 'FCD'].includes(opsDeptUpper())) {
-      const payload = rows.value[gsdModal.row][gsdModal.column]
+    if (syncAfterFeedback && ['DCD', 'FCD'].includes(opsDeptUpper())) {
+      const feedbackPayload = JSON.stringify({ payment: {
+        jobNo: String(gsdModal.form.job || ''),
+        refNo: String(gsdModal.form.ref || ''),
+        issueFrom: String(gsdModal.form.issueFrom || ''),
+        issueBank: String(gsdModal.form.issueBank || ''),
+        lines: expenseCollectLines()
+          .filter((line: any) => !!String(line.statusDetails || '').trim())
+          .map((line: any) => normalizePaymentLine(line)),
+      } })
       const peers = fclStructureSyncPeers('PAYMENT REQUEST')
-      const results = await Promise.all(peers.map((dept) => mirrorExwFclWorkflowCell(dept, 'PAYMENT REQUEST', payload)))
+      const results = await Promise.all(peers.map((dept) => mirrorExwFclWorkflowCell(dept, 'PAYMENT REQUEST', feedbackPayload)))
       if (opsDeptUpper() === 'FCD') {
         const ecdIndex = peers.indexOf('ECD')
         if (ecdIndex < 0 || results[ecdIndex] !== true) throw new Error('Could not return Payment Approval feedback to ECD')
@@ -12592,7 +12712,7 @@ const sendExpenseCollectFeedback = async () => {
   })
   const targetIds = new Set(selected.map((line: any) => String(line.id)))
   try {
-    await persistExpenseCollect(true)
+    await persistExpenseCollect(true, true)
     showToast('Feedback sent')
   } catch (error: any) {
     expenseCollectLines().forEach((line: any) => {
@@ -17355,11 +17475,6 @@ const persistPreAlert = (immediate = false) => {
   if (immediate) void saveSheet()
 }
 const savePreAlert = () => {
-  const missing = preAlertValidate()
-  if (missing.length) {
-    showToast(`Tick and attach a file for: ${missing.join(', ')}`)
-    return
-  }
   if (!preAlertIsDirty()) return
   gsdModal.form.sent = false
   gsdModal.form.sentAt = ''
@@ -17379,7 +17494,10 @@ const preAlertSourceCell = (...labels: string[]) => {
 }
 const preAlertTargetService = () => {
   const type = upperText(opsParts.value?.type || '')
-  return upperText(preAlertSourceCell(`${type}+`, type === 'EXW' ? 'EFA+' : '', 'EXW+', 'FCA+', 'FCF+'))
+  // Only the `+` column that belongs to the current export service controls
+  // whether PRE-ALERT creates an import ICD row. Looking through every export
+  // service column can create an unrelated destination row from stale data.
+  return upperText(preAlertSourceCell(`${type}+`, ...(type === 'EXW' ? ['EFA+'] : [])))
 }
 const crossServiceSourceSnapshot = async (row: number) => {
   const parsed = opsParts.value
@@ -17447,15 +17565,16 @@ const sendPreAlert = async () => {
   const targetService = preAlertTargetService()
   const hasDestinationService = ['DO', 'DAP', 'DDU', 'DDP'].includes(targetService)
   const destinationCell = preAlertSourceCell('DESTINATION AGENT', 'DEST. AGENT')
+  const destinationAgentNotRequired = upperText(clientCellText(destinationCell)) === 'N/A'
   const destinationEmail = linkedEntityEmail(destinationCell)
-  if (!destinationEmail) {
+  if (!destinationAgentNotRequired && !destinationEmail) {
     showToast('Destination Agent does not have an email in Traders & Suppliers')
     return
   }
-  const ok = await askConfirm('Send pre-alert to destination agent?', '', { okText: 'YES', cancelText: 'NO', tone: 'remove' })
-  if (!ok) return
   dispatchLoading.value = hasDestinationService
-    ? `Creating ${targetService} ICD record and sending pre-alert...`
+    ? `Creating ${targetService} ICD record${destinationAgentNotRequired ? '...' : ' and sending pre-alert...'}`
+    : destinationAgentNotRequired
+      ? 'Completing pre-alert...'
     : 'Sending pre-alert to destination agent...'
   try {
     const source = opsParts.value
@@ -17479,53 +17598,57 @@ const sendPreAlert = async () => {
       })
       if (!linked) throw new Error(`Could not create the linked ${targetService} ICD record`)
     }
-    const isAir = upperText(source.mode) === 'AIR'
-    const routeCell = rowValueByHeader('ROUTE')
-    const routeData = routeFromCellValue(routeCell)
-    const routeCode = routeData?.polCode && routeData?.podCode ? routeLabel(routeData) : String(routeCell || '').trim()
-    const vesselCell = rowValueByHeader('VESSEL/VOYAGE')
-    const originalVessel = vesselOriginalFromCell(vesselCell)
-    const vesselVoyage = originalVessel?.name
-      ? [originalVessel.name, originalVessel.voyage].filter(Boolean).join(' / ')
-      : emailCellDisplayValue('VESSEL/VOYAGE', vesselCell)
-    const carrierCell = isAir
-      ? (rowValueByHeader('AIRLINE') || rowValueByHeader('CARRIER'))
-      : (rowValueByHeader('LINER') || rowValueByHeader('CARRIER'))
-    const houseNo = isAir
-      ? rowValueByHeader('HAWB NO#')
-      : emailCellDisplayValue('HBL NO#', rowValueByHeader('HBL NO#'))
-    const masterNo = isAir ? rowValueByHeader('MAWB NO#') : rowValueByHeader('MBL NO#')
-    const movement = isAir ? rowValueByHeader('FLIGHT NO#') : vesselVoyage
-    const result = await props.request('/workbook/send-pre-alert-email', {
-      method: 'POST',
-      body: {
-        to: destinationEmail,
-        destinationAgent: gsdModal.form.destAgent || clientCellText(destinationCell),
-        jobNo: rowValueByHeader('JOB NO#') || rowValueByHeader('REF#'),
-        mode: source.mode,
-        shipmentType: `${source.mode} ${source.type}`,
-        service: hasDestinationService ? targetService : '',
-        routeCode,
-        details: {
-          client: clientCellText(rowValueByHeader('CLIENT')),
-          shipper: clientCellTitle(rowValueByHeader('SHIPPER')) || clientCellText(rowValueByHeader('SHIPPER')),
-          cnee: clientCellTitle(rowValueByHeader('CNEE')) || clientCellText(rowValueByHeader('CNEE')),
-          carrier: clientCellTitle(carrierCell) || clientCellText(carrierCell),
-          bookingNo: emailCellDisplayValue('BC NO#', rowValueByHeader('BC NO#')),
-          refNo: rowValueByHeader('REF#'), hblNo: houseNo,
-          mblNo: masterNo, etd: rowValueByHeader('ETD'),
-          eta: rowValueByHeader('ETA'), route: emailCellDisplayValue('ROUTE', routeCell), routeCode,
-          vessel: movement,
-          volume: emailCellDisplayValue('VOLUME', rowValueByHeader('VOLUME')), remarks: gsdModal.form.remarks,
+    let emailSentAt = ''
+    if (!destinationAgentNotRequired) {
+      const isAir = upperText(source.mode) === 'AIR'
+      const routeCell = rowValueByHeader('ROUTE')
+      const routeData = routeFromCellValue(routeCell)
+      const routeCode = routeData?.polCode && routeData?.podCode ? routeLabel(routeData) : String(routeCell || '').trim()
+      const vesselCell = rowValueByHeader('VESSEL/VOYAGE')
+      const originalVessel = vesselOriginalFromCell(vesselCell)
+      const vesselVoyage = originalVessel?.name
+        ? [originalVessel.name, originalVessel.voyage].filter(Boolean).join(' / ')
+        : emailCellDisplayValue('VESSEL/VOYAGE', vesselCell)
+      const carrierCell = isAir
+        ? (rowValueByHeader('AIRLINE') || rowValueByHeader('CARRIER'))
+        : (rowValueByHeader('LINER') || rowValueByHeader('CARRIER'))
+      const houseNo = isAir
+        ? rowValueByHeader('HAWB NO#')
+        : emailCellDisplayValue('HBL NO#', rowValueByHeader('HBL NO#'))
+      const masterNo = isAir ? rowValueByHeader('MAWB NO#') : rowValueByHeader('MBL NO#')
+      const movement = isAir ? rowValueByHeader('FLIGHT NO#') : vesselVoyage
+      const result = await props.request('/workbook/send-pre-alert-email', {
+        method: 'POST',
+        body: {
+          to: destinationEmail,
+          destinationAgent: gsdModal.form.destAgent || clientCellText(destinationCell),
+          jobNo: rowValueByHeader('JOB NO#') || rowValueByHeader('REF#'),
+          mode: source.mode,
+          shipmentType: `${source.mode} ${source.type}`,
+          service: hasDestinationService ? targetService : '',
+          routeCode,
+          details: {
+            client: clientCellText(rowValueByHeader('CLIENT')),
+            shipper: clientCellTitle(rowValueByHeader('SHIPPER')) || clientCellText(rowValueByHeader('SHIPPER')),
+            cnee: clientCellTitle(rowValueByHeader('CNEE')) || clientCellText(rowValueByHeader('CNEE')),
+            carrier: clientCellTitle(carrierCell) || clientCellText(carrierCell),
+            bookingNo: emailCellDisplayValue('BC NO#', rowValueByHeader('BC NO#')),
+            refNo: rowValueByHeader('REF#'), hblNo: houseNo,
+            mblNo: masterNo, etd: rowValueByHeader('ETD'),
+            eta: rowValueByHeader('ETA'), route: emailCellDisplayValue('ROUTE', routeCell), routeCode,
+            vessel: movement,
+            volume: emailCellDisplayValue('VOLUME', rowValueByHeader('VOLUME')), remarks: gsdModal.form.remarks,
+          },
+          documents: [
+            ...Object.values(gsdModal.form.files || {}).map((file: any) => ({ name: preAlertFileName(file), url: String(file?.url || '') })),
+            ...[preDocsData().ci, preDocsData().pl, ...(preDocsData().others || [])].flatMap((item: any) => (item.files || []).map((file: any) => ({ name: String(file?.name || ''), url: String(file?.url || '') }))),
+          ].filter((file: any) => file.name),
         },
-        documents: [
-          ...Object.values(gsdModal.form.files || {}).map((file: any) => ({ name: preAlertFileName(file), url: String(file?.url || '') })),
-          ...[preDocsData().ci, preDocsData().pl, ...(preDocsData().others || [])].flatMap((item: any) => (item.files || []).map((file: any) => ({ name: String(file?.name || ''), url: String(file?.url || '') }))),
-        ].filter((file: any) => file.name),
-      },
-    })
+      })
+      emailSentAt = String(result?.data?.sentAt || '')
+    }
     gsdModal.form.sent = true
-    gsdModal.form.sentAt = String(result?.data?.sentAt || new Date().toISOString())
+    gsdModal.form.sentAt = emailSentAt || new Date().toISOString()
     gsdModal.form.targetService = targetService
     gsdModal.form.locked = true
     gsdModal.editing = false
@@ -18360,7 +18483,7 @@ const isChecked = (value: any) => {
   return ['true', '1', 'yes', 'x', 'checked'].includes(normalized) || normalized.startsWith('true|')
 }
 const canEditCell = (row: number, column: number) =>
-  isEditingCell(row, column) && !isSentEcdRowLocked(row) && !(row === 0 && isDefaultTemplateColumn(column)) && !isLockedOpsCell(row, column) && !isScheduleDateCell(row, column) && !isCheckboxCell(row, column) && !isDropdownCell(row, column) && !isActionInfoCell(row, column) && !isTruckInfoCell(row, column) && !isClientLinkCell(row, column) && !isGsdActionButtonCell(row, column) && !isActionSelectCell(row, column)
+  isEditingCell(row, column) && !isWorkflowLockedOpsCell(row, column) && !(row === 0 && isDefaultTemplateColumn(column)) && !isLockedOpsCell(row, column) && !isScheduleDateCell(row, column) && !isCheckboxCell(row, column) && !isDropdownCell(row, column) && !isActionInfoCell(row, column) && !isTruckInfoCell(row, column) && !isClientLinkCell(row, column) && !isGsdActionButtonCell(row, column) && !isActionSelectCell(row, column)
 const cellClass = (row: number, column: number) => ({
   editing: isEditingCell(row, column),
   bool: isCheckboxCell(row, column),
@@ -18371,7 +18494,7 @@ const cellClass = (row: number, column: number) => ({
   gsdactcell: isGsdActionButtonCell(row, column),
   actcell: isActionSelectCell(row, column),
   staffcell: isOpsStaffColumn(column),
-  lockedsrc: row > 0 && isLockedOpsCell(row, column),
+  lockedsrc: row > 0 && (isLockedOpsCell(row, column) || isWorkflowLockedOpsCell(row, column)),
   xfercell: row > 0 && xferColumn() === column,
   'has-note': Boolean(noteText(row, column)),
   'linked-date-changed': linkedDateChanged(row, column),
@@ -18405,8 +18528,12 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
     const sourceRow = sourceState.rows[row]
     if (!sourceRow) return
     const sourceParts = parseOpsKey(sourceKey)
-    const targetDept = normalizedHeaderLabel(column).replace(/^SENT\s+/, '') || 'ECD'
-    const confirmed = await askConfirm(`Confirmed to send to ${targetDept}`, '', { okText: 'YES', cancelText: 'NO', tone: 'question' })
+    const sentColumnLabel = normalizedHeaderLabel(column)
+    const targetDept = sentColumnLabel === 'SENT E/ICD'
+      ? 'ICD'
+      : sentColumnLabel.replace(/^SENT\s+/, '') || 'ECD'
+    const confirmationTarget = sentColumnLabel === 'SENT E/ICD' ? 'E/ICD' : targetDept
+    const confirmed = await askConfirm(`Confirmed to send to ${confirmationTarget}`, '', { okText: 'YES', cancelText: 'NO', tone: 'question' })
     if (!confirmed || !sourceStillVisible()) return
     const mode = String(sourceParts?.mode || '').toUpperCase()
     const useAtomicIcdDispatch = targetDept === 'ICD' && ['FCL', 'LCL', 'AIR'].includes(mode)
@@ -18448,8 +18575,19 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
       if (useAtomicIcdDispatch || useAtomicEcdDispatch) {
         const endpoint = useAtomicIcdDispatch ? 'dispatch-sent-icd' : 'dispatch-sent-ecd'
         const dispatchUrl = `/workbook/sheets/${encodeURIComponent(sourceStorageKey)}/${endpoint}`
+        // Keep the new UI label compatible with backend instances that still
+        // validate the former SENT ICD header. Column position and cell data
+        // remain unchanged; only the request snapshot uses the legacy alias.
+        const compatibleSourcePayload = useAtomicIcdDispatch && sentColumnLabel === 'SENT E/ICD'
+          ? {
+              ...sourcePayload,
+              rows: (sourcePayload.rows || []).map((payloadRow: any[], payloadRowIndex: number) => payloadRowIndex === 0
+                ? payloadRow.map((cell: any) => upperText(cell) === 'SENT E/ICD' ? 'SENT ICD' : cell)
+                : payloadRow),
+            }
+          : sourcePayload
         const dispatchBody = {
-          ...versionedSheetPayload(sourceStorageKey, sourcePayload),
+          ...versionedSheetPayload(sourceStorageKey, compatibleSourcePayload),
           rowIndex: row,
           sentAt,
           shipmentLink,
@@ -18471,6 +18609,18 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
           }))
         }
         rememberSheetUpdatedAt(sourceStorageKey, responseUpdatedAt(dispatched))
+        // An inbound GSD row can carry an export-side service in DO+/DAP+/
+        // DDU+/DDP+. Dispatch the same shipment snapshot to that service's
+        // ECD as well, using the shared shipment link to update instead of
+        // duplicating the row when the action is retried.
+        if (useAtomicIcdDispatch && sourceParts) {
+          const serviceColumn = sourceHeader.findIndex((label) => upperText(label) === `${upperText(sourceParts.type)}+`)
+          const exportService = upperText(serviceColumn >= 0 ? sourceRow[serviceColumn] : '')
+          if (['EXW', 'FCA', 'FCF'].includes(exportService)) {
+            const exportLinked = await dispatchCrossServiceExportToEcd(row, serviceColumn, sentAt, transferSource)
+            if (!exportLinked) throw new Error(`Could not create the linked ${exportService} ECD record`)
+          }
+        }
         // The atomic backend request assigns the receiving department owner.
         // Mirror that owner back to GSD after both SENT ECD and SENT ICD so the
         // source worksheet immediately shows who received the shipment.
@@ -18823,6 +18973,11 @@ const syncCrossServiceGsdRow = async (row: number, column: number, createdAt = f
     if (!sourceStillVisible()) return false
     targetLinks[String(targetRowIndex)] = { id: linkId, counterpartKey: sourceKey, counterpartType: String(parsed.type || '').toUpperCase() }
     targetSettings.crossServiceLinks = targetLinks
+    const sourceShipmentLink = ensureOpsShipmentLink(sourceHeader, sourceRow, row, settings.value)
+    targetSettings.opsRowLinks = {
+      ...(targetSettings.opsRowLinks || {}),
+      [String(targetRowIndex)]: sourceShipmentLink,
+    }
     await patchLoadedWorkbookSheet(targetStorageKey, targetSheet, { rows: [...targetRows, [workbookMetaMarker, JSON.stringify({
         version: 1,
         columnWidths: extracted.columnWidths || targetSheet.columnWidths || targetHeader.map(() => 100),
@@ -18841,10 +18996,9 @@ const syncCrossServiceGsdRow = async (row: number, column: number, createdAt = f
       }
       scheduleSave()
     }
-    showToast(`Linked ${String(parsed.type || '').toUpperCase()} with ${counterpartType}`)
     return true
   } catch (error: any) {
-    showToast(error?.data?.message || error?.message || `Could not link to ${counterpartType}`)
+    console.warn(`Could not link ${String(parsed.type || '').toUpperCase()} with ${counterpartType}`, error)
     return false
   }
 }
@@ -18989,7 +19143,20 @@ const runMirrorExwFclWorkflowCell = async (
     if (wasAlreadyLinked) {
       markLinkedDateChange(targetSettings, matchingRow, targetHeader[targetColumn], targetRows[matchingRow][targetColumn], value)
     }
-    if (['BILL RELEASE', 'AWB RELEASE'].includes(label)) {
+    if (label === 'PAYMENT REQUEST') {
+      const incoming = paymentRequestFromCell(value)
+      const existing = paymentRequestFromCell(targetRows[matchingRow][targetColumn])
+      const mergedLines = new Map(existing.lines.map((line) => [String(line.id), normalizePaymentLine(line)]))
+      incoming.lines.forEach((line) => mergedLines.set(String(line.id), normalizePaymentLine(line)))
+      targetRows[matchingRow][targetColumn] = JSON.stringify({ payment: {
+        jobNo: incoming.jobNo || existing.jobNo,
+        refNo: incoming.refNo || existing.refNo,
+        refLastBiz: incoming.refLastBiz || existing.refLastBiz,
+        issueFrom: incoming.issueFrom || existing.issueFrom,
+        issueBank: incoming.issueBank || existing.issueBank,
+        lines: Array.from(mergedLines.values()).map((line) => ({ ...line, selected: false })),
+      } })
+    } else if (['BILL RELEASE', 'AWB RELEASE'].includes(label)) {
       const sourceParsed = parseJsonCell(value, {} as any)
       const targetParsed = parseJsonCell(targetRows[matchingRow][targetColumn], {} as any)
       const sourceForm = sourceParsed && typeof sourceParsed === 'object' && 'form' in sourceParsed ? sourceParsed.form || {} : sourceParsed || {}
@@ -19938,7 +20105,11 @@ const transferRowToNextDept = async (rowIndex: number, targetDept?: string, tran
   const sendingFromGsdToIcdFlow = source?.dept === 'GSD' && ['DO', 'DAP', 'DDU', 'DDP'].includes(String(parsed.type || '').toUpperCase()) && parsed.dept === 'ICD'
   const crossServiceInbound = sendingFromGsdToIcdFlow
     && (!!sourceSettings?.crossServiceInboundDirect || !sourceHeader.some((label) => upperText(label) === `${upperText(source.type)}+`))
-        const sendingDoGsdToIcd = sendingFromGsdToIcdFlow && ['FCL', 'LCL'].includes(parsed.mode) && parsed.type === 'DO'
+  const crossServiceOutbound = source?.dept === 'GSD'
+    && parsed.dept === 'ECD'
+    && ['EXW', 'FCA', 'FCF'].includes(upperText(parsed.type))
+    && !!sourceSettings?.crossServiceOutboundDirect
+  const sendingDoGsdToIcd = sendingFromGsdToIcdFlow && ['FCL', 'LCL'].includes(parsed.mode) && parsed.type === 'DO'
   const sendingToInitialOpsDept = sendingFromGsdToIcdFlow || (
     ['EXW', 'FCA', 'FCF'].includes(String(parsed.type || '').toUpperCase()) && parsed.dept === 'ECD'
   )
@@ -19955,6 +20126,7 @@ const transferRowToNextDept = async (rowIndex: number, targetDept?: string, tran
     if (sendingToInitialOpsDept && label === 'BU') return generatedJobCountryCode()
     if (sendingToInitialOpsDept && label === 'SALES') return String(sourceSettings?.opsRowCreators?.[String(rowIndex)] || props.currentUser?.displayName || props.currentUser?.username || '').trim()
     if (crossServiceInbound && label === `${upperText(parsed.type)}+`) return upperText(sourceSettings?.crossServiceOriginType || '')
+    if (crossServiceOutbound && label === `${upperText(parsed.type)}+`) return upperText(sourceSettings?.crossServiceOriginType || '')
     if (label === 'REF#') {
       const sourceRef = sourceIndexForTarget('REF#')
       const sourceJob = sourceIndexForTarget('JOB NO#')
@@ -20011,14 +20183,14 @@ const transferRowToNextDept = async (rowIndex: number, targetDept?: string, tran
         const label = targetHeader[column]
         if (label === 'REF#') return current || nextRow[column]
         const sourceColumn = sourceIndexForTarget(label)
-        const isGsdToExportEcd = source?.dept === 'GSD' && parsed.dept === 'ECD' && ['FCL', 'LCL', 'AIR'].includes(parsed.mode) && ['EXW', 'FCA', 'FCF'].includes(parsed.type)
+        const isGsdToExportEcd = source?.dept === 'GSD' && parsed.dept === 'ECD' && ['FCL', 'LCL', 'AIR'].includes(parsed.mode) && ['EXW', 'FCA', 'FCF'].includes(upperText(parsed.type))
         const sendingDapGsdToIcd = sendingFromGsdToIcdFlow && ['FCL', 'LCL'].includes(parsed.mode) && parsed.type === 'DAP'
         const sendingDduGsdToIcd = sendingFromGsdToIcdFlow && ['FCL', 'LCL', 'AIR'].includes(parsed.mode) && parsed.type === 'DDU'
         const sendingDdpGsdToIcd = sendingFromGsdToIcdFlow && ['FCL', 'LCL', 'AIR'].includes(parsed.mode) && parsed.type === 'DDP'
         const isInbound = crossServiceInbound
           ? sourceColumn >= 0 || ['TIME', 'BU', 'SALES'].includes(label)
           : isGsdToExportEcd
-          ? ['TIME', 'EXTRA SERVICE', 'JOB NO#', 'ECD OPS', 'CLIENT', 'DEALT INFO', 'EXW+', 'FCA+', 'FCF+', 'BU', 'SALES'].includes(label)
+          ? ['TIME', 'EXTRA SERVICE', 'JOB NO#', 'ECD OPS', 'CLIENT', 'DEALT INFO', 'EXW+', 'FCA+', 'FCF+', 'BU', 'SALES', 'ACTION'].includes(label)
           : sendingDoGsdToIcd
             ? ['TIME', 'EXTRA SERVICE', 'JOB NO#', 'ICD OPS', 'CLIENT', 'DEALT INFO', 'DO+', 'BU', 'SALES'].includes(label)
             : sendingDapGsdToIcd
@@ -20069,6 +20241,42 @@ const transferRowToNextDept = async (rowIndex: number, targetDept?: string, tran
       if (notify) showToast(error?.data?.message || error?.message || 'Could not send to next department')
       return false
     }
+  })
+}
+const dispatchCrossServiceExportToEcd = async (
+  sourceRowIndex: number,
+  serviceColumn: number,
+  sentAt: string,
+  snapshot: OpsTransferSource,
+) => {
+  // Use the exact row snapshot that was sent to the ICD endpoint. Reading
+  // rows.value here is racy because the source sheet may be refreshed/replaced
+  // after that request completes, leaving this second dispatch with stale data.
+  const source = parseOpsKey(snapshot.key)
+  const sourceHeader = snapshot.header
+  const sourceRow = snapshot.row
+  const country = snapshot.country
+  const exportService = upperText(sourceRow?.[serviceColumn])
+  if (!source || source.dept !== 'GSD' || !['DO', 'DAP', 'DDU', 'DDP'].includes(upperText(source.type)) || !['EXW', 'FCA', 'FCF'].includes(exportService)) return false
+
+  const sourceSettings = snapshot.settings
+  const exportBase = opsBaseForType(exportService as any)
+  // SENT E/ICD must create exactly one export-side record: the selected
+  // service's ECD row. Always run the upsert: settings can retain a shipment
+  // link for an old/incomplete row that has no ACTIVE action and is therefore
+  // invisible in the worksheet. Returning early for that link skipped the
+  // actual row repair/creation.
+  const exportGsdKey = opsLeafKey(exportBase, source.mode, exportService as any, 'GSD')
+  return transferRowToNextDept(sourceRowIndex, 'ECD', sentAt, false, {
+    key: exportGsdKey,
+    country,
+    header: sourceHeader,
+    row: sourceRow,
+    settings: {
+      ...sourceSettings,
+      crossServiceOutboundDirect: true,
+      crossServiceOriginType: upperText(source.type),
+    },
   })
 }
 const setDropdownValue = (row: number, column: number, event: Event) => {
@@ -20503,7 +20711,7 @@ const opsCellClass = (row: number, column: number) => ({
   select: isDropdownCell(row, column),
   action: isActionSelectCell(row, column),
   button: isActionInfoCell(row, column) || isTruckInfoCell(row, column) || isClientLinkCell(row, column) || isGsdActionButtonCell(row, column),
-  locked: isLockedOpsCell(row, column),
+  locked: isLockedOpsCell(row, column) || isWorkflowLockedOpsCell(row, column),
   vdly: ['ETD', 'ETA'].includes(normalizedHeaderLabel(column)) && rowVesselDelayed(row),
   refecd: isRefEcdCell(row, column),
   staffcell: isOpsStaffColumn(column),
@@ -20513,7 +20721,7 @@ const opsCellClass = (row: number, column: number) => ({
   'inline-editing': isEditingCell(row, column),
 })
 const isOpsConfirmableFreeTextCell = (row: number, column: number) =>
-  row > 0 && !isOpsEditingRow(row) && !isLockedOpsCell(row, column) && !isSentEcdRowLocked(row) &&
+  row > 0 && !isOpsEditingRow(row) && !isLockedOpsCell(row, column) && !isWorkflowLockedOpsCell(row, column) &&
   !isCheckboxCell(row, column) && !isDropdownCell(row, column) && !isActionSelectCell(row, column) &&
   !isActionInfoCell(row, column) && !isTruckInfoCell(row, column) && !isClientLinkCell(row, column) &&
   !isGsdActionButtonCell(row, column) && !isScheduleDateCell(row, column) && !isDatePopupCell(row, column) && !isOpsTimeColumn(column) && !isRefEcdCell(row, column)
@@ -20546,12 +20754,12 @@ const blurEventTarget = (event: Event) => {
   ;(event.target as HTMLElement | null)?.blur()
 }
 const updateOpsEditCell = (row: number, column: number, event: Event) => {
-  if (isLockedOpsCell(row, column) || isSentEcdRowLocked(row)) return
+  if (isLockedOpsCell(row, column) || isWorkflowLockedOpsCell(row, column)) return
   const value = (event.target as HTMLInputElement).value
   rows.value[row][column] = isOpsTimeColumn(column) ? value.replace('T', ' ') : isOpsMoneyColumn(column) ? sanitizeMoneyInput(value) : value
 }
 const updateOpsTimeCell = (row: number, column: number, event: Event) => {
-  if (isLockedOpsCell(row, column) || isSentEcdRowLocked(row)) return
+  if (isLockedOpsCell(row, column) || isWorkflowLockedOpsCell(row, column)) return
   const value = (event.target as HTMLInputElement).value
   const next = value ? value.replace('T', ' ') : ''
   if (String(rows.value[row]?.[column] ?? '') === next) return
@@ -20562,7 +20770,7 @@ const updateOpsTimeCell = (row: number, column: number, event: Event) => {
 const finishOpsCellEdit = (row: number, column: number, event: Event) => {
   if (!isEditingCell(row, column) && !isOpsEditingRow(row)) return
   if (isEditingCell(row, column)) editingCell.value = null
-  if (isLockedOpsCell(row, column) || isSentEcdRowLocked(row)) return
+  if (isLockedOpsCell(row, column) || isWorkflowLockedOpsCell(row, column)) return
   const rawNext = ((event.target as HTMLElement).innerText || '').trim()
   const next = isOpsMoneyColumn(column) && rawNext ? formatMoneyValue(rawNext) : rawNext
   const current = String(rows.value[row]?.[column] ?? '')
@@ -22082,6 +22290,10 @@ onBeforeUnmount(() => {
 .gsd-release-actions .wb-modal-btn.release-send:hover:not(:disabled),.gsd-release-actions .wb-modal-btn.release-send:focus-visible:not(:disabled){background:#0b5f59;border-color:#0b5f59;color:#fff;box-shadow:0 2px 8px rgba(15,118,110,.24)}
 .gsd-release-actions .wb-modal-btn.release-send:active:not(:disabled){background:#094f4a;border-color:#094f4a}
 .gsd-prs-actions .wb-modal-btn.primary:disabled{opacity:1!important;filter:none!important;background:#b9d9c9!important;border-color:#b9d9c9!important;color:#fff!important}
+/* A confirmed workflow checkbox makes the complete row read-only. Modal
+   content remains available for review, while every mutating action is hidden. */
+.gsd-workflow-locked input,.gsd-workflow-locked select,.gsd-workflow-locked textarea{pointer-events:none!important}
+.gsd-workflow-locked button:not(.gsd-modal-x):not(.ec-view):not(.gsd-eye-btn):not(.gsd-pre-icon.eye):not([class*="export"]):not([title^="View"]){display:none!important}
 .do-document-overlay{z-index:760!important;background:rgba(20,30,26,.5)!important}.do-document-modal{width:900px;max-width:96vw;height:94vh;display:flex;flex-direction:column;overflow:hidden;border-radius:10px;background:#eef1f4;box-shadow:0 20px 60px rgba(0,0,0,.32)}.do-document-toolbar{display:flex;justify-content:flex-end;gap:8px;padding:10px 14px;background:#fff;border-bottom:1px solid #dce3df}.do-document-toolbar .wb-modal-btn{height:34px;padding:0 14px}.do-document-close{width:25px;height:25px;margin-left:4px;border:0;border-radius:50%;background:#c0392b;color:#fff;font-size:18px;font-weight:800;line-height:1;cursor:pointer}.do-document-scroll{flex:1;overflow:auto;padding:18px}.do-document-sheet{box-sizing:border-box;width:760px;min-height:1060px;margin:0 auto;padding:44px 50px;background:#fff;color:#26312b;font:12px/1.35 Arial,sans-serif;box-shadow:0 2px 9px rgba(0,0,0,.14)}.do-document-head{display:flex;justify-content:space-between;gap:20px;padding-bottom:12px;border-bottom:2px solid #0f4c81;color:#0f4c81}.do-document-head>div:first-child{display:flex;flex-direction:column;max-width:460px}.do-document-head b{font-size:15px}.do-document-head span{font-size:9px;color:#495852}.do-document-head>div:last-child{text-align:right}.do-document-head strong{display:block;font-size:20px;letter-spacing:.04em}.do-document-head small{font-size:10px;font-weight:800}.do-document-sheet label{display:grid;gap:4px;margin-top:12px}.do-document-sheet label>span,.do-doc-section{color:#0f4c81;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}.do-document-sheet input,.do-document-sheet textarea{box-sizing:border-box;width:100%;border:1px solid #c9d3cf;border-radius:5px;background:#fff;padding:7px 9px;color:#26312b;font:12px Arial,sans-serif;outline:none;resize:vertical}.do-document-sheet input{height:34px}.do-document-sheet textarea{min-height:54px}.do-document-sheet input:disabled,.do-document-sheet textarea:disabled{background:#f1f5f4;color:#46534d;opacity:1}.do-doc-grid{display:grid;gap:14px}.do-doc-grid.two{grid-template-columns:1fr 1fr}.do-doc-grid.three{grid-template-columns:repeat(3,1fr)}.do-doc-section{margin-top:22px;padding-bottom:5px;border-bottom:1px solid #8fa9be;font-size:11px}.do-doc-table{width:100%;margin-top:8px;border-collapse:collapse;table-layout:fixed}.do-doc-table th,.do-doc-table td{border:1px solid #c7d3dc;padding:0;text-align:center}.do-doc-table th{height:27px;background:#eef3f7;color:#0f4c81;font-size:9px}.do-doc-table th:first-child{width:30px}.do-doc-table input{height:30px;border:0;border-radius:0;text-align:center}.do-doc-add{margin-top:7px;border:0;border-radius:5px;background:#008f4c;color:#fff;padding:5px 10px;font-size:10px;font-weight:800;cursor:pointer}.do-doc-bottom{margin-top:16px}.do-doc-sign{display:grid;grid-template-columns:1fr 1fr;gap:54px;margin-top:52px;text-align:center;color:#526159;font-size:10px}.do-doc-sign>div{display:flex;flex-direction:column;align-items:center}.do-doc-sign b{margin-top:3px;color:#26312b;font-size:11px}.do-doc-sign i{display:block;width:100%;height:48px;border-bottom:1px solid #26312b}.do-doc-sign strong{margin-top:6px;color:#26312b;font-size:11px}@media(max-width:820px){.do-document-sheet{width:720px}.do-document-scroll{padding:10px}}
 .do-document-actions .wb-modal-btn.primary{border-color:#00c566;background:#00c566;color:#fff}.do-document-actions .wb-modal-btn.edit{border-color:#e67e22;background:#e67e22;color:#fff}.do-document-actions .wb-modal-btn.export{border-color:#237bdd;background:#237bdd;color:#fff}.do-document-actions .wb-modal-btn:disabled{filter:saturate(.42) brightness(.78);cursor:not-allowed}.do-doc-sign>div{display:grid;grid-template-rows:14px 18px 49px 18px;align-items:center}.do-doc-sign b,.do-doc-sign strong{display:block;margin:0}.do-doc-sign i{height:48px;align-self:start}.do-sign-placeholder{visibility:hidden}
 .do-document-modal{width:920px}.do-document-scroll{padding:18px 22px 24px}.do-document-sheet{width:min(824px,100%)}@media(max-width:820px){.do-document-sheet{width:100%}}
