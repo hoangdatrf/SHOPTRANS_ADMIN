@@ -3282,6 +3282,7 @@ const referenceDefaultTabs = [
       salesField('whname', 'WHName', 220),
       salesField('city', 'City', 160, { kind: 'list' }),
       salesField('country', 'Country', 150, { kind: 'list' }),
+      salesField('fulladdress', 'Full Address', 280),
       salesField('whtype', 'Type', 130, { kind: 'select', opts: ['CFS', 'Bonded', 'General', 'CY', 'Cold'] }),
     ],
   },
