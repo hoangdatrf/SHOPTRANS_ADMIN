@@ -1326,24 +1326,24 @@
             </div>
           </template>
           <template v-else-if="isVolumeModal()">
-            <div v-if="!isCcdVolumeModal()" class="gsd-volume-form" :class="{ lcl: isLclSheet() }">
+            <div v-if="!isCcdVolumeModal()" class="gsd-volume-form" :class="{ lcl: isLclSheet() || isAirMode() }">
               <div class="gsd-volume-block">
                 <div class="gsd-volume-label">VOLUME</div>
                 <input v-model.trim="gsdModal.form.volume" type="number" min="1" step="1" placeholder="Qty" @input="clearRecordHint" />
               </div>
               <div class="gsd-volume-block">
-                <div class="gsd-volume-label">{{ isLclSheet() ? 'UNIT' : 'TYPE' }} <button class="gsd-plusmini" type="button" @click="startVolumeOption('type')">+</button></div>
+                <div class="gsd-volume-label">{{ isLclSheet() || isAirMode() ? 'UNIT' : 'TYPE' }} <button class="gsd-plusmini" type="button" @click="startVolumeOption('type')">+</button></div>
                 <select v-model="gsdModal.form.type" @change="clearRecordHint">
                   <option value="">-- select --</option>
                   <option v-for="option in gsdModal.form.typeOptions" :key="option" :value="option">{{ option }}</option>
                 </select>
                 <div v-if="gsdModal.form.addOption === 'type'" class="gsd-option-add">
-                  <input v-model.trim="gsdModal.form.newOption" type="text" :placeholder="isLclSheet() ? 'New UNIT' : 'New TYPE'" @input="uppercaseVolumeOption" @keydown.enter.prevent="saveVolumeOption" />
+                  <input v-model.trim="gsdModal.form.newOption" type="text" :placeholder="isLclSheet() || isAirMode() ? 'New UNIT' : 'New TYPE'" @input="uppercaseVolumeOption" @keydown.enter.prevent="saveVolumeOption" />
                   <button type="button" @click="saveVolumeOption">Add</button>
                   <button type="button" class="cancel" @click="cancelVolumeOption">Cancel</button>
                 </div>
               </div>
-              <template v-if="isLclSheet()">
+              <template v-if="isLclSheet() || isAirMode()">
                 <div class="gsd-volume-block">
                   <div class="gsd-volume-label">G.W</div>
                   <input v-model.trim="gsdModal.form.gw" type="number" min="0" step="any" placeholder="Weight" @input="clearRecordHint" />
@@ -1376,21 +1376,23 @@
             <div v-if="!isCcdVolumeModal()" class="gsd-record-savebar">
               <button class="wb-modal-btn primary" type="button" :disabled="!volumeHasInput()" @click="saveVolumeRecord">Save</button>
             </div>
-            <div v-if="!isCcdVolumeModal()" class="gsd-record-hint" :class="{ editing: !!gsdModal.form.editId }">{{ gsdModal.form.hint || '' }}</div>
+            <div v-if="!isCcdVolumeModal() && gsdModal.form.hint" class="gsd-record-hint" :class="{ editing: !!gsdModal.form.editId }">{{ gsdModal.form.hint }}</div>
             <div class="gsd-record-history gsd-five-row-scroll">
               <table class="gsd-record-table volume">
                 <thead>
-                  <tr v-if="isLclSheet() && isCcdVolumeModal()"><th>ORDER</th><th>VOLUME</th><th>G.WEIGHT</th><th>MEA</th></tr>
+                  <tr v-if="isAirMode()"><th>ORDER</th><th>VOLUME</th><th>G.W</th><th>MEA.(CBM)</th><th>CHARGEABLE WEIGHT</th></tr>
+                  <tr v-else-if="isLclSheet() && isCcdVolumeModal()"><th>ORDER</th><th>VOLUME</th><th>G.WEIGHT</th><th>MEA</th></tr>
                   <tr v-else-if="isLclSheet()"><th>ORDER</th><th>VOLUME</th><th>G.W</th><th>MEA.(CBM)</th></tr>
                   <tr v-else><th>ORDER</th><th>VOLUME</th><th>TYPE</th><th>PURPOSE</th></tr>
                 </thead>
                 <tbody>
                   <tr v-for="(item, index) in volumeRecords()" :key="item.id" :class="{ selected: !isReadonlyTcdVolumeModal() && gsdModal.form.selectedId === item.id }" @click="!isReadonlyTcdVolumeModal() && selectRecord(item.id)">
                     <td>{{ index + 1 }}</td>
-                    <template v-if="isLclSheet()">
+                    <template v-if="isLclSheet() || isAirMode()">
                       <td>{{ `${item.volume || ''} ${item.type || ''}`.trim() }}</td>
                       <td>{{ item.gw ? `${item.gw} ${item.gwUnit || ''}`.trim() : '—' }}</td>
                       <td>{{ item.mea ? `${item.mea} CBM` : '—' }}</td>
+                      <td v-if="isAirMode()">{{ formatChargeable(airChargeableWeight([item]).chargeable) }}</td>
                     </template>
                     <template v-else>
                       <td>{{ item.volume }}</td>
@@ -1398,14 +1400,10 @@
                       <td>{{ item.purpose }}</td>
                     </template>
                   </tr>
-                  <tr v-if="!volumeRecords().length"><td colspan="4" class="empty">No volume saved yet</td></tr>
+                  <tr v-if="isAirMode() && volumeRecords().length" class="volume-total-row"><td colspan="4">TOTAL CHARGEABLE WEIGHT</td><td>{{ formatChargeable(airChargeableWeight(volumeRecords()).chargeable) }}</td></tr>
+                  <tr v-if="!volumeRecords().length"><td :colspan="isAirMode() ? 5 : 4" class="empty">No volume saved yet</td></tr>
                 </tbody>
               </table>
-            </div>
-            <div v-if="isAirMode() && volumeRecords().length" class="gsd-chargeable">
-              <span class="gsd-chargeable-label">CHARGEABLE WEIGHT</span>
-              <b class="gsd-chargeable-value">{{ formatChargeable(airChargeableWeight(volumeRecords()).chargeable) }}</b>
-              <em>MEA x 167 = {{ formatChargeable(airChargeableWeight(volumeRecords()).volumetric) }} · G.W = {{ formatChargeable(airChargeableWeight(volumeRecords()).gw) }}</em>
             </div>
             <div class="gsd-record-footer">
               <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
@@ -1481,7 +1479,7 @@
                 <label><span>POD</span><input v-model.trim="gsdModal.form.pod" type="text" @input="uppercaseRouteAdd('pod')" /></label>
                 <label><span>COUNTRY/AREA</span><select v-model="gsdModal.form.podC" @change="uppercaseRouteAdd('podC')"><option value="">Select country/area</option><option v-for="country in routeCountryOptions" :key="`route-pod-${country}`" :value="country">{{ country }}</option></select></label>
                 <label><span>CODE</span><input v-model.trim="gsdModal.form.podCode" type="text" @input="uppercaseRouteAdd('podCode')" /></label>
-                <label class="gsd-route-check"><span>MNF SUBMIT</span><input v-model="gsdModal.form.mnfSubmit" type="checkbox" @change="uppercaseRouteAdd('mnfSubmit')" /></label>
+                <label class="gsd-route-check"><span>MNF SUBMIT</span><input v-model="gsdModal.form.mnfSubmit" class="gsd-pre-check" type="checkbox" @change="uppercaseRouteAdd('mnfSubmit')" /></label>
               </div>
               <div v-if="gsdModal.form.hint" class="gsd-route-hint" :class="{ ok: gsdModal.form.routeSaved }">{{ gsdModal.form.hint }}</div>
               <div class="gsd-route-actions add">
@@ -17904,6 +17902,10 @@ const sendPreAlert = async () => {
 const volumeRecords = () => (Array.isArray(gsdModal.form.records) ? gsdModal.form.records : []) as VolumeRecord[]
 const volumeSummaryLines = (value: any) => {
   const records = volumeFormFromCell(value).records || []
+  if (isAirMode()) {
+    const chargeable = airChargeableWeight(records).chargeable
+    return chargeable > 0 ? [formatChargeable(chargeable)] : []
+  }
   return records.map((record: any) => {
     const quantity = String(record.volume ?? '').trim()
     const size = String(record.type ?? '').trim().replace(/\s+/g, '').toUpperCase()
@@ -17926,9 +17928,7 @@ const airChargeableWeight = (records: any[]) => {
 const formatChargeable = (value: number) => `${(Math.round(value * 100) / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })} KGS`
 const volumeCellText = (value: any) => {
   const summary = volumeSummaryText(value)
-  if (!summary || !isAirMode()) return summary
-  const { chargeable } = airChargeableWeight(volumeFormFromCell(value).records || [])
-  return chargeable > 0 ? `${summary}\nC.W: ${formatChargeable(chargeable)}` : summary
+  return summary
 }
 const freetimeRecords = () => {
   const list = Array.isArray(gsdModal.form.records) ? gsdModal.form.records : []
@@ -18067,10 +18067,10 @@ const saveVolumeRecord = () => {
     return
   }
   if (!type) {
-    gsdModal.form.hint = isLclSheet() ? 'Select a UNIT' : 'Select a TYPE'
+    gsdModal.form.hint = isLclSheet() || isAirMode() ? 'Select a UNIT' : 'Select a TYPE'
     return
   }
-  if (!purpose && !isLclSheet()) {
+  if (!purpose && !isLclSheet() && !isAirMode()) {
     gsdModal.form.hint = 'Select a PURPOSE'
     return
   }
@@ -21600,24 +21600,24 @@ onBeforeUnmount(() => {
 .gsd-dap-tcd-volume-modal .gsd-record-table th{padding:4px 8px 8px}
 .gsd-dap-tcd-volume-modal .gsd-record-table td{height:auto;padding:7px 12px}
 .gsd-dap-tcd-volume-modal .gsd-record-table th:first-child,.gsd-dap-tcd-volume-modal .gsd-record-table td:first-child{width:52px}
-.gsd-volume-modal{width:780px;max-width:96vw;padding:34px 24px 20px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-volume-modal .gsd-modal-x,.gsd-freetime-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-volume-form{display:grid;grid-template-columns:1fr 1fr 1fr;gap:22px;margin-bottom:8px}.gsd-freetime-modal{width:600px;max-width:96vw;padding:34px 24px 20px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-freetime-form{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:8px}.gsd-free-title{text-align:center;font-size:14px;font-weight:800;color:#0e1512;margin:-4px 0 14px}.gsd-volume-block{display:grid;gap:7px;align-content:start}.gsd-volume-label{font-size:12px;font-weight:800;color:#33413b;text-transform:uppercase}
+.gsd-volume-modal{width:780px;max-width:96vw;padding:34px 24px 20px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-volume-modal .gsd-modal-x,.gsd-freetime-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-volume-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:22px;margin-bottom:6px}.gsd-freetime-modal{width:600px;max-width:96vw;padding:34px 24px 20px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-freetime-form{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:8px}.gsd-free-title{text-align:center;font-size:14px;font-weight:800;color:#0e1512;margin:-4px 0 14px}.gsd-volume-block{display:grid;gap:7px;align-content:start}.gsd-volume-label{font-size:12px;font-weight:800;color:#33413b;text-transform:uppercase}
 .gsd-chargeable{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 12px;margin:10px 0 4px;padding:10px 12px;border:1px solid #cfe3d6;border-radius:8px;background:#f1f8f3}.gsd-chargeable-label{font-size:12px;font-weight:800;color:#33413b}.gsd-chargeable-value{font-size:15px;color:#0c6b39}.gsd-chargeable em{font-style:normal;font-size:11.5px;color:#66736d}
 .gsd-volume-block{grid-template-rows:auto 38px}.gsd-volume-block .gsd-option-add{grid-column:1}.gsd-volume-label{display:flex;align-items:center;gap:6px;min-height:22px}.gsd-volume-block input,.gsd-volume-block select{height:38px;box-sizing:border-box}.gsd-volume-block input,.gsd-volume-block select{height:38px;border:1px solid #cfd8d2;border-radius:8px;background:#fff;padding:8px 10px;font:inherit;font-size:13px;color:#33413b;outline:none;text-transform:uppercase}.gsd-volume-block input:focus,.gsd-volume-block select:focus{box-shadow:inset 0 0 0 2px #00c566}.gsd-plusmini{display:inline-grid;place-items:center;width:17px;height:17px;margin-left:5px;border:0;border-radius:50%;background:#008f4c;color:#fff;font-size:13px;font-weight:900;line-height:1;vertical-align:middle;cursor:pointer}.gsd-option-add{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:5px;align-items:center;padding:6px;border:1px solid #dce7df;border-radius:8px;background:#f7fbf8}.gsd-option-add input{height:30px!important;padding:5px 8px!important;background:#fff!important}.gsd-option-add button{height:30px;border:1px solid #008f4c;border-radius:7px;background:#008f4c;color:#fff;padding:0 9px;font-size:11px;font-weight:800;cursor:pointer}.gsd-option-add button.cancel{border-color:#cfd8d2;background:#fff;color:#33413b}.gsd-record-savebar{display:flex;justify-content:flex-end;min-height:42px;margin:0 0 8px}.gsd-record-savebar .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 16px;background:#008f4c;border-color:#008f4c;color:#fff}.gsd-record-savebar .wb-modal-btn:disabled{opacity:.45;cursor:not-allowed}.gsd-record-hint{min-height:18px;margin:2px 0 8px;color:#c0392b;font-size:11.5px;font-weight:700}
-.gsd-volume-modal .gsd-record-savebar{min-height:34px;margin:0 0 4px}.gsd-volume-modal .gsd-record-hint{min-height:0;margin:0 0 4px}.gsd-volume-modal .gsd-record-history{padding-top:6px}.gsd-volume-modal .gsd-record-table.volume{table-layout:fixed;width:100%}.gsd-volume-modal .gsd-record-table.volume th,.gsd-volume-modal .gsd-record-table.volume td{width:auto;text-align:center}.gsd-volume-modal .gsd-record-table.volume th:first-child,.gsd-volume-modal .gsd-record-table.volume td:first-child{width:72px}.gsd-record-history{border-top:1px solid #e4e9e2;padding-top:14px}.gsd-record-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12.5px}.gsd-record-table th,.gsd-record-table td{border:1px solid #cfd8d2;padding:8px 10px;text-align:center}.gsd-record-table th{background:#eef3ee;color:#33413b;font-family:var(--mono,'Geist Mono',ui-monospace,monospace);font-size:12px;font-weight:700;letter-spacing:.03em}.gsd-record-table td{height:34px;color:#33413b;background:#fff}.gsd-record-table tr.selected td{background:#e8f8ef}.gsd-record-table .empty{height:42px;color:#7a847d;font-weight:700;font-style:italic}.gsd-record-table .applied{color:#0c6b39;font-weight:800}.gsd-record-table .expired{color:#7a847d;font-weight:800}.gsd-record-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.gsd-record-footer .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700}.gsd-record-footer .wb-modal-btn.edit{background:#f6c998;border-color:#f6c998;color:#fff}.gsd-record-footer .wb-modal-btn.cancel{background:#c0392b;border-color:#c0392b;color:#fff}.gsd-record-footer .wb-modal-btn:disabled{opacity:.45;cursor:not-allowed}
+.gsd-volume-modal .gsd-record-savebar{min-height:34px;margin:4px 0 6px}.gsd-volume-modal .gsd-record-hint{min-height:0;margin:0 0 4px}.gsd-volume-modal .gsd-record-history{padding-top:6px}.gsd-volume-modal .gsd-record-table.volume{table-layout:fixed;width:100%}.gsd-volume-modal .gsd-record-table.volume th,.gsd-volume-modal .gsd-record-table.volume td{width:auto;text-align:center}.gsd-volume-modal .gsd-record-table.volume th:first-child,.gsd-volume-modal .gsd-record-table.volume td:first-child{width:72px}.gsd-record-table.volume .volume-total-row td{background:#f1f8f3;color:#0c6b39;font-weight:800}.gsd-record-table.volume .volume-total-row td:first-child{text-align:right}.gsd-record-history{border-top:1px solid #e4e9e2;padding-top:14px}.gsd-record-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12.5px}.gsd-record-table th,.gsd-record-table td{border:1px solid #cfd8d2;padding:8px 10px;text-align:center}.gsd-record-table th{background:#eef3ee;color:#33413b;font-family:var(--mono,'Geist Mono',ui-monospace,monospace);font-size:12px;font-weight:700;letter-spacing:.03em}.gsd-record-table td{height:34px;color:#33413b;background:#fff}.gsd-record-table tr.selected td{background:#e8f8ef}.gsd-record-table .empty{height:42px;color:#7a847d;font-weight:700;font-style:italic}.gsd-record-table .applied{color:#0c6b39;font-weight:800}.gsd-record-table .expired{color:#7a847d;font-weight:800}.gsd-record-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.gsd-record-footer .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700}.gsd-record-footer .wb-modal-btn.edit{background:#f6c998;border-color:#f6c998;color:#fff}.gsd-record-footer .wb-modal-btn.cancel{background:#c0392b;border-color:#c0392b;color:#fff}.gsd-record-footer .wb-modal-btn:disabled{opacity:.45;cursor:not-allowed}
 .gsd-air-fca-ecd-volume-modal{width:780px;max-width:96vw;padding:22px 24px 20px;font:13px/1.4 system-ui,"Segoe UI",Arial,sans-serif}
 .gsd-volume-form.lcl{grid-template-columns:repeat(5,minmax(0,1fr));column-gap:8px;row-gap:0;margin:8px 0 4px}
 .gsd-volume-form.lcl .gsd-volume-block{min-width:0}
 .gsd-volume-form.lcl .gsd-volume-block input,.gsd-volume-form.lcl .gsd-volume-block select{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box}
 .gsd-air-fca-ecd-volume-modal .gsd-volume-form.lcl{grid-template-columns:repeat(5,minmax(0,1fr));column-gap:8px;row-gap:0;margin:8px 0 4px}
 .gsd-air-fca-ecd-volume-modal .gsd-volume-block{min-width:0;margin:0}
-.gsd-air-fca-ecd-volume-modal .gsd-volume-block:nth-child(3),.gsd-air-fca-ecd-volume-modal .gsd-volume-block:nth-child(5){margin-left:20px}
+.gsd-air-fca-ecd-volume-modal .gsd-volume-block:nth-child(3),.gsd-air-fca-ecd-volume-modal .gsd-volume-block:nth-child(5){margin-left:0}
 .gsd-air-fca-ecd-volume-modal .gsd-volume-block input,.gsd-air-fca-ecd-volume-modal .gsd-volume-block select{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box}
 .gsd-air-fca-ecd-volume-modal .gsd-record-savebar{min-height:34px;margin:8px 0 0}
 .gsd-air-fca-ecd-volume-modal .gsd-record-hint{min-height:16px;margin:2px 0 8px;text-align:right}
 .gsd-air-fca-ecd-volume-modal .gsd-record-table th:first-child,.gsd-air-fca-ecd-volume-modal .gsd-record-table td:first-child{width:10%}
 .gsd-air-fca-ecd-volume-modal .gsd-record-table th:not(:first-child),.gsd-air-fca-ecd-volume-modal .gsd-record-table td:not(:first-child){width:30%}
 .gsd-route-modal{width:660px;max-width:94vw;padding:34px 20px 18px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-route-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-route-head{display:flex;align-items:center;gap:6px;margin:0 0 14px;font-size:13px;font-weight:800;color:#0e1512;text-transform:uppercase}.gsd-route-field{display:grid;gap:7px}.gsd-route-field span,.gsd-route-grid span{font-size:11px;font-weight:800;color:#33413b}.gsd-route-input,.gsd-route-grid input{width:100%;height:38px;border:1px solid #d3dacf;border-radius:7px;background:#fff;padding:8px 10px;font:inherit;font-size:12.5px;color:#33413b;outline:none;text-transform:uppercase}.gsd-route-input::placeholder{color:#9aa6a1;text-transform:none}.gsd-route-input:focus,.gsd-route-grid input:focus{box-shadow:inset 0 0 0 2px #00c566}.gsd-route-hint{min-height:20px;margin:8px 0 20px;color:#c0392b;font-size:12px;font-weight:700}.gsd-route-hint.ok{color:#0c6b39}.gsd-route-actions{display:flex;justify-content:flex-end;gap:8px}.gsd-route-actions .wb-modal-btn{height:34px;min-height:34px;border-radius:7px;padding:7px 16px;font-size:12px;font-weight:800}.gsd-route-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-route-actions .primary:disabled{background:#9adfbd;border-color:#9adfbd;color:#fff;opacity:1;cursor:not-allowed}.gsd-route-actions .slate{background:#64748b;border-color:#64748b;color:#fff}.gsd-route-add{display:grid;gap:10px}.gsd-route-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.gsd-route-grid label{display:grid;gap:6px}
-.gsd-route-reference-maintenance .gsd-route-grid{grid-template-columns:repeat(3,minmax(0,1fr)) auto;align-items:end}.gsd-route-reference-maintenance .gsd-route-grid .gsd-route-check{grid-column:4;grid-row:2;justify-items:center;padding:0 6px}.gsd-route-reference-maintenance .gsd-route-grid .gsd-route-check input{width:18px;height:18px;padding:0;margin-bottom:10px;accent-color:#008f4c;cursor:pointer}.gsd-route-actions.add{border-top:1px solid #e4e9e2;margin:4px -20px -18px;padding:12px 18px;background:#fff}
+.gsd-route-grid .gsd-route-check{grid-column:1/-1;display:flex;align-items:center;justify-content:flex-start;gap:10px;min-height:24px;padding:0;margin:0}.gsd-route-grid .gsd-route-check span{line-height:18px}.gsd-route-grid .gsd-route-check input[type=checkbox]{display:block;flex:0 0 18px;width:18px;height:18px;min-width:18px;margin:0;padding:0;border-radius:3px;accent-color:#008f4c;box-shadow:none;cursor:pointer;text-transform:none}.gsd-route-grid .gsd-route-check input[type=checkbox]:focus{box-shadow:0 0 0 2px rgba(0,143,76,.18)}.gsd-route-reference-maintenance .gsd-route-grid{grid-template-columns:repeat(3,minmax(0,1fr)) auto;align-items:end}.gsd-route-reference-maintenance .gsd-route-grid .gsd-route-check{grid-column:4;grid-row:2;justify-content:center;padding:0 6px}.gsd-route-actions.add{border-top:1px solid #e4e9e2;margin:4px -20px -18px;padding:12px 18px;background:#fff}
 .gsd-route-head .gsd-plusmini{width:20px;height:20px;margin-left:0;border-radius:5px;font-size:14px}
 .gsd-route-grid select{width:100%;height:38px;border:1px solid #d3dacf;border-radius:7px;background:#fff;padding:8px 34px 8px 10px;font:inherit;font-size:12.5px;color:#33413b;outline:none;text-transform:uppercase;cursor:pointer}.gsd-route-grid select:focus{border-color:#00c566;box-shadow:inset 0 0 0 2px #00c566}
 .gsd-air-modal.gsd-volume-modal .gsd-volume-label .gsd-plusmini{width:20px;height:20px;border-radius:4px;font-size:14px}
