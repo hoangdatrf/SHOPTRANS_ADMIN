@@ -73,10 +73,6 @@
             <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
             Add Row
           </button>
-          <button v-if="canAddOpsRow()" class="ops-btn" type="button" :disabled="!canCopySelectedOpsRow" @click="copySelectedOpsRow">
-            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            Copy Row
-          </button>
           <button class="ops-btn edit" type="button" :disabled="!canEditSelectedOpsRow" @click="editSelectedOpsRow">
             <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
             Edit
@@ -894,22 +890,22 @@
       <div class="do-info-modal" :class="{ editing: doInfoModal.editing }" role="dialog" aria-modal="true" aria-label="DO information">
         <button class="do-info-x" type="button" aria-label="Close" @click="closeDoInfoModal">×</button>
         <div class="do-info-row">
-          <label class="do-info-choice"><input v-model="doInfoModal.mblEnabled" type="checkbox" :disabled="!doInfoModal.editing || !canManageDoInfo()" @change="toggleDoInfoKind('mbl')" /><span>Upload<br>{{ isAirMode() ? 'MAWB' : 'MBL' }} DO:</span></label>
-          <input v-model="doInfoModal.mblNo" type="text" :placeholder="`${isAirMode() ? 'MAWB' : 'MBL'} DO No#`" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.mblEnabled" />
+          <label class="do-info-choice"><input v-model="doInfoModal.mblEnabled" type="checkbox" :disabled="!doInfoModal.editing || !canManageDoInfo()" @change="toggleDoInfoKind('mbl')" /><span>Upload<br>MBL DO:</span></label>
+          <input v-model="doInfoModal.mblNo" type="text" placeholder="MBL DO No#" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.mblEnabled" />
           <input v-model="doInfoModal.mblDate" type="date" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.mblEnabled" />
-          <button class="gsd-pre-icon upload do-info-upload" :class="{ has: !!doInfoModal.mblFile.name }" type="button" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.mblEnabled" :title="doInfoModal.mblFile.name || `Upload ${isAirMode() ? 'MAWB' : 'MBL'} DO`" @click="chooseDoInfoFile('mbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg></button>
-          <button v-if="doInfoModal.mblFile.dataUrl" class="gsd-pre-icon eye on do-info-view" type="button" :title="`View ${isAirMode() ? 'MAWB' : 'MBL'} DO`" @click="viewDoInfoFile('mbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          <button class="gsd-pre-icon upload do-info-upload" :class="{ has: !!doInfoModal.mblFile.name }" type="button" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.mblEnabled" :title="doInfoModal.mblFile.name || 'Upload MBL DO'" @click="chooseDoInfoFile('mbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg></button>
+          <button v-if="doInfoModal.mblFile.dataUrl" class="gsd-pre-icon eye on do-info-view" type="button" title="View MBL DO" @click="viewDoInfoFile('mbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
           <div class="do-info-validity">
             <label for="do-info-validity">Validity:</label>
             <input id="do-info-validity" v-model="doInfoModal.validity" type="date" :disabled="!doInfoModal.editing || !canManageDoInfo()" />
           </div>
         </div>
         <div class="do-info-row">
-          <label class="do-info-choice"><input v-model="doInfoModal.hblEnabled" type="checkbox" :disabled="!doInfoModal.editing || !canManageDoInfo()" @change="toggleDoInfoKind('hbl')" /><span>{{ isAirMode() ? 'HAWB' : 'HBL' }} DO:</span></label>
-          <input v-model="doInfoModal.hblNo" type="text" :placeholder="`${isAirMode() ? 'HAWB' : 'HBL'} DO No#`" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.hblEnabled" />
+          <label class="do-info-choice"><input v-model="doInfoModal.hblEnabled" type="checkbox" :disabled="!doInfoModal.editing || !canManageDoInfo()" @change="toggleDoInfoKind('hbl')" /><span>HBL DO:</span></label>
+          <input v-model="doInfoModal.hblNo" type="text" placeholder="HBL DO No#" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.hblEnabled" />
           <input v-model="doInfoModal.hblDate" type="date" placeholder="dd/mm/yyyy" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.hblEnabled" />
-          <button class="gsd-pre-icon upload do-info-upload" :class="{ has: !!doInfoModal.hblFile.name }" type="button" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.hblEnabled" :title="doInfoModal.hblFile.name || `Upload ${isAirMode() ? 'HAWB' : 'HBL'} DO`" @click="chooseDoInfoFile('hbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg></button>
-          <button v-if="doInfoModal.hblFile.dataUrl" class="gsd-pre-icon eye on do-info-view" type="button" :title="`View ${isAirMode() ? 'HAWB' : 'HBL'} DO`" @click="viewDoInfoFile('hbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          <button class="gsd-pre-icon upload do-info-upload" :class="{ has: !!doInfoModal.hblFile.name }" type="button" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.hblEnabled" :title="doInfoModal.hblFile.name || 'Upload HBL DO'" @click="chooseDoInfoFile('hbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg></button>
+          <button v-if="doInfoModal.hblFile.dataUrl" class="gsd-pre-icon eye on do-info-view" type="button" title="View HBL DO" @click="viewDoInfoFile('hbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
         <div v-if="canManageDoInfo()" class="do-info-actions">
           <button class="clear" type="button" :disabled="!doInfoHasData()" @click="clearDoInfoModal">Clear</button>
@@ -955,7 +951,6 @@
           'gsd-air-dup-icd-cont-modal': isAirDupIcdContSealModal(),
           'gsd-air-dup-ccd-cont-modal': isAirDupCcdContSealModal(),
           'gsd-truck-cont-modal': isTruckContModal(),
-          'gsd-lcl-trucking-info-modal': isLclTruckingInfoModal(),
           'gsd-fcl-dup-tcd-truck-modal': usesTcdTruckStatusTemplate() && (isFclDduTcdSheet() || (isDapTcdSheet() && opsParts?.mode === 'FCL')),
           'gsd-fcl-dap-tcd-truck-modal': isTruckContModal() && isDapTcdSheet() && opsParts?.mode === 'FCL',
           'gsd-dap-fcd-trucking-detail-modal': isTruckContModal() && isAirSheet() && isDapFcdSheet() && isLclTruckingDetailModal(),
@@ -965,7 +960,6 @@
           'gsd-air-dup-tcd-trucking-status-modal': isAirDupTcdTruckingStatusModal() || isAirDupFcdTruckingStatusModal(),
           'gsd-air-dup-fcd-trucking-status-modal': isAirDupFcdTruckingStatusModal(),
           'gsd-air-pickup-status-modal': isAirSheet() && isLclPickupStatusModal(),
-          'gsd-lcl-icd-pickup-status-modal': isLclSheet() && isDestinationIcdPickupStatusModal(),
           'gsd-bill-modal': isBillApprovalModal() || isBillReleaseModal() || isDoReleaseModal(),
           'gsd-bill-detail-modal': isBillApprovalModal(),
           'gsd-ecd-bill-detail-readonly': isReadonlyExwFclEcdBillDetail(),
@@ -980,7 +974,6 @@
           'gsd-prealert-modal': isPreAlertModal(),
           'gsd-cda-modal': isClearanceDocsModal(),
           'gsd-clr-modal': isClearanceDetailsModal(),
-          'gsd-lcl-clr-modal': isLclClearanceDetailsModal(),
           'gsd-ccd-clr-modal': isClearanceDetailsModal() && opsDeptUpper() === 'CCD',
           'gsd-simple-clr-modal': isSimpleCcdClearanceDetailsModal(),
           'gsd-dup-tcd-clr-modal': isDupTcdClearanceDetailsModal(),
@@ -1263,7 +1256,7 @@
             </div>
           </template>
           <template v-else-if="gsdModal.kind === 'hbl'">
-            <div class="gsd-hbl-title">Is {{ isAirMode() ? 'HAWB' : 'HBL' }} required for this batch?</div>
+            <div class="gsd-hbl-title">Is HBL required for this batch?</div>
             <div class="gsd-hbl-buttons">
               <button class="wb-modal-btn" :class="{ primary: gsdModal.form.required === 'YES' }" type="button" :disabled="!gsdModal.editing" @click="setHblRequired('YES')">YES</button>
               <button class="wb-modal-btn" :class="{ primary: gsdModal.form.required === 'NO' }" type="button" :disabled="!gsdModal.editing" @click="setHblRequired('NO')">NO</button>
@@ -1273,7 +1266,7 @@
               :value="gsdModal.form.hblNo"
               class="gsd-hbl-input"
               type="text"
-              :placeholder="`Enter ${isAirMode() ? 'HAWB' : 'HBL'} NO#`"
+              placeholder="Enter HBL NO#"
               autocomplete="off"
               :disabled="!gsdModal.editing || gsdModal.form.required !== 'YES'"
               @input="uppercaseHblInput"
@@ -1282,7 +1275,7 @@
             <div class="gsd-hbl-hint">{{ gsdModal.form.hint || '' }}</div>
           </template>
           <template v-else-if="isCutoffModal()">
-            <div v-if="!isCcdCutoffModal() && !isGsdModalWorkflowLocked()" class="gsd-cutoff-form">
+            <div v-if="!isCcdCutoffModal()" class="gsd-cutoff-form">
               <div class="gsd-cutoff-block">
                 <div class="gsd-cutoff-label">SI CUTOFF</div>
                 <div class="gsd-cutoff-inputs">
@@ -1298,16 +1291,15 @@
                 </div>
               </div>
             </div>
-            <div v-if="!isCcdCutoffModal() && !isGsdModalWorkflowLocked()" class="gsd-cutoff-savebar">
+            <div v-if="!isCcdCutoffModal()" class="gsd-cutoff-savebar">
               <button class="wb-modal-btn primary" type="button" :disabled="!cutoffHasInput()" @click="saveCutoffRecord">Save</button>
             </div>
-            <div v-if="!isCcdCutoffModal() && !isGsdModalWorkflowLocked()" class="gsd-cutoff-hint">{{ gsdModal.form.hint || '' }}</div>
+            <div v-if="!isCcdCutoffModal()" class="gsd-cutoff-hint">{{ gsdModal.form.hint || '' }}</div>
             <div class="gsd-cutoff-history gsd-five-row-scroll">
               <table class="gsd-cutoff-table">
                 <thead>
                   <tr>
-                    <th>STT</th>
-                    <th colspan="2">SI CUTOFF</th>
+                    <th colspan="3">SI CUTOFF</th>
                     <th colspan="2">{{ isLclSheet() ? 'CFS CUTOFF' : 'CY CUTOFF' }}</th>
                     <th>STATUS</th>
                   </tr>
@@ -1328,30 +1320,30 @@
               </table>
             </div>
             <div class="gsd-cutoff-footer">
-              <button class="wb-modal-btn slate gsd-locked-review-action" type="button" @click="closeGsdModal">Close</button>
+              <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
               <button v-if="!isCcdCutoffModal()" class="wb-modal-btn edit" type="button" :disabled="!gsdModal.form.selectedId" @click="editCutoffRecord">Edit</button>
               <button v-if="!isCcdCutoffModal()" class="wb-modal-btn cancel" type="button" :disabled="!gsdModal.form.selectedId" @click="removeCutoffRecord">Remove</button>
             </div>
           </template>
           <template v-else-if="isVolumeModal()">
-            <div v-if="!isCcdVolumeModal() && !isGsdModalWorkflowLocked()" class="gsd-volume-form" :class="{ lcl: isLclSheet() || isAirMode() }">
+            <div v-if="!isCcdVolumeModal()" class="gsd-volume-form" :class="{ lcl: isLclSheet() }">
               <div class="gsd-volume-block">
                 <div class="gsd-volume-label">VOLUME</div>
                 <input v-model.trim="gsdModal.form.volume" type="number" min="1" step="1" placeholder="Qty" @input="clearRecordHint" />
               </div>
               <div class="gsd-volume-block">
-                <div class="gsd-volume-label">{{ isLclSheet() || isAirMode() ? 'UNIT' : 'TYPE' }} <button class="gsd-plusmini" type="button" @click="startVolumeOption('type')">+</button></div>
+                <div class="gsd-volume-label">{{ isLclSheet() ? 'UNIT' : 'TYPE' }} <button class="gsd-plusmini" type="button" @click="startVolumeOption('type')">+</button></div>
                 <select v-model="gsdModal.form.type" @change="clearRecordHint">
                   <option value="">-- select --</option>
                   <option v-for="option in gsdModal.form.typeOptions" :key="option" :value="option">{{ option }}</option>
                 </select>
                 <div v-if="gsdModal.form.addOption === 'type'" class="gsd-option-add">
-                  <input v-model.trim="gsdModal.form.newOption" type="text" :placeholder="isLclSheet() || isAirMode() ? 'New UNIT' : 'New TYPE'" @input="uppercaseVolumeOption" @keydown.enter.prevent="saveVolumeOption" />
+                  <input v-model.trim="gsdModal.form.newOption" type="text" :placeholder="isLclSheet() ? 'New UNIT' : 'New TYPE'" @input="uppercaseVolumeOption" @keydown.enter.prevent="saveVolumeOption" />
                   <button type="button" @click="saveVolumeOption">Add</button>
                   <button type="button" class="cancel" @click="cancelVolumeOption">Cancel</button>
                 </div>
               </div>
-              <template v-if="isLclSheet() || isAirMode()">
+              <template v-if="isLclSheet()">
                 <div class="gsd-volume-block">
                   <div class="gsd-volume-label">G.W</div>
                   <input v-model.trim="gsdModal.form.gw" type="number" min="0" step="any" placeholder="Weight" @input="clearRecordHint" />
@@ -1381,26 +1373,24 @@
                 </div>
               </div>
             </div>
-            <div v-if="!isCcdVolumeModal() && !isGsdModalWorkflowLocked()" class="gsd-record-savebar">
+            <div v-if="!isCcdVolumeModal()" class="gsd-record-savebar">
               <button class="wb-modal-btn primary" type="button" :disabled="!volumeHasInput()" @click="saveVolumeRecord">Save</button>
             </div>
-            <div v-if="!isCcdVolumeModal() && !isGsdModalWorkflowLocked() && gsdModal.form.hint" class="gsd-record-hint" :class="{ editing: !!gsdModal.form.editId }">{{ gsdModal.form.hint }}</div>
+            <div v-if="!isCcdVolumeModal()" class="gsd-record-hint" :class="{ editing: !!gsdModal.form.editId }">{{ gsdModal.form.hint || '' }}</div>
             <div class="gsd-record-history gsd-five-row-scroll">
               <table class="gsd-record-table volume">
                 <thead>
-                  <tr v-if="isAirMode()"><th>ORDER</th><th>VOLUME</th><th>G.W</th><th>MEA.(CBM)</th><th>CHARGEABLE WEIGHT</th></tr>
-                  <tr v-else-if="isLclSheet() && isCcdVolumeModal()"><th>ORDER</th><th>VOLUME</th><th>G.WEIGHT</th><th>MEA</th></tr>
+                  <tr v-if="isLclSheet() && isCcdVolumeModal()"><th>ORDER</th><th>VOLUME</th><th>G.WEIGHT</th><th>MEA</th></tr>
                   <tr v-else-if="isLclSheet()"><th>ORDER</th><th>VOLUME</th><th>G.W</th><th>MEA.(CBM)</th></tr>
                   <tr v-else><th>ORDER</th><th>VOLUME</th><th>TYPE</th><th>PURPOSE</th></tr>
                 </thead>
                 <tbody>
                   <tr v-for="(item, index) in volumeRecords()" :key="item.id" :class="{ selected: !isReadonlyTcdVolumeModal() && gsdModal.form.selectedId === item.id }" @click="!isReadonlyTcdVolumeModal() && selectRecord(item.id)">
                     <td>{{ index + 1 }}</td>
-                    <template v-if="isLclSheet() || isAirMode()">
+                    <template v-if="isLclSheet()">
                       <td>{{ `${item.volume || ''} ${item.type || ''}`.trim() }}</td>
                       <td>{{ item.gw ? `${item.gw} ${item.gwUnit || ''}`.trim() : '—' }}</td>
                       <td>{{ item.mea ? `${item.mea} CBM` : '—' }}</td>
-                      <td v-if="isAirMode()">{{ `${formatVolumeNumber(airVolumeRecordChargeableWeight(item))} KGS` }}</td>
                     </template>
                     <template v-else>
                       <td>{{ item.volume }}</td>
@@ -1408,12 +1398,12 @@
                       <td>{{ item.purpose }}</td>
                     </template>
                   </tr>
-                  <tr v-if="!volumeRecords().length"><td :colspan="isAirMode() ? 5 : 4" class="empty">No volume saved yet</td></tr>
+                  <tr v-if="!volumeRecords().length"><td colspan="4" class="empty">No volume saved yet</td></tr>
                 </tbody>
               </table>
             </div>
             <div class="gsd-record-footer">
-              <button class="wb-modal-btn slate gsd-locked-review-action" type="button" @click="closeGsdModal">Close</button>
+              <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
               <button v-if="!isCcdVolumeModal()" class="wb-modal-btn edit" type="button" :disabled="!gsdModal.form.selectedId" @click="editVolumeRecord">{{ gsdModal.form.editId ? 'Editing...' : 'Edit' }}</button>
               <button v-if="!isCcdVolumeModal()" class="wb-modal-btn cancel" type="button" :disabled="!gsdModal.form.selectedId" @click="removeVolumeRecord">Remove</button>
             </div>
@@ -1455,7 +1445,7 @@
           </template>
           <template v-else-if="isRouteModal()">
             <div v-if="gsdModal.form.view !== 'add'" class="gsd-route-search">
-              <div class="gsd-route-head">ROUTE <button class="gsd-plusmini gsd-route-reference-add" type="button" title="Add new route" @click="showRouteAdd">+</button></div>
+              <div class="gsd-route-head">ROUTE <button v-if="gsdModal.editing" class="gsd-plusmini" type="button" title="Add new route" @click="showRouteAdd">+</button></div>
               <label class="gsd-route-field">
                 <span>Route</span>
                 <input
@@ -1478,7 +1468,7 @@
                 <button v-if="gsdModal.editing" class="wb-modal-btn primary" type="button" :disabled="!gsdModal.form.routeOk" @click="saveRouteSelection">Save</button>
               </div>
             </div>
-            <div v-else class="gsd-route-add gsd-route-reference-maintenance">
+            <div v-else class="gsd-route-add">
               <div class="gsd-route-grid">
                 <label><span>POL</span><input v-model.trim="gsdModal.form.pol" type="text" @input="uppercaseRouteAdd('pol')" /></label>
                 <label><span>COUNTRY/AREA</span><select v-model="gsdModal.form.polC" @change="uppercaseRouteAdd('polC')"><option value="">Select country/area</option><option v-for="country in routeCountryOptions" :key="`route-pol-${country}`" :value="country">{{ country }}</option></select></label>
@@ -1522,7 +1512,7 @@
             </div>
           </template>
           <template v-else-if="isVesselModal()">
-            <div v-if="!isGsdModalWorkflowLocked()" class="gsd-vessel-main">
+            <div class="gsd-vessel-main">
               <label>
                 <span>Search Vessel:</span>
                 <input
@@ -1553,10 +1543,10 @@
                 />
               </label>
             </div>
-            <datalist v-if="!isGsdModalWorkflowLocked()" id="gsd-vessel-options">
+            <datalist id="gsd-vessel-options">
               <option v-for="vessel in availableVesselOptions()" :key="vessel.name" :value="vessel.name">IMO {{ vessel.imo }}</option>
             </datalist>
-            <div v-if="isExwEcdVesselDelayModal() && !isGsdModalWorkflowLocked()" class="gsd-vdelay">
+            <div v-if="isExwEcdVesselDelayModal()" class="gsd-vdelay">
               <label class="gsd-vdtog" :class="{ disabled: vesselTranshipmentDisabled() }"><input v-model="gsdModal.form.transhipmentToggle" type="checkbox" :disabled="vesselTranshipmentDisabled()" @change="toggleVesselTranshipment" /> Transhipment</label>
               <div v-if="gsdModal.form.transhipmentToggle" class="gsd-vdbox">
                 <label><span>ETD:</span><button class="gsd-vessel-date" type="button" :disabled="vesselTsDetailsLocked()" @click="openVesselDatePopup('tsEtd', $event)"><span :class="{ placeholder: !gsdModal.form.tsEtd }">{{ cutoffDateLabel(gsdModal.form.tsEtd) }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button></label>
@@ -1572,12 +1562,12 @@
               </div>
               <label class="gsd-vapall" :class="{ disabled: isExwEcdVesselControlsDisabled() }"><input v-model="gsdModal.form.applyAll" type="checkbox" :disabled="isExwEcdVesselControlsDisabled()" /> Apply to all shipments on the same vessel &amp; voyage</label>
             </div>
-            <div v-if="!isGsdModalWorkflowLocked()" class="gsd-vessel-actions">
+            <div class="gsd-vessel-actions">
               <button v-if="isExwEcdVesselDelayModal() && Number(gsdModal.form.selectedHistoryOrder) > 0" class="wb-modal-btn primary vessel-update" type="button" :disabled="!vesselDelayCanUpdate()" @click="updateVesselDelay">Update</button>
               <button v-if="gsdModal.editing && Number(gsdModal.form.selectedHistoryOrder) <= 0 && !gsdModal.form.addLocked" class="wb-modal-btn vessel-add-new" type="button" :disabled="vesselAddInProgress()" @click="showVesselAdd">Add New</button>
               <button v-if="gsdModal.editing && Number(gsdModal.form.selectedHistoryOrder) <= 0" class="wb-modal-btn primary orange vessel-select" type="button" :disabled="!vesselCanSelect()" @click="selectVessel">Select</button>
             </div>
-            <div v-if="gsdModal.form.addView && !isGsdModalWorkflowLocked()" class="gsd-vessel-add">
+            <div v-if="gsdModal.form.addView" class="gsd-vessel-add">
               <div class="gsd-vessel-add-grid">
                 <label>
                   <span>Vessel Name:</span>
@@ -1828,14 +1818,14 @@
                 </colgroup>
                 <colgroup v-else-if="isAirDcdTruckingModal()">
                   <col v-if="!isReadonlyTruckContModal()" style="width:40px" />
-                  <col style="width:52px" />
+                  <col style="width:60px" />
                   <col style="width:110px" />
-                  <col style="width:170px" />
-                  <col style="width:170px" />
-                  <col style="width:112px" />
-                  <col style="width:88px" />
-                  <col style="width:112px" />
-                  <col style="width:88px" />
+                  <col style="width:260px" />
+                  <col style="width:280px" />
+                  <col style="width:140px" />
+                  <col style="width:130px" />
+                  <col style="width:140px" />
+                  <col style="width:130px" />
                 </colgroup>
                 <colgroup v-else>
                   <col v-if="!isReadonlyTruckContModal()" style="width:40px" />
@@ -1978,7 +1968,7 @@
                       <td><input v-model="record.pickupDate" class="prs-date" type="date" :disabled="isAirDupFcdTruckingStatusModal() || !gsdModal.editing" /></td>
                       <td><input v-model="record.arrivingTime" class="prs-date" type="time" :disabled="isAirDupFcdTruckingStatusModal() || !gsdModal.editing" /></td>
                       <td class="epodcell">
-                        <button v-if="isAirDupFcdTruckingStatusModal()" class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign, epodUrl: record.epodUrl })"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                        <button v-if="isAirDupFcdTruckingStatusModal()" class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign })"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
                         <span v-else class="roval" :class="{ 'ro-empty': !record.epodSign }">{{ record.epodSign || '' }}</span>
                       </td>
                     </tr>
@@ -2009,7 +1999,7 @@
                       <td class="prs-days">{{ pickupReturnDaysAfterAta(record) }}</td>
                       <td><input :value="record.pickupDate" class="prs-date" type="date" disabled /></td>
                       <td class="epodcell">
-                        <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign, epodUrl: record.epodUrl })">
+                        <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign })">
                           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>
                       </td>
@@ -2022,23 +2012,19 @@
             <template v-else-if="isDestinationIcdPickupStatusModal()">
               <div class="gsd-prs-table-wrap gsd-five-row-scroll">
                 <table class="gsd-prs-table gsd-icd-pickup-status-table">
-                  <colgroup v-if="isLclSheet()">
-                    <col style="width:52px" /><col style="width:132px" /><col style="width:116px" /><col style="width:112px" />
-                    <col style="width:90px" /><col style="width:122px" /><col style="width:132px" /><col style="width:70px" />
-                  </colgroup>
                   <thead>
                     <tr>
                       <th>ORDER</th>
                       <th>PU NO#</th>
                       <th>Truck Comp</th>
-                      <th v-if="!isLclSheet()">Container No#</th>
-                      <th v-if="!isLclSheet()">ContType</th>
-                      <th v-if="!isLclSheet()">Seal No#</th>
+                      <th>Container No#</th>
+                      <th>ContType</th>
+                      <th>Seal No#</th>
                       <th>Driver info</th>
                       <th>Days after ATA</th>
                       <th>Pickup Date</th>
                       <th>Est. Arriving time</th>
-                      <th v-if="!isLclSheet()">Return Date</th>
+                      <th>Return Date</th>
                       <th>ePOD Sign</th>
                     </tr>
                   </thead>
@@ -2047,21 +2033,21 @@
                       <td class="prs-order">{{ index + 1 }}</td>
                       <td><button class="gsd-pu-link" type="button" @click="openPickupReturnPuDetail(record, index)">{{ truckPuNumber(index) }}</button></td>
                       <td class="prs-readonly">{{ record.truckCompany || '—' }}</td>
-                      <td v-if="!isLclSheet()" class="prs-readonly">{{ record.containerNo || '—' }}</td>
-                      <td v-if="!isLclSheet()" class="prs-readonly">{{ record.contType || '—' }}</td>
-                      <td v-if="!isLclSheet()" class="prs-readonly">{{ record.sealNo || '—' }}</td>
+                      <td class="prs-readonly">{{ record.containerNo || '—' }}</td>
+                      <td class="prs-readonly">{{ record.contType || '—' }}</td>
+                      <td class="prs-readonly">{{ record.sealNo || '—' }}</td>
                       <td class="prs-readonly">{{ record.driverInfo || '—' }}</td>
                       <td class="prs-days">{{ pickupReturnDaysAfterAta(record) }}</td>
                       <td class="prs-readonly">{{ cutoffDateLabel(record.pickupDate) }}</td>
                       <td class="prs-readonly">{{ record.arrivingTime || '—' }}</td>
-                      <td v-if="!isLclSheet()" class="prs-readonly">{{ cutoffDateLabel(record.returnDate) }}</td>
+                      <td class="prs-readonly">{{ cutoffDateLabel(record.returnDate) }}</td>
                       <td class="epodcell">
-                        <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign, epodUrl: record.epodUrl })">
+                        <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign })">
                           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>
                       </td>
                     </tr>
-                    <tr v-if="!pickupReturnRecords().length"><td :colspan="isLclSheet() ? 8 : 12" class="prs-empty">No truck data.</td></tr>
+                    <tr v-if="!pickupReturnRecords().length"><td colspan="12" class="prs-empty">No truck data.</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -2116,7 +2102,7 @@
                     <td v-if="isDupTruckingStatusModal()" class="prs-readonly">{{ record.arrivingTime || record.estimatedArrivingTime || '' }}</td>
                     <td v-if="!isLclPickupStatusModal() && !isDupTruckingStatusModal()" class="prs-date-cell"><button class="prs-date-field" type="button" :disabled="!pickupReturnRowCanEdit(record)" @click.stop="openPickupReturnDatePopup(index, 'returnDate', $event)"><span>{{ cutoffDateLabel(record.returnDate) }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button></td>
                     <td v-if="isDupTruckingStatusModal()" class="epodcell">
-                      <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign, epodUrl: record.epodUrl })">
+                      <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign })">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
                       </button>
                     </td>
@@ -2191,17 +2177,17 @@
                   <div class="gsd-release-rows">
                     <div class="gsd-release-row">
                       <input v-model="gsdModal.form.mdo" type="checkbox" :disabled="!gsdModal.editing || !billReleasePaymentReady()" @change="syncDoReleaseTimestamp('mdo')" />
-                      <span>{{ isAirMode() ? 'MAWB' : 'MBL' }} DO:</span>
-                      <input v-model.trim="gsdModal.form.mdoAt" class="gsd-release-auto-date" type="text" readonly :title="`Automatically generated when ${isAirMode() ? 'MAWB' : 'MBL'} DO is selected`" />
-                      <button class="gsd-release-icon" :class="{ has: !!(gsdModal.form.mblFile?.url || gsdModal.form.mblFile?.name) }" type="button" :disabled="!gsdModal.editing || !billReleasePaymentReady() || !gsdModal.form.mdo" :title="gsdModal.form.mblFile?.name ? `Uploaded: ${gsdModal.form.mblFile.name}` : `Upload ${isAirMode() ? 'MAWB' : 'MBL'} DO file`" @click="billReleaseFileInput?.click()"><svg viewBox="0 0 24 24"><path d="M12 16V5M8 9l4-4 4 4"/><path d="M5 18.5h14"/></svg></button>
+                      <span>MBL DO:</span>
+                      <input v-model.trim="gsdModal.form.mdoAt" class="gsd-release-auto-date" type="text" readonly title="Automatically generated when MBL DO is selected" />
+                      <button class="gsd-release-icon" :class="{ has: !!(gsdModal.form.mblFile?.url || gsdModal.form.mblFile?.name) }" type="button" :disabled="!gsdModal.editing || !billReleasePaymentReady() || !gsdModal.form.mdo" :title="gsdModal.form.mblFile?.name ? `Uploaded: ${gsdModal.form.mblFile.name}` : 'Upload MBL DO file'" @click="billReleaseFileInput?.click()"><svg viewBox="0 0 24 24"><path d="M12 16V5M8 9l4-4 4 4"/><path d="M5 18.5h14"/></svg></button>
                       <button class="gsd-release-eye" :class="{ on: !!gsdModal.form.mblFile?.url }" type="button" :disabled="!gsdModal.form.mblFile?.url" :title="gsdModal.form.mblFile?.name ? `View ${gsdModal.form.mblFile.name}` : 'No uploaded file'" @click="viewBillDetailFile(gsdModal.form.mblFile)"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
                       <label class="do-validity-label" for="do-release-validity">Validity:</label>
                       <input id="do-release-validity" v-model="gsdModal.form.validity" class="do-validity-date" type="date" :disabled="!gsdModal.editing || !billReleasePaymentReady() || !gsdModal.form.mdo" />
                     </div>
                     <div class="gsd-release-row">
                       <input v-model="gsdModal.form.hdo" type="checkbox" :disabled="!gsdModal.editing || !billReleasePaymentReady()" @change="syncDoReleaseTimestamp('hdo')" />
-                      <span>{{ isAirMode() ? 'HAWB' : 'HBL' }} DO:</span>
-                      <input v-model.trim="gsdModal.form.hdoAt" class="gsd-release-auto-date" type="text" readonly :title="`Automatically generated when ${isAirMode() ? 'HAWB' : 'HBL'} DO is selected`" />
+                      <span>HBL DO:</span>
+                      <input v-model.trim="gsdModal.form.hdoAt" class="gsd-release-auto-date" type="text" readonly title="Automatically generated when HBL DO is selected" />
                       <button class="wb-modal-btn release-export" type="button" :disabled="!billReleasePaymentReady() || !gsdModal.form.hdo" @click="openDeliveryOrderDocument">Export</button>
                     </div>
                   </div>
@@ -2234,8 +2220,8 @@
             </template>
             <template v-else-if="isReadonlyExwFclEcdBillDetail()">
               <div class="gsd-bill-form gsd-bill-readonly">
-                <div class="gsd-bill-row"><span>{{ isAirMode() ? 'MAWB' : 'MBL' }} APPROVED</span><input v-model="gsdModal.form.mbl" type="checkbox" disabled /><input v-model.trim="gsdModal.form.mblAt" type="text" readonly /></div>
-                <div v-if="currentRowRequiresHbl()" class="gsd-bill-row"><span>{{ isAirMode() ? 'HAWB' : 'HBL' }} APPROVED</span><input v-model="gsdModal.form.hbl" type="checkbox" disabled /><input v-model.trim="gsdModal.form.hblAt" type="text" readonly /></div>
+                <div class="gsd-bill-row"><span>MBL APPROVED</span><input v-model="gsdModal.form.mbl" type="checkbox" disabled /><input v-model.trim="gsdModal.form.mblAt" type="text" readonly /></div>
+                <div v-if="currentRowRequiresHbl()" class="gsd-bill-row"><span>HBL APPROVED</span><input v-model="gsdModal.form.hbl" type="checkbox" disabled /><input v-model.trim="gsdModal.form.hblAt" type="text" readonly /></div>
                 <div v-for="file in gsdModal.form.files || []" :key="file.name" class="gsd-bill-file"><span>{{ file.name }}</span><button type="button" class="gsd-pre-icon eye on" title="View attachment" @click="viewBillDetailFile(file)">◉</button></div>
                 <div v-if="currentRowRequiresHbl()" class="gsd-bill-exports"><button type="button" class="wb-modal-btn primary" @click="exportBillDetailPdf('B/L')">Export B/L</button><button type="button" class="wb-modal-btn primary" @click="exportBillDetailPdf('FCR')">Export FCR</button></div>
               </div>
@@ -2243,12 +2229,12 @@
             <template v-else>
             <div class="gsd-bill-form">
               <div class="gsd-bill-row">
-                <span>{{ isBillReleaseModal() ? `${isAirMode() ? 'MAWB' : 'MBL'} RELEASED` : `${isAirMode() ? 'MAWB' : 'MBL'} APPROVED` }}</span>
+                <span>{{ isBillReleaseModal() ? 'MBL RELEASED' : 'MBL APPROVED' }}</span>
                 <input v-model="gsdModal.form.mbl" type="checkbox" :disabled="!gsdModal.editing" @change="syncBillTimestamp('mbl')" />
                 <input v-model.trim="gsdModal.form.mblAt" type="text" readonly placeholder="yyyy/mm/dd hh:mm" />
               </div>
               <div v-if="isAwbDetailModal() || isAwbReleaseModal() || currentRowRequiresHbl()" class="gsd-bill-row">
-                <span>{{ isBillReleaseModal() ? `${isAirMode() ? 'HAWB' : 'HBL'} RELEASED` : `${isAirMode() ? 'HAWB' : 'HBL'} APPROVED` }}</span>
+                <span>{{ isBillReleaseModal() ? 'HBL RELEASED' : 'HBL APPROVED' }}</span>
                 <input v-model="gsdModal.form.hbl" type="checkbox" :disabled="!gsdModal.editing" @change="syncBillTimestamp('hbl')" />
                 <input v-model.trim="gsdModal.form.hblAt" type="text" readonly placeholder="yyyy/mm/dd hh:mm" />
               </div>
@@ -2397,7 +2383,6 @@
             <div class="gsd-cda-addbar">
               <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing" @click="addClearanceOtherDoc">Add+</button>
             </div>
-            <div class="gsd-cda-scroll">
             <table class="gsd-cda-table">
               <colgroup>
                 <col />
@@ -2438,12 +2423,11 @@
                     </span>
                   </td>
                   <td class="cda-act">
-                    <button v-if="doc.custom" class="cda-rm" type="button" :disabled="!gsdModal.editing" :title="gsdModal.editing ? 'Remove' : 'Click Edit to remove this document'" @click.stop="removeClearanceOtherDoc(doc.key)">×</button>
+                    <button v-if="doc.custom && clearanceDocs().filter((item) => item.custom).length > 1 && gsdModal.editing" class="cda-rm" type="button" title="Remove" @click="removeClearanceOtherDoc(doc.key)">×</button>
                   </td>
                 </tr>
               </tbody>
             </table>
-            </div>
             <div class="gsd-cda-actions">
               <button class="wb-modal-btn slate" type="button" @click="cancelClearanceDocs">Cancel All</button>
               <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || !clearanceDocsAnyChecked()" @click="enableClearanceDocsEdit">Edit</button>
@@ -2453,43 +2437,7 @@
           </template>
           <template v-else-if="isClearanceDetailsModal()">
             <div class="gsd-clr-title">{{ isDupCcdClearanceDetailsModal() ? 'CLEARANCE DETAIL' : 'CLEARANCE DETAILS' }}</div>
-            <div v-if="isLclClearanceDetailsModal()" class="gsd-clr-scroll gsd-lcl-clr-scroll">
-              <table class="gsd-clr-table gsd-lcl-clr-table">
-                <colgroup>
-                  <col style="width:34px" /><col style="width:48px" /><col style="width:58px" />
-                  <col style="width:72px" /><col style="width:76px" /><col style="width:86px" /><col style="width:164px" />
-                </colgroup>
-                <thead><tr>
-                  <th class="clr-allcell"><input type="checkbox" :checked="allClearanceRowsSelected()" :disabled="isClearanceViewOnly()" @change="toggleAllClearanceRows" /></th>
-                  <th>Order</th><th>Qty</th><th>Unit</th><th>Gross W.</th><th>Measurement</th>
-                  <th class="clr-declhead"><span class="clr-dcap"><span>Declaration</span><button v-if="!isClearanceViewOnly()" class="clr-plus" :class="{ dim: !allClearanceRowsSelected() }" type="button" title="Link All Items to One CDS No" @click="addClearanceDeclarationToAll">+</button></span></th>
-                </tr></thead>
-                <tbody>
-                  <tr v-for="(row, index) in clearanceRows()" :key="row.key">
-                    <td class="clr-allcell"><input v-model="gsdModal.form.selected[row.key]" type="checkbox" :disabled="isClearanceViewOnly()" /></td>
-                    <td class="clr-ro">{{ index + 1 }}</td><td class="clr-ro">{{ row.qty || '-' }}</td>
-                    <td class="clr-ro">{{ row.unit || '-' }}</td><td class="clr-ro">{{ row.gw || '-' }}</td><td class="clr-ro">{{ row.mea || '-' }}</td>
-                    <td class="clr-declcell">
-                      <div class="clr-declwrap" :class="{ viewonly: isClearanceViewOnly() }">
-                        <div v-for="decl in clearanceDeclarationsFor(row.key)" :key="decl.id" class="clr-declrow">
-                          <template v-if="decl.editing && !isClearanceViewOnly()">
-                            <input v-model.trim="decl.no" class="clr-din" :class="{ 'clr-baderr': decl.bad }" placeholder="Enter CDS No" @input="decl.bad = false" />
-                            <button class="clr-tick" type="button" title="Confirm" @click="confirmClearanceDeclaration(decl.id)">✓</button>
-                          </template>
-                          <button v-else class="clr-link" :class="{ 'clr-link-red': decl.result === 'Inspected' }" type="button" @click="toggleClearancePanel(decl.id)">
-                            <b>{{ decl.no || '(no number)' }}</b><span class="clr-dots"><span v-for="n in 4" :key="n" class="clr-dot" :class="{ on: n <= clearanceDotCount(decl) }"></span></span>
-                          </button>
-                        </div>
-                        <div v-if="!isClearanceViewOnly()" class="clr-dcapbox"><button class="clr-plus" :class="{ dim: allClearanceRowsSelected() }" type="button" title="Assign item to CDS No" @click="addClearanceDeclaration(row.key)">+</button></div>
-                        <span v-if="isClearanceViewOnly() && !clearanceDeclarationsFor(row.key).length" class="roval ro-empty">-</span>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr v-if="!clearanceRows().length"><td colspan="7" class="clr-empty">No MASTER SI SUBMIT data.</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <div v-else-if="isSimpleCcdClearanceDetailsModal()" class="gsd-clr-scroll simple">
+            <div v-if="isSimpleCcdClearanceDetailsModal()" class="gsd-clr-scroll simple">
               <table class="gsd-clr-table gsd-clr-simple-table">
                 <thead>
                   <tr>
@@ -2647,28 +2595,29 @@
                 </tbody>
               </table>
             </div>
-            <div class="gsd-clr-panels">
+            <div v-if="!isReadonlyFullClearanceDetailModal()" class="gsd-clr-panels">
               <div v-for="decl in openClearanceDeclarations()" :key="decl.id" class="clr-panel">
                 <div class="clr-phead"><span>DECLARATION: <b>{{ decl.no || '' }}</b></span><button type="button" class="clr-pclose" @click="toggleClearancePanel(decl.id)">×</button></div>
                 <div class="clr-prow">
-                  <label class="clr-fld"><span>Declaration number</span><input v-model.trim="decl.no" type="text" :readonly="decl.locked || isClearanceViewOnly()" /></label>
-                  <label class="clr-fld"><span>Date</span><input v-model="decl.date" type="date" :disabled="decl.locked || isClearanceViewOnly()" /></label>
+                  <label class="clr-fld"><span>Declaration number</span><input v-model.trim="decl.no" type="text" :readonly="decl.locked" /></label>
+                  <label class="clr-fld"><span>Date</span><span v-if="isDupTcdClearanceDetailsModal()" class="roval" :class="{ 'ro-empty': !decl.date }">{{ formatCutoffDate(decl.date) || '-' }}</span><input v-else v-model="decl.date" type="date" :disabled="decl.locked" /></label>
                   <div class="clr-fld result">
                     <span>Result</span>
-                    <div class="clr-res">
-                      <button type="button" class="clr-rchip" :class="{ 'on-green': decl.result === 'Not inspected' }" :disabled="decl.locked || isClearanceViewOnly()" @click="decl.result = 'Not inspected'">Not inspected</button>
-                      <button type="button" class="clr-rchip" :class="{ 'on-red': decl.result === 'Inspected' }" :disabled="decl.locked || isClearanceViewOnly()" @click="decl.result = 'Inspected'">ⓘ Inspected</button>
+                    <span v-if="isDupTcdClearanceDetailsModal()" class="roval" :class="{ 'ro-empty': !decl.result }">{{ decl.result || '-' }}</span>
+                    <div v-else class="clr-res">
+                      <button type="button" class="clr-rchip" :class="{ 'on-green': decl.result === 'Not inspected' }" :disabled="decl.locked" @click="decl.result = 'Not inspected'">Not inspected</button>
+                      <button type="button" class="clr-rchip" :class="{ 'on-red': decl.result === 'Inspected' }" :disabled="decl.locked" @click="decl.result = 'Inspected'">ⓘ Inspected</button>
                     </div>
                   </div>
                 </div>
                 <div class="clr-steps">
-                  <label class="clr-step"><input v-model="decl.tax" type="checkbox" :disabled="isClearanceViewOnly() || decl.locked" @change="stampClearanceStep(decl, 'tax')" /><span>Tax paid</span><em>{{ decl.taxAt }}</em></label>
-                  <label class="clr-step"><input v-model="decl.fee" type="checkbox" :disabled="isClearanceViewOnly() || decl.locked" @change="stampClearanceStep(decl, 'fee')" /><span>Fee paid</span><em>{{ decl.feeAt }}</em></label>
-                  <label class="clr-step" :class="{ dim: !decl.tax || !decl.fee }"><input v-model="decl.cleared" type="checkbox" :disabled="isClearanceViewOnly() || decl.locked || !decl.tax || !decl.fee" @change="stampClearanceStep(decl, 'cleared')" /><span>Customs cleared</span><em>{{ decl.clearedAt }}</em></label>
-                  <label class="clr-step" :class="{ dim: !decl.cleared }"><input v-model="decl.docs" type="checkbox" :disabled="isClearanceViewOnly() || decl.locked || !decl.cleared" @change="stampClearanceStep(decl, 'docs')" /><span>Documents returned</span><em>{{ decl.docsAt }}</em></label>
+                  <label class="clr-step" :class="{ dim: isDupTcdClearanceDetailsModal() }"><input v-model="decl.tax" type="checkbox" :disabled="isDupTcdClearanceDetailsModal() || decl.locked" @change="stampClearanceStep(decl, 'tax')" /><span>Tax paid</span><em>{{ decl.taxAt }}</em></label>
+                  <label class="clr-step" :class="{ dim: isDupTcdClearanceDetailsModal() }"><input v-model="decl.fee" type="checkbox" :disabled="isDupTcdClearanceDetailsModal() || decl.locked" @change="stampClearanceStep(decl, 'fee')" /><span>Fee paid</span><em>{{ decl.feeAt }}</em></label>
+                  <label class="clr-step" :class="{ dim: isDupTcdClearanceDetailsModal() || !decl.tax || !decl.fee }"><input v-model="decl.cleared" type="checkbox" :disabled="isDupTcdClearanceDetailsModal() || decl.locked || !decl.tax || !decl.fee" @change="stampClearanceStep(decl, 'cleared')" /><span>Customs cleared</span><em>{{ decl.clearedAt }}</em></label>
+                  <label class="clr-step" :class="{ dim: isDupTcdClearanceDetailsModal() || !decl.cleared }"><input v-model="decl.docs" type="checkbox" :disabled="isDupTcdClearanceDetailsModal() || decl.locked || !decl.cleared" @change="stampClearanceStep(decl, 'docs')" /><span>Documents returned</span><em>{{ decl.docsAt }}</em></label>
                 </div>
-                <div v-if="!isClearanceViewOnly() && (!decl.tax || !decl.fee)" class="clr-warn">Tax and Fee must be checked before Customs cleared.</div>
-                <div v-if="!isClearanceViewOnly()" class="clr-pfoot">
+                <div v-if="!isDupTcdClearanceDetailsModal() && (!decl.tax || !decl.fee)" class="clr-warn">Tax and Fee must be checked before Customs cleared.</div>
+                <div v-if="!isDupTcdClearanceDetailsModal()" class="clr-pfoot">
                   <button class="wb-modal-btn slate" type="button" @click="removeClearanceDeclaration(decl.id)">Clear</button>
                   <button class="wb-modal-btn edit" type="button" :disabled="!decl.locked" @click="decl.locked = false">Edit</button>
                   <button class="wb-modal-btn primary" type="button" :disabled="!clearanceDeclarationCanSave(decl)" @click="saveClearanceDeclaration(decl)">Save</button>
@@ -3023,7 +2972,6 @@
                 <div class="an-detail-g2"><label><span>Notify Party</span><textarea v-model="gsdModal.form.notify" :disabled="!gsdModal.editing" rows="2"></textarea></label><div class="an-detail-field"><span>Received Freetime <em>(from Pre-Alert Confirmation)</em></span><div class="an-detail-freetime"><b>DEM</b><input v-model="gsdModal.form.dem" readonly placeholder="-" /><b>DET</b><input v-model="gsdModal.form.det" readonly placeholder="-" /></div></div></div>
                 <div class="an-detail-g3"><label><span>Vessel/Voyage</span><input v-model="gsdModal.form.vessel" readonly /></label><label><span>ETA</span><input v-model="gsdModal.form.eta" type="date" :disabled="!gsdModal.editing" @change="syncArrivalNoticeEta" /></label><label><span>B/L No.</span><input v-model="gsdModal.form.blNo" readonly /></label></div>
                 <div class="an-detail-g2"><label><span>Port of Loading</span><input v-model="gsdModal.form.pol" readonly /></label><label><span>Port of Discharge</span><input v-model="gsdModal.form.pod" readonly /></label></div>
-                <div v-if="isLclSheet()" class="an-detail-warehouse"><label><span>Warehouse CFS</span><input v-model.trim="gsdModal.form.warehouseCfs" list="an-cfs-warehouses" :disabled="!gsdModal.editing" autocomplete="off" placeholder="Type to filter..." @input="applyArrivalWarehouse(false)" @change="applyArrivalWarehouse(true)" /><datalist id="an-cfs-warehouses"><option v-for="warehouse in arrivalCfsWarehouseOptions" :key="warehouse.value" :value="warehouse.value">{{ warehouse.label }}</option></datalist></label><label><span>Full Address</span><input v-model="gsdModal.form.warehouseAddress" readonly /></label></div>
                 <div class="an-detail-section">Container &amp; Seal Information</div>
                 <table class="an-detail-table an-container-table"><thead><tr><th>#</th><th>ContNo#</th><th>ContType</th><th>SealNo#</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th></tr></thead><tbody><tr v-if="gsdModal.form.asPerBl"><td>1</td><td><input value="As per B/L" disabled /></td><td></td><td><input value="As per B/L" disabled /></td><td><input v-model="gsdModal.form.conts[0].qty" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="gsdModal.form.conts[0].unit" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="gsdModal.form.conts[0].gw" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="gsdModal.form.conts[0].mea" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td></tr><template v-else><tr v-for="(item, index) in gsdModal.form.conts" :key="item.key || index"><td>{{ index + 1 }}</td><td><input v-model="item.contNo" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.contType" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.sealNo" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.qty" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.unit" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.gw" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.mea" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td></tr><tr v-if="!gsdModal.form.conts.length"><td colspan="8" class="empty">No container data</td></tr></template></tbody></table>
                 <div class="an-detail-section">Description of Goods</div>
@@ -3402,16 +3350,6 @@
                   <td :contenteditable="!billDocModal.locked" class="num" @blur="setBillDocField('grossWeight', $event)">{{ billDocValue('grossWeight') }}</td>
                   <td :contenteditable="!billDocModal.locked" class="num" @blur="setBillDocField('measurement', $event)">{{ billDocValue('measurement') }}</td>
                 </tr>
-              </tbody>
-            </table>
-            <div class="bill-container-title">Container &amp; Seal Information</div>
-            <table class="bill-container-table">
-              <thead><tr><th>#</th><th>ContNo#</th><th>ContType</th><th>SealNo#</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th></tr></thead>
-              <tbody>
-                <tr v-for="(container, index) in billDocModal.containers" :key="container.id || index">
-                  <td>{{ index + 1 }}</td><td>{{ container.contNo || '—' }}</td><td>{{ container.contType || '—' }}</td><td>{{ container.sealNo || '—' }}</td><td>{{ container.qty || '—' }}</td><td>{{ container.unit || '—' }}</td><td>{{ container.gw || '—' }}</td><td>{{ container.mea || '—' }}</td>
-                </tr>
-                <tr v-if="!billDocModal.containers?.length"><td colspan="8" class="bill-container-empty">No container data</td></tr>
               </tbody>
             </table>
             <table class="bgrid bill-summary-grid" style="margin-top:6px">
@@ -4403,9 +4341,6 @@ type VolumeRecord = {
   volume: number
   type: string
   purpose: string
-  gw?: string
-  gwUnit?: string
-  mea?: string
 }
 type FreetimeRecord = {
   id: string
@@ -4470,7 +4405,7 @@ type TruckDriverRecord = {
   htrailer: string
   active: string
 }
-type ClearanceRow = { key: string; type: string; purpose: string; containerNo: string; sealNo: string; qty?: string; unit?: string; gw?: string; mea?: string }
+type ClearanceRow = { key: string; type: string; purpose: string; containerNo: string; sealNo: string }
 type ClearanceDeclaration = {
   id: string
   rowKeys: string[]
@@ -4502,7 +4437,6 @@ type PickupReturnRecord = {
   driverInfo?: string
   arrivingTime?: string
   epodSign?: string
-  epodUrl?: string
 }
 const emptyGsdForm = (fields: GsdFormField[]) => fields.reduce((acc, field) => {
   acc[field.key] = field.type === 'checkbox' ? false : field.type === 'select' ? field.options?.[0] || '' : ''
@@ -4718,7 +4652,7 @@ let epodStatusTimer: ReturnType<typeof setInterval> | null = null
 const routeDirectory = ref<RouteRecord[]>([])
 const vesselDirectory = ref<VesselRecord[]>([])
 const transhipmentPlaceOptions = ref<string[]>([])
-type PickupReferenceOption = { value: string, label: string, city?: string, ward?: string, type?: string, address?: string }
+type PickupReferenceOption = { value: string, label: string, city?: string, ward?: string, type?: string }
 const pickupPostalOptions = ref<PickupReferenceOption[]>([])
 const pickupPortOptions = ref<PickupReferenceOption[]>([])
 const pickupWarehouseOptions = ref<PickupReferenceOption[]>([])
@@ -4747,7 +4681,7 @@ const paymentHistoryPicker = reactive<any>({ open: false, row: -1, sourceColumn:
 let clientSearchRun = 0
 const preAlertFileTarget = ref('')
 const billExportMenuOpen = ref(false)
-const billDocModal = reactive<any>({ open: false, readonly: false, isRelease: false, exportingPdf: false, billType: 'ORIGINAL B/L', kind: 'B/L', company: 'TX LOGISTICS VIETNAM CO.,LTD', copySi: false, locked: false, attachments: 0, savedAt: '', signedAt: '', docNo: '', refNo: '', shipper: '', consignee: '', notify: '', notifyBackup: '', sameAsConsignee: false, preCarriage: '', receipt: '', vessel: '', pol: '', pod: '', delivery: '', marks: '', packages: '', goodsDescription: '', grossWeight: '', measurement: '', containers: [], freightCharges: '', freightPayableAt: '', originalCount: '', placeOfIssue: '', dateOfIssue: '', shippedOnBoardDate: '' })
+const billDocModal = reactive<any>({ open: false, readonly: false, isRelease: false, exportingPdf: false, billType: 'ORIGINAL B/L', kind: 'B/L', company: 'TX LOGISTICS VIETNAM CO.,LTD', copySi: false, locked: false, attachments: 0, savedAt: '', signedAt: '', docNo: '', refNo: '', shipper: '', consignee: '', notify: '', notifyBackup: '', sameAsConsignee: false, preCarriage: '', receipt: '', vessel: '', pol: '', pod: '', delivery: '', marks: '', packages: '', goodsDescription: '', grossWeight: '', measurement: '', freightCharges: '', freightPayableAt: '', originalCount: '', placeOfIssue: '', dateOfIssue: '', shippedOnBoardDate: '' })
 const deliveryOrderModal = reactive<any>({ open: false, editing: false, exporting: false, form: {} })
 const billDocRouteFields = [
   { key: 'preCarriage', label: 'PRE-CARRIAGE BY' }, { key: 'receipt', label: 'PLACE OF RECEIPT' },
@@ -5403,9 +5337,8 @@ const loadPickupReferenceData = async () => {
       const code = upperText(data.portcode || data.code || '')
       const name = upperText(data.whname || data.name || '')
       const type = upperText(data.whtype || data.warehouseType || data.type || '')
-      const address = String(data.fulladdress || data.fullAddress || data.address || '').trim()
       const label = name && code ? `${name} (${code})` : name || code
-      return { value: label, label, type, address }
+      return { value: label, label, type }
     }).filter((item: PickupReferenceOption) => item.value && !warehouseSeen.has(`${item.type}:${item.value}`) && !!warehouseSeen.add(`${item.type}:${item.value}`))
       .sort((a: PickupReferenceOption, b: PickupReferenceOption) => a.label.localeCompare(b.label))
     pickupReferencesLoaded = true
@@ -6902,63 +6835,10 @@ const canDeleteSelectedOpsRows = computed(() => {
   if (!isOpsPage.value || !canManageManualOpsRows() || opsEditingRow.value || !opsSelectedRows.value.size) return false
   return [...opsSelectedRows.value].every((row) => isManualOpsRow(row))
 })
-const canCopySelectedOpsRow = computed(() =>
-  isOpsPage.value && canAddOpsRow() && !opsEditingRow.value && opsSelectedRows.value.size === 1,
-)
 const editSelectedOpsRow = () => {
   if (!canEditSelectedOpsRow.value) return
   const row = [...opsSelectedRows.value][0]
   opsEditingRow.value = { row, isNew: false, snapshot: rows.value[row].slice() }
-}
-
-const copiedOpsSummaryLabels = new Set([
-  'BC NO#', 'HBL NO#', 'HAWB NO#', 'MBL NO#', 'MAWB NO#', 'VOLUME', 'ROUTE', 'VESSEL/VOYAGE', 'VESSEL NAME',
-])
-const copyVisibleOpsCell = (sourceRow: number, column: number) => {
-  const label = normalizedHeaderLabel(column)
-  const value = rows.value[sourceRow]?.[column]
-  if (isCheckboxCell(sourceRow, column) || isStampedOpsCheckboxColumn(column)) return ''
-  if (isClientLinkColumn(column) || label === 'CLIENT') return clientCellText(value)
-  if (gsdButtonLabels.includes(label) && !copiedOpsSummaryLabels.has(label)) return ''
-  if (value && typeof value === 'object') return ''
-  const raw = String(value ?? '').trim()
-  if (!raw) return ''
-  if (raw.startsWith('{') || raw.startsWith('[')) {
-    if (label === 'VOLUME') return volumeSummaryText(value)
-    const displayed = String(displayCell(value, sourceRow, column) ?? '').trim()
-    return displayed && !displayed.startsWith('{') && !displayed.startsWith('[') ? displayed : ''
-  }
-  return value
-}
-const copySelectedOpsRow = async () => {
-  if (!canCopySelectedOpsRow.value) return
-  const sourceRow = [...opsSelectedRows.value][0]
-  await loadOpsStaff()
-  if (requiresRowConfirmation() && !(await askRowConfirm('add'))) return
-
-  const copiedRow = makeBlankWorkbookRow()
-  const generatedLabels = new Set(['TIME', 'JOB NO#', 'REF#', 'BU', 'SALES', 'MODE'])
-  ;(rows.value[0] || []).forEach((_, column) => {
-    if (!generatedLabels.has(normalizedHeaderLabel(column))) copiedRow[column] = copyVisibleOpsCell(sourceRow, column)
-  })
-  const modeColumn = headerIndexOf(['MODE'])
-  if (modeColumn >= 0) copiedRow[modeColumn] = 'MANU'
-
-  rows.value.push(copiedRow)
-  const row = rows.value.length - 1
-  const links = { ...(settings.value.opsRowLinks || {}) }
-  if (opsDeptUpper() === 'GSD') links[String(row)] = newOpsShipmentLink()
-  else delete links[String(row)]
-  const creators = {
-    ...(settings.value.opsRowCreators || {}),
-    [String(row)]: String(props.currentUser?.displayName || props.currentUser?.username || '').trim(),
-  }
-  settings.value = { ...settings.value, opsRowLinks: links, opsRowCreators: creators }
-  markManualOpsRow(row)
-  opsEditingRow.value = { row, isNew: true, snapshot: copiedRow.slice() }
-  opsSelectedRows.value = new Set()
-  sortBy.value = 'new'
-  activeStatus.value = 'active'
 }
 
 const addRow = async () => {
@@ -8351,7 +8231,7 @@ const unmergeCells = () => {
 const formatHeaderLabel = (value: any) => {
   const label = String(value ?? '').replace(/\s+/g, ' ').trim()
   if (!label || label !== label.toUpperCase()) return label
-  const keepUpper = new Set(['ID', 'ICD', 'ECD', 'TCD', 'CCD', 'DCD', 'FCD', 'OPS', 'HBL', 'MBL', 'HAWB', 'MAWB', 'AWB', 'BL', 'GP', 'HC'])
+  const keepUpper = new Set(['ID', 'ICD', 'ECD', 'TCD', 'CCD', 'DCD', 'FCD', 'OPS', 'HBL', 'MBL', 'BL', 'GP', 'HC'])
   return label
     .split(/(\s+|\/|-)/)
     .map((part) => {
@@ -8365,11 +8245,7 @@ const formatHeaderLabel = (value: any) => {
     .join('')
 }
 const headerLabel = (column: number) => {
-  let label = formatHeaderLabel(rows.value[0]?.[column])
-  if (isAirMode()) {
-    if (label.toUpperCase() === 'HBL NO#') label = 'HAWB NO#'
-    if (label.toUpperCase() === 'MBL NO#') label = 'MAWB NO#'
-  }
+  const label = formatHeaderLabel(rows.value[0]?.[column])
   return label.toUpperCase() === 'BILL APPROVAL' ? 'BILL DETAIL' : label
 }
 const normalizedHeaderLabel = (column: number) => {
@@ -8378,8 +8254,6 @@ const normalizedHeaderLabel = (column: number) => {
     'EXW+': 'EFA+',
     'ORIGIN AGENT': 'ORIGINAL AGENT',
     'CUT OFF DETAIL': 'CUT OFF DETAILS',
-    // AIR shows HAWB NO# but must follow the same logic as HBL NO# in FCL/LCL.
-    'HAWB NO#': 'HBL NO#',
   }
   return aliases[label] || label
 }
@@ -8416,7 +8290,6 @@ const isFcaFcdSheet = () => opsParts.value?.type === 'FCA' && opsParts.value?.de
 // AIR and LCL admin mockups are byte-identical for every corresponding tab.
 // Keep one behavior/visual path while preserving their separate sheet keys.
 const isAirSheet = () => ['AIR', 'LCL'].includes(String(opsParts.value?.mode || ''))
-const isAirMode = () => String(opsParts.value?.mode || '').toUpperCase() === 'AIR'
 const isFcfEcdSheet = () => opsParts.value?.type === 'FCF' && opsParts.value?.dept === 'ECD'
 const isAirPartyAddSheet = () =>
   isAirSheet() && (isExwEcdSheet() || isFcaEcdSheet() || isFcfEcdSheet() || isDoIcdSheet() || isDapIcdSheet() || isDupIcdSheet())
@@ -8727,8 +8600,7 @@ const defaultDropdownOptionsFor = (column: number) => {
   if (['OPS', 'OPS1', 'OPS2'].includes(label) || /^(GSD|ECD|ICD|TCD|CCD|DCD|FCD) OPS$/.test(label)) return ['', ...departmentStaff]
   if (label === 'TERM') return ['FCL', 'LCL', 'AIR']
   if (['EFA+', 'EXW+', 'FCA+', 'FCF+'].includes(label)) return ['—', 'DO', 'DAP', 'DDU', 'DDP']
-  if (isLclSheet() && label === 'DO+') return ['', 'EXW', 'FCA', 'FCF']
-  if (isLclSheet() && label === 'DUP+') return ['', 'DAP', 'DDU']
+  if (isLclSheet() && ['DO+', 'DUP+'].includes(label)) return ['', 'DAP', 'DDU']
   if (['DO+', 'DAP+', 'DDU+', 'DDP+', 'DUP+'].includes(label)) return ['', 'EXW', 'FCA', 'FCF']
   if (label === 'TYPE') return ['EXW', 'FCA', 'FOB', 'CIF', 'D/O', 'DUP', 'DAP', 'DDP']
   if (label.includes('FREETIME TYPE')) return ['COMBINED', 'DETENTION', 'DEMURRAGE']
@@ -8819,17 +8691,14 @@ const missingEcdBcSentFields = (row: number) => {
   const header = rows.value[0] || []
   return ecdBcSentRequiredFields.flatMap((field) => {
     const column = header.findIndex((_, index) => field.aliases.includes(normalizedHeaderLabel(index)))
-    const fieldName = isAirMode() && field.name === 'HBL NO#' ? 'HAWB NO#'
-      : isAirMode() && field.name === 'MBL NO#' ? 'MAWB NO#'
-        : field.name
-    if (column < 0) return [fieldName]
+    if (column < 0) return [field.name]
     const actualLabel = normalizedHeaderLabel(column)
-    return requiredEcdCellHasValue(actualLabel, rows.value[row]?.[column]) ? [] : [fieldName]
+    return requiredEcdCellHasValue(actualLabel, rows.value[row]?.[column]) ? [] : [field.name]
   })
 }
 const isStampedOpsCheckboxDisabled = (row: number, column: number) => {
   if (isExwFclGsdSentEcdColumn(column)) {
-    return isOpsEditingRow(row) || isSentEcdLocked(rows.value[row]?.[column]) || !gsdDispatchPrerequisitesComplete(row)
+    return isSentEcdLocked(rows.value[row]?.[column]) || !gsdDispatchPrerequisitesComplete(row)
   }
   if (isExwFclEcdBcSentColumn(column)) {
     return isBcSentLocked(rows.value[row]?.[column]) || missingEcdBcSentFields(row).length > 0
@@ -8945,7 +8814,6 @@ const uniqueDropdownOptions = (values: any[], includeBlank = false) => {
   return hasBlank ? ['', ...result] : result
 }
 const dropdownOptions = (column: number) => {
-  if (isLclSheet() && normalizedHeaderLabel(column) === 'DO+') return ['', 'EXW', 'FCA', 'FCF']
   const formatOptions = Array.isArray(columnFormatOf(column).options) ? columnFormatOf(column).options as string[] : []
   const stored = settings.value.dropdownOptions || {}
   const storedOptions = stored[opsColumnOptionKey(column)] || stored[String(column)]
@@ -8991,9 +8859,7 @@ const formButtonLabels = [
   'MASTER SI SUBMIT',
   'BC NO#',
   'HBL NO#',
-  'HAWB NO#',
   'MBL NO#',
-  'MAWB NO#',
   'CUT OFF DETAILS',
   'CUT OFF DETAIL',
   'CUTOFF DETAIL',
@@ -9148,9 +9014,7 @@ const toggleDoInfoKind = (kind: 'mbl' | 'hbl') => {
 }
 const clearDoInfoModal = async () => {
   if (!canManageDoInfo() || !doInfoHasData() || doInfoModal.row < 1 || doInfoModal.column < 0) return
-  const masterLabel = isAirMode() ? 'MAWB' : 'MBL'
-  const houseLabel = isAirMode() ? 'HAWB' : 'HBL'
-  if (!(await askConfirm(`Clear all ${masterLabel} DO and ${houseLabel} DO information?`, 'Clear DO information'))) return
+  if (!(await askConfirm('Clear all MBL DO and HBL DO information?', 'Clear DO information'))) return
   rows.value[doInfoModal.row][doInfoModal.column] = ''
   mirrorFclLinkedCell(doInfoModal.row, doInfoModal.column)
   for (const dept of fclLinkedRecipients()) void mirrorExwFclWorkflowCell(dept, 'DO VALIDITY', '', doInfoModal.row)
@@ -9221,7 +9085,7 @@ const isGsdActionButtonColumn = (column: number) =>
   // Its ownership can be read-only (CCD), but that must not downgrade it to a
   // generic text cell.
   (normalizedHeaderLabel(column) === 'BC NO#' || !isExwCcdPlainTextColumn(column)) &&
-  !['MBL NO#', 'MAWB NO#'].includes(normalizedHeaderLabel(column)) &&
+  normalizedHeaderLabel(column) !== 'MBL NO#' &&
   !isDoInfoCell(1, column) &&
   gsdButtonLabels.includes(normalizedHeaderLabel(column))
 const isGsdActionButtonCell = (row: number, column: number) => {
@@ -9229,11 +9093,11 @@ const isGsdActionButtonCell = (row: number, column: number) => {
   const label = normalizedHeaderLabel(column)
   // MBL NO# is always maintained as an inline free-text value on the grid.
   // It must never fall back to the legacy generic form modal.
-  if (['MBL NO#', 'MAWB NO#'].includes(label)) return false
+  if (label === 'MBL NO#') return false
   if (isStandaloneManualOpsRow(row) && gsdButtonLabels.includes(label)) return true
   if (opsParts.value?.mode === 'FCL' && isExwEcdSheet() && label === 'CUTOFF DETAIL') return true
   // AIR origin and ICD mockups keep HBL available before assignment.
-  if (isAirPartyAddSheet() && ['HBL NO#', 'HAWB NO#'].includes(label)) return true
+  if (isAirPartyAddSheet() && label === 'HBL NO#') return true
   // Other downstream AIR/LCL views render HBL only after data has arrived.
   if (isLclSheet() && label === 'HBL NO#') {
     return !!String(rows.value[row]?.[column] ?? '').trim()
@@ -9316,7 +9180,7 @@ const emailCellDisplayValue = (label: string, value: any) => {
     if (vessel?.name) return vessel.voyage ? `${vessel.name} / ${vessel.voyage}` : vessel.name
   }
   if (normalized === 'VOLUME') return volumeSummaryText(value).replace(/\n+/g, '; ')
-  if (['HBL NO#', 'HAWB NO#'].includes(normalized)) {
+  if (normalized === 'HBL NO#') {
     const parsed = parseJsonCell(value, null as any)
     const form = parsed && typeof parsed === 'object' && 'form' in parsed ? parsed.form || {} : parsed || {}
     if (upperText(form.required) === 'NO') return ''
@@ -9385,7 +9249,6 @@ const gsdActionButtonText = (row: number, column: number) => {
   if (opsParts.value?.type === 'DO' && opsParts.value?.dept === 'ICD' && label === 'DO RELEASE') return 'DETAIL'
   if (label === 'BC DETAIL') return 'DETAIL'
   if (label === 'ARRIVAL NOTICE DETAIL') return 'DETAIL'
-  if (isLclSheet() && opsDeptUpper() === 'ICD' && ['DELIVERY DETAIL', 'DELIVERY DETAILS'].includes(label) && isCrossLinkedImportRow(row)) return 'DETAIL'
   if (isFclDduTcdSheet() && label === 'DELIVERY DETAIL') return String(rows.value[row]?.[column] || '').trim() ? 'DETAIL' : 'ADD+'
   if (isFclDduTcdSheet() && label === 'CLEARANCE DETAIL') return 'DETAIL'
   if (['DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && opsParts.value?.dept === 'FCD' && ['DELIVERY DETAIL', 'TRUCK & CONT/SEAL INFO'].includes(label)) return 'DETAIL'
@@ -9437,7 +9300,7 @@ const gsdActionButtonText = (row: number, column: number) => {
   if (label === 'CLEARANCE DOCS APPROVAL') return clearanceDocsSaved(rows.value[row]?.[column]) ? 'DETAIL' : 'ADD+'
   if (isDapLikeTcdSheet() && (label === 'CLEARANCE DETAIL' || label === 'CLEARANCE DETAILS' || label === 'CUSTOMS CLEARANCE DETAILS')) return 'DETAIL'
   if (label === 'CLEARANCE DETAIL' || label === 'CLEARANCE DETAILS' || label === 'CUSTOMS CLEARANCE DETAILS') return clearanceDetailsSaved(rows.value[row]?.[column]) ? 'DETAIL' : 'ADD+'
-  if (['HBL NO#', 'HAWB NO#'].includes(label)) {
+  if (label === 'HBL NO#') {
     const raw = String(rows.value[row]?.[column] ?? '').trim()
     const parsed = parseJsonCell(raw, null as any)
     const hbl = parsed && typeof parsed === 'object' && 'form' in parsed ? String((parsed as any).form?.hblNo || '').trim() : ''
@@ -9447,7 +9310,7 @@ const gsdActionButtonText = (row: number, column: number) => {
     if (raw && raw !== 'N/A' && !raw.startsWith('{')) return raw
     if (raw === 'N/A') return isAirSheet() && isDapIcdSheet() ? 'ADD+' : 'N/A'
   }
-  if (['MBL NO#', 'MAWB NO#'].includes(label)) {
+  if (label === 'MBL NO#') {
     const value = String(rows.value[row]?.[column] ?? '').trim()
     return value || 'ADD+'
   }
@@ -9487,7 +9350,7 @@ const isPlainDocumentValue = (row: number, column: number) => {
   }
   if (label === 'VESSEL/VOYAGE' || label === 'VESSEL NAME') return !!vesselFromCellValue(rows.value[row]?.[column])
   if (label === 'FREETIME CONFIRMATION') return !!freetimeSummaryText(rows.value[row]?.[column])
-  if (['HBL NO#', 'HAWB NO#'].includes(label)) {
+  if (label === 'HBL NO#') {
     const text = gsdActionButtonText(row, column)
     return !!text && !['ADD+', 'DETAIL'].includes(text)
   }
@@ -9604,9 +9467,6 @@ const gsdModalTitleFor = (label: string) => {
     'SI SUBMIT': 'SI SUBMIT',
     'MASTER SI SUBMIT': 'MASTER SI SUBMIT',
     'HBL NO#': 'HBL NO#',
-    'HAWB NO#': 'HAWB NO#',
-    'MBL NO#': 'MBL NO#',
-    'MAWB NO#': 'MAWB NO#',
     'CUT OFF DETAILS': 'CUT OFF DETAILS',
     'CUT OFF DETAIL': 'CUT OFF DETAIL',
     'CUTOFF DETAIL': 'CUTOFF DETAIL',
@@ -10495,12 +10355,12 @@ const gsdFormFieldsFor = (label: string): GsdFormField[] => {
     { key: 'noteToFcd', label: 'Note to FCD', type: 'textarea' },
     { key: 'debitReady', label: 'Debit / Invoice readiness', type: 'checkbox', checkLabel: 'Ready' },
   ]
-  if (['HBL NO#', 'HAWB NO#'].includes(label)) return [
-    { key: 'required', label: `Is ${isAirMode() ? 'HAWB' : 'HBL'} required?`, type: 'select', options: ['', 'YES', 'NO'] },
-    { key: 'hblNo', label: `${isAirMode() ? 'HAWB' : 'HBL'} No#` },
+  if (label === 'HBL NO#') return [
+    { key: 'required', label: 'Is HBL required?', type: 'select', options: ['', 'YES', 'NO'] },
+    { key: 'hblNo', label: 'HBL No#' },
   ]
-  if (['MBL NO#', 'MAWB NO#'].includes(label)) return [
-    { key: 'mblNo', label: `${isAirMode() ? 'MAWB' : 'MBL'} No#` },
+  if (label === 'MBL NO#') return [
+    { key: 'mblNo', label: 'MBL No#' },
   ]
   if (['CUT OFF DETAILS', 'CUT OFF DETAIL', 'CUTOFF DETAIL'].includes(label)) return [
     { key: 'siDate', label: 'SI CUTOFF Date', type: 'date' },
@@ -10527,10 +10387,10 @@ const gsdFormFieldsFor = (label: string): GsdFormField[] => {
   if (label === 'BILL RELEASE' || label === 'AWB RELEASE') return []
   if (label === 'PRE-ALERT SENDING') return []
   if (label === 'PRE-ALERT CONFIRMATION') return [
-    { key: 'mblConfirmed', label: `${isAirMode() ? 'MAWB' : 'MBL'} CONFIRMED`, type: 'checkbox' },
-    { key: 'hblConfirmed', label: `${isAirMode() ? 'HAWB' : 'HBL'} CONFIRMED`, type: 'checkbox' },
-    { key: 'mblReleased', label: `${isAirMode() ? 'MAWB' : 'MBL'} RELEASED`, type: 'checkbox' },
-    { key: 'hblReleased', label: `${isAirMode() ? 'HAWB' : 'HBL'} RELEASED`, type: 'checkbox' },
+    { key: 'mblConfirmed', label: 'MBL CONFIRMED', type: 'checkbox' },
+    { key: 'hblConfirmed', label: 'HBL CONFIRMED', type: 'checkbox' },
+    { key: 'mblReleased', label: 'MBL RELEASED', type: 'checkbox' },
+    { key: 'hblReleased', label: 'HBL RELEASED', type: 'checkbox' },
     { key: 'dem', label: 'DEM' },
     { key: 'det', label: 'DET' },
   ]
@@ -10829,7 +10689,7 @@ const openGsdModal = async (row: number, column: number) => {
   const hasValue = String(rawValue || '').trim() !== ''
   gsdModal.row = row
   gsdModal.column = column
-  gsdModal.kind = label === 'EXTRA SERVICE' ? 'extra' : clientLinkLabels.includes(label) ? 'client' : label === 'DEALT INFO' ? 'dealt' : (label === 'REMINDER' || label === 'NOTICE') ? 'reminder' : ['HBL NO#', 'HAWB NO#'].includes(label) ? 'hbl' : formButtonLabels.includes(label) ? 'form' : 'generic'
+  gsdModal.kind = label === 'EXTRA SERVICE' ? 'extra' : clientLinkLabels.includes(label) ? 'client' : label === 'DEALT INFO' ? 'dealt' : (label === 'REMINDER' || label === 'NOTICE') ? 'reminder' : label === 'HBL NO#' ? 'hbl' : formButtonLabels.includes(label) ? 'form' : 'generic'
   gsdModal.title = label === 'DEALT INFO' ? 'Dealt info' : (label === 'REMINDER' || label === 'NOTICE') ? 'Notice' : gsdModalTitleFor(label)
   gsdModal.label = label === 'CLIENT' ? 'Client detail' : label === 'DEALT INFO' ? 'Inquiry / cost / quote / remarks' : (label === 'REMINDER' || label === 'NOTICE') ? '' : 'Details'
   // Assign the complete modal identity before mounting it. Opening first briefly
@@ -11045,8 +10905,7 @@ const openGsdModal = async (row: number, column: number) => {
           }
         }
         pickupInvalidFields.value = new Set()
-        // Downstream pickup views remain read-only. TCD owns Delivery Details
-        // for LCL/AIR, so those forms must stay editable until they are sent.
+        // AIR/LCL mockups lock downstream pickup views and the DAP/DUP delivery detail views.
         gsdModal.editing = lclReadonlyPickup || (isDeliveryDetailsModal() && isReadonlyDeliveryDetailsModal())
           ? false
           : !gsdModal.form.sent
@@ -11058,17 +10917,6 @@ const openGsdModal = async (row: number, column: number) => {
         gsdModal.formFields = []
         const linkedValue = isReadonlyCcdDduContSealModal() ? await linkedCcdContSealValue(row, rawText) : rawText
         gsdModal.form = doContSealFormFromCell(linkedValue)
-        if (isLinkedLclImportContSealModal(row)) {
-          const masterContainers = await loadLinkedExportMasterSiContainers(row)
-          gsdModal.form.records = masterContainers.map((item: any, index: number) => normalizeDoContSealRecord({
-            key: item?.key || `LCL-MASTER-SI-${index}`,
-            type: item?.contType || '',
-            purpose: '',
-            container: item?.contNo || '',
-            seal: item?.sealNo || '',
-          }))
-          gsdModal.form.linkedMasterSi = true
-        }
         gsdModal.form.originalRecordsSignature = doContSealRecordsSignature()
         const linkedReadonly = isReadonlyDoContSealModal()
         gsdModal.editing = !linkedReadonly
@@ -11164,12 +11012,6 @@ const openGsdModal = async (row: number, column: number) => {
         }
         gsdModal.editing = label === 'ARRIVAL NOTICE SENDING' && !gsdModal.form.locked
         restoreOpsScroll()
-        if (isLclSheet()) {
-          void loadPickupReferenceData().then(() => {
-            if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
-            applyArrivalWarehouse(false)
-          })
-        }
         // Arrival Notice can render immediately. Reference lists are ancillary
         // and should not block or replace the document view while they load.
         void loadPaymentReferenceOptions().then(() => {
@@ -11247,9 +11089,6 @@ const openGsdModal = async (row: number, column: number) => {
         const linkedClearanceValue = isDupTcdClearanceDetailsModal() ? await linkedTcdClearanceValue(row, rawText) : rawText
         if (linkedClearanceValue !== rawText && String(linkedClearanceValue || '').trim()) rows.value[row][column] = linkedClearanceValue
         gsdModal.form = clearanceDetailsFormFromCell(linkedClearanceValue)
-        if (isLclClearanceDetailsModal()) {
-          gsdModal.form.linkedMasterSiValue = await linkedLclMasterSiValue(row, rawSiSourceValue('MASTER SI SUBMIT') || rawSiSourceValue('SI SUBMIT'))
-        }
         if (isDupCcdClearanceDetailsModal()) {
           gsdModal.form.linkedContSealValue = await linkedCcdContSealValue(row, rowValueByHeader('CONT/SEAL INFO'))
         }
@@ -11268,7 +11107,7 @@ const openGsdModal = async (row: number, column: number) => {
             ? { done: !!((parsed as any).validity || (parsed as any).mblDate || (parsed as any).hblDate), date: String((parsed as any).validity || (parsed as any).mblDate || (parsed as any).hblDate || '').slice(0, 10), remarks: '' }
             : {}
         gsdModal.form = { ...emptyGsdForm(fields), ...savedForm }
-        if (['MBL NO#', 'MAWB NO#'].includes(label) && rawText && !rawText.trim().startsWith('{')) gsdModal.form.mblNo = rawText.trim()
+        if (label === 'MBL NO#' && rawText && !rawText.trim().startsWith('{')) gsdModal.form.mblNo = rawText.trim()
       }
       // The Excel structure files are authoritative for inbound/locked
       // columns. Keep every corresponding modal in read-only mode even when
@@ -12150,32 +11989,17 @@ const isFclDduTcdSheet = () =>
   opsParts.value?.mode === 'FCL' && ['DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.dept === 'TCD'
 const isFclDduTcdDeliveryDetailModal = () => isDeliveryDetailsModal() && isFclDduTcdSheet()
 const isDduTcdDeliveryDetailsModal = () => isDeliveryDetailsModal() && isDupTcdSheet()
-const isReadonlyDeliveryDetailsModal = () => !isStandaloneManualOpsRow(gsdModal.row) && isDeliveryDetailsModal() && (
-  isDapIcdSheet() ||
-  isDapFcdSheet() ||
-  isDupIcdOrCcdSheet() ||
-  isDupFcdSheet() ||
-  (isDupTcdSheet() && !isFclDduTcdSheet() && !isLclSheet() && !isAirSheet())
-)
+const isReadonlyDeliveryDetailsModal = () => !isStandaloneManualOpsRow(gsdModal.row) && isDeliveryDetailsModal() && (isDapIcdSheet() || isDapFcdSheet() || isDupIcdOrCcdSheet() || isDupFcdSheet() || (isDupTcdSheet() && !isFclDduTcdSheet()))
 const isPickupModal = () => isGsdFormModalLabel('PICKUP DETAIL', 'PICKUP DETAILS', 'DELIVERY DETAIL', 'DELIVERY DETAILS')
 const isExwFcaSheet = () => ['EXW', 'FCA', 'FCF'].includes(upperText(String(opsParts.value?.type || '')))
 const isExwFcaPickupModal = () => isPickupModal() && !isDeliveryDetailsModal() && isExwFcaSheet()
 const isDoContSealModal = () => (isDoSheet() || isDapSheet() || isDupSheet()) && isGsdFormModalLabel('CONT/SEAL INFO')
 const isAirDoIcdContSealModal = () => isAirSheet() && (isDoIcdSheet() || isDapIcdSheet()) && isDoContSealModal()
 const isAirDupIcdContSealModal = () => isAirSheet() && isDupIcdSheet() && isDoContSealModal()
-const isAirDupCcdContSealModal = () => isAirSheet() && isDupCcdSheet() && isDoContSealModal() &&
-  (!isLclSheet() || isLinkedLclImportContSealModal())
-const isCrossLinkedImportRow = (row = gsdModal.row) => {
-  if (row < 1 || !['DO', 'DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type))) return false
-  if (settings.value?.crossServiceInboundRows?.[String(row)]) return true
-  const flowColumn = (rows.value[0] || []).findIndex((_, index) => normalizedHeaderLabel(index) === `${upperText(opsParts.value?.type)}+`)
-  return flowColumn >= 0 && ['EXW', 'FCA', 'FCF'].includes(upperText(rows.value[row]?.[flowColumn]))
-}
-const isLinkedLclImportContSealModal = (row = gsdModal.row) =>
-  isLclSheet() && isDoContSealModal() && isCrossLinkedImportRow(row)
+const isAirDupCcdContSealModal = () => isAirSheet() && isDupCcdSheet() && isDoContSealModal()
 const isCcdDduDdpFlow = () =>
   opsDeptUpper() === 'CCD' && ['DDU', 'DDP'].includes(upperText(opsParts.value?.type))
-const isReadonlyCcdDduContSealModal = () => isDoContSealModal() && isCcdDduDdpFlow() && (!isLclSheet() || isLinkedLclImportContSealModal())
+const isReadonlyCcdDduContSealModal = () => isDoContSealModal() && isCcdDduDdpFlow()
 const linkedCcdContSealValue = async (row: number, fallback: any) => {
   const parsed = opsParts.value
   if (!parsed || !isCcdDduDdpFlow()) return fallback
@@ -12307,8 +12131,7 @@ const linkedOriginContSealHasData = () => {
     String(record?.container || record?.containerNo || record?.seal || record?.sealNo || '').trim(),
   )
 }
-const isReadonlyDoContSealModal = () => isLinkedLclImportContSealModal() || isReadonlyCcdDduContSealModal() || (
-  !isLclSheet() &&
+const isReadonlyDoContSealModal = () => isReadonlyCcdDduContSealModal() || (
   !isStandaloneManualOpsRow(gsdModal.row) && isDoContSealModal() && (
     isDoFcdSheet() || isDapFcdSheet() || isDupFcdSheet() || linkedOriginContSealHasData()
   )
@@ -12422,7 +12245,7 @@ const isLclPickupStatusModal = () => isPickupReturnStatusModal() && normalizedHe
 const isBillApprovalModal = () => isGsdFormModalLabel('BILL DETAIL', 'BILL APPROVAL', 'AWB DETAIL')
 const isAwbDetailModal = () => isGsdFormModalLabel('AWB DETAIL')
 const hblRequiredForRow = (row: number) => {
-  const hblColumn = (rows.value[0] || []).findIndex((_, index) => ['HBL NO#', 'HAWB NO#'].includes(normalizedHeaderLabel(index)))
+  const hblColumn = (rows.value[0] || []).findIndex((_, index) => normalizedHeaderLabel(index) === 'HBL NO#')
   if (hblColumn >= 0) {
     const raw = String(rows.value[row]?.[hblColumn] ?? '').trim()
     const parsed = parseJsonCell(raw, null as any)
@@ -12485,7 +12308,7 @@ const arrivalNoticeExporting = ref(false)
 const arrivalNoticeIsCrossLinked = () => !!settings.value?.crossServiceInboundRows?.[String(gsdModal.row)]
 const loadLinkedExportMasterSiContainers = async (row: number) => {
   const current = opsParts.value
-  if (!current || row < 1 || !isCrossLinkedImportRow(row)) return [] as any[]
+  if (!current || row < 1 || !arrivalNoticeIsCrossLinked()) return [] as any[]
   const currentHeader = (rows.value[0] || []).map((item: any) => String(item ?? '').trim())
   const currentRow = rows.value[row] || []
   const originColumn = currentHeader.findIndex((label) => label === `${upperText(current.type)}+`)
@@ -12555,19 +12378,6 @@ const arrivalNoticeVesselDisplay = () => {
   const vessel = vesselFromCellValue(value) as any
   return vessel ? [vessel.name, vessel.voyage].filter(Boolean).join(' / ') : ''
 }
-const arrivalCfsWarehouseOptions = computed(() => pickupWarehouseOptions.value.filter((option) => upperText(option.type) === 'CFS'))
-const applyArrivalWarehouse = (normalizeSelection = false) => {
-  const input = String(gsdModal.form?.warehouseCfs || '').trim()
-  const selected = arrivalCfsWarehouseOptions.value.find((option) =>
-    upperText(option.value) === upperText(input) || upperText(option.label) === upperText(input),
-  )
-  if (!selected) {
-    gsdModal.form.warehouseAddress = ''
-    return
-  }
-  if (normalizeSelection) gsdModal.form.warehouseCfs = selected.value
-  gsdModal.form.warehouseAddress = String(selected.address || '')
-}
 const arrivalNoticeDetail = () => {
   const raw = parseJsonCell(rows.value[gsdModal.row]?.[gsdModal.column], {} as any)
   const form = raw && typeof raw === 'object' && raw.form && typeof raw.form === 'object' ? raw.form : raw
@@ -12607,8 +12417,6 @@ const arrivalNoticeDetail = () => {
     volume: String(volumeSummaryText(rowValueByHeader('VOLUME')) || form?.volume || ''),
     pol: String(siRouteDisplay(rowValueByHeader('ROUTE'), 'pol') || routeData.polCode || routeData.pol || form?.pol || ''),
     pod: String(siRouteDisplay(rowValueByHeader('ROUTE'), 'pod') || routeData.podCode || routeData.pod || form?.pod || ''),
-    warehouseCfs: String(form?.warehouseCfs || ''),
-    warehouseAddress: String(form?.warehouseAddress || ''),
     conts,
     description: String(form?.description || siSubmit.description || ''),
     marks: String(form?.marks || ''),
@@ -12755,7 +12563,7 @@ const createArrivalNoticePdf = async () => {
     })
     document.body.appendChild(printSheet)
     const sheetRect = printSheet.getBoundingClientRect()
-    const atomicRanges = Array.from(printSheet.querySelectorAll<HTMLElement>('.an-detail-letterhead,.an-detail-g2,.an-detail-g3,.an-detail-warehouse,.an-detail-description,.an-detail-table,.an-detail-sign'))
+    const atomicRanges = Array.from(printSheet.querySelectorAll<HTMLElement>('.an-detail-letterhead,.an-detail-g2,.an-detail-g3,.an-detail-description,.an-detail-table,.an-detail-sign'))
       .map((element) => {
         const rect = element.getBoundingClientRect()
         return { top: rect.top - sheetRect.top, bottom: rect.bottom - sheetRect.top }
@@ -14538,48 +14346,10 @@ const sendPickupToTarget = async () => {
 }
 const isClearanceDocsModal = () => isGsdFormModalLabel('CLEARANCE DOCS APPROVAL')
 const isClearanceDetailsModal = () => isGsdFormModalLabel('CLEARANCE DETAIL', 'CLEARANCE DETAILS', 'CUSTOMS CLEARANCE DETAILS')
-const isLclClearanceDetailsModal = () => isClearanceDetailsModal() && isLclSheet()
 const isDapTcdClearanceDetailsModal = () => isClearanceDetailsModal() && isDapTcdSheet()
 const isReadonlyFullClearanceDetailModal = () => !isStandaloneManualOpsRow(gsdModal.row) && (isDapTcdClearanceDetailsModal() || (isClearanceDetailsModal() && isFclDduTcdSheet()))
 const isDupCcdClearanceDetailsModal = () => isClearanceDetailsModal() && isDupCcdSheet()
 const isDupTcdClearanceDetailsModal = () => isClearanceDetailsModal() && isDupTcdSheet()
-const isClearanceViewOnly = () => isDupTcdClearanceDetailsModal() || isReadonlyFullClearanceDetailModal()
-const linkedLclMasterSiValue = async (row: number, fallback: any) => {
-  const parsed = opsParts.value
-  if (!parsed || upperText(parsed.mode) !== 'LCL' || parsed.dept === 'ECD') return fallback
-  const currentHeader = (rows.value[0] || []).map((item) => String(item || '').trim())
-  const currentRow = rows.value[row] || []
-  const sourceLink = opsShipmentLink(currentHeader, currentRow, row, settings.value)
-  try {
-    const sourceKey = opsLeafKey(parsed.base, parsed.mode, parsed.type, 'ECD')
-    const sourceSheet = await props.request(`/workbook/sheets/${encodeURIComponent(sheetStorageKey(sourceKey))}`)
-    const sourceHeader = opsHeaderFor(parsed.base, parsed.mode, 'ECD', parsed.type)
-    const extracted = extractWorkbookRows(Array.isArray(sourceSheet.rows) ? sourceSheet.rows.map((item: any[]) => [...item]) : [], sourceSheet)
-    const sourceRows = alignRowsToHeader(extracted.rows, sourceHeader).rows
-    const sourceSettings = extracted.settings || sourceSheet.settings || {}
-    let sourceRowIndex = sourceLink
-      ? sourceRows.findIndex((item, index) => index > 0 && opsShipmentLink(sourceHeader, item, index, sourceSettings) === sourceLink)
-      : -1
-    if (sourceRowIndex < 1) {
-      const identity = rowIdentity(currentHeader, currentRow)
-      if (identity) sourceRowIndex = sourceRows.findIndex((item, index) => index > 0 && rowIdentity(sourceHeader, item) === identity)
-    }
-    if (sourceRowIndex < 1) {
-      sourceRowIndex = sourceRows.findIndex((item, index) => index > 0 && ['JOB NO#', 'REF#', 'HBL NO#', 'MBL NO#'].some((label) => {
-        const currentColumn = currentHeader.indexOf(label)
-        const sourceColumn = sourceHeader.indexOf(label)
-        const currentValue = currentColumn >= 0 ? String(currentRow[currentColumn] || '').trim() : ''
-        return !!currentValue && sourceColumn >= 0 && currentValue === String(item[sourceColumn] || '').trim()
-      }))
-    }
-    const sourceColumn = sourceHeader.findIndex((label) => ['MASTER SI SUBMIT', 'SI SUBMIT'].includes(upperText(label)))
-    const value = sourceRowIndex > 0 && sourceColumn >= 0 ? sourceRows[sourceRowIndex]?.[sourceColumn] : ''
-    return String(value ?? '').trim() ? value : fallback
-  } catch (error: any) {
-    if (requestStatus(error) !== 404) console.warn('Could not load linked MASTER SI SUBMIT from ECD', error)
-    return fallback
-  }
-}
 const linkedTcdClearanceValue = async (row: number, fallback: any) => {
   const parsed = opsParts.value
   if (!parsed || parsed.dept !== 'TCD' || !['DDU', 'DDP'].includes(upperText(parsed.type))) return fallback
@@ -14665,10 +14435,8 @@ const gsdModalShellStyle = () => {
   if (isVesselModal()) return shell(isExwEcdVesselDelayModal() || isAirDcdVesselHistoryModal() ? '980px' : '700px')
   if (isPickupModal()) return shell(isDeliveryDetailsModal() ? '890px' : '880px')
   if (isDoContSealModal()) return shell('680px')
-  if (isTruckContModal()) return shell(isLclTruckingInfoModal() ? '1040px' : '1360px')
+  if (isTruckContModal()) return shell('1360px')
   if (isPickupReturnStatusModal()) {
-    if (isLclSheet() && isDestinationIcdPickupStatusModal()) return shell('880px')
-    if (isAirSheet() && isLclPickupStatusModal()) return shell('560px')
     if (isAirDupTcdTruckingStatusModal() || isAirDupFcdTruckingStatusModal()) return shell('1360px')
     if (isAirDupIcdTruckingStatusModal()) return shell('960px')
     if (isDestinationIcdPickupStatusModal()) return shell('1360px')
@@ -14685,7 +14453,6 @@ const gsdModalShellStyle = () => {
   if (isPreAlertModal()) return shell('486px')
   if (isClearanceDocsModal()) return shell('700px')
   if (isClearanceDetailsModal()) {
-    if (isLclClearanceDetailsModal()) return shell('720px')
     if (isSimpleCcdClearanceDetailsModal()) return shell('780px')
     if (isDupTcdClearanceDetailsModal()) return shell('760px')
     return shell('800px')
@@ -14754,15 +14521,9 @@ const addClearanceOtherDoc = () => {
   clearanceDocs().push({ key: `ot${Date.now()}${count}`, label: '', verified: false, file: '', url: '', displayName: '', custom: true })
 }
 const removeClearanceOtherDoc = async (key: string) => {
-  if (!gsdModal.editing) return
   const ok = await askConfirm('Are you sure to remove?', '', { okText: 'OK', cancelText: 'Cancel', tone: 'remove' })
   if (!ok) return
-  const docs = clearanceDocs()
-  const index = docs.findIndex((doc) => doc.custom && doc.key === key)
-  if (index < 0) return
-  docs.splice(index, 1)
-  if (clearanceDocUploadTarget.value === key) clearanceDocUploadTarget.value = ''
-  showToast('Document removed')
+  gsdModal.form.docs = clearanceDocs().filter((doc) => doc.key !== key)
 }
 const chooseClearanceDocFile = (key: string) => {
   clearanceDocUploadTarget.value = key
@@ -14827,25 +14588,6 @@ const latestVolumeRecord = () => {
   return records[records.length - 1]
 }
 const clearanceRowsFromSource = (): ClearanceRow[] => {
-  if (isLclClearanceDetailsModal()) {
-    const masterSi = siSubmitFormFromCell(gsdModal.form.linkedMasterSiValue || rawSiSourceValue('MASTER SI SUBMIT') || rawSiSourceValue('SI SUBMIT'))
-    const masterRows = (Array.isArray(masterSi.containers) ? masterSi.containers : [])
-      .filter((item: any) => [item?.contNo, item?.container, item?.contType, item?.type, item?.sealNo, item?.seal, item?.qty, item?.gw, item?.grossWeight, item?.mea, item?.measurement].some((value) => String(value ?? '').trim()))
-      .map((item: any, index: number) => ({
-      key: String(item?.id || item?.key || `lcl-si-${index}`),
-      type: String(item?.contType || item?.type || ''),
-      purpose: '', containerNo: '', sealNo: '',
-      qty: String(item?.qty || ''), unit: String(item?.unit || ''),
-      gw: String(item?.gw || item?.grossWeight || ''), mea: String(item?.mea || item?.measurement || ''),
-      }))
-    if (masterRows.length) return masterRows
-    return (Array.isArray(gsdModal.form.rows) ? gsdModal.form.rows : []).map((item: any, index: number) => ({
-      key: String(item?.key || `lcl-saved-${index}`),
-      type: String(item?.type || ''), purpose: '', containerNo: '', sealNo: '',
-      qty: String(item?.qty || ''), unit: String(item?.unit || ''),
-      gw: String(item?.gw || item?.grossWeight || ''), mea: String(item?.mea || item?.measurement || ''),
-    }))
-  }
   if (isDupTcdSheet()) {
     return doContSealVolumeRows().map((record) => ({
       key: record.key,
@@ -14954,10 +14696,6 @@ const clearanceDetailsFormFromCell = (value: any) => {
       purpose: String(row?.purpose || ''),
       containerNo: String(row?.containerNo || ''),
       sealNo: String(row?.sealNo || ''),
-      qty: String(row?.qty || ''),
-      unit: String(row?.unit || ''),
-      gw: String(row?.gw || row?.grossWeight || ''),
-      mea: String(row?.mea || row?.measurement || ''),
     })) : [] as ClearanceRow[],
     selected: form.selected && typeof form.selected === 'object' ? { ...form.selected } : {},
     declarations: Array.isArray(form.declarations) ? form.declarations.map(normalizeClearanceDeclaration) : [],
@@ -15588,19 +15326,13 @@ const saveTruckContDetails = async () => {
   }
   const originServiceTruck = isTcdTruckContModal() &&
     ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase())
-  const required = isLclTruckingInfoModal()
-    ? ['truck', 'driver', 'eta1', 'eta2', 'gdate', 'gtime']
-    : isLclTruckingDetailModal()
-      ? ['truck', 'driver', 'eta1', 'eta2']
-      : originServiceTruck
-        ? ['truck', 'container', 'contType', 'seal', 'driver', 'eta1', 'eta2']
-        : isTcdTruckContModal()
-          ? ['truck', 'container', 'contType', 'seal', 'driver', 'eta1', 'eta2', 'gdate']
-          : ['truck', 'container', 'contType', 'seal', 'driver', 'eta1', 'eta2', 'gdate', 'gtime']
+  const required = originServiceTruck
+    ? ['truck', 'container', 'contType', 'seal', 'driver', 'eta1', 'eta2']
+    : isTcdTruckContModal()
+      ? ['truck', 'container', 'contType', 'seal', 'driver', 'eta1', 'eta2', 'gdate']
+    : ['truck', 'container', 'contType', 'seal', 'driver', 'eta1', 'eta2', 'gdate', 'gtime']
   if (editedRecords.some((record: any) => required.some((field) => !String(record[field] || '').trim()))) {
-    showToast(isLclTruckingInfoModal() || isLclTruckingDetailModal()
-      ? 'Please complete all Trucking fields before saving'
-      : 'Please complete all Truck & Cont/Seal fields before saving')
+    showToast('Please complete all Truck & Cont/Seal fields before saving')
     return
   }
   truckDetailsSaving.value = true
@@ -15896,7 +15628,6 @@ const normalizePickupReturnRecord = (item: any, fallback?: TruckContRecord, inde
     driverInfo: String(item?.driverInfo || item?.driverName || item?.driver || fallback?.driver || ''),
     arrivingTime: String(item?.arrivingTime || item?.estimatedArrivingTime || item?.eta || item?.eta2 || fallback?.eta2 || ''),
     epodSign: String(item?.epodSign || fallback?.epodSign || ''),
-    epodUrl: String(item?.epodUrl || fallback?.epodUrl || ''),
   }
 }
 const pickupReturnFormFromCell = (value: any, linkedTruckValue: any = '') => {
@@ -16019,7 +15750,6 @@ const persistPickupReturnStatus = (immediate = false) => {
         driverInfo: record.driverInfo || '',
         arrivingTime: record.arrivingTime || '',
         epodSign: record.epodSign || '',
-        epodUrl: record.epodUrl || '',
       })),
       locked: !!gsdModal.form.locked,
     },
@@ -16770,7 +16500,7 @@ const billSendModal = reactive<{ open: boolean; to: string; cc: string; hint: st
 const openBillSendModal = () => {
   if (gsdModal.editing || !gsdModal.form.locked) return
   if (!gsdModal.form.mbl || !gsdModal.form.siReceived) {
-    showToast(`${isAirMode() ? 'MAWB' : 'MBL'} APPROVED and SI RECEIVED are required`)
+    showToast('MBL APPROVED and SI RECEIVED are required')
     return
   }
   if (!gsdModal.form.exportBl) {
@@ -16959,11 +16689,8 @@ const saveBillApproval = async () => {
   })
   gsdModal.form.locked = true
   gsdModal.editing = false
-  const saved = await saveSheet()
-  if (!saved) {
-    showToast(saveError.value || 'Could not save document data')
-    return false
-  }
+  scheduleSave()
+  await saveSheet()
   if (isBillApprovalModal()) {
     const detailLabel = normalizedHeaderLabel(gsdModal.column) === 'AWB DETAIL' ? 'AWB DETAIL' : 'BILL DETAIL'
     for (const dept of fclStructureSyncPeers(detailLabel)) void mirrorExwFclWorkflowCell(dept, detailLabel, rows.value[gsdModal.row][gsdModal.column])
@@ -16975,7 +16702,6 @@ const saveBillApproval = async () => {
   } catch (error: any) {
     showToast(error?.data?.message || error?.message || 'Could not update Approval List deadline')
   }
-  return true
 }
 const viewBillDetailFile = (file: any) => {
   const url = String(file?.url || '').trim()
@@ -17005,33 +16731,20 @@ const selectBillDocumentExport = (kind: 'B/L' | 'FCR') => {
   billExportMenuOpen.value = false
   void openBillDocument(kind)
 }
-const billDocumentMasterSiContainers = () => {
-  const source = rawSiSourceValue('MASTER SI SUBMIT') || rawSiSourceValue('SI SUBMIT')
-  return siSubmitFormFromCell(source).containers
-    .filter((item: any) => String(item?.contNo || item?.container || item?.sealNo || item?.seal || '').trim())
-    .map((item: any, index: number) => ({
-      id: String(item?.id || `BILL-CONT-${index}`),
-      contNo: String(item?.contNo || item?.container || ''),
-      contType: String(item?.contType || item?.type || ''),
-      sealNo: String(item?.sealNo || item?.seal || ''),
-      qty: String(item?.qty || ''), unit: String(item?.unit || ''),
-      gw: String(item?.gw || ''), mea: String(item?.mea || ''),
-    }))
-}
 const openBillDocument = async (kind: 'B/L' | 'FCR', isRelease = false) => {
   billExportMenuOpen.value = false
   if (!isRelease && isBillApprovalModal() && !gsdModal.form.siReceived) {
     showToast('Tick SI RECEIVED before exporting a document')
     return
   }
-  let stored = gsdModal.form.exportBl || gsdModal.form.exportFcr
+  let stored = kind === 'B/L' ? gsdModal.form.exportBl : gsdModal.form.exportFcr
   let sentAt = gsdModal.form.sentAt
   if (isRelease) {
     const headers = rows.value[0] || []
     const index = headers.findIndex((_: any, i: number) => ['BILL DETAIL', 'BILL APPROVAL', 'AWB DETAIL'].includes(normalizedHeaderLabel(i)))
     if (index >= 0) {
       const detailForm = billApprovalFormFromCell(rows.value[gsdModal.row]?.[index])
-      stored = detailForm.exportBl || detailForm.exportFcr
+      stored = kind === 'B/L' ? detailForm.exportBl : detailForm.exportFcr
       sentAt = detailForm.sentAt
     }
   }
@@ -17047,7 +16760,6 @@ const openBillDocument = async (kind: 'B/L' | 'FCR', isRelease = false) => {
   const linkedPod = siRouteDisplay(routeValue, 'pod').toUpperCase()
   const shippedDate = String(rowValueByHeader('ATD') || rowValueByHeader('ETD') || '').trim()
   const sameAsConsignee = !!saved?.sameAsConsignee || /^\(?SAME AS CONSIGNEE\)?$/i.test(String(saved?.notify || '').trim())
-  const masterSiContainers = billDocumentMasterSiContainers()
   Object.assign(billDocModal, {
     open: true, readonly: !isRelease && isReadonlyExwFclEcdBillDetail(), isRelease, billType: saved?.billType || 'ORIGINAL B/L',
     kind, company: saved?.company || 'TX LOGISTICS VIETNAM CO.,LTD', copySi: false,
@@ -17057,10 +16769,7 @@ const openBillDocument = async (kind: 'B/L' | 'FCR', isRelease = false) => {
     notify: sameAsConsignee ? '(SAME AS CONSIGNEE)' : saved?.notify || siClientTextFromSource(rawSiSourceValue('DESTINATION AGENT')), notifyBackup: sameAsConsignee ? '' : saved?.notify || '', sameAsConsignee,
     preCarriage: saved?.preCarriage || '', receipt: saved?.receipt || '', vessel: linkedVesselText(saved?.vessel || rawSiSourceValue('VESSEL/VOYAGE')),
     pol: String(saved?.pol || linkedPol || '').toUpperCase(), pod: String(saved?.pod || linkedPod || '').toUpperCase(), delivery: saved?.delivery || '',
-    marks: saved?.marks || '', packages: saved?.packages || '',
-    goodsDescription: saved ? String(saved.goodsDescription || '') : (upperText(opsParts.value?.mode) === 'FCL' ? 'CY-CY' : upperText(opsParts.value?.mode) === 'LCL' ? 'CFS-CFS' : ''),
-    grossWeight: saved?.grossWeight || '', measurement: saved?.measurement || '',
-    containers: masterSiContainers.length ? masterSiContainers : (Array.isArray(saved?.containers) ? saved.containers : []),
+    marks: saved?.marks || '', packages: saved?.packages || '', goodsDescription: saved?.goodsDescription || '', grossWeight: saved?.grossWeight || '', measurement: saved?.measurement || '',
     freightCharges: saved?.freightCharges || '', freightPayableAt: saved?.freightPayableAt || saved?.pol || linkedPol || '', originalCount: saved?.originalCount || '3',
     placeOfIssue: saved?.placeOfIssue || 'HO CHI MINH CITY, VIETNAM', dateOfIssue: saved?.dateOfIssue || '', shippedOnBoardDate: saved?.shippedOnBoardDate || shippedDate,
     signedAt: saved?.signedAt || '',
@@ -17111,41 +16820,31 @@ const saveBillDocument = async () => {
   }
   billDocModal.savedAt = billTimestamp()
   billDocModal.signedAt = billTimestamp()
-  const data = JSON.stringify(Object.fromEntries(['company','attachments','savedAt','signedAt','docNo','refNo','shipper','consignee','notify','sameAsConsignee','preCarriage','receipt','vessel','pol','pod','delivery','marks','packages','goodsDescription','grossWeight','measurement','containers','freightCharges','freightPayableAt','originalCount','placeOfIssue','dateOfIssue','shippedOnBoardDate','billType'].map((key) => [key, billDocModal[key]]).concat([['locked', true]])))
-  // Reflect the completed edit immediately. The network write continues below,
-  // and only a failed write re-opens the document and shows a notification.
-  billDocModal.locked = true
+  const data = JSON.stringify(Object.fromEntries(['company','attachments','savedAt','signedAt','docNo','refNo','shipper','consignee','notify','sameAsConsignee','preCarriage','receipt','vessel','pol','pod','delivery','marks','packages','goodsDescription','grossWeight','measurement','freightCharges','freightPayableAt','originalCount','placeOfIssue','dateOfIssue','shippedOnBoardDate','billType'].map((key) => [key, billDocModal[key]]).concat([['locked', true]])))
 
   if (billDocModal.isRelease) {
     const headers = rows.value[0] || []
     const index = headers.findIndex((_: any, i: number) => ['BILL DETAIL', 'BILL APPROVAL', 'AWB DETAIL'].includes(normalizedHeaderLabel(i)))
     if (index >= 0) {
       const detailForm = billApprovalFormFromCell(rows.value[gsdModal.row]?.[index])
-      detailForm.exportBl = data
-      detailForm.exportFcr = data
+      if (billDocModal.kind === 'B/L') detailForm.exportBl = data
+      else detailForm.exportFcr = data
       rows.value[gsdModal.row][index] = JSON.stringify({ form: { ...detailForm } })
-      gsdModal.form.exportBl = data
-      gsdModal.form.exportFcr = data
-      const saved = await saveSheet()
-      if (!saved) {
-        billDocModal.locked = false
-        showToast(saveError.value || 'Could not save B/L/FCR document')
-        return
-      }
+      if (billDocModal.kind === 'B/L') gsdModal.form.exportBl = data
+      else gsdModal.form.exportFcr = data
+      scheduleSave()
+      await saveSheet()
     } else {
-      billDocModal.locked = false
       showToast('Could not find BILL DETAIL to save the export document')
       return
     }
   } else {
-    gsdModal.form.exportBl = data
-    gsdModal.form.exportFcr = data
-    const saved = await saveBillApproval()
-    if (!saved) {
-      billDocModal.locked = false
-      return
-    }
+    if (billDocModal.kind === 'B/L') gsdModal.form.exportBl = data
+    else gsdModal.form.exportFcr = data
+    await saveBillApproval()
   }
+  billDocModal.locked = true
+  showToast(`${billDocModal.kind} saved`)
 }
 const printBillDocument = async (download: boolean | Event = true): Promise<Blob | null> => {
   if (!billDocModal.locked || billDocModal.exportingPdf) return
@@ -17389,16 +17088,16 @@ const billDocumentText = (kind: 'B/L' | 'FCR' | 'D/O') => {
   const job = rowValueByHeader('JOB NO#') || '—'
   const detail = billDetailApprovalForRow(gsdModal.row)
   const now = billTimestamp()
-  return `${kind}\nSHOPTRANS\nJOB NO#: ${job}\n${isAirMode() ? 'MAWB' : 'MBL'} APPROVED: ${detail?.mblAt || gsdModal.form.mblAt || now}\n${isAirMode() ? 'HAWB' : 'HBL'} APPROVED: ${detail?.hblAt || gsdModal.form.hblAt || now}\nDOCUMENT STATUS: COMPLETE\nGENERATED: ${now}`
+  return `${kind}\nSHOPTRANS\nJOB NO#: ${job}\nMBL APPROVED: ${detail?.mblAt || gsdModal.form.mblAt || now}\nHBL APPROVED: ${detail?.hblAt || gsdModal.form.hblAt || now}\nDOCUMENT STATUS: COMPLETE\nGENERATED: ${now}`
 }
-const preAlertConfirmLeftRows = computed(() => [
-  { key: 'mblConfirmed', label: `${isAirMode() ? 'MAWB' : 'MBL'} CONFIRMED` },
-  { key: 'mblReleased', label: `${isAirMode() ? 'MAWB' : 'MBL'} RELEASED` },
-])
-const preAlertConfirmRightRows = computed(() => [
-  { key: 'hblConfirmed', label: `${isAirMode() ? 'HAWB' : 'HBL'} CONFIRMED` },
-  { key: 'hblReleased', label: `${isAirMode() ? 'HAWB' : 'HBL'} RELEASED` },
-])
+const preAlertConfirmLeftRows = [
+  { key: 'mblConfirmed', label: 'MBL CONFIRMED' },
+  { key: 'mblReleased', label: 'MBL RELEASED' },
+]
+const preAlertConfirmRightRows = [
+  { key: 'hblConfirmed', label: 'HBL CONFIRMED' },
+  { key: 'hblReleased', label: 'HBL RELEASED' },
+]
 const defaultPreAlertConfirmDocs = () => [
   { key: 'coo', label: 'CERTIFICATE OF ORIGIN (COO)', checked: false, at: '' },
   { key: 'pkl', label: 'PACKING LIST (PKL)', checked: false, at: '' },
@@ -17534,12 +17233,12 @@ const removePreAlertConfirmationFreetime = async () => {
   scheduleSave()
   void saveSheet()
 }
-const preAlertMainRows = computed(() => [
-  { key: 'mc', label: `${isAirMode() ? 'MAWB' : 'MBL'} CONFIRMED` },
-  { key: 'hc', label: `${isAirMode() ? 'HAWB' : 'HBL'} CONFIRMED` },
-  { key: 'mr', label: `${isAirMode() ? 'MAWB' : 'MBL'} RELEASED` },
-  { key: 'hr', label: `${isAirMode() ? 'HAWB' : 'HBL'} RELEASED` },
-])
+const preAlertMainRows = [
+  { key: 'mc', label: 'MBL CONFIRMED' },
+  { key: 'hc', label: 'HBL CONFIRMED' },
+  { key: 'mr', label: 'MBL RELEASED' },
+  { key: 'hr', label: 'HBL RELEASED' },
+]
 const preAlertHasHbl = () => {
   const raw = preAlertSourceCell('HBL NO#', 'HAWB NO#')
   const parsed = parseJsonCell(raw, null as any)
@@ -17549,8 +17248,8 @@ const preAlertHasHbl = () => {
   return !!number && upperText(number) !== 'N/A'
 }
 const preAlertVisibleMainRows = () => preAlertHasHbl()
-  ? preAlertMainRows.value
-  : preAlertMainRows.value.filter((item) => !['hc', 'hr'].includes(item.key))
+  ? preAlertMainRows
+  : preAlertMainRows.filter((item) => !['hc', 'hr'].includes(item.key))
 const preAlertConfirmedLocked = (key: string) => ['mc', 'hc'].includes(key)
 const hydratePreAlertFromBillDetail = () => {
   const bill = billApprovalFormFromCell(preAlertSourceCell('BILL DETAIL', 'AWB DETAIL'))
@@ -18117,28 +17816,8 @@ const sendPreAlert = async () => {
   }
 }
 const volumeRecords = () => (Array.isArray(gsdModal.form.records) ? gsdModal.form.records : []) as VolumeRecord[]
-const volumeRecordGwInKg = (record: VolumeRecord) => {
-  const weight = Math.max(0, Number(record.gw) || 0)
-  return upperText(record.gwUnit) === 'LBS' ? weight * 0.45359237 : weight
-}
-const airVolumeRecordChargeableWeight = (record: VolumeRecord) =>
-  Math.max(volumeRecordGwInKg(record), Math.max(0, Number(record.mea) || 0) * 167)
-const airVolumeChargeableWeight = (records: VolumeRecord[]) => {
-  const grossWeight = records.reduce((total, record) => total + volumeRecordGwInKg(record), 0)
-  const volumetricWeight = records.reduce((total, record) => total + Math.max(0, Number(record.mea) || 0), 0) * 167
-  return Math.max(grossWeight, volumetricWeight)
-}
-const formatVolumeNumber = (value: number) => Number.isInteger(value)
-  ? String(value)
-  : String(Math.round(value * 100) / 100)
 const volumeSummaryLines = (value: any) => {
   const records = volumeFormFromCell(value).records || []
-  if (isAirMode()) {
-    const storedSummary = String(value ?? '').trim()
-    if (!records.length && storedSummary && !storedSummary.startsWith('{') && !storedSummary.startsWith('[')) return [storedSummary]
-    const chargeableWeight = airVolumeChargeableWeight(records)
-    return chargeableWeight > 0 ? [`${formatVolumeNumber(chargeableWeight)} KGS`] : []
-  }
   return records.map((record: any) => {
     const quantity = String(record.volume ?? '').trim()
     const size = String(record.type ?? '').trim().replace(/\s+/g, '').toUpperCase()
@@ -18170,14 +17849,7 @@ const volumeFormFromCell = (value: any) => {
   // line as one Volume record so downstream Truck/SI tables keep the same
   // number and order of rows as the Volume modal.
   if (!records.length && typeof value === 'string') {
-    if (isAirMode()) {
-      records = value.split(/\r?\n|\s*;\s*/).map((line, index) => {
-        const match = line.trim().match(/^([^/]*)\/([^/]*)\/([^/]*)$/)
-        if (!match) return null
-        return { id: `VOL-SUMMARY-${index}`, volume: Number(match[1] || 0), type: '', purpose: '', gw: match[2].trim(), gwUnit: 'KGS', mea: match[3].trim() }
-      }).filter(Boolean)
-    }
-    if (!records.length) records = value.split(/\r?\n|\s*,\s*/).map((line, index) => {
+    records = value.split(/\r?\n|\s*,\s*/).map((line, index) => {
       const match = line.trim().toUpperCase().match(/^(\d+(?:\.\d+)?)\s*X\s*(20|40|45)\s*([A-Z0-9]*)$/)
       if (!match) return null
       return { id: `VOL-SUMMARY-${index}-${match[2]}-${match[3]}`, volume: Number(match[1]), type: match[2], purpose: match[3] }
@@ -18293,10 +17965,10 @@ const saveVolumeRecord = () => {
     return
   }
   if (!type) {
-    gsdModal.form.hint = isLclSheet() || isAirMode() ? 'Select a UNIT' : 'Select a TYPE'
+    gsdModal.form.hint = isLclSheet() ? 'Select a UNIT' : 'Select a TYPE'
     return
   }
-  if (!purpose && !isLclSheet() && !isAirMode()) {
+  if (!purpose && !isLclSheet()) {
     gsdModal.form.hint = 'Select a PURPOSE'
     return
   }
@@ -18803,7 +18475,7 @@ const saveGsdModal = async () => {
     if (required === 'YES') {
       const hblNo = upperText(hblNumberDraft).trim()
       if (!hblNo) {
-        gsdModal.form.hint = `Enter the ${isAirMode() ? 'HAWB' : 'HBL'} number`
+        gsdModal.form.hint = 'Enter the HBL number'
         return
       }
       gsdModal.form.hblNo = hblNo
@@ -18823,7 +18495,7 @@ const saveGsdModal = async () => {
     void (async () => {
       const saved = await saveSheet(savedKey, savedPayload, savedCountry)
       if (!saved) {
-        showToast(`Could not save ${isAirMode() ? 'HAWB' : 'HBL'} information. Please try again.`)
+        showToast('Could not save HBL information. Please try again.')
         return
       }
       // These helpers read the currently visible worksheet. Do not let a
@@ -18864,10 +18536,10 @@ const saveGsdModal = async () => {
       savePickupReturnStatus()
       return
     }
-    if (['MBL NO#', 'MAWB NO#'].includes(normalizedHeaderLabel(gsdModal.column))) {
+    if (normalizedHeaderLabel(gsdModal.column) === 'MBL NO#') {
       const mblNo = upperText(String(gsdModal.form.mblNo || '')).trim()
       if (!mblNo) {
-        showToast(`Enter the ${isAirMode() ? 'MAWB' : 'MBL'} number`)
+        showToast('Enter the MBL number')
         return
       }
       rows.value[gsdModal.row][gsdModal.column] = mblNo
@@ -21317,7 +20989,7 @@ const displayCell = (value: any, row: number, column: number) => {
       const booking = bookingDetailValue(value)
       if (booking) return booking
     }
-    if (['HBL NO#', 'HAWB NO#'].includes(jsonLabel)) {
+    if (jsonLabel === 'HBL NO#') {
       const parsedHbl = parseJsonCell(value, null as any)
       const form = parsedHbl && typeof parsedHbl === 'object' && 'form' in parsedHbl ? (parsedHbl as any).form || {} : {}
       if (String(form.required || '').toUpperCase() === 'NO') return 'N/A'
@@ -21825,15 +21497,14 @@ onBeforeUnmount(() => {
 .gsd-dap-tcd-volume-modal .gsd-record-table th{padding:4px 8px 8px}
 .gsd-dap-tcd-volume-modal .gsd-record-table td{height:auto;padding:7px 12px}
 .gsd-dap-tcd-volume-modal .gsd-record-table th:first-child,.gsd-dap-tcd-volume-modal .gsd-record-table td:first-child{width:52px}
-.gsd-volume-modal{width:780px;max-width:96vw;padding:34px 24px 20px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-volume-modal .gsd-modal-x,.gsd-freetime-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-volume-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:22px;margin-bottom:6px}.gsd-volume-modal .gsd-record-savebar{min-height:0;margin:4px 0 8px}.gsd-freetime-modal{width:600px;max-width:96vw;padding:34px 24px 20px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-freetime-form{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:8px}.gsd-free-title{text-align:center;font-size:14px;font-weight:800;color:#0e1512;margin:-4px 0 14px}.gsd-volume-block{display:grid;gap:7px;align-content:start}.gsd-volume-label{font-size:12px;font-weight:800;color:#33413b;text-transform:uppercase}.gsd-volume-block input,.gsd-volume-block select{height:38px;border:1px solid #cfd8d2;border-radius:8px;background:#fff;padding:8px 10px;font:inherit;font-size:13px;color:#33413b;outline:none;text-transform:uppercase}.gsd-volume-block input:focus,.gsd-volume-block select:focus{box-shadow:inset 0 0 0 2px #00c566}.gsd-plusmini{display:inline-grid;place-items:center;width:17px;height:17px;margin-left:5px;border:0;border-radius:50%;background:#008f4c;color:#fff;font-size:13px;font-weight:900;line-height:1;vertical-align:middle;cursor:pointer}.gsd-option-add{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:5px;align-items:center;padding:6px;border:1px solid #dce7df;border-radius:8px;background:#f7fbf8}.gsd-option-add input{height:30px!important;padding:5px 8px!important;background:#fff!important}.gsd-option-add button{height:30px;border:1px solid #008f4c;border-radius:7px;background:#008f4c;color:#fff;padding:0 9px;font-size:11px;font-weight:800;cursor:pointer}.gsd-option-add button.cancel{border-color:#cfd8d2;background:#fff;color:#33413b}.gsd-record-savebar{display:flex;justify-content:flex-end;min-height:42px;margin:0 0 8px}.gsd-record-savebar .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 16px;background:#008f4c;border-color:#008f4c;color:#fff}.gsd-record-savebar .wb-modal-btn:disabled{opacity:.45;cursor:not-allowed}.gsd-record-hint{min-height:18px;margin:2px 0 8px;color:#c0392b;font-size:11.5px;font-weight:700}.gsd-record-history{border-top:1px solid #e4e9e2;padding-top:14px}.gsd-record-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12.5px}.gsd-record-table th,.gsd-record-table td{border:1px solid #cfd8d2;padding:8px 10px;text-align:center}.gsd-record-table th{background:#eef3ee;color:#33413b;font-family:var(--mono,'Geist Mono',ui-monospace,monospace);font-size:12px;font-weight:700;letter-spacing:.03em}.gsd-record-table td{height:34px;color:#33413b;background:#fff}.gsd-record-table tr.selected td{background:#e8f8ef}.gsd-record-table .empty{height:42px;color:#7a847d;font-weight:700;font-style:italic}.gsd-record-table .applied{color:#0c6b39;font-weight:800}.gsd-record-table .expired{color:#7a847d;font-weight:800}.gsd-record-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.gsd-record-footer .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700}.gsd-record-footer .wb-modal-btn.edit{background:#f6c998;border-color:#f6c998;color:#fff}.gsd-record-footer .wb-modal-btn.cancel{background:#c0392b;border-color:#c0392b;color:#fff}.gsd-record-footer .wb-modal-btn:disabled{opacity:.45;cursor:not-allowed}
-.gsd-volume-block{grid-template-rows:auto 38px}.gsd-volume-block .gsd-option-add{grid-column:1}.gsd-volume-label{display:flex;align-items:center;gap:6px;min-height:22px}.gsd-volume-block input,.gsd-volume-block select{height:38px;box-sizing:border-box}
+.gsd-volume-modal{width:780px;max-width:96vw;padding:34px 24px 20px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-volume-modal .gsd-modal-x,.gsd-freetime-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-volume-form{display:grid;grid-template-columns:1fr 1fr 1fr;gap:22px;margin-bottom:8px}.gsd-freetime-modal{width:600px;max-width:96vw;padding:34px 24px 20px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-freetime-form{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:8px}.gsd-free-title{text-align:center;font-size:14px;font-weight:800;color:#0e1512;margin:-4px 0 14px}.gsd-volume-block{display:grid;gap:7px;align-content:start}.gsd-volume-label{font-size:12px;font-weight:800;color:#33413b;text-transform:uppercase}.gsd-volume-block input,.gsd-volume-block select{height:38px;border:1px solid #cfd8d2;border-radius:8px;background:#fff;padding:8px 10px;font:inherit;font-size:13px;color:#33413b;outline:none;text-transform:uppercase}.gsd-volume-block input:focus,.gsd-volume-block select:focus{box-shadow:inset 0 0 0 2px #00c566}.gsd-plusmini{display:inline-grid;place-items:center;width:17px;height:17px;margin-left:5px;border:0;border-radius:50%;background:#008f4c;color:#fff;font-size:13px;font-weight:900;line-height:1;vertical-align:middle;cursor:pointer}.gsd-option-add{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:5px;align-items:center;padding:6px;border:1px solid #dce7df;border-radius:8px;background:#f7fbf8}.gsd-option-add input{height:30px!important;padding:5px 8px!important;background:#fff!important}.gsd-option-add button{height:30px;border:1px solid #008f4c;border-radius:7px;background:#008f4c;color:#fff;padding:0 9px;font-size:11px;font-weight:800;cursor:pointer}.gsd-option-add button.cancel{border-color:#cfd8d2;background:#fff;color:#33413b}.gsd-record-savebar{display:flex;justify-content:flex-end;min-height:42px;margin:0 0 8px}.gsd-record-savebar .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 16px;background:#008f4c;border-color:#008f4c;color:#fff}.gsd-record-savebar .wb-modal-btn:disabled{opacity:.45;cursor:not-allowed}.gsd-record-hint{min-height:18px;margin:2px 0 8px;color:#c0392b;font-size:11.5px;font-weight:700}.gsd-record-history{border-top:1px solid #e4e9e2;padding-top:14px}.gsd-record-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12.5px}.gsd-record-table th,.gsd-record-table td{border:1px solid #cfd8d2;padding:8px 10px;text-align:center}.gsd-record-table th{background:#eef3ee;color:#33413b;font-family:var(--mono,'Geist Mono',ui-monospace,monospace);font-size:12px;font-weight:700;letter-spacing:.03em}.gsd-record-table td{height:34px;color:#33413b;background:#fff}.gsd-record-table tr.selected td{background:#e8f8ef}.gsd-record-table .empty{height:42px;color:#7a847d;font-weight:700;font-style:italic}.gsd-record-table .applied{color:#0c6b39;font-weight:800}.gsd-record-table .expired{color:#7a847d;font-weight:800}.gsd-record-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.gsd-record-footer .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700}.gsd-record-footer .wb-modal-btn.edit{background:#f6c998;border-color:#f6c998;color:#fff}.gsd-record-footer .wb-modal-btn.cancel{background:#c0392b;border-color:#c0392b;color:#fff}.gsd-record-footer .wb-modal-btn:disabled{opacity:.45;cursor:not-allowed}
 .gsd-air-fca-ecd-volume-modal{width:780px;max-width:96vw;padding:22px 24px 20px;font:13px/1.4 system-ui,"Segoe UI",Arial,sans-serif}
 .gsd-volume-form.lcl{grid-template-columns:repeat(5,minmax(0,1fr));column-gap:8px;row-gap:0;margin:8px 0 4px}
 .gsd-volume-form.lcl .gsd-volume-block{min-width:0}
 .gsd-volume-form.lcl .gsd-volume-block input,.gsd-volume-form.lcl .gsd-volume-block select{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box}
 .gsd-air-fca-ecd-volume-modal .gsd-volume-form.lcl{grid-template-columns:repeat(5,minmax(0,1fr));column-gap:8px;row-gap:0;margin:8px 0 4px}
 .gsd-air-fca-ecd-volume-modal .gsd-volume-block{min-width:0;margin:0}
-.gsd-air-fca-ecd-volume-modal .gsd-volume-block:nth-child(3),.gsd-air-fca-ecd-volume-modal .gsd-volume-block:nth-child(5){margin-left:0}
+.gsd-air-fca-ecd-volume-modal .gsd-volume-block:nth-child(3),.gsd-air-fca-ecd-volume-modal .gsd-volume-block:nth-child(5){margin-left:20px}
 .gsd-air-fca-ecd-volume-modal .gsd-volume-block input,.gsd-air-fca-ecd-volume-modal .gsd-volume-block select{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box}
 .gsd-air-fca-ecd-volume-modal .gsd-record-savebar{min-height:34px;margin:8px 0 0}
 .gsd-air-fca-ecd-volume-modal .gsd-record-hint{min-height:16px;margin:2px 0 8px;text-align:right}
@@ -21874,7 +21545,6 @@ onBeforeUnmount(() => {
 .gsd-fcl-dup-tcd-truck-modal{height:auto;max-height:calc(100vh - 32px);overflow:auto}.gsd-fcl-dup-tcd-truck-modal .gsd-truck-table-wrap{max-height:calc(100vh - 190px);overflow:auto}.gsd-fcl-dup-tcd-truck-modal .gsd-truck-table input,.gsd-fcl-dup-tcd-truck-modal .gsd-truck-table select{box-sizing:border-box;min-width:0;padding:4px 6px;overflow:hidden;text-align:center;text-overflow:ellipsis;white-space:nowrap}.gsd-fcl-dup-tcd-truck-modal .epodcell{text-align:center}.gsd-fcl-dup-tcd-truck-modal .epodcell>*{margin:auto}
 .gsd-fcl-dap-tcd-truck-modal{width:min(1480px,calc(100vw - 24px));overflow:hidden}.gsd-fcl-dap-tcd-truck-modal .gsd-truck-table-wrap{max-width:100%;overflow:auto}.gsd-fcl-dap-tcd-truck-modal .gsd-truck-table{min-width:1380px;table-layout:fixed}.gsd-fcl-dap-tcd-truck-modal .gsd-truck-table th,.gsd-fcl-dap-tcd-truck-modal .gsd-truck-table td{box-sizing:border-box;overflow:hidden}.gsd-fcl-dap-tcd-truck-modal .gsd-truck-table input,.gsd-fcl-dap-tcd-truck-modal .gsd-truck-table select{display:block;width:100%;min-width:0;box-sizing:border-box;text-overflow:ellipsis}
 .gsd-truck-cont-modal .gsd-truck-table-wrap{overflow-x:auto;overflow-y:visible}.gsd-truck-cont-modal .gsd-truck-table{min-width:1280px;table-layout:auto}.gsd-truck-cont-modal .gsd-truck-table th,.gsd-truck-cont-modal .gsd-truck-table td{white-space:nowrap}.gsd-truck-cont-modal .gsd-truck-table input,.gsd-truck-cont-modal .gsd-truck-table select{box-sizing:border-box;min-width:72px;overflow:hidden;text-overflow:ellipsis}
-.gsd-lcl-trucking-info-modal{width:min(1040px,96vw)}.gsd-lcl-trucking-info-modal .gsd-truck-table-wrap{overflow-x:auto}.gsd-lcl-trucking-info-modal .gsd-truck-table{width:100%;min-width:942px;table-layout:fixed}.gsd-lcl-trucking-info-modal .gsd-truck-table th,.gsd-lcl-trucking-info-modal .gsd-truck-table td{box-sizing:border-box;overflow:hidden;text-overflow:ellipsis}.gsd-lcl-trucking-info-modal .gsd-truck-table input,.gsd-lcl-trucking-info-modal .gsd-truck-table select{min-width:0}
 .gsd-air-modal.gsd-dap-fcd-trucking-detail-modal{width:min(1360px,98vw);height:auto;min-height:0;padding:24px 24px 22px;border-radius:10px;overflow:hidden}
 .gsd-truck-cont-modal{height:auto;min-height:275px;max-height:calc(100vh - 24px);overflow-y:auto;overflow-x:hidden;box-sizing:border-box}.gsd-truck-cont-modal .gsd-truck-table-wrap{overflow:visible;max-height:none}.gsd-truck-cont-modal .gsd-truck-table{height:auto}.gsd-dap-fcd-trucking-detail-modal .gsd-truck-title{margin:0 0 14px;font-size:14px}
 .gsd-dap-fcd-trucking-detail-modal .gsd-truck-table-wrap{overflow-x:auto}
@@ -21915,8 +21585,7 @@ onBeforeUnmount(() => {
 .gsd-prs-modal .prs-date-field:hover:not(:disabled){color:#087d43;background:#f8fcfa}
 .gsd-prs-modal .prs-date-field:disabled{background:#fff;color:#9aa6a1;cursor:not-allowed}
 .gsd-prs-editing .gsd-prs-table td.prs-readonly{background:#eef1ef;color:#7a847d;cursor:not-allowed}.gsd-prs-editing .gsd-prs-table td.prs-days{background:#eef1ef}
-.gsd-air-pickup-status-modal{width:560px;max-width:96vw;min-height:0;padding:24px 20px 20px}.gsd-air-pickup-status-modal .gsd-prs-title{margin-bottom:14px}.gsd-air-pickup-status-modal .gsd-prs-table-wrap{max-height:none}.gsd-air-pickup-status-modal .gsd-prs-table{width:480px;min-width:480px;max-width:100%;margin:0 auto;table-layout:fixed}.gsd-air-pickup-status-modal .gsd-prs-table th,.gsd-air-pickup-status-modal .gsd-prs-table td{height:32px;padding:5px 8px}.gsd-air-pickup-status-modal .gsd-prs-actions{margin-top:14px}
-.gsd-lcl-icd-pickup-status-modal .gsd-icd-pickup-status-table{width:826px;min-width:826px;max-width:826px;margin:0 auto;table-layout:fixed}.gsd-lcl-icd-pickup-status-modal .gsd-icd-pickup-status-table th,.gsd-lcl-icd-pickup-status-modal .gsd-icd-pickup-status-table td{padding:6px 7px;white-space:normal;overflow-wrap:anywhere}
+.gsd-air-pickup-status-modal{width:880px;max-width:96vw;min-height:0;padding:24px 20px 20px}.gsd-air-pickup-status-modal .gsd-prs-title{margin-bottom:14px}.gsd-air-pickup-status-modal .gsd-prs-table-wrap{max-height:none}.gsd-air-pickup-status-modal .gsd-prs-table th,.gsd-air-pickup-status-modal .gsd-prs-table td{height:32px;padding:5px 8px}.gsd-air-pickup-status-modal .gsd-prs-actions{margin-top:14px}
 .gsd-air-dup-icd-prs-modal{width:960px;max-width:96vw;min-height:0;padding:22px 24px}
 .gsd-air-dup-icd-prs-modal .gsd-prs-title{display:block;text-align:center;margin:0 0 6px}
 .gsd-air-dup-icd-prs-modal .gsd-prs-table-wrap{max-height:none;margin-top:6px;overflow-x:auto}
@@ -21967,7 +21636,7 @@ onBeforeUnmount(() => {
 .bd-foot .edit:not(:disabled){background:#e67e22;border-color:#e67e22;color:#fff}
 @media(max-width:720px){.gsd-modal.gsd-bill-modal:has(.bd-body){padding:30px 18px 22px}.bd-row{flex-wrap:wrap}.bd-lab{flex-basis:130px}.bd-date{width:170px;flex-basis:170px}.bd-foot{width:100%}}
 .gsd-prealert-modal{width:486px;max-width:96vw;max-height:90vh;overflow-y:auto;padding:30px 28px 22px;border-radius:12px;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-prealert-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-pre-title{font-weight:800;font-size:14px;color:#1f2a26;margin:0 0 12px}.gsd-pre-dest{font-weight:700;font-size:13px;color:#33413b;margin:0 0 14px 14px}.gsd-pre-section{display:flex;flex-direction:column;align-items:center}.gsd-pre-row{display:flex;align-items:center;gap:12px;margin:9px 0}.gsd-pre-row.doc{width:440px;justify-content:flex-start}.gsd-pre-label{width:150px;text-align:right;font-weight:800;font-size:12.5px;color:#33413b;flex:none}.gsd-pre-row.doc .gsd-pre-label{width:170px}.gsd-pre-check{width:18px;height:18px;flex:none;accent-color:#008f4c;cursor:pointer}.gsd-pre-date,.gsd-pre-other{width:150px;height:38px;flex:none;text-align:center;padding:8px 10px;border:1px solid #c9d3cf;border-radius:8px;font:inherit;color:#33413b;background:#f7faf9;outline:none}.gsd-pre-other{text-align:left}.gsd-pre-icon{flex:none;border:none;background:none;cursor:pointer;color:#33413b;padding:2px;display:inline-flex;align-items:center;justify-content:center;line-height:0}.gsd-pre-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.gsd-pre-icon.upload.has{color:#1b7a43}.gsd-pre-icon.eye{opacity:.3;color:#9aa6a1;cursor:default}.gsd-pre-icon.eye.on{opacity:1;color:#0f4c81;cursor:pointer}.gsd-pre-icon:disabled{opacity:.4;cursor:not-allowed}.gsd-pre-divider{border-top:1px solid #e4eae7;margin:14px 0}.gsd-pre-doc-head{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 8px}.gsd-pre-doc-head span{font-weight:800;font-size:13px;color:#1f2a26}.gsd-pre-doc-head .wb-modal-btn{height:32px;min-height:32px;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:800}.gsd-pre-remarks{display:block;margin:6px 0 0}.gsd-pre-remarks span{display:block;font-weight:800;font-size:13px;color:#1f2a26;margin:0 0 6px}.gsd-pre-remarks textarea{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid #c9d3cf;border-radius:8px;font:inherit;color:#33413b;resize:vertical;outline:none}.gsd-pre-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}.gsd-pre-actions .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:800}.gsd-pre-actions .edit{background:#f6c998;border-color:#f6c998;color:#fff}.gsd-pre-actions .send{background:#0f4c81;border-color:#0f4c81;color:#fff}.gsd-pre-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-pre-actions .wb-modal-btn:disabled{opacity:.55;cursor:not-allowed}
-.gsd-cda-modal{width:fit-content;max-width:96vw;padding:30px 28px 20px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-cda-modal .gsd-modal-x,.gsd-clr-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-cda-instr{font-size:14px;font-weight:800;color:#1f2a26;margin:10px 40px 6px 0}.gsd-cda-addbar{display:flex;justify-content:flex-start;margin:8px 0 12px}.gsd-cda-scroll{max-height:320px;overflow-x:hidden;overflow-y:auto;scrollbar-gutter:stable}.gsd-cda-table{width:auto;border-collapse:separate;border-spacing:0;font-size:13px;color:#33413b}.gsd-cda-table th{position:sticky;top:0;z-index:2;padding:8px 10px;border-bottom:1px solid #e1e8e4;background:#fff;text-align:left;font-weight:800;color:#42504b}.gsd-cda-table td{padding:9px 10px;vertical-align:middle}.gsd-cda-table .cda-doc{font-weight:700;color:#1a1a1a;white-space:nowrap}.gsd-cda-table .cda-vf{text-align:center;width:104px}.gsd-cda-table .cda-up{width:372px}.gsd-cda-table .cda-act{width:44px}.gsd-cda-table input[type=checkbox]{width:18px;height:18px;accent-color:#008f4c}.cda-uphead{display:inline-block;width:160px;text-align:center}.cda-up-wrap{display:flex;align-items:center;gap:10px;width:100%}.cda-upcol{display:inline-flex;flex-direction:column;gap:3px;width:160px}.cdaup{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:160px;box-sizing:border-box;border:0;border-radius:8px;background:#1456e0;color:#fff;padding:7px 12px;font-size:12.5px;font-weight:800;white-space:nowrap;cursor:pointer}.cdaup.has{background:#0e9f57}.cdaup:disabled{background:#cfd8e6;cursor:not-allowed}.cdaup svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.cdafn{width:160px;box-sizing:border-box;border:1px solid #e2e8e4;border-radius:5px;background:#fff;padding:2px 7px;color:#44524c;font-size:10.5px;line-height:1.3}.cdaname{width:150px;flex:0 0 150px;box-sizing:border-box;border:1px solid #d6ddd9;border-radius:7px;background:#fff;padding:6px 9px;text-align:center;font-size:12.5px}.cda-rm{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;padding:0;border:0;border-radius:50%;background:transparent;color:#c0392b;font-size:15px;font-weight:900;line-height:1;cursor:pointer}.cda-rm:hover{background:#fdecea;color:#a72c21}.cda-eye{margin-left:auto}.gsd-cda-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;padding-right:44px}.gsd-cda-actions .edit{background:#e67e22;border-color:#e67e22;color:#fff}.gsd-cda-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-clr-modal{width:1180px;max-width:96vw;max-height:90vh;padding:30px 26px 24px;border-radius:12px;overflow:auto;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-clr-title{text-align:center;font-size:13px;font-weight:900;color:#0e1512;text-transform:uppercase;margin:0 0 8px}.gsd-clr-scroll{overflow:auto;max-height:300px;margin-top:6px}.gsd-clr-table{width:100%;border-collapse:collapse;table-layout:auto;font-size:12.5px;color:#33413b}.gsd-clr-table th,.gsd-clr-table td{border:1px solid #d5ddd9;padding:8px 10px;text-align:center;vertical-align:middle}.gsd-clr-table th{background:#f1f5f3;font-weight:800;color:#33413b;white-space:nowrap}.gsd-clr-table td.clr-ro{background:#f7faf9;color:#5b6a63;font-weight:700}.clr-allcell{width:44px}.clr-declcell{min-width:230px}.clr-dcap{display:inline-flex;align-items:center;gap:8px}.clr-dcapbox{text-align:center}.clr-plus{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;border-radius:6px;background:#008f4c;color:#fff;font-size:16px;font-weight:900;line-height:1;cursor:pointer}.clr-plus.dim{background:#b7c2bc;cursor:not-allowed}.clr-declwrap{display:flex;flex-direction:column;gap:6px;align-items:stretch;max-width:80%;margin:0 auto}.clr-declrow{display:flex;align-items:center;gap:6px}.clr-din{flex:1 1 auto;min-width:120px;border:1px solid #c9d3cf;border-radius:6px;padding:6px 8px;text-align:center;font:inherit}.clr-din.clr-baderr{border-color:#c0392b;background:#fff5f4}.clr-tick{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:0;border-radius:6px;background:#008f4c;color:#fff;font-size:14px;cursor:pointer}.clr-link{flex:1 1 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #cfe0d6;border-radius:6px;background:#eaf6ef;padding:6px 8px;cursor:pointer}.clr-link b{color:#0a6b3b;font-size:12.5px}.clr-link.clr-link-red{background:#fdecea;border-color:#c0392b}.clr-link.clr-link-red b{color:#c0392b}.clr-dots{display:inline-flex;gap:4px}.clr-dot{width:8px;height:8px;border-radius:50%;background:#d0d7de}.clr-dot.on{background:#008f4c}.gsd-clr-panels{display:flex;flex-direction:column;gap:14px;margin-top:14px}.clr-panel{border:1px solid #dfe6e2;border-radius:10px;background:#fff;padding:16px 18px}.clr-phead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;color:#5b6a63;font-size:12px;letter-spacing:.04em}.clr-phead b{margin-left:6px;color:#1f2a26;font-size:13px}.clr-pclose{border:0;background:transparent;color:#8a97a0;font-size:15px;cursor:pointer}.clr-prow{display:flex;align-items:flex-end;flex-wrap:wrap;gap:20px}.clr-fld{display:flex;flex-direction:column;gap:5px}.clr-fld span{font-size:12px;font-weight:800;color:#33413b}.clr-fld input[type=text],.clr-fld input[type=date]{min-width:190px;border:1px solid #c9d3cf;border-radius:7px;padding:7px 9px;font:inherit}.clr-res{display:flex;align-items:center;gap:16px}.clr-rchip{display:inline-flex;align-items:center;border:1.5px solid #cfd8d4;border-radius:20px;background:#fff;padding:7px 14px;color:#5b6a63;font-size:12.5px;cursor:pointer}.clr-rchip.on-green{background:#e8f6ee;border-color:#008f4c;color:#0a6b3b;font-weight:800}.clr-rchip.on-red{background:#fdecea;border-color:#c0392b;color:#c0392b;font-weight:800}.clr-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}.clr-step{display:flex;align-items:center;gap:8px;border:1px solid #d5ddd9;border-radius:8px;background:#fbfdfc;padding:9px 11px}.clr-step.dim{opacity:.5}.clr-step input{width:16px;height:16px;accent-color:#008f4c}.clr-step span{font-size:12px;font-weight:700;color:#33413b}.clr-step em{margin-left:auto;color:#0a6b3b;font-size:11px;font-style:normal;white-space:nowrap}.clr-warn{margin-top:8px;color:#c0392b;font-size:11.5px}.clr-pfoot{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}.clr-pfoot .edit{background:#e67e22;border-color:#e67e22;color:#fff}.clr-pfoot .primary{background:#008f4c;border-color:#008f4c;color:#fff}.clr-empty{height:44px;background:#fff;color:#0e1512;font-weight:800;font-style:italic}
+.gsd-cda-modal{width:fit-content;max-width:96vw;padding:30px 28px 20px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-cda-modal .gsd-modal-x,.gsd-clr-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-cda-instr{font-size:14px;font-weight:800;color:#1f2a26;margin:10px 40px 6px 0}.gsd-cda-addbar{display:flex;justify-content:flex-start;margin:8px 0 12px}.gsd-cda-table{width:auto;border-collapse:collapse;font-size:13px;color:#33413b}.gsd-cda-table th{padding:8px 10px;border-bottom:1px solid #e1e8e4;text-align:left;font-weight:800;color:#42504b}.gsd-cda-table td{padding:9px 10px;vertical-align:middle}.gsd-cda-table .cda-doc{font-weight:700;color:#1a1a1a;white-space:nowrap}.gsd-cda-table .cda-vf{text-align:center;width:104px}.gsd-cda-table .cda-up{width:372px}.gsd-cda-table .cda-act{width:44px}.gsd-cda-table input[type=checkbox]{width:18px;height:18px;accent-color:#008f4c}.cda-uphead{display:inline-block;width:160px;text-align:center}.cda-up-wrap{display:flex;align-items:center;gap:10px;width:100%}.cda-upcol{display:inline-flex;flex-direction:column;gap:3px;width:160px}.cdaup{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:160px;box-sizing:border-box;border:0;border-radius:8px;background:#1456e0;color:#fff;padding:7px 12px;font-size:12.5px;font-weight:800;white-space:nowrap;cursor:pointer}.cdaup.has{background:#0e9f57}.cdaup:disabled{background:#cfd8e6;cursor:not-allowed}.cdaup svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.cdafn{width:160px;box-sizing:border-box;border:1px solid #e2e8e4;border-radius:5px;background:#fff;padding:2px 7px;color:#44524c;font-size:10.5px;line-height:1.3}.cdaname{width:150px;flex:0 0 150px;box-sizing:border-box;border:1px solid #d6ddd9;border-radius:7px;background:#fff;padding:6px 9px;text-align:center;font-size:12.5px}.cda-rm{border:0;background:transparent;color:#c0392b;font-size:15px;font-weight:900;line-height:1;cursor:pointer}.cda-eye{margin-left:auto}.gsd-cda-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;padding-right:44px}.gsd-cda-actions .edit{background:#e67e22;border-color:#e67e22;color:#fff}.gsd-cda-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-clr-modal{width:1180px;max-width:96vw;max-height:90vh;padding:30px 26px 24px;border-radius:12px;overflow:auto;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-clr-title{text-align:center;font-size:13px;font-weight:900;color:#0e1512;text-transform:uppercase;margin:0 0 8px}.gsd-clr-scroll{overflow:auto;max-height:300px;margin-top:6px}.gsd-clr-table{width:100%;border-collapse:collapse;table-layout:auto;font-size:12.5px;color:#33413b}.gsd-clr-table th,.gsd-clr-table td{border:1px solid #d5ddd9;padding:8px 10px;text-align:center;vertical-align:middle}.gsd-clr-table th{background:#f1f5f3;font-weight:800;color:#33413b;white-space:nowrap}.gsd-clr-table td.clr-ro{background:#f7faf9;color:#5b6a63;font-weight:700}.clr-allcell{width:44px}.clr-declcell{min-width:230px}.clr-dcap{display:inline-flex;align-items:center;gap:8px}.clr-dcapbox{text-align:center}.clr-plus{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;border-radius:6px;background:#008f4c;color:#fff;font-size:16px;font-weight:900;line-height:1;cursor:pointer}.clr-plus.dim{background:#b7c2bc;cursor:not-allowed}.clr-declwrap{display:flex;flex-direction:column;gap:6px;align-items:stretch;max-width:80%;margin:0 auto}.clr-declrow{display:flex;align-items:center;gap:6px}.clr-din{flex:1 1 auto;min-width:120px;border:1px solid #c9d3cf;border-radius:6px;padding:6px 8px;text-align:center;font:inherit}.clr-din.clr-baderr{border-color:#c0392b;background:#fff5f4}.clr-tick{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:0;border-radius:6px;background:#008f4c;color:#fff;font-size:14px;cursor:pointer}.clr-link{flex:1 1 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #cfe0d6;border-radius:6px;background:#eaf6ef;padding:6px 8px;cursor:pointer}.clr-link b{color:#0a6b3b;font-size:12.5px}.clr-link.clr-link-red{background:#fdecea;border-color:#c0392b}.clr-link.clr-link-red b{color:#c0392b}.clr-dots{display:inline-flex;gap:4px}.clr-dot{width:8px;height:8px;border-radius:50%;background:#d0d7de}.clr-dot.on{background:#008f4c}.gsd-clr-panels{display:flex;flex-direction:column;gap:14px;margin-top:14px}.clr-panel{border:1px solid #dfe6e2;border-radius:10px;background:#fff;padding:16px 18px}.clr-phead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;color:#5b6a63;font-size:12px;letter-spacing:.04em}.clr-phead b{margin-left:6px;color:#1f2a26;font-size:13px}.clr-pclose{border:0;background:transparent;color:#8a97a0;font-size:15px;cursor:pointer}.clr-prow{display:flex;align-items:flex-end;flex-wrap:wrap;gap:20px}.clr-fld{display:flex;flex-direction:column;gap:5px}.clr-fld span{font-size:12px;font-weight:800;color:#33413b}.clr-fld input[type=text],.clr-fld input[type=date]{min-width:190px;border:1px solid #c9d3cf;border-radius:7px;padding:7px 9px;font:inherit}.clr-res{display:flex;align-items:center;gap:16px}.clr-rchip{display:inline-flex;align-items:center;border:1.5px solid #cfd8d4;border-radius:20px;background:#fff;padding:7px 14px;color:#5b6a63;font-size:12.5px;cursor:pointer}.clr-rchip.on-green{background:#e8f6ee;border-color:#008f4c;color:#0a6b3b;font-weight:800}.clr-rchip.on-red{background:#fdecea;border-color:#c0392b;color:#c0392b;font-weight:800}.clr-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}.clr-step{display:flex;align-items:center;gap:8px;border:1px solid #d5ddd9;border-radius:8px;background:#fbfdfc;padding:9px 11px}.clr-step.dim{opacity:.5}.clr-step input{width:16px;height:16px;accent-color:#008f4c}.clr-step span{font-size:12px;font-weight:700;color:#33413b}.clr-step em{margin-left:auto;color:#0a6b3b;font-size:11px;font-style:normal;white-space:nowrap}.clr-warn{margin-top:8px;color:#c0392b;font-size:11.5px}.clr-pfoot{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}.clr-pfoot .edit{background:#e67e22;border-color:#e67e22;color:#fff}.clr-pfoot .primary{background:#008f4c;border-color:#008f4c;color:#fff}.clr-empty{height:44px;background:#fff;color:#0e1512;font-weight:800;font-style:italic}
 .gsd-clr-table .clr-declhead,.gsd-clr-table .clr-declcell{width:180px;min-width:180px}
 .gsd-clr-table .clr-declwrap{max-width:100%}
 .gsd-ccd-clr-modal{width:980px;max-width:96vw;padding:28px 22px 20px}
@@ -22001,10 +21670,6 @@ onBeforeUnmount(() => {
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-view-table th:nth-child(4){width:112px}
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-view-table th:nth-child(5){width:82px}
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-declhead,.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-declcell{width:148px;min-width:148px}
-.gsd-lcl-clr-modal .gsd-lcl-clr-scroll{overflow-x:auto}
-.gsd-lcl-clr-modal .gsd-lcl-clr-table{width:100%;min-width:0;max-width:none;margin:0;table-layout:fixed}
-.gsd-lcl-clr-modal .gsd-lcl-clr-table th,.gsd-lcl-clr-modal .gsd-lcl-clr-table td{padding:6px 5px;white-space:nowrap}
-.gsd-lcl-clr-modal .gsd-lcl-clr-table .clr-declhead,.gsd-lcl-clr-modal .gsd-lcl-clr-table .clr-declcell{width:164px;min-width:164px}
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-panel{padding:14px 16px}
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-prow{gap:16px}
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-fld input[type=text],.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-fld input[type=date]{min-width:170px}
@@ -22318,13 +21983,6 @@ onBeforeUnmount(() => {
 .blform .ctab td.ctr{text-align:center}
 .blform .ctab td[data-ph]:empty::before{content:attr(data-ph);color:#b7bfc7}
 .blform .ctab tr.grow td{height:150px}
-.blform .bill-container-title{margin-top:8px;border-bottom:1.5px solid #0f4c81;padding:0 0 4px;color:#0f4c81;font-size:10px;font-weight:800;letter-spacing:.35px;text-transform:uppercase}
-.blform .bill-container-table{width:100%;margin-top:5px;border-collapse:collapse;table-layout:fixed;font-size:9px}
-.blform .bill-container-table th,.blform .bill-container-table td{height:22px;border:1px solid #0f4c81;padding:0 4px;text-align:center;vertical-align:middle;line-height:22px;overflow-wrap:anywhere}
-.blform .bill-container-table th{background:#eef4f9;color:#0f4c81;font-size:8px;font-weight:800;letter-spacing:.25px;text-transform:uppercase}
-.blform .bill-container-table th:first-child{width:28px}.blform .bill-container-table td{background:#fff;color:#111}.blform .bill-container-empty{height:28px;color:#7a8792!important;font-style:italic;line-height:28px}
-.bl-pdf-render-sheet .bill-container-table th,.bl-pdf-render-sheet .bill-container-table td{height:22px!important;padding:0 4px!important;vertical-align:middle!important;line-height:22px!important}
-.bl-pdf-render-sheet .bill-container-table tbody td{box-sizing:border-box!important;padding:0 4px 4px!important;line-height:17px!important}
 .blform .clause{font-size:9px;color:#444;margin-top:8px;line-height:1.5}
 .blform .sig-row{display:flex;justify-content:flex-end;margin-top:auto;padding-top:18px}
 .blform .sig{width:46%;text-align:center}
@@ -22382,9 +22040,7 @@ onBeforeUnmount(() => {
 .shipment-notes-modal textarea:focus{border-color:#008f4c;box-shadow:0 0 0 2px rgba(0,143,76,.12)}
 .do-info-actions .clear{background:#64748b;color:#fff}.do-info-actions button:disabled{filter:saturate(.45);opacity:.45;cursor:not-allowed}
 .do-info-modal{width:822px}.do-info-row{grid-template-columns:86px 190px 140px 26px 26px 194px;gap:10px}.do-info-modal.editing .do-info-row input:not(:disabled):not([type=checkbox]){background:#fff;color:#26312b}.do-info-row .do-info-upload{grid-column:4}.do-info-row .do-info-view{grid-column:5}.do-info-validity{grid-column:6;display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}.do-info-validity label{flex:0 0 auto}.do-info-validity input{width:130px}.do-info-validity input:disabled{cursor:not-allowed}@media(max-width:880px){.do-info-modal{width:94vw}.do-info-row{grid-template-columns:80px minmax(0,1fr) 30px 30px}.do-info-row .do-info-upload{grid-column:3;grid-row:1/3}.do-info-row .do-info-view{grid-column:4;grid-row:1/3}.do-info-validity{grid-column:2/5;grid-row:auto;justify-content:flex-start}.do-info-validity input{width:min(180px,100%)}}
-.do-info-choice{display:flex;align-items:center;gap:9px;cursor:pointer}.do-info-choice input[type=checkbox]{flex:0 0 auto;width:18px;height:18px;margin:0;padding:0;border-radius:3px;accent-color:#008f4c}.do-info-choice span{display:block}.do-info-choice:has(input:disabled){cursor:not-allowed}
-.gsd-cda-modal .cda-rm:disabled{display:inline-flex!important;background:transparent!important;color:#c0392b!important;opacity:.35!important;cursor:not-allowed!important}
-.gsd-cda-modal .gsd-cda-table{width:610px;table-layout:fixed}.gsd-cda-modal .gsd-cda-table col:first-child{width:160px}.gsd-cda-modal .gsd-cda-table .cda-vf{width:62px}.gsd-cda-modal .gsd-cda-table .cda-up{width:342px}.gsd-cda-modal .gsd-cda-table .cda-act{width:46px}.gsd-cda-modal .cda-up-wrap{gap:7px}.gsd-cda-modal .cdaname{width:130px;flex-basis:130px}.gsd-cda-modal .cda-upcol,.gsd-cda-modal .cdaup,.gsd-cda-modal .cdafn{width:140px}.gsd-cda-modal .cda-uphead{width:140px}.gsd-cda-modal .cda-eye{width:24px;margin-left:0}.gsd-cda-modal td.cda-act,.gsd-cda-modal th:last-child{padding-left:10px;padding-right:10px;text-align:center}
+  .do-info-choice{display:flex;align-items:center;gap:9px;cursor:pointer}.do-info-choice input[type=checkbox]{flex:0 0 auto;width:18px;height:18px;margin:0;padding:0;border-radius:3px;accent-color:#008f4c}.do-info-choice span{display:block}.do-info-choice:has(input:disabled){cursor:not-allowed}
 </style>
 <style>
 .booking-detail-modal{box-sizing:border-box}.booking-detail-row{grid-template-columns:104px minmax(0,1fr) 36px 24px;column-gap:12px}.booking-doc-wrap{display:flex;align-items:flex-start;gap:16px;margin-bottom:10px}.booking-add-doc{flex:0 0 auto;min-width:88px;padding:0 14px}.booking-doc-list{display:flex;min-width:0;flex:1;flex-direction:column;gap:10px}.booking-detail-row.booking-doc-row{grid-template-columns:minmax(0,1fr) 36px 24px;column-gap:12px;margin:0;padding:0;border:0}.booking-detail-row.booking-doc-row.has-remove{grid-template-columns:minmax(0,1fr) 36px 24px 24px}.booking-remove{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border:0;border-radius:50%;background:#c0392b;color:#fff;font-size:15px;font-weight:800;line-height:1;cursor:pointer}.booking-remove:hover{background:#a23227}.booking-icon,.booking-eye{display:inline-flex;align-items:center;justify-content:center;padding:0}.booking-icon{width:36px;height:36px}.booking-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.booking-eye{width:24px;height:24px;color:#0f4c81}.booking-eye svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.booking-eye:disabled{color:#9aa6a1}
@@ -22578,7 +22234,6 @@ onBeforeUnmount(() => {
 .gsd-arrival-detail-modal .an-detail-g2 :is(input,textarea):not(:disabled):not([readonly]),.gsd-arrival-detail-modal .an-detail-g3 :is(input,textarea):not(:disabled):not([readonly]){background:#fff;color:#26312b}
 .gsd-arrival-detail-modal textarea.an-party-textarea{min-height:66px;resize:vertical}
 .an-detail-g2 input,.an-detail-g3 input,.an-detail-freetime input { height: 34px; padding-top: 0; padding-bottom: 2px; line-height: normal; }
-.an-detail-warehouse{display:grid;grid-template-columns:minmax(180px,.72fr) minmax(0,1.8fr);gap:16px;margin:10px 0}.an-detail-warehouse label{display:flex;min-width:0;flex-direction:column;gap:4px}.an-detail-warehouse label>span{color:#555;font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}.an-detail-warehouse input{box-sizing:border-box;width:100%;height:34px;border:1px solid #c9d3cf;border-radius:7px;background:#f1f5f4;padding:0 9px 2px;color:#46524d;font:inherit;font-size:13px;line-height:normal;outline:none}.gsd-arrival-detail-modal .an-detail-sheet.is-editing .an-detail-warehouse input:not([readonly]){background:#fff;color:#26312b}
 .an-cargo-summary textarea { height: 34px; min-height: 34px; padding-top: 6px; padding-bottom: 8px; overflow: hidden; }
 .an-detail-remarks textarea { min-height: 76px; resize: vertical; }
 .an-detail-freetime { display: grid; grid-template-columns: 30px 1fr 30px 1fr; align-items: center; gap: 8px; }.an-detail-freetime b { color: #16406e; font-size: 11px; font-weight: 800; }.an-detail-freetime input { text-align: center; font-weight: 700; }
@@ -22616,7 +22271,7 @@ onBeforeUnmount(() => {
 .an-payment-contact textarea[readonly]{background:#fff!important;opacity:1}
 .an-detail-sheet:not(.is-editing) .an-payment-contact textarea[readonly]{background:#f1f5f4!important}
 .an-detail-sign { width: 300px; margin: 26px 0 0 auto; color: #555; text-align: center; font-size: 11px; font-weight: 700; }.an-detail-sign b { display: block; margin-top: 4px; color: #1f2a26; font-size: 12px; }.an-detail-sign strong { display: block; margin-top: 28px; color: #1f2a26; font-size: 12px; }.an-detail-sign em { display:block; margin-top:5px; }.an-sign-line { display:block; margin-top:8px; border-top:1px solid #333; }
-@media (max-width:700px) { .an-detail-g2,.an-detail-g3,.an-detail-warehouse { grid-template-columns: 1fr; }.an-detail-letterhead { flex-direction: column; }.an-detail-heading { text-align: left; }.an-detail-table { min-width: 760px; } }
+@media (max-width:700px) { .an-detail-g2,.an-detail-g3 { grid-template-columns: 1fr; }.an-detail-letterhead { flex-direction: column; }.an-detail-heading { text-align: left; }.an-detail-table { min-width: 760px; } }
 
 /* One close-button treatment for every AdminWorkbook modal. Modal-specific
    rules may position the button, but must not alter its size or X alignment. */
@@ -22802,14 +22457,7 @@ onBeforeUnmount(() => {
 /* A confirmed workflow checkbox makes the complete row read-only. Modal
    content remains available for review, while every mutating action is hidden. */
 .gsd-workflow-locked input,.gsd-workflow-locked select,.gsd-workflow-locked textarea{pointer-events:none!important}
-.gsd-workflow-locked button:not(.gsd-modal-x):not(.ec-view):not(.gsd-eye-btn):not(.gsd-pre-icon.eye):not(.gsd-locked-review-action):not(.gsd-route-reference-add):not([class*="export"]):not([title^="View"]){display:none!important}
-/* Locked shipment rows remain read-only, but maintaining the shared Route
-   directory is independent from changing shipment data. */
-.gsd-workflow-locked .gsd-route-reference-maintenance input,.gsd-workflow-locked .gsd-route-reference-maintenance select{pointer-events:auto!important}
-.gsd-workflow-locked .gsd-route-reference-maintenance button{display:inline-flex!important}
-.gsd-workflow-locked.gsd-cutoff-modal .gsd-cutoff-history{border-top:0;padding-top:0}
-.gsd-workflow-locked.gsd-volume-modal .gsd-record-history{border-top:0;padding-top:0}
-.gsd-workflow-locked.gsd-vessel-modal .gsd-vhist-wrap.ecd{margin-top:0;border-top:0;padding-top:0}
+.gsd-workflow-locked button:not(.gsd-modal-x):not(.ec-view):not(.gsd-eye-btn):not(.gsd-pre-icon.eye):not([class*="export"]):not([title^="View"]){display:none!important}
 .do-document-overlay{z-index:760!important;background:rgba(20,30,26,.5)!important}.do-document-modal{width:900px;max-width:96vw;height:94vh;display:flex;flex-direction:column;overflow:hidden;border-radius:10px;background:#eef1f4;box-shadow:0 20px 60px rgba(0,0,0,.32)}.do-document-toolbar{display:flex;justify-content:flex-end;gap:8px;padding:10px 14px;background:#fff;border-bottom:1px solid #dce3df}.do-document-toolbar .wb-modal-btn{height:34px;padding:0 14px}.do-document-close{width:25px;height:25px;margin-left:4px;border:0;border-radius:50%;background:#c0392b;color:#fff;font-size:18px;font-weight:800;line-height:1;cursor:pointer}.do-document-scroll{flex:1;overflow:auto;padding:18px}.do-document-sheet{box-sizing:border-box;width:760px;min-height:1060px;margin:0 auto;padding:44px 50px;background:#fff;color:#26312b;font:12px/1.35 Arial,sans-serif;box-shadow:0 2px 9px rgba(0,0,0,.14)}.do-document-head{display:flex;justify-content:space-between;gap:20px;padding-bottom:12px;border-bottom:2px solid #0f4c81;color:#0f4c81}.do-document-head>div:first-child{display:flex;flex-direction:column;max-width:460px}.do-document-head b{font-size:15px}.do-document-head span{font-size:9px;color:#495852}.do-document-head>div:last-child{text-align:right}.do-document-head strong{display:block;font-size:20px;letter-spacing:.04em}.do-document-head small{font-size:10px;font-weight:800}.do-document-sheet label{display:grid;gap:4px;margin-top:12px}.do-document-sheet label>span,.do-doc-section{color:#0f4c81;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}.do-document-sheet input,.do-document-sheet textarea{box-sizing:border-box;width:100%;border:1px solid #c9d3cf;border-radius:5px;background:#fff;padding:7px 9px;color:#26312b;font:12px Arial,sans-serif;outline:none;resize:vertical}.do-document-sheet input{height:34px}.do-document-sheet textarea{min-height:54px}.do-document-sheet input:disabled,.do-document-sheet textarea:disabled{background:#f1f5f4;color:#46534d;opacity:1}.do-doc-grid{display:grid;gap:14px}.do-doc-grid.two{grid-template-columns:1fr 1fr}.do-doc-grid.three{grid-template-columns:repeat(3,1fr)}.do-doc-section{margin-top:22px;padding-bottom:5px;border-bottom:1px solid #8fa9be;font-size:11px}.do-doc-table{width:100%;margin-top:8px;border-collapse:collapse;table-layout:fixed}.do-doc-table th,.do-doc-table td{border:1px solid #c7d3dc;padding:0;text-align:center}.do-doc-table th{height:27px;background:#eef3f7;color:#0f4c81;font-size:9px}.do-doc-table th:first-child{width:30px}.do-doc-table input{height:30px;border:0;border-radius:0;text-align:center}.do-doc-add{margin-top:7px;border:0;border-radius:5px;background:#008f4c;color:#fff;padding:5px 10px;font-size:10px;font-weight:800;cursor:pointer}.do-doc-bottom{margin-top:16px}.do-doc-sign{display:grid;grid-template-columns:1fr 1fr;gap:54px;margin-top:52px;text-align:center;color:#526159;font-size:10px}.do-doc-sign>div{display:flex;flex-direction:column;align-items:center}.do-doc-sign b{margin-top:3px;color:#26312b;font-size:11px}.do-doc-sign i{display:block;width:100%;height:48px;border-bottom:1px solid #26312b}.do-doc-sign strong{margin-top:6px;color:#26312b;font-size:11px}@media(max-width:820px){.do-document-sheet{width:720px}.do-document-scroll{padding:10px}}
 .do-document-actions .wb-modal-btn.primary{border-color:#00c566;background:#00c566;color:#fff}.do-document-actions .wb-modal-btn.edit{border-color:#e67e22;background:#e67e22;color:#fff}.do-document-actions .wb-modal-btn.export{border-color:#237bdd;background:#237bdd;color:#fff}.do-document-actions .wb-modal-btn:disabled{filter:saturate(.42) brightness(.78);cursor:not-allowed}.do-doc-sign>div{display:grid;grid-template-rows:14px 18px 49px 18px;align-items:center}.do-doc-sign b,.do-doc-sign strong{display:block;margin:0}.do-doc-sign i{height:48px;align-self:start}.do-sign-placeholder{visibility:hidden}
 .do-document-modal{width:920px}.do-document-scroll{padding:18px 22px 24px}.do-document-sheet{width:min(824px,100%)}@media(max-width:820px){.do-document-sheet{width:100%}}

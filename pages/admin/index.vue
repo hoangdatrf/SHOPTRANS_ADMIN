@@ -884,6 +884,71 @@
                         <span v-else>Click <b style="display:inline">Add Row</b> to create the first record.</span>
                       </td>
                     </tr>
+                    <template v-if="smAdding">
+                      <tr class="sm-editing" @keydown.enter="handleSalesRowEnter('add', $event)">
+                        <td class="sel-col"><input type="checkbox" disabled /></td>
+                        <td class="sm-order-cell"><div class="viewcell">New</div></td>
+                        <td v-for="column in tableColumns" :key="column.key" :data-col-key="column.key">
+                          <input v-if="column.kind === 'checkbox'" type="checkbox" class="sm-check" v-model="smDraft[column.key]" />
+                          <div v-else-if="column.kind === 'postal-tree'" class="idcell">Saved after country creation</div>
+                          <div v-else-if="column.kind === 'id' || column.kind === 'computed'" class="idcell" :class="{ empty: !smDraft[column.key] }">{{ smDraft[column.key] || 'auto' }}</div>
+                          <button v-else-if="column.kind === 'roles'" type="button" class="sm-rolepick" @click.stop="openRolesModal('add')">
+                            <span v-if="smDraft[column.key]">{{ smDraft[column.key] }}</span>
+                            <span v-else class="sm-role-empty">Select…</span>
+                            <span class="sm-role-arrow">▾</span>
+                          </button>
+                          <div v-else-if="column.kind === 'gsdstaff'" class="idcell">{{ smDraft[column.key] || '-' }}</div>
+                          <button v-else-if="column.kind === 'fulldetail'" class="sm-mini-action ghost" type="button" @click.stop="openTraderFullDetail(smDraft)">Detail</button>
+                          <button v-else-if="column.kind === 'driverlist'" class="sm-mini-action" type="button">No drivers</button>
+                          <button v-else-if="column.kind === 'coverage'" class="sm-mini-action ghost" type="button" @click.stop="openCoverageDraft('add')">{{ coverageLabel(smDraft[column.key]) }}</button>
+                          <div v-else-if="column.kind === 'deplist' || column.kind === 'haulier'" class="haulage-suggest-cell">
+                            <input v-model="smDraft[column.key]" class="sm-celli" type="text" :list="`haulage-${column.key}-options`" placeholder="Select" autocomplete="off" />
+                            <datalist :id="`haulage-${column.key}-options`"><option v-for="option in haulageOptionsFor(column.key)" :key="option" :value="option" /></datalist>
+                          </div>
+                          <select v-else-if="column.kind === 'stafflist'" v-model="smDraft[column.key]" class="sm-celli">
+                            <option value="">— Staff —</option><option v-for="staff in haulageStaffOptions" :key="staff" :value="staff">{{ staff }}</option>
+                          </select>
+                          <div v-else-if="column.kind === 'list'" class="sm-list-cell">
+                            <input
+                              v-model="smDraft[column.key]"
+                              class="sm-celli sm-list-input"
+                              type="text"
+                              :placeholder="salesCellPlaceholder(column)"
+                              @focus="openSalesList(column.key)"
+                              @input="openSalesList(column.key)"
+                              @keydown.down.prevent="moveSalesList(column.key, 1)"
+                              @keydown.up.prevent="moveSalesList(column.key, -1)"
+                              @change="syncSalesFeeReferencePair(column.key)"
+                              @keydown.enter.stop="handleSalesListEnter(column.key, 'add', $event)"
+                              @keydown.esc.prevent="closeSalesList"
+                            />
+                            <span class="sm-list-arrow">&#9662;</span>
+                            <div v-if="smListPicker.key === column.key" class="sm-list-menu">
+                              <button
+                                v-for="option in filteredSalesListOptions(column.key)"
+                                :key="option"
+                                type="button"
+                                class="sm-list-item"
+                                :class="{ active: option === activeSalesListOption(column.key) }"
+                                @mousedown.prevent="chooseSalesList(column.key, option)"
+                              >
+                                {{ option }}
+                              </button>
+                              <div v-if="filteredSalesListOptions(column.key).length === 0" class="sm-list-empty">No options</div>
+                            </div>
+                          </div>
+                          <select v-else-if="column.kind === 'select'" v-model="smDraft[column.key]" class="sm-celli">
+                            <option v-for="option in column.opts" :key="option" :value="option">{{ option }}</option>
+                          </select>
+                          <textarea v-else-if="column.kind === 'textarea'" v-model="smDraft[column.key]" class="sm-celli haulage-textarea" rows="1" @input="growHaulageTextarea"></textarea>
+                          <div v-else-if="isInternalHaulage && column.key === 'distance'" class="haulage-geo-cell">
+                            <input v-model="smDraft[column.key]" class="sm-celli" type="number" inputmode="decimal" :placeholder="salesCellPlaceholder(column)" />
+                            <button type="button" title="Calculate with OpenRouteService" :disabled="haulageCalculating" @click.stop="calculateHaulageRoute(smDraft)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7" /></svg></button>
+                          </div>
+                          <input v-else v-model="smDraft[column.key]" class="sm-celli" :type="salesInputType(column)" :inputmode="salesInputMode(column)" :placeholder="salesCellPlaceholder(column)" :data-key="column.key" @focus="refreshSmLedge" @focusout="formatSalesNumberInput(column.key, $event, 'add'); refreshSmLedge()" />
+                        </td>
+                      </tr>
+                    </template>
                     <template v-for="(record, rowIndex) in pageRows" :key="`sm-row-${record.id}`">
                       <tr :class="salesRowClass(record)" @dblclick="!activeSalesTable.readOnly && startSalesEdit(record, $event)" @keydown.enter="handleSalesRowEnter('edit', $event)">
                         <td class="sel-col"><input type="checkbox" :checked="state.selected.has(record.id)" :disabled="smEditId === record.id || rowSelectionDisabled" @change="toggleSelected(record.id, $event)" /></td>
@@ -1023,71 +1088,6 @@
                               </form>
                             </div>
                           </section>
-                        </td>
-                      </tr>
-                    </template>
-                    <template v-if="smAdding">
-                      <tr class="sm-editing" @keydown.enter="handleSalesRowEnter('add', $event)">
-                        <td class="sel-col"><input type="checkbox" disabled /></td>
-                        <td class="sm-order-cell"><div class="viewcell">{{ filteredRows.length + 1 }}</div></td>
-                        <td v-for="column in tableColumns" :key="column.key" :data-col-key="column.key">
-                          <input v-if="column.kind === 'checkbox'" type="checkbox" class="sm-check" v-model="smDraft[column.key]" />
-                          <div v-else-if="column.kind === 'postal-tree'" class="idcell">Saved after country creation</div>
-                          <div v-else-if="column.kind === 'id' || column.kind === 'computed'" class="idcell" :class="{ empty: !smDraft[column.key] }">{{ smDraft[column.key] || 'auto' }}</div>
-                          <button v-else-if="column.kind === 'roles'" type="button" class="sm-rolepick" @click.stop="openRolesModal('add')">
-                            <span v-if="smDraft[column.key]">{{ smDraft[column.key] }}</span>
-                            <span v-else class="sm-role-empty">Select…</span>
-                            <span class="sm-role-arrow">▾</span>
-                          </button>
-                          <div v-else-if="column.kind === 'gsdstaff'" class="idcell">{{ smDraft[column.key] || '-' }}</div>
-                          <button v-else-if="column.kind === 'fulldetail'" class="sm-mini-action ghost" type="button" @click.stop="openTraderFullDetail(smDraft)">Detail</button>
-                          <button v-else-if="column.kind === 'driverlist'" class="sm-mini-action" type="button">No drivers</button>
-                          <button v-else-if="column.kind === 'coverage'" class="sm-mini-action ghost" type="button" @click.stop="openCoverageDraft('add')">{{ coverageLabel(smDraft[column.key]) }}</button>
-                          <div v-else-if="column.kind === 'deplist' || column.kind === 'haulier'" class="haulage-suggest-cell">
-                            <input v-model="smDraft[column.key]" class="sm-celli" type="text" :list="`haulage-${column.key}-options`" placeholder="Select" autocomplete="off" />
-                            <datalist :id="`haulage-${column.key}-options`"><option v-for="option in haulageOptionsFor(column.key)" :key="option" :value="option" /></datalist>
-                          </div>
-                          <select v-else-if="column.kind === 'stafflist'" v-model="smDraft[column.key]" class="sm-celli">
-                            <option value="">— Staff —</option><option v-for="staff in haulageStaffOptions" :key="staff" :value="staff">{{ staff }}</option>
-                          </select>
-                          <div v-else-if="column.kind === 'list'" class="sm-list-cell">
-                            <input
-                              v-model="smDraft[column.key]"
-                              class="sm-celli sm-list-input"
-                              type="text"
-                              :placeholder="salesCellPlaceholder(column)"
-                              @focus="openSalesList(column.key)"
-                              @input="openSalesList(column.key)"
-                              @keydown.down.prevent="moveSalesList(column.key, 1)"
-                              @keydown.up.prevent="moveSalesList(column.key, -1)"
-                              @change="syncSalesFeeReferencePair(column.key)"
-                              @keydown.enter.stop="handleSalesListEnter(column.key, 'add', $event)"
-                              @keydown.esc.prevent="closeSalesList"
-                            />
-                            <span class="sm-list-arrow">&#9662;</span>
-                            <div v-if="smListPicker.key === column.key" class="sm-list-menu">
-                              <button
-                                v-for="option in filteredSalesListOptions(column.key)"
-                                :key="option"
-                                type="button"
-                                class="sm-list-item"
-                                :class="{ active: option === activeSalesListOption(column.key) }"
-                                @mousedown.prevent="chooseSalesList(column.key, option)"
-                              >
-                                {{ option }}
-                              </button>
-                              <div v-if="filteredSalesListOptions(column.key).length === 0" class="sm-list-empty">No options</div>
-                            </div>
-                          </div>
-                          <select v-else-if="column.kind === 'select'" v-model="smDraft[column.key]" class="sm-celli">
-                            <option v-for="option in column.opts" :key="option" :value="option">{{ option }}</option>
-                          </select>
-                          <textarea v-else-if="column.kind === 'textarea'" v-model="smDraft[column.key]" class="sm-celli haulage-textarea" rows="1" @input="growHaulageTextarea"></textarea>
-                          <div v-else-if="isInternalHaulage && column.key === 'distance'" class="haulage-geo-cell">
-                            <input v-model="smDraft[column.key]" class="sm-celli" type="number" inputmode="decimal" :placeholder="salesCellPlaceholder(column)" />
-                            <button type="button" title="Calculate with OpenRouteService" :disabled="haulageCalculating" @click.stop="calculateHaulageRoute(smDraft)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7" /></svg></button>
-                          </div>
-                          <input v-else v-model="smDraft[column.key]" class="sm-celli" :type="salesInputType(column)" :inputmode="salesInputMode(column)" :placeholder="salesCellPlaceholder(column)" :data-key="column.key" @focus="refreshSmLedge" @focusout="formatSalesNumberInput(column.key, $event, 'add'); refreshSmLedge()" />
                         </td>
                       </tr>
                     </template>
@@ -3270,6 +3270,8 @@ const referenceDefaultTabs = [
     salesField('pod', 'POD', 170),
     salesField('podCountry', 'COUNTRY/AREA', 170, { kind: 'list' }),
     salesField('podCode', 'CODE', 120),
+    salesField('mnfSubmit', 'MNF SUBMIT', 130, { kind: 'checkbox', optional: true }),
+    salesField('routeType', 'TYPE', 110, { kind: 'select', opts: ['Sea', 'Air'] }),
   ] },
   { id: 'units', label: 'Units', columns: [salesField('ucode', 'Unit Code', 130), salesField('udesc', 'Description', 220)] },
   { id: 'servicetypes', label: 'Service Types', columns: [salesField('sname', 'Service Name', 200), salesField('scode', 'Code', 130)] },
@@ -6485,6 +6487,8 @@ const startSalesAddRow = async () => {
     smDraft[column.key] = salesDefaultValue(column)
   })
   smAdding.value = true
+  // The draft row renders above the existing rows, so make sure it is in view.
+  document.querySelector('.sm-tablewrap')?.scrollTo?.({ top: 0 })
   await focusSalesDraftCell()
   await refreshSmLedge()
 }
@@ -8502,9 +8506,25 @@ const deleteRecord = async (record: AdminRecord) => {
 const bulkCopy = async () => {
   const selected = filteredRows.value.filter((record) => state.selected.has(record.id))
   if (!selected.length) return
+  // The API rejects duplicate routes/currencies/charges/vessels, so an exact copy can never be
+  // saved. Open the Add Row draft prefilled from the selected record and let the user change the key.
+  if (currentPage.value.kind === 'reference-data' && ['routes', 'currencies', 'charges', 'vessels'].includes(activeReferenceTab.value.id)) {
+    const source = dataOf(selected[0])
+    await startSalesAddRow()
+    tableColumns.value.forEach((column: any) => {
+      if (source[column.key] !== undefined && source[column.key] !== null) smDraft[column.key] = source[column.key]
+    })
+    clearSelected()
+    await notifyAdmin('Copied into a new row. Change the code/name, then Save.')
+    return
+  }
   if (currentPage.value.kind !== 'sales-marketing') {
-    for (const [index, record] of selected.entries()) {
-      await apiFetch('/records', { method: 'POST', body: { country: record.country, page: record.page, kind: record.kind, data: record.data, sortOrder: records.value.length + index + 1 } })
+    try {
+      for (const [index, record] of selected.entries()) {
+        await apiFetch('/records', { method: 'POST', body: { country: record.country, page: record.page, kind: record.kind, data: record.data, sortOrder: records.value.length + index + 1 } })
+      }
+    } catch (error: any) {
+      await notifyAdmin(error?.data?.message || error?.message || 'Could not copy the selected rows.')
     }
   } else {
     let sortOrder = 0
