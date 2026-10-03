@@ -2137,22 +2137,28 @@
             <fieldset v-if="!gsdModal.form.notSubmittedByShoptrans" class="si-body-fieldset" :disabled="siBodyDisabled()"><div class="si-scroll"><div class="si-sheet">
               <div class="si-letterhead">
                 <div><div class="si-lh-name">{{ siCompanyName() }}</div><div class="si-lh-addr">3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam</div><div class="si-lh-contact">Tel: 84.028-35470468&nbsp;&nbsp;&nbsp;Fax: 84.028-35470469</div></div>
-                <div class="si-title-block"><div class="si-doc-title">SHIPPING INSTRUCTION</div><div class="si-doc-sub">SEA FCL</div></div>
+                <div class="si-title-block"><div class="si-doc-title">SHIPPING INSTRUCTION</div><div class="si-doc-sub">{{ docSubtitle() }}</div></div>
               </div>
               <div class="si-g2"><div class="si-f"><div class="si-party-head"><span>Shipper</span><label><input v-model="gsdModal.form.copyShipper" type="checkbox" :disabled="!gsdModal.editing" @change="toggleSiPartyCopy('SHIPPER')" /> Copy from Shipper</label></div><textarea v-model="gsdModal.form.shipper" rows="3" :disabled="!gsdModal.editing" @input="gsdModal.form.copyShipper = false"></textarea></div><div class="si-f"><div class="si-party-head"><span>Consignee</span><label><input v-model="gsdModal.form.copyConsignee" type="checkbox" :disabled="!gsdModal.editing" @change="toggleSiPartyCopy('CNEE')" /> Copy from Consignee</label></div><textarea v-model="gsdModal.form.consignee" rows="3" :disabled="!gsdModal.editing" @input="gsdModal.form.copyConsignee = false"></textarea></div></div>
               <label class="si-f"><span>Notify Party</span><textarea v-model="gsdModal.form.notify" rows="2" :disabled="!gsdModal.editing"></textarea></label>
-              <div class="si-g3"><label class="si-f"><span>Booking No.</span><input v-model="gsdModal.form.bookingNo" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Vessel/Voyage</span><input v-model="gsdModal.form.vessel" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Departure Date</span><input v-model="gsdModal.form.depDate" type="date" :disabled="!gsdModal.editing" /></label></div>
-              <div class="si-g2"><label class="si-f"><span>Place of Receipt</span><input v-model="gsdModal.form.por" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Port of Loading</span><input v-model="gsdModal.form.pol" type="text" :disabled="!gsdModal.editing" @input="uppercaseSiPort('pol')" /></label></div>
-              <div class="si-g2"><label class="si-f"><span>Port of Discharge</span><input v-model="gsdModal.form.pod" type="text" :disabled="!gsdModal.editing" @input="uppercaseSiPort('pod')" /></label><label class="si-f"><span>Place of Delivery</span><input v-model="gsdModal.form.podl" type="text" :disabled="!gsdModal.editing" /></label></div>
+              <div v-if="isAirMode()" class="si-g3"><label class="si-f"><span>Booking No.</span><input v-model="gsdModal.form.bookingNo" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Flight No.</span><input v-model="gsdModal.form.vessel" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Flight Date</span><input v-model="gsdModal.form.depDate" type="date" :disabled="!gsdModal.editing" /></label></div>
+              <div v-if="!isAirMode()" class="si-g3"><label class="si-f"><span>Booking No.</span><input v-model="gsdModal.form.bookingNo" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Vessel/Voyage</span><input v-model="gsdModal.form.vessel" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Departure Date</span><input v-model="gsdModal.form.depDate" type="date" :disabled="!gsdModal.editing" /></label></div>
+              <div v-if="!isAirMode()" class="si-g2"><label class="si-f"><span>Place of Receipt</span><input v-model="gsdModal.form.por" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Port of Loading</span><input v-model="gsdModal.form.pol" type="text" :disabled="!gsdModal.editing" @input="uppercaseSiPort('pol')" /></label></div>
+              <div v-if="!isAirMode()" class="si-g2"><label class="si-f"><span>Port of Discharge</span><input v-model="gsdModal.form.pod" type="text" :disabled="!gsdModal.editing" @input="uppercaseSiPort('pod')" /></label><label class="si-f"><span>Place of Delivery</span><input v-model="gsdModal.form.podl" type="text" :disabled="!gsdModal.editing" /></label></div>
+              <div v-if="isAirMode()" class="si-g2"><label class="si-f"><span>Airport of Loading</span><input v-model="gsdModal.form.pol" type="text" :disabled="!gsdModal.editing" @input="uppercaseSiPort('pol')" /></label><label class="si-f"><span>Airport of Discharge</span><input v-model="gsdModal.form.pod" type="text" :disabled="!gsdModal.editing" @input="uppercaseSiPort('pod')" /></label></div>
+              <label v-if="isAirMode()" class="si-f"><span>To (Air Cargo Warehouse)</span><textarea v-model="gsdModal.form.toWarehouse" rows="2" :disabled="!gsdModal.editing"></textarea></label>
               <div class="si-section-title">Freight Term</div>
               <div class="si-radio"><label><input v-model="gsdModal.form.freight" type="radio" value="Prepaid" :disabled="!gsdModal.editing" /> Freight Prepaid</label><label><input v-model="gsdModal.form.freight" type="radio" value="Collect" :disabled="!gsdModal.editing" /> Freight Collect</label></div>
-              <div class="si-section-title">Container &amp; Seal Information</div>
-              <div class="si-table-wrap gsd-five-row-scroll"><table class="si-table"><thead><tr><th>#</th><th>ContNo#</th><th>ContType</th><th>SealNo#</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th></tr></thead><tbody><tr v-for="(container, index) in siSubmitContainers()" :key="container.id"><td class="si-order">{{ index + 1 }}</td><td><input v-model="container.contNo" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.contType" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.sealNo" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.qty" type="number" min="0" step="1" :disabled="!gsdModal.editing" /></td><td><input v-model="container.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="container.gw" type="number" min="0" step="0.01" :disabled="!gsdModal.editing" /></td><td><input v-model="container.mea" type="number" min="0" step="0.001" :disabled="!gsdModal.editing" /></td></tr></tbody></table></div>
-              <button v-if="gsdModal.editing && !isFclExwDcdSiModal()" class="wb-modal-btn si-add-container" type="button" @click="addSiSubmitContainer">+ Add Container</button>
-              <div class="si-section-title">Cargo Description</div>
-              <label class="si-f si-description"><span>Description</span><textarea v-model="gsdModal.form.description" rows="2" :disabled="!gsdModal.editing"></textarea></label>
-              <div class="si-g3"><label class="si-f"><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="si-marks" rows="1" :disabled="!gsdModal.editing"></textarea><span class="si-attachment"><button v-if="gsdModal.editing" class="si-attach-button" type="button" @click="siMarksFileInput?.click()"><svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5 5 0 0 1-7-7l9-9a3.3 3.3 0 0 1 4.7 4.7l-9 9a1.7 1.7 0 0 1-2.4-2.4l8.1-8.1"/></svg>AttFile</button><span v-if="gsdModal.form.marksFile" class="si-file-name">{{ gsdModal.form.marksFile.name }}</span><button v-if="gsdModal.form.marksFile" class="si-file-icon" type="button" title="View" @click="viewSiMarksFile"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button><button v-if="gsdModal.editing && gsdModal.form.marksFile" class="si-file-remove" type="button" title="Remove" @click="removeSiMarksFile">&times;</button><em v-if="!gsdModal.editing && !gsdModal.form.marksFile">No file attached</em></span></label><label class="si-f"><span>QTY</span><input :value="siSubmitTotal('qty')" type="text" readonly /></label><label class="si-f"><span>Unit</span><input v-model="gsdModal.form.unit" type="text" :disabled="!gsdModal.editing" /></label></div>
-              <div class="si-g2"><label class="si-f"><span>GW (KG)</span><input :value="siSubmitTotal('gw')" type="text" readonly /></label><label class="si-f"><span>MEA. (CBM)</span><input :value="siSubmitTotal('mea')" type="text" readonly /></label></div>
+              <div v-if="!isLclSheet()" class="si-section-title">Container &amp; Seal Information</div>
+              <div v-if="!isLclSheet()" class="si-table-wrap gsd-five-row-scroll"><table class="si-table"><thead><tr><th>#</th><th>ContNo#</th><th>ContType</th><th>SealNo#</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th></tr></thead><tbody><tr v-for="(container, index) in siSubmitContainers()" :key="container.id"><td class="si-order">{{ index + 1 }}</td><td><input v-model="container.contNo" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.contType" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.sealNo" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.qty" type="number" min="0" step="1" :disabled="!gsdModal.editing" /></td><td><input v-model="container.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="container.gw" type="number" min="0" step="0.01" :disabled="!gsdModal.editing" /></td><td><input v-model="container.mea" type="number" min="0" step="0.001" :disabled="!gsdModal.editing" /></td></tr></tbody></table></div>
+              <button v-if="gsdModal.editing && !isFclExwDcdSiModal() && !isLclSheet()" class="wb-modal-btn si-add-container" type="button" @click="addSiSubmitContainer">+ Add Container</button>
+              <div v-if="isLclSheet()" class="si-section-title">Cargo Description</div>
+              <div v-if="isLclSheet()" class="si-table-wrap gsd-five-row-scroll"><table class="si-table"><thead><tr><th>#</th><th>Marks &amp; Numbers</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th><th v-if="isAirMode()">C.W (KG)</th></tr></thead><tbody><tr v-for="(container, index) in siSubmitContainers()" :key="container.id"><td class="si-order">{{ index + 1 }}</td><td><input v-model="container.marks" :disabled="!gsdModal.editing" /></td><td><input v-model="container.qty" type="number" min="0" step="1" :disabled="!gsdModal.editing" /></td><td><input v-model="container.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="container.gw" type="number" min="0" step="0.01" :disabled="!gsdModal.editing" /></td><td><input v-model="container.mea" type="number" min="0" step="0.001" :disabled="!gsdModal.editing" /></td><td v-if="isAirMode()"><input :value="siGoodsChargeable(container)" readonly /></td></tr></tbody></table></div>
+              <button v-if="isLclSheet() && gsdModal.editing" class="wb-modal-btn si-add-container" type="button" @click="addSiSubmitContainer">+ Add Row</button>
+              <div v-if="!isLclSheet()" class="si-section-title">Cargo Description</div>
+              <label v-if="!isLclSheet()" class="si-f si-description"><span>Description</span><textarea v-model="gsdModal.form.description" rows="2" :disabled="!gsdModal.editing"></textarea></label>
+              <div v-if="!isLclSheet()" class="si-g3"><label class="si-f"><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="si-marks" rows="1" :disabled="!gsdModal.editing"></textarea><span class="si-attachment"><button v-if="gsdModal.editing" class="si-attach-button" type="button" @click="siMarksFileInput?.click()"><svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5 5 0 0 1-7-7l9-9a3.3 3.3 0 0 1 4.7 4.7l-9 9a1.7 1.7 0 0 1-2.4-2.4l8.1-8.1"/></svg>AttFile</button><span v-if="gsdModal.form.marksFile" class="si-file-name">{{ gsdModal.form.marksFile.name }}</span><button v-if="gsdModal.form.marksFile" class="si-file-icon" type="button" title="View" @click="viewSiMarksFile"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button><button v-if="gsdModal.editing && gsdModal.form.marksFile" class="si-file-remove" type="button" title="Remove" @click="removeSiMarksFile">&times;</button><em v-if="!gsdModal.editing && !gsdModal.form.marksFile">No file attached</em></span></label><label class="si-f"><span>QTY</span><input :value="siSubmitTotal('qty')" type="text" readonly /></label><label class="si-f"><span>Unit</span><input v-model="gsdModal.form.unit" type="text" :disabled="!gsdModal.editing" /></label></div>
+              <div v-if="!isLclSheet()" class="si-g2"><label class="si-f"><span>GW (KG)</span><input :value="siSubmitTotal('gw')" type="text" readonly /></label><label class="si-f"><span>MEA. (CBM)</span><input :value="siSubmitTotal('mea')" type="text" readonly /></label></div>
               <label class="si-f"><span>Special Instructions</span><textarea v-model="gsdModal.form.specialInst" rows="3" :disabled="!gsdModal.editing"></textarea></label>
               <div class="si-signature"><div>ARRANGED BY</div><b>{{ siCompanyName() }}</b><span></span><strong>NGUYEN HUU PHUOC</strong><em v-if="gsdModal.form.signedAt" class="si-signed-stamp">✓ Signed · {{ gsdModal.form.signedAt }}</em></div>
               <input ref="siMarksFileInput" type="file" hidden @change="handleSiMarksFile" />
@@ -2970,18 +2976,23 @@
               <div class="an-detail-sheet" :class="{ 'is-editing': gsdModal.editing }">
                 <div class="an-detail-letterhead">
                   <div><div class="an-detail-company">TX LOGISTICS VIET NAM COMPANY LIMITED</div><div class="an-detail-address">3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam</div><div class="an-detail-contact">Tel: 84.028-35470468 &nbsp; Fax: 84.028-35470469</div></div>
-                  <div class="an-detail-heading"><strong>ARRIVAL NOTICE</strong><span>SEA FCL</span></div>
+                  <div class="an-detail-heading"><strong>ARRIVAL NOTICE</strong><span>{{ docSubtitle() }}</span></div>
                 </div>
                 <div class="an-detail-g2"><label><span>From (Shipper)</span><textarea v-model="gsdModal.form.shipper" class="an-party-textarea" :disabled="!gsdModal.editing" rows="3"></textarea></label><label><span>To (Consignee)</span><textarea v-model="gsdModal.form.consignee" class="an-party-textarea" :disabled="!gsdModal.editing" rows="3"></textarea></label></div>
-                <div class="an-detail-g2"><label><span>Notify Party</span><textarea v-model="gsdModal.form.notify" :disabled="!gsdModal.editing" rows="2"></textarea></label><div class="an-detail-field"><span>Received Freetime <em>(from Pre-Alert Confirmation)</em></span><div class="an-detail-freetime"><b>DEM</b><input v-model="gsdModal.form.dem" readonly placeholder="-" /><b>DET</b><input v-model="gsdModal.form.det" readonly placeholder="-" /></div></div></div>
-                <div class="an-detail-g3"><label><span>Vessel/Voyage</span><input v-model="gsdModal.form.vessel" readonly /></label><label><span>ETA</span><input v-model="gsdModal.form.eta" type="date" :disabled="!gsdModal.editing" @change="syncArrivalNoticeEta" /></label><label><span>B/L No.</span><input v-model="gsdModal.form.blNo" readonly /></label></div>
-                <div class="an-detail-g2"><label><span>Port of Loading</span><input v-model="gsdModal.form.pol" readonly /></label><label><span>Port of Discharge</span><input v-model="gsdModal.form.pod" readonly /></label></div>
-                <div class="an-detail-section">Container &amp; Seal Information</div>
-                <table class="an-detail-table an-container-table"><thead><tr><th>#</th><th>ContNo#</th><th>ContType</th><th>SealNo#</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th></tr></thead><tbody><tr v-if="gsdModal.form.asPerBl"><td>1</td><td><input value="As per B/L" disabled /></td><td></td><td><input value="As per B/L" disabled /></td><td><input v-model="gsdModal.form.conts[0].qty" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="gsdModal.form.conts[0].unit" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="gsdModal.form.conts[0].gw" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="gsdModal.form.conts[0].mea" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td></tr><template v-else><tr v-for="(item, index) in gsdModal.form.conts" :key="item.key || index"><td>{{ index + 1 }}</td><td><input v-model="item.contNo" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.contType" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.sealNo" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.qty" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.unit" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.gw" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.mea" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td></tr><tr v-if="!gsdModal.form.conts.length"><td colspan="8" class="empty">No container data</td></tr></template></tbody></table>
-                <div class="an-detail-section">Description of Goods</div>
-                <label class="an-detail-description"><span>Description</span><textarea v-model="gsdModal.form.description" readonly rows="2"></textarea></label>
-                <div class="an-detail-g3 an-cargo-summary"><label><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="an-linked-field" readonly rows="1"></textarea></label><label><span>QTY</span><input :value="arrivalNoticeTotals().qty" readonly /></label><label><span>Unit</span><input v-model="gsdModal.form.unit" readonly /></label></div>
-                <div class="an-detail-g2"><label><span>GW (KG)</span><input :value="arrivalNoticeTotals().gw" readonly /></label><label><span>MEA. (CBM)</span><input :value="arrivalNoticeTotals().mea" readonly /></label></div>
+                <div class="an-detail-g2"><label><span>Notify Party</span><textarea v-model="gsdModal.form.notify" :disabled="!gsdModal.editing" rows="2"></textarea></label><div v-if="!isAirMode()" class="an-detail-field"><span>Received Freetime <em>(from Pre-Alert Confirmation)</em></span><div class="an-detail-freetime"><b>DEM</b><input v-model="gsdModal.form.dem" readonly placeholder="-" /><b>DET</b><input v-model="gsdModal.form.det" readonly placeholder="-" /></div></div></div>
+                <div v-if="isAirMode()" class="an-detail-g3"><label><span>Flight No.</span><input v-model="gsdModal.form.vessel" readonly /></label><label><span>Flight Date</span><input v-model="gsdModal.form.flightDate" type="date" disabled /></label><label><span>AWB No.</span><input v-model="gsdModal.form.blNo" readonly /></label></div>
+                <div v-if="isAirMode()" class="an-detail-g3"><label><span>Airport of Loading</span><input v-model="gsdModal.form.pol" readonly /></label><label><span>Airport of Discharge</span><input v-model="gsdModal.form.pod" readonly /></label><label><span>ETA</span><input v-model="gsdModal.form.eta" type="date" :disabled="!gsdModal.editing" @change="syncArrivalNoticeEta" /></label></div>
+                <div v-if="!isAirMode()" class="an-detail-g3"><label><span>Vessel/Voyage</span><input v-model="gsdModal.form.vessel" readonly /></label><label><span>ETA</span><input v-model="gsdModal.form.eta" type="date" :disabled="!gsdModal.editing" @change="syncArrivalNoticeEta" /></label><label><span>B/L No.</span><input v-model="gsdModal.form.blNo" readonly /></label></div>
+                <div v-if="!isAirMode()" class="an-detail-g2"><label><span>Port of Loading</span><input v-model="gsdModal.form.pol" readonly /></label><label><span>Port of Discharge</span><input v-model="gsdModal.form.pod" readonly /></label></div>
+                <label v-if="isLclSheet()" class="an-detail-description"><span>{{ isAirMode() ? 'To (Air Cargo Warehouse)' : 'CFS / Warehouse for Cargo Pick-up' }}</span><textarea v-model="gsdModal.form.cfs" :disabled="!gsdModal.editing" rows="2"></textarea></label>
+                <div v-if="!isLclSheet()" class="an-detail-section">Container &amp; Seal Information</div>
+                <table v-if="!isLclSheet()" class="an-detail-table an-container-table"><thead><tr><th>#</th><th>ContNo#</th><th>ContType</th><th>SealNo#</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th></tr></thead><tbody><tr v-if="gsdModal.form.asPerBl"><td>1</td><td><input value="As per B/L" disabled /></td><td></td><td><input value="As per B/L" disabled /></td><td><input v-model="gsdModal.form.conts[0].qty" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="gsdModal.form.conts[0].unit" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="gsdModal.form.conts[0].gw" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="gsdModal.form.conts[0].mea" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td></tr><template v-else><tr v-for="(item, index) in gsdModal.form.conts" :key="item.key || index"><td>{{ index + 1 }}</td><td><input v-model="item.contNo" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.contType" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.sealNo" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.qty" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.unit" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.gw" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.mea" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td></tr><tr v-if="!gsdModal.form.conts.length"><td colspan="8" class="empty">No container data</td></tr></template></tbody></table>
+                <div v-if="isLclSheet()" class="an-detail-section">Description of Goods</div>
+                <table v-if="isLclSheet()" class="an-detail-table an-container-table"><thead><tr><th>#</th><th>Marks &amp; Numbers</th><th>QTY</th><th>Unit</th><th>GW (KG)</th><th>MEA. (CBM)</th></tr></thead><tbody><tr v-for="(item, index) in gsdModal.form.conts" :key="item.key || index"><td>{{ index + 1 }}</td><td><input v-model="item.marks" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.qty" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.unit" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.gw" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.mea" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td></tr><tr v-if="!gsdModal.form.conts.length"><td colspan="6" class="empty">No goods data</td></tr></tbody></table>
+                <div v-if="!isLclSheet()" class="an-detail-section">Description of Goods</div>
+                <label v-if="!isLclSheet()" class="an-detail-description"><span>Description</span><textarea v-model="gsdModal.form.description" readonly rows="2"></textarea></label>
+                <div v-if="!isLclSheet()" class="an-detail-g3 an-cargo-summary"><label><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="an-linked-field" readonly rows="1"></textarea></label><label><span>QTY</span><input :value="arrivalNoticeTotals().qty" readonly /></label><label><span>Unit</span><input v-model="gsdModal.form.unit" readonly /></label></div>
+                <div v-if="!isLclSheet()" class="an-detail-g2"><label><span>GW (KG)</span><input :value="arrivalNoticeTotals().gw" readonly /></label><label><span>MEA. (CBM)</span><input :value="arrivalNoticeTotals().mea" readonly /></label></div>
                 <div class="an-detail-section an-detail-section-ref"><span>Charges Due</span><span class="an-refbox"><label>RefLastBiz:</label><span class="an-ref-search"><input v-model.trim="gsdModal.form.refLastBiz" :disabled="!gsdModal.editing" placeholder="JOB NO# / REF NO#" autocomplete="off" @input="searchArrivalPaymentHistory" @keydown.escape="paymentSearchOpen = false" /><span class="pr-searchresults" :class="{ show: paymentSearchOpen }"><button v-for="match in paymentSearchResults" :key="`an-${match.id}`" class="pr-sr-item" type="button" @mousedown.prevent="selectArrivalPaymentHistoryMatch(match)"><span class="pr-sr-info"><b>{{ match.jobNo || '—' }}</b><br />REF: {{ match.refNo || '—' }} · {{ match.lineCount }} line(s)</span></button><span v-if="!paymentSearchResults.length" class="pr-sr-empty">No previous Job No matches your search.</span></span></span><button type="button" :disabled="!gsdModal.editing" @click="openArrivalPaymentHistoryFilter">Search</button></span></div>
                 <table class="an-detail-table"><thead><tr><th>#</th><th>Charge Name</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>CUR</th><th>Tax (%)</th><th>Total Price</th></tr></thead><tbody><tr v-for="(charge, index) in gsdModal.form.charges" :key="charge.key || index"><td>{{ index + 1 }}</td><td><select v-model="charge.chargeName" :disabled="!gsdModal.editing"><option value="">— Select —</option><option v-for="name in paymentChargeOptions" :key="name" :value="name">{{ name }}</option></select></td><td><input v-model="charge.qty" :disabled="!gsdModal.editing" /></td><td><input v-model="charge.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="charge.unitPrice" :disabled="!gsdModal.editing" @input="charge.unitPrice = sanitizeMoneyInput(charge.unitPrice)" @blur="charge.unitPrice = formatMoneyValue(charge.unitPrice)" /></td><td><select v-model="charge.cur" :disabled="!gsdModal.editing" @change="selectArrivalNoticeBankForCurrency(charge.cur)"><option>VND</option><option>USD</option></select></td><td><input v-model="charge.taxRate" :disabled="!gsdModal.editing" /></td><td>{{ arrivalNoticeChargeTotal(charge) }}</td></tr><tr v-if="!gsdModal.form.charges.length"><td colspan="8" class="empty">No charge data</td></tr></tbody><tfoot><tr><td colspan="7" class="an-total-label">Total Tax Amount</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().tax }}</td></tr><tr><td colspan="7" class="an-total-label">Total Charge</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().total }}</td></tr></tfoot></table>
                 <button v-if="gsdModal.editing" class="an-add-row" type="button" @click="addArrivalCharge">+ Add Charge</button>
@@ -3032,18 +3043,22 @@
           <button class="do-document-close" type="button" title="Close" @click="closeDeliveryOrderDocument">×</button></div>
         </div>
         <div class="do-document-scroll"><div id="delivery-order-document" class="do-document-sheet">
-          <div class="do-document-head"><div><b>{{ deliveryOrderCompanyName() }}</b><span>3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam</span><span>Tel: 84.028-35470468 &nbsp; Fax: 84.028-35470469</span></div><div><strong>DELIVERY ORDER</strong><small>SEA FCL</small></div></div>
+          <div class="do-document-head"><div><b>{{ deliveryOrderCompanyName() }}</b><span>3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam</span><span>Tel: 84.028-35470468 &nbsp; Fax: 84.028-35470469</span></div><div><strong>DELIVERY ORDER</strong><small>{{ docSubtitle() }}</small></div></div>
           <div class="do-doc-grid two"><label><span>D/O NO.</span><input v-model="deliveryOrderModal.form.doNo" :disabled="!deliveryOrderModal.editing" /></label><label><span>DATE</span><input v-model="deliveryOrderModal.form.doDate" type="date" :disabled="!deliveryOrderModal.editing" /></label></div>
-          <label><span>TO (CY)</span><input v-model="deliveryOrderModal.form.toParty" :disabled="!deliveryOrderModal.editing" /></label>
+          <label v-if="!isLclSheet()"><span>TO (CY)</span><input v-model="deliveryOrderModal.form.toParty" :disabled="!deliveryOrderModal.editing" /></label>
+          <label v-else><span>{{ isAirMode() ? 'TO (AIR CARGO WAREHOUSE)' : 'TO (CFS / WAREHOUSE)' }}</span><textarea v-model="deliveryOrderModal.form.toParty" rows="2" :disabled="!deliveryOrderModal.editing"></textarea></label>
           <div class="do-doc-grid two"><label><span class="do-doc-party-head"><b>SHIPPER</b><em><input v-model="deliveryOrderModal.form.copyShipper" type="checkbox" :disabled="!deliveryOrderModal.editing" @change="toggleDeliveryOrderPartyCopy('SHIPPER')" /> Copy from Shipper</em></span><textarea v-model="deliveryOrderModal.form.shipper" rows="2" :disabled="!deliveryOrderModal.editing" @input="deliveryOrderModal.form.copyShipper = false"></textarea></label><label><span class="do-doc-party-head"><b>CONSIGNEE</b><em><input v-model="deliveryOrderModal.form.copyConsignee" type="checkbox" :disabled="!deliveryOrderModal.editing" @change="toggleDeliveryOrderPartyCopy('CNEE')" /> Copy from Consignee</em></span><textarea v-model="deliveryOrderModal.form.consignee" rows="2" :disabled="!deliveryOrderModal.editing" @input="deliveryOrderModal.form.copyConsignee = false"></textarea></label></div>
           <label><span class="do-doc-party-head"><b>NOTIFY PARTY</b><em><input v-model="deliveryOrderModal.form.sameAsConsignee" type="checkbox" :disabled="!deliveryOrderModal.editing" @change="toggleDeliveryOrderNotify" /> Same as Consignee</em></span><textarea v-model="deliveryOrderModal.form.notify" rows="2" :disabled="!deliveryOrderModal.editing || deliveryOrderModal.form.sameAsConsignee" @input="deliveryOrderModal.form.sameAsConsignee = false"></textarea></label>
-          <div class="do-doc-grid three"><label><span>VESSEL/VOYAGE</span><input v-model="deliveryOrderModal.form.vessel" :disabled="!deliveryOrderModal.editing" /></label><label><span>B/L NO.</span><input v-model="deliveryOrderModal.form.blNo" :disabled="!deliveryOrderModal.editing" /></label><label><span>VALID UNTIL</span><input v-model="deliveryOrderModal.form.validUntil" type="date" :disabled="!deliveryOrderModal.editing" /></label></div>
-          <div class="do-doc-section">CONTAINER &amp; SEAL INFORMATION</div>
-          <table class="do-doc-table"><thead><tr><th>#</th><th>CONTNO#</th><th>CONTTYPE</th><th>SEALNO#</th><th>GW (KG)</th><th>MEA. (CBM)</th></tr></thead><tbody><tr v-for="(item,index) in deliveryOrderModal.form.containers" :key="item.id"><td>{{ index + 1 }}</td><td><input v-model="item.contNo" disabled /></td><td><input v-model="item.contType" disabled /></td><td><input v-model="item.sealNo" disabled /></td><td><input v-model="item.gw" :disabled="!deliveryOrderModal.editing" /></td><td><input v-model="item.mea" :disabled="!deliveryOrderModal.editing" /></td></tr><tr v-if="!deliveryOrderModal.form.containers.length"><td colspan="6" class="empty">No container data</td></tr></tbody></table>
-          <div class="do-doc-section">DESCRIPTION OF GOODS</div>
-          <label><span>DESCRIPTION</span><textarea v-model="deliveryOrderModal.form.description" rows="2" :disabled="!deliveryOrderModal.editing"></textarea></label>
-          <div class="do-doc-grid three"><label><span>MARKS &amp; NUMBERS</span><input v-model="deliveryOrderModal.form.marks" :disabled="!deliveryOrderModal.editing" /></label><label><span>QTY</span><input :value="deliveryOrderTotal('qty')" readonly /></label><label><span>UNIT</span><input v-model="deliveryOrderModal.form.unit" :disabled="!deliveryOrderModal.editing" /></label></div>
-          <div class="do-doc-grid two"><label><span>GW (KG)</span><input :value="deliveryOrderTotal('gw')" readonly /></label><label><span>MEA. (CBM)</span><input :value="deliveryOrderTotal('mea')" readonly /></label></div>
+          <div v-if="isAirMode()" class="do-doc-grid three"><label><span>FLIGHT NO.</span><input v-model="deliveryOrderModal.form.vessel" :disabled="!deliveryOrderModal.editing" /></label><label><span>AWB NO.</span><input v-model="deliveryOrderModal.form.blNo" :disabled="!deliveryOrderModal.editing" /></label><label><span>VALID UNTIL</span><input v-model="deliveryOrderModal.form.validUntil" type="date" :disabled="!deliveryOrderModal.editing" /></label></div>
+          <div v-if="!isAirMode()" class="do-doc-grid three"><label><span>VESSEL/VOYAGE</span><input v-model="deliveryOrderModal.form.vessel" :disabled="!deliveryOrderModal.editing" /></label><label><span>B/L NO.</span><input v-model="deliveryOrderModal.form.blNo" :disabled="!deliveryOrderModal.editing" /></label><label><span>VALID UNTIL</span><input v-model="deliveryOrderModal.form.validUntil" type="date" :disabled="!deliveryOrderModal.editing" /></label></div>
+          <div v-if="!isLclSheet()" class="do-doc-section">CONTAINER &amp; SEAL INFORMATION</div>
+          <table v-if="!isLclSheet()" class="do-doc-table"><thead><tr><th>#</th><th>CONTNO#</th><th>CONTTYPE</th><th>SEALNO#</th><th>GW (KG)</th><th>MEA. (CBM)</th></tr></thead><tbody><tr v-for="(item,index) in deliveryOrderModal.form.containers" :key="item.id"><td>{{ index + 1 }}</td><td><input v-model="item.contNo" disabled /></td><td><input v-model="item.contType" disabled /></td><td><input v-model="item.sealNo" disabled /></td><td><input v-model="item.gw" :disabled="!deliveryOrderModal.editing" /></td><td><input v-model="item.mea" :disabled="!deliveryOrderModal.editing" /></td></tr><tr v-if="!deliveryOrderModal.form.containers.length"><td colspan="6" class="empty">No container data</td></tr></tbody></table>
+          <div v-if="isLclSheet()" class="do-doc-section">DESCRIPTION OF GOODS</div>
+          <table v-if="isLclSheet()" class="do-doc-table"><thead><tr><th>#</th><th>MARKS &amp; NUMBERS</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th><th v-if="isAirMode()">C.W (KG)</th></tr></thead><tbody><tr v-for="(item,index) in deliveryOrderModal.form.containers" :key="item.id"><td>{{ index + 1 }}</td><td><input v-model="item.marks" :disabled="!deliveryOrderModal.editing" /></td><td><input v-model="item.qty" :disabled="!deliveryOrderModal.editing" /></td><td><input v-model="item.unit" :disabled="!deliveryOrderModal.editing" /></td><td><input v-model="item.gw" :disabled="!deliveryOrderModal.editing" /></td><td><input v-model="item.mea" :disabled="!deliveryOrderModal.editing" /></td><td v-if="isAirMode()"><input :value="siGoodsChargeable(item)" readonly /></td></tr><tr v-if="!deliveryOrderModal.form.containers.length"><td :colspan="isAirMode() ? 7 : 6" class="empty">No goods data</td></tr></tbody></table>
+          <div v-if="!isLclSheet()" class="do-doc-section">DESCRIPTION OF GOODS</div>
+          <label v-if="!isLclSheet()"><span>DESCRIPTION</span><textarea v-model="deliveryOrderModal.form.description" rows="2" :disabled="!deliveryOrderModal.editing"></textarea></label>
+          <div v-if="!isLclSheet()" class="do-doc-grid three"><label><span>MARKS &amp; NUMBERS</span><input v-model="deliveryOrderModal.form.marks" :disabled="!deliveryOrderModal.editing" /></label><label><span>QTY</span><input :value="deliveryOrderTotal('qty')" readonly /></label><label><span>UNIT</span><input v-model="deliveryOrderModal.form.unit" :disabled="!deliveryOrderModal.editing" /></label></div>
+          <div v-if="!isLclSheet()" class="do-doc-grid two"><label><span>GW (KG)</span><input :value="deliveryOrderTotal('gw')" readonly /></label><label><span>MEA. (CBM)</span><input :value="deliveryOrderTotal('mea')" readonly /></label></div>
           <div class="do-doc-grid two do-doc-bottom"><label><span>PLACE OF DELIVERY</span><input v-model="deliveryOrderModal.form.placeDelivery" :disabled="!deliveryOrderModal.editing" /></label><label><span>REMARKS</span><input v-model="deliveryOrderModal.form.remarks" :disabled="!deliveryOrderModal.editing" /></label></div>
           <div class="do-doc-sign"><div><span>RECEIVED BY (CONSIGNEE)</span><b class="do-sign-placeholder">&nbsp;</b><i></i><strong class="do-sign-placeholder">&nbsp;</strong></div><div><span>ISSUED BY</span><b>{{ deliveryOrderCompanyName() }}</b><i></i><strong>NGUYEN HUU PHUOC</strong></div></div>
         </div></div>
@@ -8302,6 +8317,8 @@ const isFcaFcdSheet = () => opsParts.value?.type === 'FCA' && opsParts.value?.de
 // Keep one behavior/visual path while preserving their separate sheet keys.
 const isAirSheet = () => ['AIR', 'LCL'].includes(String(opsParts.value?.mode || ''))
 const isAirMode = () => String(opsParts.value?.mode || '').toUpperCase() === 'AIR'
+// Document subtitle for Arrival Notice / Shipping Instruction / Delivery Order.
+const docSubtitle = () => isAirMode() ? 'AIR' : String(opsParts.value?.mode || '').toUpperCase() === 'LCL' ? 'SEA LCL' : 'SEA FCL'
 // AIR shows MAWB/HAWB wording; logic is shared with LCL.
 const awbText = (text: string) => isAirMode() ? text.replace(/MBL/g, 'MAWB').replace(/HBL/g, 'HAWB') : text
 const isFcfEcdSheet = () => opsParts.value?.type === 'FCF' && opsParts.value?.dept === 'ECD'
@@ -12406,9 +12423,18 @@ const arrivalNoticeDetail = () => {
   const siSubmit = siSubmitFormFromCell(rowValueByHeader('MASTER SI SUBMIT') || rowValueByHeader('SI SUBMIT'))
   const contSeal = doContSealFormFromCell(rowValueByHeader('CONT/SEAL INFO') || rowValueByHeader('TRUCK & CONT/SEAL INFO')).records
   const volumes = volumeFormFromCell(rowValueByHeader('VOLUME')).records
-  const hblNo = linkedDocumentNumber(rowValueByHeader('HBL NO#'))
-  const mblNo = linkedDocumentNumber(rowValueByHeader('MBL NO#'))
-  const conts = Array.isArray(form?.conts) && form.conts.length ? form.conts : contSeal.map((record: any, index: number) => {
+  const hblNo = linkedDocumentNumber(rowValueByHeader('HBL NO#') || rowValueByHeader('HAWB NO#'))
+  const mblNo = linkedDocumentNumber(rowValueByHeader('MBL NO#') || rowValueByHeader('MAWB NO#'))
+  // LCL/AIR list goods rows (from Volume) instead of containers.
+  const goodsRows = isLclSheet() ? volumes.map((volume: any, index: number) => ({
+    key: volume.id || index,
+    marks: '',
+    qty: volume.volume || '',
+    unit: volume.type || '',
+    gw: volume.gw || '',
+    mea: volume.mea || '',
+  })) : []
+  const conts = Array.isArray(form?.conts) && form.conts.length ? form.conts : isLclSheet() ? goodsRows : contSeal.map((record: any, index: number) => {
     const volume: any = volumes[index] || volumes[0] || {}
     return {
       key: record.key || index,
@@ -12437,6 +12463,8 @@ const arrivalNoticeDetail = () => {
     description: String(form?.description || siSubmit.description || ''),
     marks: String(form?.marks || ''),
     unit: String(form?.unit || conts[0]?.unit || ''),
+    flightDate: isoDateValue(rowValueByHeader('ATD') || form?.flightDate || ''),
+    cfs: String(form?.cfs || ''),
     charges: Array.isArray(form?.charges) ? form.charges : [],
     payInst: String(form?.payInst || ''),
     contact: String(siClientTextFromSource(rawSiSourceValue('DESTINATION AGENT')) || form?.contact || ''),
@@ -12484,6 +12512,8 @@ const arrivalNoticeFormFromCell = (value: any) => {
     pol: fallback.pol || String(stored?.pol || ''),
     pod: fallback.pod || String(stored?.pod || ''),
     contact: fallback.contact || String(stored?.contact || ''),
+    flightDate: fallback.flightDate || isoDateValue(stored?.flightDate || ''),
+    cfs: String(stored?.cfs || fallback.cfs || ''),
     company: String(stored?.company || 'tx'),
     conts: Array.isArray(stored?.conts) && stored.conts.length ? stored.conts : fallback.conts,
     charges: Array.isArray(stored?.charges) && stored.charges.length ? stored.charges : fallback.charges,
@@ -15869,6 +15899,7 @@ const newSiSubmitContainer = () => ({
   unit: 'PACKAGES',
   gw: '',
   mea: '',
+  marks: '',
 })
 const siSubmitFormFromCell = (value: any) => {
   const parsed = parseJsonCell(value, null as any)
@@ -15888,6 +15919,7 @@ const siSubmitFormFromCell = (value: any) => {
     pol: String(saved.pol || '').toUpperCase(),
     pod: String(saved.pod || '').toUpperCase(),
     podl: String(saved.podl || ''),
+    toWarehouse: String(saved.toWarehouse || ''),
     freight: String(saved.freight || 'Prepaid'),
     containers: (containers.length ? containers : [newSiSubmitContainer()]).map((container: any) => ({
       ...newSiSubmitContainer(),
@@ -15990,10 +16022,27 @@ const siDateFromSource = (value: any) => {
   const dmy = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/)
   return dmy ? `${dmy[3]}-${String(dmy[2]).padStart(2, '0')}-${String(dmy[1]).padStart(2, '0')}` : raw
 }
+// LCL/AIR SI lists goods rows (from Volume) instead of containers and fills only empty fields.
+const syncSiLclAirFromSources = () => {
+  const fillEmpty = (key: string, value: any) => { if (value && !String(gsdModal.form[key] || '').trim()) gsdModal.form[key] = value }
+  fillEmpty('bookingNo', bookingDetailValue(rawSiSourceValue('BC NO#')))
+  const vessel = vesselFromCellValue(rawSiSourceValue('VESSEL/VOYAGE')) as any
+  fillEmpty('vessel', vessel ? [vessel.name, vessel.voyage].filter(Boolean).join(' / ') : String(rawSiSourceValue('FLIGHT NO#') || '').trim())
+  fillEmpty('depDate', siDateFromSource(rawSiSourceValue('ETD')))
+  const routeValue = rawSiSourceValue('ROUTE')
+  fillEmpty('pol', siRouteDisplay(routeValue, 'pol').toUpperCase())
+  fillEmpty('pod', siRouteDisplay(routeValue, 'pod').toUpperCase())
+  const hasGoods = siSubmitContainers().some((item: any) => item.marks || item.qty || item.gw || item.mea)
+  const volumes = volumeFormFromCell(rawSiSourceValue('VOLUME')).records
+  if (!hasGoods && volumes.length) {
+    gsdModal.form.containers = volumes.map((volume: any) => ({ ...newSiSubmitContainer(), qty: String(volume.volume || ''), unit: String(volume.type || ''), gw: String(volume.gw || ''), mea: String(volume.mea || '') }))
+  }
+}
 const syncSiSubmitFromSources = () => {
   // `locked` only controls whether the submitted SI can be edited. Linked
   // shipment fields must still refresh whenever the modal is opened; otherwise
   // an older saved SI keeps blank/stale ETD and route values forever.
+  if (isLclSheet() && !gsdModal.form.notSubmittedByShoptrans) syncSiLclAirFromSources()
   if (!isLinkedFclDcdSiModal() || gsdModal.form.notSubmittedByShoptrans) return
   const shipper = siClientTextFromSource(rawSiSourceValue('SHIPPER'))
   const consignee = siClientTextFromSource(rawSiSourceValue('CNEE'))
@@ -16031,6 +16080,12 @@ const syncSiSubmitFromSources = () => {
       }
     })
   }
+}
+// AIR C.W per goods row = the higher of G.W and MEA x 167.
+const siGoodsChargeable = (container: any) => {
+  const gw = Number.parseFloat(String(container?.gw || '0')) || 0
+  const mea = Number.parseFloat(String(container?.mea || '0')) || 0
+  return String(Number(Math.max(gw, mea * 167).toFixed(2)))
 }
 const siSubmitTotal = (field: 'qty' | 'gw' | 'mea') => {
   const total = siSubmitContainers().reduce((sum: number, container: any) => sum + (Number.parseFloat(String(container?.[field] || '0')) || 0), 0)
@@ -17006,7 +17061,7 @@ const deliveryOrderSourceSi = () => {
   const column = (rows.value[0] || []).findIndex((_: any, index: number) => ['SI SUBMIT', 'MASTER SI SUBMIT'].includes(normalizedHeaderLabel(index)))
   return column >= 0 ? siSubmitFormFromCell(rows.value[gsdModal.row]?.[column]) : siSubmitFormFromCell(null)
 }
-const newDeliveryOrderContainer = (source: any = {}) => ({ id: String(source.id || `DO-CONT-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`), contNo: String(source.contNo || ''), contType: String(source.contType || ''), sealNo: String(source.sealNo || ''), qty: String(source.qty || ''), gw: String(source.gw || ''), mea: String(source.mea || '') })
+const newDeliveryOrderContainer = (source: any = {}) => ({ id: String(source.id || `DO-CONT-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`), contNo: String(source.contNo || ''), contType: String(source.contType || ''), sealNo: String(source.sealNo || ''), qty: String(source.qty || ''), gw: String(source.gw || ''), mea: String(source.mea || ''), marks: String(source.marks || '') })
 const openDeliveryOrderDocument = () => {
   const si = deliveryOrderSourceSi()
   const saved = gsdModal.form.deliveryOrder && typeof gsdModal.form.deliveryOrder === 'object' ? gsdModal.form.deliveryOrder : {}
@@ -17017,22 +17072,22 @@ const openDeliveryOrderDocument = () => {
     gw: saved.containers?.[index]?.gw ?? item.gw,
     mea: saved.containers?.[index]?.mea ?? item.mea,
   }))
-  const vesselSource = saved.vessel || rowValueByHeader('VESSEL/VOYAGE') || si.vessel || ''
+  const vesselSource = saved.vessel || rowValueByHeader('VESSEL/VOYAGE') || rowValueByHeader('FLIGHT NO#') || si.vessel || ''
   const vesselData: any = vesselFromCellValue(vesselSource)
   const vesselText = String(vesselData && (vesselData.name || vesselData.voyage)
     ? [vesselData.name, vesselData.voyage].filter(Boolean).join(' / ')
     : vesselSource).trim()
   deliveryOrderModal.form = {
     company: String(saved.company || si.company || 'tx'),
-    doNo: String(saved.doNo || rowValueByHeader('HBL NO#') || rowValueByHeader('MBL NO#') || ''),
+    doNo: String(saved.doNo || rowValueByHeader('HBL NO#') || rowValueByHeader('HAWB NO#') || rowValueByHeader('MBL NO#') || rowValueByHeader('MAWB NO#') || ''),
     doDate: String(saved.doDate || todayIso()),
-    toParty: String(saved.toParty || rowValueByHeader('LINER') || ''),
+    toParty: String(saved.toParty || (isLclSheet() ? arrivalNoticeDetail().cfs || '' : rowValueByHeader('LINER')) || ''),
     copyShipper: !!saved.copyShipper, copyConsignee: !!saved.copyConsignee,
     shipper: String(saved.shipper || si.shipper || ''), consignee: String(saved.consignee || si.consignee || ''),
     notify: String(saved.notify || si.notify || ''), notifyBackup: String(saved.notifyBackup || ''),
     sameAsConsignee: !!saved.sameAsConsignee || /^\(?SAME AS CONSIGNEE\)?$/i.test(String(saved.notify || si.notify || '').trim()),
     shipperBackup: String(saved.shipperBackup || ''), consigneeBackup: String(saved.consigneeBackup || ''),
-    vessel: vesselText, blNo: String(saved.blNo || rowValueByHeader('HBL NO#') || rowValueByHeader('MBL NO#') || ''),
+    vessel: vesselText, blNo: String(saved.blNo || rowValueByHeader('HBL NO#') || rowValueByHeader('HAWB NO#') || rowValueByHeader('MBL NO#') || rowValueByHeader('MAWB NO#') || ''),
     validUntil: isoDateValue(saved.validUntil || gsdModal.form.validity || ''), containers,
     description: String(saved.description || si.description || ''), marks: String(saved.marks || si.marks || ''), unit: String(saved.unit || si.unit || 'CONT'),
     placeDelivery: String(saved.placeDelivery || si.podl || ''), remarks: String(saved.remarks || si.specialInst || ''),
