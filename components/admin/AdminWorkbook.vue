@@ -1249,7 +1249,7 @@
                   <div v-for="(file, index) in gsdModal.dealt.files" :key="`${file.name}-${index}`" class="gsd-dealt-file">
                     <span class="file-icon">📄</span>
                     <button type="button" class="gsd-dealt-file-link" :title="`View ${file.name}`" @click="viewDealtFile(file)">{{ file.name }}</button>
-                    <button v-if="gsdModal.editing" type="button" title="Remove" @click="removeDealtFile(index)">×</button>
+                    <button type="button" title="Remove" :disabled="!gsdModal.editing" @click="removeDealtFile(index)">×</button>
                   </div>
                 </div>
               </div>
@@ -1448,7 +1448,7 @@
           </template>
           <template v-else-if="isRouteModal()">
             <div v-if="gsdModal.form.view !== 'add'" class="gsd-route-search">
-              <div class="gsd-route-head">ROUTE <button v-if="gsdModal.editing" class="gsd-plusmini" type="button" title="Add new route" @click="showRouteAdd">+</button></div>
+              <div class="gsd-route-head">ROUTE <button class="gsd-plusmini" type="button" title="Add new route" :disabled="!gsdModal.editing" @click="showRouteAdd">+</button></div>
               <label class="gsd-route-field">
                 <span>Route</span>
                 <input
@@ -1468,7 +1468,7 @@
               </datalist>
               <div class="gsd-route-hint" :class="{ ok: gsdModal.form.routeOk }">{{ gsdModal.form.hint || '' }}</div>
               <div class="gsd-route-actions">
-                <button v-if="gsdModal.editing" class="wb-modal-btn primary" type="button" :disabled="!gsdModal.form.routeOk" @click="saveRouteSelection">Save</button>
+                <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing || !gsdModal.form.routeOk" @click="saveRouteSelection">Save</button>
               </div>
             </div>
             <div v-else class="gsd-route-add">
@@ -1568,8 +1568,8 @@
             </div>
             <div class="gsd-vessel-actions">
               <button v-if="isExwEcdVesselDelayModal() && Number(gsdModal.form.selectedHistoryOrder) > 0" class="wb-modal-btn primary vessel-update" type="button" :disabled="!vesselDelayCanUpdate()" @click="updateVesselDelay">Update</button>
-              <button v-if="gsdModal.editing && Number(gsdModal.form.selectedHistoryOrder) <= 0 && !gsdModal.form.addLocked" class="wb-modal-btn vessel-add-new" type="button" :disabled="vesselAddInProgress()" @click="showVesselAdd">Add New</button>
-              <button v-if="gsdModal.editing && Number(gsdModal.form.selectedHistoryOrder) <= 0" class="wb-modal-btn primary orange vessel-select" type="button" :disabled="!vesselCanSelect()" @click="selectVessel">Select</button>
+              <button v-if="Number(gsdModal.form.selectedHistoryOrder) <= 0 && !gsdModal.form.addLocked" class="wb-modal-btn vessel-add-new" type="button" :disabled="!gsdModal.editing || vesselAddInProgress()" @click="showVesselAdd">Add New</button>
+              <button v-if="Number(gsdModal.form.selectedHistoryOrder) <= 0" class="wb-modal-btn primary orange vessel-select" type="button" :disabled="!gsdModal.editing || !vesselCanSelect()" @click="selectVessel">Select</button>
             </div>
             <div v-if="gsdModal.form.addView" class="gsd-vessel-add">
               <div class="gsd-vessel-add-grid">
@@ -2151,13 +2151,13 @@
               <div class="si-radio"><label><input v-model="gsdModal.form.freight" type="radio" value="Prepaid" :disabled="!gsdModal.editing" /> Freight Prepaid</label><label><input v-model="gsdModal.form.freight" type="radio" value="Collect" :disabled="!gsdModal.editing" /> Freight Collect</label></div>
               <div v-if="!isLclSheet()" class="si-section-title">Container &amp; Seal Information</div>
               <div v-if="!isLclSheet()" class="si-table-wrap gsd-five-row-scroll"><table class="si-table"><thead><tr><th>#</th><th>ContNo#</th><th>ContType</th><th>SealNo#</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th></tr></thead><tbody><tr v-for="(container, index) in siSubmitContainers()" :key="container.id"><td class="si-order">{{ index + 1 }}</td><td><input v-model="container.contNo" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.contType" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.sealNo" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.qty" type="number" min="0" step="1" :disabled="!gsdModal.editing" /></td><td><input v-model="container.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="container.gw" type="number" min="0" step="0.01" :disabled="!gsdModal.editing" /></td><td><input v-model="container.mea" type="number" min="0" step="0.001" :disabled="!gsdModal.editing" /></td></tr></tbody></table></div>
-              <button v-if="gsdModal.editing && !isFclExwDcdSiModal() && !isLclSheet()" class="wb-modal-btn si-add-container" type="button" @click="addSiSubmitContainer">+ Add Container</button>
+              <button v-if="!isFclExwDcdSiModal() && !isLclSheet()" class="wb-modal-btn si-add-container" type="button" :disabled="!gsdModal.editing" @click="addSiSubmitContainer">+ Add Container</button>
               <div v-if="isLclSheet()" class="si-section-title">Cargo Description</div>
               <div v-if="isLclSheet()" class="si-table-wrap gsd-five-row-scroll"><table class="si-table"><thead><tr><th>#</th><th>Marks &amp; Numbers</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th><th v-if="isAirMode()">C.W (KG)</th></tr></thead><tbody><tr v-for="(container, index) in siSubmitContainers()" :key="container.id"><td class="si-order">{{ index + 1 }}</td><td><input v-model="container.marks" :disabled="!gsdModal.editing" /></td><td><input v-model="container.qty" type="number" min="0" step="1" :disabled="!gsdModal.editing" /></td><td><input v-model="container.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="container.gw" type="number" min="0" step="0.01" :disabled="!gsdModal.editing" /></td><td><input v-model="container.mea" type="number" min="0" step="0.001" :disabled="!gsdModal.editing" /></td><td v-if="isAirMode()"><input :value="siGoodsChargeable(container)" readonly /></td></tr></tbody></table></div>
-              <button v-if="isLclSheet() && gsdModal.editing" class="wb-modal-btn si-add-container" type="button" @click="addSiSubmitContainer">+ Add Row</button>
+              <button v-if="isLclSheet()" class="wb-modal-btn si-add-container" type="button" :disabled="!gsdModal.editing" @click="addSiSubmitContainer">+ Add Row</button>
               <div v-if="!isLclSheet()" class="si-section-title">Cargo Description</div>
               <label v-if="!isLclSheet()" class="si-f si-description"><span>Description</span><textarea v-model="gsdModal.form.description" rows="2" :disabled="!gsdModal.editing"></textarea></label>
-              <div v-if="!isLclSheet()" class="si-g3"><label class="si-f"><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="si-marks" rows="1" :disabled="!gsdModal.editing"></textarea><span class="si-attachment"><button v-if="gsdModal.editing" class="si-attach-button" type="button" @click="siMarksFileInput?.click()"><svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5 5 0 0 1-7-7l9-9a3.3 3.3 0 0 1 4.7 4.7l-9 9a1.7 1.7 0 0 1-2.4-2.4l8.1-8.1"/></svg>AttFile</button><span v-if="gsdModal.form.marksFile" class="si-file-name">{{ gsdModal.form.marksFile.name }}</span><button v-if="gsdModal.form.marksFile" class="si-file-icon" type="button" title="View" @click="viewSiMarksFile"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button><button v-if="gsdModal.editing && gsdModal.form.marksFile" class="si-file-remove" type="button" title="Remove" @click="removeSiMarksFile">&times;</button><em v-if="!gsdModal.editing && !gsdModal.form.marksFile">No file attached</em></span></label><label class="si-f"><span>QTY</span><input :value="siSubmitTotal('qty')" type="text" readonly /></label><label class="si-f"><span>Unit</span><input v-model="gsdModal.form.unit" type="text" :disabled="!gsdModal.editing" /></label></div>
+              <div v-if="!isLclSheet()" class="si-g3"><label class="si-f"><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="si-marks" rows="1" :disabled="!gsdModal.editing"></textarea><span class="si-attachment"><button class="si-attach-button" type="button" :disabled="!gsdModal.editing" @click="siMarksFileInput?.click()"><svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5 5 0 0 1-7-7l9-9a3.3 3.3 0 0 1 4.7 4.7l-9 9a1.7 1.7 0 0 1-2.4-2.4l8.1-8.1"/></svg>AttFile</button><span v-if="gsdModal.form.marksFile" class="si-file-name">{{ gsdModal.form.marksFile.name }}</span><button v-if="gsdModal.form.marksFile" class="si-file-icon" type="button" title="View" @click="viewSiMarksFile"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button><button v-if="gsdModal.form.marksFile" class="si-file-remove" type="button" title="Remove" :disabled="!gsdModal.editing" @click="removeSiMarksFile">&times;</button><em v-if="!gsdModal.editing && !gsdModal.form.marksFile">No file attached</em></span></label><label class="si-f"><span>QTY</span><input :value="siSubmitTotal('qty')" type="text" readonly /></label><label class="si-f"><span>Unit</span><input v-model="gsdModal.form.unit" type="text" :disabled="!gsdModal.editing" /></label></div>
               <div v-if="!isLclSheet()" class="si-g2"><label class="si-f"><span>GW (KG)</span><input :value="siSubmitTotal('gw')" type="text" readonly /></label><label class="si-f"><span>MEA. (CBM)</span><input :value="siSubmitTotal('mea')" type="text" readonly /></label></div>
               <label class="si-f"><span>Special Instructions</span><textarea v-model="gsdModal.form.specialInst" rows="3" :disabled="!gsdModal.editing"></textarea></label>
               <div class="si-signature"><div>ARRANGED BY</div><b>{{ siCompanyName() }}</b><span></span><strong>NGUYEN HUU PHUOC</strong><em v-if="gsdModal.form.signedAt" class="si-signed-stamp">✓ Signed · {{ gsdModal.form.signedAt }}</em></div>
@@ -2385,7 +2385,7 @@
               <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
               <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="enablePreAlertEdit">Edit</button>
               <button class="wb-modal-btn primary" type="button" :disabled="!preAlertCanSave()" @click="savePreAlert">Save</button>
-              <button class="wb-modal-btn send" type="button" :disabled="gsdModal.editing || gsdModal.form.sent" @click="sendPreAlert">Send to Dest. Agent</button>
+              <button class="wb-modal-btn send" type="button" :disabled="gsdModal.editing" @click="sendPreAlert">Send to Dest. Agent</button>
             </div>
             <input ref="preAlertFileInput" type="file" hidden @change="handlePreAlertFile" />
           </template>
@@ -2434,7 +2434,7 @@
                     </span>
                   </td>
                   <td class="cda-act">
-                    <button v-if="doc.custom && clearanceDocs().filter((item) => item.custom).length > 1 && gsdModal.editing" class="cda-rm" type="button" title="Remove" @click="removeClearanceOtherDoc(doc.key)">×</button>
+                    <button v-if="doc.custom && clearanceDocs().filter((item) => item.custom).length > 1" class="cda-rm" type="button" title="Remove" :disabled="!gsdModal.editing" @click="removeClearanceOtherDoc(doc.key)">×</button>
                   </td>
                 </tr>
               </tbody>
@@ -2995,7 +2995,7 @@
                 <div v-if="!isLclSheet()" class="an-detail-g2"><label><span>GW (KG)</span><input :value="arrivalNoticeTotals().gw" readonly /></label><label><span>MEA. (CBM)</span><input :value="arrivalNoticeTotals().mea" readonly /></label></div>
                 <div class="an-detail-section an-detail-section-ref"><span>Charges Due</span><span class="an-refbox"><label>RefLastBiz:</label><span class="an-ref-search"><input v-model.trim="gsdModal.form.refLastBiz" :disabled="!gsdModal.editing" placeholder="JOB NO# / REF NO#" autocomplete="off" @input="searchArrivalPaymentHistory" @keydown.escape="paymentSearchOpen = false" /><span class="pr-searchresults" :class="{ show: paymentSearchOpen }"><button v-for="match in paymentSearchResults" :key="`an-${match.id}`" class="pr-sr-item" type="button" @mousedown.prevent="selectArrivalPaymentHistoryMatch(match)"><span class="pr-sr-info"><b>{{ match.jobNo || '—' }}</b><br />REF: {{ match.refNo || '—' }} · {{ match.lineCount }} line(s)</span></button><span v-if="!paymentSearchResults.length" class="pr-sr-empty">No previous Job No matches your search.</span></span></span><button type="button" :disabled="!gsdModal.editing" @click="openArrivalPaymentHistoryFilter">Search</button></span></div>
                 <table class="an-detail-table"><thead><tr><th>#</th><th>Charge Name</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>CUR</th><th>Tax (%)</th><th>Total Price</th></tr></thead><tbody><tr v-for="(charge, index) in gsdModal.form.charges" :key="charge.key || index"><td>{{ index + 1 }}</td><td><select v-model="charge.chargeName" :disabled="!gsdModal.editing"><option value="">— Select —</option><option v-for="name in paymentChargeOptions" :key="name" :value="name">{{ name }}</option></select></td><td><input v-model="charge.qty" :disabled="!gsdModal.editing" /></td><td><input v-model="charge.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="charge.unitPrice" :disabled="!gsdModal.editing" @input="charge.unitPrice = sanitizeMoneyInput(charge.unitPrice)" @blur="charge.unitPrice = formatMoneyValue(charge.unitPrice)" /></td><td><select v-model="charge.cur" :disabled="!gsdModal.editing" @change="selectArrivalNoticeBankForCurrency(charge.cur)"><option>VND</option><option>USD</option></select></td><td><input v-model="charge.taxRate" :disabled="!gsdModal.editing" /></td><td>{{ arrivalNoticeChargeTotal(charge) }}</td></tr><tr v-if="!gsdModal.form.charges.length"><td colspan="8" class="empty">No charge data</td></tr></tbody><tfoot><tr><td colspan="7" class="an-total-label">Total Tax Amount</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().tax }}</td></tr><tr><td colspan="7" class="an-total-label">Total Charge</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().total }}</td></tr></tfoot></table>
-                <button v-if="gsdModal.editing" class="an-add-row" type="button" @click="addArrivalCharge">+ Add Charge</button>
+                <button class="an-add-row" type="button" :disabled="!gsdModal.editing" @click="addArrivalCharge">+ Add Charge</button>
                 <div class="an-detail-g2 an-payment-contact"><label><span>Payment Instruction</span><select v-model="gsdModal.form.paymentBank" :disabled="!gsdModal.editing" @change="applyArrivalNoticeBank"><option value="">— Select bank —</option><option v-for="bank in paymentBankOptions" :key="bank" :value="bank">{{ bank }}</option></select><textarea v-model="gsdModal.form.payInst" readonly rows="3"></textarea></label><label><span>Contact for Cargo Release</span><i class="an-contact-spacer" aria-hidden="true"></i><textarea v-model="gsdModal.form.contact" readonly rows="3"></textarea></label></div>
                 <div class="an-detail-g2 single an-detail-remarks"><label><span>Remarks</span><textarea v-model="gsdModal.form.remarks" :disabled="!gsdModal.editing" rows="3"></textarea></label></div>
                 <div class="an-detail-sign"><span>Issued by</span><b>TX LOGISTICS VIET NAM COMPANY LIMITED</b><strong>NGUYEN HUU PHUOC</strong><em v-if="gsdModal.form.signedAt" class="si-signed-stamp">✓ Signed - {{ formatAdminDateDisplay(gsdModal.form.signedAt) }}</em><i class="an-sign-line"></i></div>
@@ -16562,10 +16562,10 @@ const confirmBillReleaseToShipper = async () => {
     const jobNo = String(rowValueByHeader('JOB NO#') || rowValueByHeader('REF#') || 'DOCUMENT').trim()
     const safeJobNo = jobNo.replace(/[^a-zA-Z0-9_-]+/g, '_')
     const blBlob = await renderSavedBillAttachment('B/L', documents.exportBl)
-    const attachments = [{ filename: `B-L_${safeJobNo}.pdf`, content: await blobToBase64(blBlob), contentType: 'application/pdf' }]
+    const attachments = [await uploadBillEmailPdf(blBlob, `B-L_${safeJobNo}.pdf`)]
     if (documents.exportFcr) {
       const fcrBlob = await renderSavedBillAttachment('FCR', documents.exportFcr)
-      attachments.push({ filename: `FCR_${safeJobNo}.pdf`, content: await blobToBase64(fcrBlob), contentType: 'application/pdf' })
+      attachments.push(await uploadBillEmailPdf(fcrBlob, `FCR_${safeJobNo}.pdf`))
     }
     await props.request('/workbook/send-bill-email', {
       method: 'POST',
@@ -16650,12 +16650,10 @@ const openBillSendModal = () => {
   billSendModal.sending = false
   billSendModal.open = true
 }
-const blobToBase64 = (blob: Blob) => new Promise<string>((resolve, reject) => {
-  const reader = new FileReader()
-  reader.onload = () => resolve(String(reader.result || '').split(',')[1] || '')
-  reader.onerror = () => reject(reader.error || new Error('Could not read PDF attachment'))
-  reader.readAsDataURL(blob)
-})
+const uploadBillEmailPdf = async (blob: Blob, filename: string) => {
+  const uploaded = await uploadAdminAttachment(new File([blob], filename, { type: 'application/pdf' }))
+  return { filename, url: uploaded.url, contentType: 'application/pdf' }
+}
 const renderSavedBillAttachment = async (kind: 'B/L' | 'FCR', stored: string) => {
   let saved: any = null
   try { saved = stored ? JSON.parse(stored) : null } catch { saved = null }
@@ -16717,10 +16715,10 @@ const confirmBillSend = async () => {
     const blBlob = await renderSavedBillAttachment('B/L', gsdModal.form.exportBl)
     const jobNo = String(rowValueByHeader('JOB NO#') || rowValueByHeader('REF#') || 'DOCUMENT').trim()
     const safeJobNo = jobNo.replace(/[^a-zA-Z0-9_-]+/g, '_')
-    const attachments = [{ filename: `B-L_${safeJobNo}.pdf`, content: await blobToBase64(blBlob), contentType: 'application/pdf' }]
+    const attachments = [await uploadBillEmailPdf(blBlob, `B-L_${safeJobNo}.pdf`)]
     if (gsdModal.form.exportFcr) {
       const fcrBlob = await renderSavedBillAttachment('FCR', gsdModal.form.exportFcr)
-      attachments.push({ filename: `FCR_${safeJobNo}.pdf`, content: await blobToBase64(fcrBlob), contentType: 'application/pdf' })
+      attachments.push(await uploadBillEmailPdf(fcrBlob, `FCR_${safeJobNo}.pdf`))
     }
     await props.request('/workbook/send-bill-email', {
       method: 'POST',
@@ -17768,14 +17766,28 @@ const persistPreAlert = (immediate = false) => {
   scheduleSave()
   if (immediate) void saveSheet()
 }
-const savePreAlert = () => {
+const savePreAlert = async () => {
   if (!preAlertIsDirty()) return
+  const previousSent = !!gsdModal.form.sent
+  const previousSentAt = String(gsdModal.form.sentAt || '')
   gsdModal.form.sent = false
   gsdModal.form.sentAt = ''
   gsdModal.form.locked = true
   gsdModal.editing = false
+  persistPreAlert(false)
+  const saved = await saveSheet()
+  if (!saved) {
+    // Keep the uploaded file in the open form so the user can retry Save;
+    // never present a failed asynchronous PATCH as a completed save.
+    gsdModal.form.sent = previousSent
+    gsdModal.form.sentAt = previousSentAt
+    gsdModal.form.locked = false
+    gsdModal.editing = true
+    persistPreAlert(false)
+    showToast(saveError.value || 'Could not save the uploaded file')
+    return
+  }
   gsdModal.form.initialSnapshot = preAlertSnapshot()
-  persistPreAlert(true)
 }
 const enablePreAlertEdit = () => {
   gsdModal.form.locked = false
@@ -17855,7 +17867,7 @@ const sendPreAlert = async () => {
     showToast(`Tick and attach a file for: ${missing.join(', ')}`)
     return
   }
-  if (gsdModal.form.sent) return
+  const wasAlreadySent = !!gsdModal.form.sent
   const targetService = preAlertTargetService()
   const hasDestinationService = ['DO', 'DAP', 'DDU', 'DDP'].includes(targetService)
   const destinationCell = preAlertSourceCell('DESTINATION AGENT', 'DEST. AGENT')
@@ -17866,7 +17878,7 @@ const sendPreAlert = async () => {
     return
   }
   dispatchLoading.value = hasDestinationService
-    ? `Creating ${targetService} ICD record${destinationAgentNotRequired ? '...' : ' and sending pre-alert...'}`
+    ? `${wasAlreadySent ? 'Syncing' : 'Creating'} ${targetService} ICD record${destinationAgentNotRequired || wasAlreadySent ? '...' : ' and sending pre-alert...'}`
     : destinationAgentNotRequired
       ? 'Completing pre-alert...'
     : 'Sending pre-alert to destination agent...'
@@ -17875,6 +17887,19 @@ const sendPreAlert = async () => {
     if (!source) throw new Error('The current Operations sheet is invalid')
     const sentAt = formatLocalDateTime()
     if (hasDestinationService) {
+      // PRE-ALERT is sent from the export ECD sheet. Ensure the reciprocal
+      // import GSD record exists first, just like the working BC SENT flow
+      // ensures its export-side counterpart before dispatching downstream.
+      // Besides making the shipment visible at the destination service, this
+      // also gives GSD and ICD the same shipment link so retries update the
+      // existing rows instead of creating duplicates.
+      const serviceColumn = (rows.value[0] || []).findIndex((_: any, column: number) =>
+        upperText(headerLabel(column)) === `${upperText(source.type)}+`)
+      if (['GSD', 'ECD'].includes(upperText(source.dept))) {
+        if (serviceColumn < 0) throw new Error(`Could not find the ${upperText(source.type)}+ field`)
+        const gsdLinked = await syncCrossServiceGsdRow(gsdModal.row, serviceColumn, sentAt)
+        if (!gsdLinked) throw new Error(`Could not create the linked ${targetService} GSD record`)
+      }
       const collectedSource = await crossServiceSourceSnapshot(gsdModal.row)
       const targetBase = opsBaseForType(targetService as any)
       // Enter the selected import service directly at ICD with the complete
@@ -17891,9 +17916,15 @@ const sendPreAlert = async () => {
         },
       })
       if (!linked) throw new Error(`Could not create the linked ${targetService} ICD record`)
+      if (['GSD', 'ECD'].includes(upperText(source.dept))) {
+        const markedSent = await syncCrossServiceGsdRow(gsdModal.row, serviceColumn, sentAt, true)
+        if (!markedSent) throw new Error(`Could not mark the linked ${targetService} GSD record as sent`)
+      }
     }
     let emailSentAt = ''
-    if (!destinationAgentNotRequired) {
+    // Retrying an already-sent PRE-ALERT is an idempotent destination-data
+    // repair. Do not send the external email a second time.
+    if (!destinationAgentNotRequired && !wasAlreadySent) {
       const isAir = upperText(source.mode) === 'AIR'
       const routeCell = rowValueByHeader('ROUTE')
       const routeData = routeFromCellValue(routeCell)
@@ -17942,7 +17973,7 @@ const sendPreAlert = async () => {
       emailSentAt = String(result?.data?.sentAt || '')
     }
     gsdModal.form.sent = true
-    gsdModal.form.sentAt = emailSentAt || new Date().toISOString()
+    gsdModal.form.sentAt = emailSentAt || gsdModal.form.sentAt || new Date().toISOString()
     gsdModal.form.targetService = targetService
     gsdModal.form.locked = true
     gsdModal.editing = false
@@ -19212,7 +19243,10 @@ const isCrossServiceRecordSourceColumn = (column: number) => {
   const dept = upperText(parsed?.dept || '')
   return ['FCL', 'LCL', 'AIR'].includes(upperText(parsed?.mode || ''))
     && ['GSD', 'ECD'].includes(dept)
-    && normalizedHeaderLabel(column) === `${type}+`
+    // Use the physical sheet label here. The UI normalizer deliberately
+    // presents EXW+ as EFA+, which previously made EXW cross-service linking
+    // fail even though the selected destination value was valid.
+    && upperText(headerLabel(column)) === `${type}+`
 }
 const crossServiceLinkId = (row: number) => {
   const existing = crossServiceLinks()[String(row)]?.id
@@ -19223,7 +19257,7 @@ const crossServiceLinkId = (row: number) => {
   const job = jobColumn >= 0 ? String(sourceRow[jobColumn] || '').trim() : ''
   return `CROSS-SERVICE:${job || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`}`
 }
-const syncCrossServiceGsdRow = async (row: number, column: number, createdAt = formatLocalDateTime()) => {
+const syncCrossServiceGsdRow = async (row: number, column: number, createdAt = formatLocalDateTime(), markSent = false) => {
   const parsed = opsParts.value
   if (!parsed || !isCrossServiceRecordSourceColumn(column)) return false
   const sourceKey = activeKey.value
@@ -19267,6 +19301,7 @@ const syncCrossServiceGsdRow = async (row: number, column: number, createdAt = f
         if (label === 'TIME') return time
         if (label === 'JOB NO#') return nextGeneratedJobNo(time, targetRows)
         if (label === `${counterpartType}+`) return String(parsed.type || '').toUpperCase()
+        if (markSent && label === 'SENT E/ICD') return `TRUE|${createdAt}`
         if (label === 'ACTION') return 'ACTIVE'
         if (['CLIENT', 'DEALT INFO'].includes(label)) return sourceValue(label)
         return ''
@@ -19281,6 +19316,8 @@ const syncCrossServiceGsdRow = async (row: number, column: number, createdAt = f
       }
       const reciprocalColumn = targetHeader.indexOf(`${counterpartType}+`)
       if (reciprocalColumn >= 0) targetRow[reciprocalColumn] = String(parsed.type || '').toUpperCase()
+      const sentColumn = targetHeader.indexOf('SENT E/ICD')
+      if (markSent && sentColumn >= 0) targetRow[sentColumn] = `TRUE|${createdAt}`
     }
     if (!sourceStillVisible()) return false
     targetLinks[String(targetRowIndex)] = { id: linkId, counterpartKey: sourceKey, counterpartType: String(parsed.type || '').toUpperCase() }
@@ -22617,10 +22654,10 @@ onBeforeUnmount(() => {
 .gsd-five-row-scroll{max-height:214px!important;overflow-x:auto!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-gutter:stable}
 .gsd-five-row-scroll table thead th{position:sticky;top:0;z-index:4;background:#eef3ee}
 .gsd-five-row-scroll:has(.truck-company-picker){max-height:none!important;overflow:visible!important}
-/* A confirmed workflow checkbox makes the complete row read-only. Modal
-   content remains available for review, while every mutating action is hidden. */
-.gsd-workflow-locked input,.gsd-workflow-locked select,.gsd-workflow-locked textarea{pointer-events:none!important}
-.gsd-workflow-locked button:not(.gsd-modal-x):not(.ec-view):not(.gsd-eye-btn):not(.gsd-pre-icon.eye):not([class*="export"]):not([title^="View"]){display:none!important}
+/* A confirmed workflow checkbox makes the complete row read-only. Keep the
+   full modal visible for review, but clearly disable every mutating control. */
+.gsd-workflow-locked input:not([type="hidden"]),.gsd-workflow-locked select,.gsd-workflow-locked textarea{pointer-events:none!important;cursor:not-allowed!important;opacity:.68!important}
+.gsd-workflow-locked button:not(.gsd-modal-x):not(.ec-view):not(.gsd-eye-btn):not(.gsd-pre-icon.eye):not([class*="export"]):not([title^="View"]){pointer-events:none!important;cursor:not-allowed!important;opacity:.58!important;filter:saturate(.55)!important}
 .do-document-overlay{z-index:760!important;background:rgba(20,30,26,.5)!important}.do-document-modal{width:900px;max-width:96vw;height:94vh;display:flex;flex-direction:column;overflow:hidden;border-radius:10px;background:#eef1f4;box-shadow:0 20px 60px rgba(0,0,0,.32)}.do-document-toolbar{display:flex;justify-content:flex-end;gap:8px;padding:10px 14px;background:#fff;border-bottom:1px solid #dce3df}.do-document-toolbar .wb-modal-btn{height:34px;padding:0 14px}.do-document-close{width:25px;height:25px;margin-left:4px;border:0;border-radius:50%;background:#c0392b;color:#fff;font-size:18px;font-weight:800;line-height:1;cursor:pointer}.do-document-scroll{flex:1;overflow:auto;padding:18px}.do-document-sheet{box-sizing:border-box;width:760px;min-height:1060px;margin:0 auto;padding:44px 50px;background:#fff;color:#26312b;font:12px/1.35 Arial,sans-serif;box-shadow:0 2px 9px rgba(0,0,0,.14)}.do-document-head{display:flex;justify-content:space-between;gap:20px;padding-bottom:12px;border-bottom:2px solid #0f4c81;color:#0f4c81}.do-document-head>div:first-child{display:flex;flex-direction:column;max-width:460px}.do-document-head b{font-size:15px}.do-document-head span{font-size:9px;color:#495852}.do-document-head>div:last-child{text-align:right}.do-document-head strong{display:block;font-size:20px;letter-spacing:.04em}.do-document-head small{font-size:10px;font-weight:800}.do-document-sheet label{display:grid;gap:4px;margin-top:12px}.do-document-sheet label>span,.do-doc-section{color:#0f4c81;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}.do-document-sheet input,.do-document-sheet textarea{box-sizing:border-box;width:100%;border:1px solid #c9d3cf;border-radius:5px;background:#fff;padding:7px 9px;color:#26312b;font:12px Arial,sans-serif;outline:none;resize:vertical}.do-document-sheet input{height:34px}.do-document-sheet textarea{min-height:54px}.do-document-sheet input:disabled,.do-document-sheet textarea:disabled{background:#f1f5f4;color:#46534d;opacity:1}.do-doc-grid{display:grid;gap:14px}.do-doc-grid.two{grid-template-columns:1fr 1fr}.do-doc-grid.three{grid-template-columns:repeat(3,1fr)}.do-doc-section{margin-top:22px;padding-bottom:5px;border-bottom:1px solid #8fa9be;font-size:11px}.do-doc-table{width:100%;margin-top:8px;border-collapse:collapse;table-layout:fixed}.do-doc-table th,.do-doc-table td{border:1px solid #c7d3dc;padding:0;text-align:center}.do-doc-table th{height:27px;background:#eef3f7;color:#0f4c81;font-size:9px}.do-doc-table th:first-child{width:30px}.do-doc-table input{height:30px;border:0;border-radius:0;text-align:center}.do-doc-add{margin-top:7px;border:0;border-radius:5px;background:#008f4c;color:#fff;padding:5px 10px;font-size:10px;font-weight:800;cursor:pointer}.do-doc-bottom{margin-top:16px}.do-doc-sign{display:grid;grid-template-columns:1fr 1fr;gap:54px;margin-top:52px;text-align:center;color:#526159;font-size:10px}.do-doc-sign>div{display:flex;flex-direction:column;align-items:center}.do-doc-sign b{margin-top:3px;color:#26312b;font-size:11px}.do-doc-sign i{display:block;width:100%;height:48px;border-bottom:1px solid #26312b}.do-doc-sign strong{margin-top:6px;color:#26312b;font-size:11px}@media(max-width:820px){.do-document-sheet{width:720px}.do-document-scroll{padding:10px}}
 .do-document-actions .wb-modal-btn.primary{border-color:#00c566;background:#00c566;color:#fff}.do-document-actions .wb-modal-btn.edit{border-color:#e67e22;background:#e67e22;color:#fff}.do-document-actions .wb-modal-btn.export{border-color:#237bdd;background:#237bdd;color:#fff}.do-document-actions .wb-modal-btn:disabled{filter:saturate(.42) brightness(.78);cursor:not-allowed}.do-doc-sign>div{display:grid;grid-template-rows:14px 18px 49px 18px;align-items:center}.do-doc-sign b,.do-doc-sign strong{display:block;margin:0}.do-doc-sign i{height:48px;align-self:start}.do-sign-placeholder{visibility:hidden}
 .do-document-modal{width:920px}.do-document-scroll{padding:18px 22px 24px}.do-document-sheet{width:min(824px,100%)}@media(max-width:820px){.do-document-sheet{width:100%}}
