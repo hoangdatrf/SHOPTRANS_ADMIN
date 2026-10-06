@@ -258,7 +258,7 @@
                     :class="{ view: normalizedHeaderLabel(columnIndex) === 'REMINDER', has: !!String(rows[rowIndex]?.[columnIndex] || '').trim() && !['REMINDER', 'NOTICE'].includes(normalizedHeaderLabel(columnIndex)), 'linked-value': showActionEditIcon(rowIndex, columnIndex), 'document-value': isPlainDocumentValue(rowIndex, columnIndex), 'do-release-warn': isDoReleaseWarnCell(rowIndex, columnIndex), 'detail-alert': detailActionNeedsAttention(rowIndex, columnIndex) || billDetailMnfMissing(rowIndex, columnIndex), 'volume-summary-btn': normalizedHeaderLabel(columnIndex) === 'VOLUME' && !!volumeSummaryText(rows[rowIndex]?.[columnIndex]) }"
                     @click="handleGsdActionButton(rowIndex, columnIndex)"
                   >
-                    <span v-if="vesselTranshipmentOf(rows[rowIndex]?.[columnIndex])" class="vessel-ts-badge">T/S</span><span v-if="isDoReleaseWarnCell(rowIndex, columnIndex)" class="do-release-warn-icon">!</span><span v-else-if="detailActionNeedsAttention(rowIndex, columnIndex) || billDetailMnfMissing(rowIndex, columnIndex)" class="detail-alert-icon">!</span>{{ gsdActionButtonText(rowIndex, columnIndex) }}
+                    <span v-if="isDoReleaseWarnCell(rowIndex, columnIndex)" class="do-release-warn-icon">!</span><span v-else-if="detailActionNeedsAttention(rowIndex, columnIndex) || billDetailMnfMissing(rowIndex, columnIndex)" class="detail-alert-icon">!</span>{{ gsdActionButtonText(rowIndex, columnIndex) }}
                     <span v-if="noticeBadgeCount(rowIndex, columnIndex)" class="ops-nbadge">{{ noticeBadgeCount(rowIndex, columnIndex) }}</span>
                   </button>
                   <select
@@ -7631,12 +7631,22 @@ const handleResizeEnd = () => {
 }
 
 const autoFitColumn = (column: number) => {
-  let maxLen = 0
-  for (const row of rows.value.slice(0, 200)) {
-    const val = row[column]
-    if (val) maxLen = Math.max(maxLen, String(val).length)
+  // Measure what the cell actually shows. Workflow cells store a serialized form
+  // (hundreds of characters) but render a short chip, so sizing on the raw value
+  // stretched the column far beyond its content.
+  const longestLine = (text: any) => String(text ?? '')
+    .split(String.fromCharCode(10))
+    .reduce((longest: number, line: string) => Math.max(longest, line.trim().length), 0)
+  let maxLen = longestLine(isOpsPage.value ? headerLabel(column).toUpperCase() : columnLetter(column))
+  const lastRow = Math.min(rows.value.length, 200)
+  for (let row = isOpsPage.value ? 1 : 0; row < lastRow; row += 1) {
+    const text = isOpsPage.value && isGsdActionButtonCell(row, column)
+      ? gsdActionButtonText(row, column)
+      : displayCell(rows.value[row]?.[column], row, column)
+    maxLen = Math.max(maxLen, longestLine(text))
   }
-  const fitWidth = Math.max(56, maxLen * 8 + 20)
+  // Keep a sane ceiling so one long free-text note cannot push the column off screen.
+  const fitWidth = Math.min(420, Math.max(56, maxLen * 8 + 24))
   columnWidths.value[column] = fitWidth
   scheduleSave()
 }
@@ -8727,7 +8737,11 @@ const missingEcdBcSentFields = (row: number) => {
     return requiredEcdCellHasValue(actualLabel, rows.value[row]?.[column]) ? [] : [field.name]
   })
 }
+// A row added with Add Row only exists on screen until Save. Dispatching it with a
+// SENT checkbox would hand the next department a record that was never stored.
+const isUnsavedNewOpsRow = (row: number) => !!opsEditingRow.value?.isNew && opsEditingRow.value.row === row
 const isStampedOpsCheckboxDisabled = (row: number, column: number) => {
+  if (isSentCheckboxColumn(column) && isUnsavedNewOpsRow(row)) return true
   if (isExwFclGsdSentEcdColumn(column)) {
     return isSentEcdLocked(rows.value[row]?.[column]) || !gsdDispatchPrerequisitesComplete(row)
   }
@@ -9260,7 +9274,9 @@ const gsdActionButtonText = (row: number, column: number) => {
     return summary || legacyText || (isLockedOpsCell(row, column) ? 'DETAIL' : 'ADD+')
   }
   if (label === 'VESSEL/VOYAGE' || label === 'VESSEL NAME') {
-    const vessel = vesselFromCellValue(rows.value[row]?.[column])
+    // Export side (EXW/FCA/FCF) shows the original SELECT vessel; import side
+    // (DO/DAP/DDU/DDP) shows the latest Transhipment leg - see vesselForGridDisplay.
+    const vessel = vesselForGridDisplay(rows.value[row]?.[column])
     const summary = vessel ? [vessel.name, vessel.voyage].filter(Boolean).join(' / ') : ''
     return summary || (isLockedOpsCell(row, column) ? 'DETAIL' : 'ADD+')
   }
@@ -9350,7 +9366,9 @@ const gsdActionButtonText = (row: number, column: number) => {
     if (route?.polCode && route?.podCode) return routeLabel(route)
   }
   if (label === 'VESSEL/VOYAGE' || label === 'VESSEL NAME') {
-    const vessel = vesselFromCellValue(rows.value[row]?.[column])
+    // Export side (EXW/FCA/FCF) shows the original vessel; import side
+    // (DO/DAP/DDU/DDP) shows the latest Transhipment leg - see vesselForGridDisplay.
+    const vessel = vesselForGridDisplay(rows.value[row]?.[column])
     if (vessel?.name && vessel?.voyage) return `${vessel.name} / ${vessel.voyage}`
     if (vessel?.name) return vessel.name
   }
@@ -10661,6 +10679,16 @@ const saveBookingDetail = () => {
   const documents = bookingDetailModal.documents.filter((document) => document.name.trim() || document.url)
   if (!bookingDetailModal.number && !documents.length) {
     showToast('Enter Booking No# or attach a document')
+    return
+  }
+  // A Booking No# is only valid together with its booking confirmation file.
+  if (bookingDetailModal.number && !bookingDetailModal.url) {
+    showToast('Attach the booking confirmation file for this Booking No#')
+    return
+  }
+  const incompleteDocument = documents.find((document) => document.name.trim() && !document.url)
+  if (incompleteDocument) {
+    showToast(`Attach a file for "${incompleteDocument.name.trim()}"`)
     return
   }
   rows.value[bookingDetailModal.row][bookingDetailModal.column] = JSON.stringify({ booking: { number: bookingDetailModal.number, documents, url: bookingDetailModal.url, fileName: bookingDetailModal.documentName } })
@@ -12219,10 +12247,6 @@ const vesselDelayedOf = (value: any) => {
   const form = parsed && typeof parsed === 'object' && 'form' in parsed ? (parsed as any).form || {} : {}
   return !!form.delayed
 }
-const vesselTranshipmentOf = (value: any) => {
-  const form = vesselCellForm(value)
-  return !!form.transhipment
-}
 // History rows for the AIR EXW DCD VESSEL/VOYAGE view-only modal (mockup `#ovs`)
 const airDcdVesselHistory = () => {
   const raw = rows.value[gsdModal.row]?.[gsdModal.column]
@@ -13187,13 +13211,49 @@ const updateVesselSearch = () => {
   autoClassifyVesselEntry()
 }
 const vesselOriginalFromCell = (value: any): VesselRecord | null => {
-  const form = vesselCellForm(value)
-  const original = normalizeVesselRecord(form.originalVesselData || {})
-  if (original.name || original.voyage) return original
+  // The first-ever SELECT history row is the ledger of truth for the original
+  // vessel. originalVesselData is only a cached copy and some edit paths can let
+  // it drift (for example editing a later T/S row), so prefer the ledger entry.
   const firstSelect = vesselCellHistory(value)
     .filter((item: any) => upperText(item.type || 'SELECT') === 'SELECT')
     .sort((a: any, b: any) => Number(a.order || 0) - Number(b.order || 0))[0]
-  return firstSelect ? normalizeVesselRecord(firstSelect) : vesselFromCellValue(value)
+  if (firstSelect) return normalizeVesselRecord(firstSelect)
+  const form = vesselCellForm(value)
+  const original = normalizeVesselRecord(form.originalVesselData || {})
+  if (original.name || original.voyage) return original
+  return vesselFromCellValue(value)
+}
+// "Tàu đầu" (the original SELECT vessel) ETD/ETA window that a new Transhipment
+// (Tàu Shipment) leg must be scheduled inside. When the original vessel has an
+// active delay, that delayed window applies instead of its first-selected dates.
+const vesselOriginalEffectiveWindow = () => {
+  const cellValue = rows.value[gsdModal.row]?.[gsdModal.column]
+  const original = vesselOriginalFromCell(cellValue)
+  if (!original?.name) return null
+  const originalKey = vesselVoyageKey(original.name, original.voyage)
+  const history = vesselCellHistory(cellValue)
+  const activeDelay = history
+    .filter((item: any) => upperText(item.type || '') === 'DELAY' && vesselVoyageKey(item.name, item.voyage) === originalKey && upperText(item.status || 'APPLIED') !== 'EXPIRED')
+    .sort((a: any, b: any) => Number(b.order || 0) - Number(a.order || 0))[0]
+  const selectEntry = history
+    .filter((item: any) => upperText(item.type || 'SELECT') === 'SELECT' && vesselVoyageKey(item.name, item.voyage) === originalKey)
+    .sort((a: any, b: any) => Number(a.order || 0) - Number(b.order || 0))[0]
+  const etd = String(activeDelay?.etd || selectEntry?.etd || '').trim()
+  const eta = String(activeDelay?.eta || selectEntry?.eta || '').trim()
+  // Without a known window there is nothing to validate against yet - let the
+  // date picker fall back to its ordinary "not in the past" rule.
+  if (!etd && !eta) return null
+  return { etd, eta }
+}
+const vesselTsWindowValid = () => {
+  if (!gsdModal.form.transhipmentToggle) return true
+  const window = vesselOriginalEffectiveWindow()
+  if (!window) return true
+  const etd = String(gsdModal.form.tsEtd || '')
+  const eta = String(gsdModal.form.tsEta || '')
+  if (window.etd && etd && etd < window.etd) return false
+  if (window.eta && eta && eta > window.eta) return false
+  return true
 }
 const autoClassifyVesselEntry = () => {
   if (!isExwEcdVesselDelayModal() || Number(gsdModal.form.selectedHistoryOrder) > 0 || vesselAddInProgress()) return
@@ -13247,8 +13307,13 @@ const toggleVesselTranshipment = () => {
   gsdModal.form.tsPlace = ''
   gsdModal.form.addView = false
   gsdModal.form.addLocked = false
-  gsdModal.form.hint = vesselTsDetailsLocked()
-    ? 'Select the next vessel and enter voyage number first'
+  if (vesselTsDetailsLocked()) {
+    gsdModal.form.hint = 'Select the next vessel and enter voyage number first'
+    return
+  }
+  const window = vesselOriginalEffectiveWindow()
+  gsdModal.form.hint = window
+    ? `Enter ETD, ETA (between ${formatVesselHistoryDate(window.etd) || window.etd || '...'} and ${formatVesselHistoryDate(window.eta) || window.eta || '...'}) and Place of T/S`
     : 'Enter ETD, ETA and Place of T/S'
 }
 const toggleVesselDelay = () => {
@@ -13274,6 +13339,7 @@ const vesselCanSelect = () => {
   const voyage = upperText(gsdModal.form.voyage || '').trim()
   if (!name || !voyage || !findVessel(name)) return false
   if (gsdModal.form.transhipmentToggle && !(gsdModal.form.tsEtd && gsdModal.form.tsEta && transhipmentPlaceValid())) return false
+  if (gsdModal.form.transhipmentToggle && !vesselTsWindowValid()) return false
   if (gsdModal.form.delayToggle && !(gsdModal.form.newEtd || gsdModal.form.newEta)) return false
   const original = vesselOriginalFromCell(rows.value[gsdModal.row]?.[gsdModal.column])
   if (!original) return true
@@ -18843,6 +18909,11 @@ const cellClass = (row: number, column: number) => ({
   'linked-date-changed': linkedDateChanged(row, column),
 })
 const toggleCheckbox = async (row: number, column: number, event: Event) => {
+  if (isSentCheckboxColumn(column) && isUnsavedNewOpsRow(row)) {
+    ;(event.target as HTMLInputElement).checked = isChecked(rows.value[row]?.[column])
+    showToast('Save the new row before sending it')
+    return
+  }
   if (isSentEcdRowLocked(row) && !isExwFclGsdSentEcdColumn(column)) {
     ;(event.target as HTMLInputElement).checked = isChecked(rows.value[row]?.[column])
     showToast('Row locked after SENT ECD')
@@ -20893,13 +20964,28 @@ const selectDatePopup = (date: Date) => {
   void persistDatePopupValue(row, column)
 }
 const isDatePopupDayDisabled = (date: Date) => {
+  const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+  if (datePopup.cutoffField === 'tsEtd' || datePopup.cutoffField === 'tsEta') {
+    // Transhipment (Tàu Shipment) dates must stay inside the original vessel's
+    // current ETD-ETA window - its delayed window when it has an active delay.
+    const window = vesselOriginalEffectiveWindow()
+    if (window) {
+      if (window.etd) {
+        const minDay = new Date(`${window.etd}T00:00:00`).getTime()
+        if (!Number.isNaN(minDay) && day < minDay) return true
+      }
+      if (window.eta) {
+        const maxDay = new Date(`${window.eta}T00:00:00`).getTime()
+        if (!Number.isNaN(maxDay) && day > maxDay) return true
+      }
+      return false
+    }
+  }
   if (datePopup.cutoffField) {
-    const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
     const today = new Date()
     return day < new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
   }
   if (normalizedHeaderLabel(datePopup.column) !== 'DO VALIDITY') return false
-  const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
   const today = new Date()
   return day < new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
 }
@@ -21983,7 +22069,7 @@ onBeforeUnmount(() => {
 .gsd-vhist-modal{width:min(980px,96vw);max-height:90vh;padding:34px 24px 24px;border-radius:10px;overflow:auto;font:12px/1.35 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}
 .gsd-vhist-head{text-align:center;font-size:13px;font-weight:900;color:#0e1512;text-transform:uppercase;margin:0 0 14px}
 .gsd-vhist-wrap{overflow-x:auto}
-.gsd-vhist-table{width:100%;min-width:898px;border-collapse:collapse;table-layout:fixed;font-size:11.5px;color:#33413b}
+.gsd-vhist-table{width:100%;min-width:898px;border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:11.5px;color:#33413b}
 .gsd-vhist-table col:nth-child(1){width:52px}
 .gsd-vhist-table th,.gsd-vhist-table td{border:1px solid #cfd8d2;text-align:center;padding:6px 8px;height:32px}
 .gsd-vhist-table th{background:#eef3ee;color:#66736c;font-family:var(--mono,'Geist Mono',ui-monospace,monospace);font-size:10.5px;font-weight:800;letter-spacing:.02em}

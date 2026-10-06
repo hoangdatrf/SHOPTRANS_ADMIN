@@ -9,6 +9,8 @@ export default defineEventHandler(async (event) => {
   const path = Array.isArray(rawPath) ? rawPath.join('/') : String(rawPath || '')
   const search = getRequestURL(event).search
 
-  return proxyRequest(event, `${backendBaseUrl}/api/admin-console/${path}${search}`)
+  // Stream the request body instead of buffering it here. Attachment uploads are
+  // up to 30 MB; without this the whole file is read into memory before the
+  // backend request even starts, which doubles the wait on every upload.
+  return proxyRequest(event, `${backendBaseUrl}/api/admin-console/${path}${search}`, { streamRequest: true })
 })
-
