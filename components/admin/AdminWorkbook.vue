@@ -989,7 +989,7 @@
         }"
         role="dialog"
         aria-modal="true"
-        @mousedown="closePickupBcMenuOnOutside($event); clearVesselHistorySelectionOnBlank($event)"
+        @mousedown="closePickupBcMenuOnOutside($event); closeBillExportMenuOnOutside($event); clearVesselHistorySelectionOnBlank($event)"
       >
         <button class="gsd-modal-x" type="button" title="Close" aria-label="Close" @pointerup.stop.prevent="closeGsdModal" @click.stop="closeGsdModal">&times;</button>
         <div v-if="gsdModal.loading && (isPaymentRequestModal() || isExpenseCollectModal())" class="payment-loading-screen" role="status" aria-live="polite">
@@ -1153,9 +1153,9 @@
                     @keydown.enter.prevent="showFirstGsdClientDetail"
                   />
                 </div>
-                <label v-if="isDestinationAgentClientModal()" class="gsd-client-not-required">
-                  <input type="checkbox" :checked="isDestinationAgentNotRequired()" :disabled="!canEditClientLinkCell(gsdModal.row, gsdModal.column)" @change="toggleDestinationAgentNotRequired" />
-                  <span>Destination agent not required</span>
+                <label v-if="agentNotRequiredConfig()" class="gsd-client-not-required">
+                  <input type="checkbox" :checked="isAgentNotRequired()" :disabled="!canEditClientLinkCell(gsdModal.row, gsdModal.column)" @change="toggleAgentNotRequired" />
+                  <span>{{ agentNotRequiredConfig()?.label }}</span>
                 </label>
                 <div v-if="gsdModal.text.trim()" class="gsd-client-results">
                   <button
@@ -1275,34 +1275,39 @@
             <div class="gsd-hbl-hint">{{ gsdModal.form.hint || '' }}</div>
           </template>
           <template v-else-if="isCutoffModal()">
-            <div v-if="!isCcdCutoffModal()" class="gsd-cutoff-form">
-              <div class="gsd-cutoff-block">
-                <div class="gsd-cutoff-label">SI CUTOFF</div>
-                <div class="gsd-cutoff-inputs">
-                  <button class="gsd-cutoff-date" type="button" @click="openCutoffDatePopup('siDate', $event)"><span :class="{ placeholder: !gsdModal.form.siDate }">{{ cutoffDateLabel(gsdModal.form.siDate) }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button>
-                  <button class="gsd-cutoff-time" type="button" @click="openCutoffTimePopup('siTime', $event)"><span :class="{ placeholder: !gsdModal.form.siTime }">{{ gsdModal.form.siTime || '-- : --' }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
+            <div v-if="!isCcdCutoffModal()" class="gsd-cutoff-entry">
+              <div class="gsd-cutoff-form">
+                <div class="gsd-cutoff-block">
+                  <div class="gsd-cutoff-label">SI CUTOFF</div>
+                  <div class="gsd-cutoff-inputs">
+                    <button class="gsd-cutoff-date" type="button" @click="openCutoffDatePopup('siDate', $event)"><span :class="{ placeholder: !gsdModal.form.siDate }">{{ cutoffDateLabel(gsdModal.form.siDate) }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button>
+                    <button class="gsd-cutoff-time" type="button" @click="openCutoffTimePopup('siTime', $event)"><span :class="{ placeholder: !gsdModal.form.siTime }">{{ gsdModal.form.siTime || '-- : --' }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
+                  </div>
+                </div>
+                <div class="gsd-cutoff-block">
+                  <div class="gsd-cutoff-label">{{ isLclSheet() ? 'CFS CUTOFF' : 'CY CUTOFF' }}</div>
+                  <div class="gsd-cutoff-inputs">
+                    <button class="gsd-cutoff-date" type="button" @click="openCutoffDatePopup('cyDate', $event)"><span :class="{ placeholder: !gsdModal.form.cyDate }">{{ cutoffDateLabel(gsdModal.form.cyDate) }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button>
+                    <button class="gsd-cutoff-time" type="button" @click="openCutoffTimePopup('cyTime', $event)"><span :class="{ placeholder: !gsdModal.form.cyTime }">{{ gsdModal.form.cyTime || '-- : --' }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
+                  </div>
                 </div>
               </div>
-              <div class="gsd-cutoff-block">
-                <div class="gsd-cutoff-label">{{ isLclSheet() ? 'CFS CUTOFF' : 'CY CUTOFF' }}</div>
-                <div class="gsd-cutoff-inputs">
-                  <button class="gsd-cutoff-date" type="button" @click="openCutoffDatePopup('cyDate', $event)"><span :class="{ placeholder: !gsdModal.form.cyDate }">{{ cutoffDateLabel(gsdModal.form.cyDate) }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button>
-                  <button class="gsd-cutoff-time" type="button" @click="openCutoffTimePopup('cyTime', $event)"><span :class="{ placeholder: !gsdModal.form.cyTime }">{{ gsdModal.form.cyTime || '-- : --' }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
-                </div>
+              <div class="gsd-cutoff-savebar">
+                <button class="wb-modal-btn primary" type="button" :disabled="!cutoffHasInput()" @click="saveCutoffRecord">Save</button>
               </div>
             </div>
-            <div v-if="!isCcdCutoffModal()" class="gsd-cutoff-savebar">
-              <button class="wb-modal-btn primary" type="button" :disabled="!cutoffHasInput()" @click="saveCutoffRecord">Save</button>
-            </div>
-            <div v-if="!isCcdCutoffModal()" class="gsd-cutoff-hint">{{ gsdModal.form.hint || '' }}</div>
+            <div v-if="!isCcdCutoffModal() && gsdModal.form.hint" class="gsd-cutoff-hint">{{ gsdModal.form.hint }}</div>
             <div class="gsd-cutoff-history gsd-five-row-scroll">
               <table class="gsd-cutoff-table">
+                <colgroup><col class="cutoff-stt" /><col class="cutoff-date-col" /><col class="cutoff-time-col" /><col class="cutoff-date-col" /><col class="cutoff-time-col" /><col class="cutoff-status-col" /></colgroup>
                 <thead>
                   <tr>
-                    <th colspan="3">SI CUTOFF</th>
+                    <th class="cutoff-stt" rowspan="2">No.</th>
+                    <th colspan="2">SI CUTOFF</th>
                     <th colspan="2">{{ isLclSheet() ? 'CFS CUTOFF' : 'CY CUTOFF' }}</th>
-                    <th>STATUS</th>
+                    <th rowspan="2">STATUS</th>
                   </tr>
+                  <tr><th>Date</th><th>Time</th><th>Date</th><th>Time</th></tr>
                 </thead>
                 <tbody>
                   <tr v-for="(item, index) in cutoffRecords()" :key="item.id" :class="{ selected: gsdModal.form.selectedId === item.id }" @click="selectCutoffRecord(item.id)">
@@ -1847,7 +1852,7 @@
                 </colgroup>
                 <thead>
                   <tr v-if="usesTcdTruckStatusTemplate() || isLclTruckingDetailModal()">
-                    <th v-if="!isReadonlyTruckContModal()" class="tk-all"><input type="checkbox" aria-label="Select all truck rows" :checked="allTruckContRowsSelected()" :indeterminate.prop="someTruckContRowsSelected()" :disabled="gsdModal.editing || !truckContRecords().length" @change="toggleAllTruckContRows" /></th>
+                    <th v-if="!isReadonlyTruckContModal()" class="tk-all"><input type="checkbox" aria-label="Select all truck rows" :checked="allTruckContRowsSelected()" :indeterminate.prop="someTruckContRowsSelected()" :disabled="!truckContRecords().length" @change="toggleAllTruckContRows" /></th>
                     <th>ORDER</th>
                     <th>PU NO#</th>
                     <th><span class="gsd-truck-heading"><span>Truck Comp</span><button v-if="!isReadonlyTruckContModal()" class="gsd-truck-plus" type="button" @click.stop="addTruckCompanyFromModal">+</button></span></th>
@@ -1863,7 +1868,7 @@
                   </tr>
                   <template v-else>
                   <tr>
-                    <th v-if="!isReadonlyTruckContModal()" class="tk-all" rowspan="2"><input type="checkbox" aria-label="Select all truck rows" :checked="allTruckContRowsSelected()" :indeterminate.prop="someTruckContRowsSelected()" :disabled="gsdModal.editing || !truckContRecords().length" @change="toggleAllTruckContRows" /></th>
+                    <th v-if="!isReadonlyTruckContModal()" class="tk-all" rowspan="2"><input type="checkbox" aria-label="Select all truck rows" :checked="allTruckContRowsSelected()" :indeterminate.prop="someTruckContRowsSelected()" :disabled="!truckContRecords().length" @change="toggleAllTruckContRows" /></th>
                     <th rowspan="2">ORDER</th>
                     <th rowspan="2">PU NO#</th>
                     <th rowspan="2"><span class="gsd-truck-heading"><span>Truck Comp</span><button v-if="!isReadonlyTruckContModal()" class="gsd-truck-plus" type="button" title="Add Haulier" @click.stop="addTruckCompanyFromModal">+</button></span></th>
@@ -1884,7 +1889,7 @@
                 </thead>
                 <tbody>
                   <tr v-for="(record, index) in truckContRecords()" :key="record.id || index" :class="{ 'truck-row-editing': truckContRowCanEdit(record) }">
-                    <td v-if="!isReadonlyTruckContModal()" class="truck-select-cell"><input v-model="record.selected" type="checkbox" :disabled="gsdModal.editing" /></td>
+                    <td v-if="!isReadonlyTruckContModal()" class="truck-select-cell"><input v-model="record.selected" type="checkbox" /></td>
                     <td class="tk-order">{{ index + 1 }}</td>
                     <td><button class="gsd-pu-link" type="button" @click="openTruckPuDetail(index)">{{ truckPuNumber(index) }}</button></td>
                     <td class="truck-company-cell">
@@ -1972,7 +1977,7 @@
                       <td><input v-model="record.pickupDate" class="prs-date" type="date" :disabled="isAirDupFcdTruckingStatusModal() || !gsdModal.editing" /></td>
                       <td><input v-model="record.arrivingTime" class="prs-date" type="time" :disabled="isAirDupFcdTruckingStatusModal() || !gsdModal.editing" /></td>
                       <td class="epodcell">
-                        <button v-if="isAirDupFcdTruckingStatusModal()" class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign })"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                        <button v-if="isAirDupFcdTruckingStatusModal()" class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign, epodUrl: record.epodUrl })"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
                         <span v-else class="roval" :class="{ 'ro-empty': !record.epodSign }">{{ record.epodSign || '' }}</span>
                       </td>
                     </tr>
@@ -2003,7 +2008,7 @@
                       <td class="prs-days">{{ pickupReturnDaysAfterAta(record) }}</td>
                       <td><input :value="record.pickupDate" class="prs-date" type="date" disabled /></td>
                       <td class="epodcell">
-                        <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign })">
+                        <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign, epodUrl: record.epodUrl })">
                           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>
                       </td>
@@ -2046,7 +2051,7 @@
                       <td class="prs-readonly">{{ record.arrivingTime || '—' }}</td>
                       <td class="prs-readonly">{{ cutoffDateLabel(record.returnDate) }}</td>
                       <td class="epodcell">
-                        <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign })">
+                        <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign, epodUrl: record.epodUrl })">
                           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>
                       </td>
@@ -2106,7 +2111,7 @@
                     <td v-if="isDupTruckingStatusModal()" class="prs-readonly">{{ record.arrivingTime || record.estimatedArrivingTime || '' }}</td>
                     <td v-if="!isLclPickupStatusModal() && !isDupTruckingStatusModal()" class="prs-date-cell"><button class="prs-date-field" type="button" :disabled="!pickupReturnRowCanEdit(record)" @click.stop="openPickupReturnDatePopup(index, 'returnDate', $event)"><span>{{ cutoffDateLabel(record.returnDate) }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button></td>
                     <td v-if="isDupTruckingStatusModal()" class="epodcell">
-                      <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign })">
+                      <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign, epodUrl: record.epodUrl })">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
                       </button>
                     </td>
@@ -2141,10 +2146,10 @@
               </div>
               <div class="si-g2"><div class="si-f"><div class="si-party-head"><span>Shipper</span><label><input v-model="gsdModal.form.copyShipper" type="checkbox" :disabled="!gsdModal.editing" @change="toggleSiPartyCopy('SHIPPER')" /> Copy from Shipper</label></div><textarea v-model="gsdModal.form.shipper" rows="3" :disabled="!gsdModal.editing" @input="gsdModal.form.copyShipper = false"></textarea></div><div class="si-f"><div class="si-party-head"><span>Consignee</span><label><input v-model="gsdModal.form.copyConsignee" type="checkbox" :disabled="!gsdModal.editing" @change="toggleSiPartyCopy('CNEE')" /> Copy from Consignee</label></div><textarea v-model="gsdModal.form.consignee" rows="3" :disabled="!gsdModal.editing" @input="gsdModal.form.copyConsignee = false"></textarea></div></div>
               <label class="si-f"><span>Notify Party</span><textarea v-model="gsdModal.form.notify" rows="2" :disabled="!gsdModal.editing"></textarea></label>
-              <div v-if="isAirMode()" class="si-g3"><label class="si-f"><span>Booking No.</span><input v-model="gsdModal.form.bookingNo" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Flight No.</span><input v-model="gsdModal.form.vessel" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Flight Date</span><input v-model="gsdModal.form.depDate" type="date" :disabled="!gsdModal.editing" /></label></div>
-              <div v-if="!isAirMode()" class="si-g3"><label class="si-f"><span>Booking No.</span><input v-model="gsdModal.form.bookingNo" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Vessel/Voyage</span><input v-model="gsdModal.form.vessel" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Departure Date</span><input v-model="gsdModal.form.depDate" type="date" :disabled="!gsdModal.editing" /></label></div>
-              <div v-if="!isAirMode()" class="si-g2"><label class="si-f"><span>Place of Receipt</span><input v-model="gsdModal.form.por" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Port of Loading</span><input v-model="gsdModal.form.pol" type="text" :disabled="!gsdModal.editing" @input="uppercaseSiPort('pol')" /></label></div>
-              <div v-if="!isAirMode()" class="si-g2"><label class="si-f"><span>Port of Discharge</span><input v-model="gsdModal.form.pod" type="text" :disabled="!gsdModal.editing" @input="uppercaseSiPort('pod')" /></label><label class="si-f"><span>Place of Delivery</span><input v-model="gsdModal.form.podl" type="text" :disabled="!gsdModal.editing" /></label></div>
+              <div v-if="isAirMode()" class="si-g3"><label class="si-f"><span>Booking No.</span><input v-model="gsdModal.form.bookingNo" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" /></label><label class="si-f"><span>Flight No.</span><input v-model="gsdModal.form.vessel" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" /></label><label class="si-f"><span>Flight Date</span><input v-model="gsdModal.form.depDate" type="date" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" /></label></div>
+              <div v-if="!isAirMode()" class="si-g3"><label class="si-f"><span>Booking No.</span><input v-model="gsdModal.form.bookingNo" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" /></label><label class="si-f"><span>Vessel/Voyage</span><input v-model="gsdModal.form.vessel" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" /></label><label class="si-f"><span>Departure Date</span><input v-model="gsdModal.form.depDate" type="date" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" /></label></div>
+              <div v-if="!isAirMode()" class="si-g2"><label class="si-f"><span>Place of Receipt</span><input v-model="gsdModal.form.por" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Port of Loading</span><input v-model="gsdModal.form.pol" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" @input="uppercaseSiPort('pol')" /></label></div>
+              <div v-if="!isAirMode()" class="si-g2"><label class="si-f"><span>Port of Discharge</span><input v-model="gsdModal.form.pod" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" @input="uppercaseSiPort('pod')" /></label><label class="si-f"><span>Place of Delivery</span><input v-model="gsdModal.form.podl" type="text" :disabled="!gsdModal.editing" /></label></div>
               <div v-if="isAirMode()" class="si-g2"><label class="si-f"><span>Airport of Loading</span><input v-model="gsdModal.form.pol" type="text" :disabled="!gsdModal.editing" @input="uppercaseSiPort('pol')" /></label><label class="si-f"><span>Airport of Discharge</span><input v-model="gsdModal.form.pod" type="text" :disabled="!gsdModal.editing" @input="uppercaseSiPort('pod')" /></label></div>
               <label v-if="isAirMode()" class="si-f"><span>To (Air Cargo Warehouse)</span><textarea v-model="gsdModal.form.toWarehouse" rows="2" :disabled="!gsdModal.editing"></textarea></label>
               <div class="si-section-title">Freight Term</div>
@@ -2223,8 +2228,8 @@
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-div"></div>
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-sec-title">{{ isAwbDetailModal() ? 'HAWB DETAILS' : awbText('HBL DETAILS') }}</div>
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-rows">
-                  <div class="bd-row"><span class="bd-lab">SI RECEIVED:</span><input v-model="gsdModal.form.siReceived" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing" @change="syncBillDetailTimestamp('siReceived')" /><input v-model.trim="gsdModal.form.siReceivedAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><div class="bd-export-menu"><button class="bd-exportbtn" id="bdExportDocument" type="button" :disabled="!gsdModal.form.siReceived" @click="billExportMenuOpen = !billExportMenuOpen">Export (B/L, FCR)<span class="bd-export-caret">▾</span></button><div v-if="billExportMenuOpen" class="bd-export-dropdown"><button type="button" @click="selectBillDocumentExport('B/L')">Export B/L</button><button type="button" @click="selectBillDocumentExport('FCR')">Export FCR</button></div></div></div>
-                  <div class="bd-row"><span class="bd-lab">{{ isAwbDetailModal() ? 'HAWB APPROVED:' : awbText('HBL APPROVED:') }}</span><input v-model="gsdModal.form.hbl" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing || !gsdModal.form.siReceived" @change="syncBillTimestamp('hbl')" /><input v-model.trim="gsdModal.form.hblAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><button class="bd-eye" :class="{ on: !!gsdModal.form.hbl && (isAwbDetailModal() ? !!gsdModal.form.hblFile?.url : !!gsdModal.form.exportBl) }" type="button" :disabled="!gsdModal.form.hbl || (isAwbDetailModal() ? !gsdModal.form.hblFile?.url : !gsdModal.form.exportBl)" :title="isAwbDetailModal() ? 'View HAWB file' : 'View Export B/L PDF'" @click="isAwbDetailModal() ? viewBillDetailFile(gsdModal.form.hblFile) : viewExportedBillPdf()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+                  <div class="bd-row"><span class="bd-lab">SI RECEIVED:</span><input v-model="gsdModal.form.siReceived" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing" @change="syncBillDetailTimestamp('siReceived')" /><input v-model.trim="gsdModal.form.siReceivedAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><div class="bd-source-menu"><button class="bd-exportbtn" type="button" :disabled="!gsdModal.form.siReceived" @click="billExportMenuOpen = !billExportMenuOpen">{{ billSourceButtonLabel() }}<span class="bd-export-caret">&#9662;</span></button><div v-if="billExportMenuOpen" class="bd-export-dropdown bd-export-groups"><div class="bd-export-group"><label><input type="checkbox" :checked="billSourceMode() === 'export'" @change="setBillSourceMode('export')" /> Export (B/L, FCR)</label><div v-if="billSourceMode() === 'export'" class="bd-export-options"><button type="button" @click="selectBillDocumentExport('B/L')">Export B/L</button><button type="button" @click="selectBillDocumentExport('FCR')">Export FCR</button></div></div><div class="bd-export-group"><label><input type="checkbox" :checked="billSourceMode() === 'client'" @change="setBillSourceMode('client')" /> Use Client's B/L</label></div></div></div><template v-if="billSourceMode() === 'client'"><button class="booking-icon bd-client-upload" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.editing" :title="gsdModal.form.clientBlFile?.url ? 'Replace Client B/L' : 'Upload Client B/L'" @click="openBillDetailUpload('clientBlFile')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5" /></svg></button><button class="booking-eye" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.form.clientBlFile?.url" :title="gsdModal.form.clientBlFile?.url ? 'View Client B/L' : 'No file attached'" @click="viewBillDetailFile(gsdModal.form.clientBlFile)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></template></div>
+                  <div class="bd-row"><span class="bd-lab">{{ isAwbDetailModal() ? 'HAWB APPROVED:' : awbText('HBL APPROVED:') }}</span><input v-model="gsdModal.form.hbl" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing || !gsdModal.form.siReceived" @change="syncBillTimestamp('hbl')" /><input v-model.trim="gsdModal.form.hblAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><button class="bd-eye" :class="{ on: !!gsdModal.form.hbl && (isAwbDetailModal() ? !!gsdModal.form.hblFile?.url : billBlReady()) }" type="button" :disabled="!gsdModal.form.hbl || (isAwbDetailModal() ? !gsdModal.form.hblFile?.url : !billBlReady())" :title="isAwbDetailModal() ? 'View HAWB file' : billSourceMode() === 'client' ? 'View Client B/L' : 'View Export B/L PDF'" @click="isAwbDetailModal() ? viewBillDetailFile(gsdModal.form.hblFile) : viewSelectedBillFile()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                 </div>
                 <input ref="billDetailFileInput" type="file" hidden @change="handleBillDetailFile" />
               </div>
@@ -2255,7 +2260,7 @@
               <span v-if="gsdModal.form.sentAt" class="bd-sent"><span class="bd-check">✓</span> B/L sent · {{ gsdModal.form.sentAt }}</span>
               <button v-if="!isReadonlyExwFclEcdBillDetail()" class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="enableBillApprovalEdit">Edit</button>
               <button v-if="!isReadonlyExwFclEcdBillDetail()" class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing" @click="saveBillApproval">Save</button>
-              <button v-if="isBillApprovalModal() && ['ECD', 'DCD'].includes(opsDeptUpper())" class="wb-modal-btn bill-send" type="button" :disabled="gsdModal.editing || !gsdModal.form.locked || !gsdModal.form.mbl || !gsdModal.form.siReceived || !gsdModal.form.exportBl || !!gsdModal.form.sentAt" @click="openBillSendModal">Send B/L to Shipper</button>
+              <button v-if="isBillApprovalModal() && ['ECD', 'DCD'].includes(opsDeptUpper())" class="wb-modal-btn bill-send" type="button" :disabled="gsdModal.editing || !gsdModal.form.locked || !gsdModal.form.mbl || !gsdModal.form.siReceived || !billBlReady() || !!gsdModal.form.sentAt" @click="openBillSendModal">Send B/L to Shipper</button>
               <button v-if="!isBillApprovalModal()" class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
             </div>
           </template>
@@ -2394,6 +2399,7 @@
             <div class="gsd-cda-addbar">
               <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing" @click="addClearanceOtherDoc">Add+</button>
             </div>
+            <div class="gsd-cda-scroll">
             <table class="gsd-cda-table">
               <colgroup>
                 <col />
@@ -2439,6 +2445,7 @@
                 </tr>
               </tbody>
             </table>
+            </div>
             <div class="gsd-cda-actions">
               <button class="wb-modal-btn slate" type="button" @click="cancelClearanceDocs">Cancel All</button>
               <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || !clearanceDocsAnyChecked()" @click="enableClearanceDocsEdit">Edit</button>
@@ -3369,6 +3376,14 @@
                   <td :contenteditable="!billDocModal.locked" class="num" @blur="setBillDocField('grossWeight', $event)">{{ billDocValue('grossWeight') }}</td>
                   <td :contenteditable="!billDocModal.locked" class="num" @blur="setBillDocField('measurement', $event)">{{ billDocValue('measurement') }}</td>
                 </tr>
+              </tbody>
+            </table>
+            <div class="bill-container-title">Container &amp; Seal Information</div>
+            <table class="ctab bill-container-table">
+              <thead><tr><th style="width:5%">#</th><th style="width:19%">ContNo#</th><th style="width:14%">ContType</th><th style="width:18%">SealNo#</th><th style="width:10%">QTY</th><th style="width:13%">UNIT</th><th style="width:11%">GW (KG)</th><th style="width:10%">MEA. (CBM)</th></tr></thead>
+              <tbody>
+                <tr v-for="(container, index) in billDocModal.containers" :key="container.id || index"><td class="ctr"><span>{{ index + 1 }}</span></td><td><span>{{ container.contNo || '—' }}</span></td><td class="ctr"><span>{{ container.contType || '—' }}</span></td><td><span>{{ container.sealNo || '—' }}</span></td><td class="num"><span>{{ container.qty || '—' }}</span></td><td class="ctr"><span>{{ container.unit || '—' }}</span></td><td class="num"><span>{{ container.gw || '—' }}</span></td><td class="num"><span>{{ container.mea || '—' }}</span></td></tr>
+                <tr v-if="!billDocModal.containers.length" class="bill-container-empty"><td colspan="8">No container data from MASTER SI SUBMIT</td></tr>
               </tbody>
             </table>
             <table class="bgrid bill-summary-grid" style="margin-top:6px">
@@ -4458,6 +4473,7 @@ type PickupReturnRecord = {
   driverInfo?: string
   arrivingTime?: string
   epodSign?: string
+  epodUrl?: string
 }
 const emptyGsdForm = (fields: GsdFormField[]) => fields.reduce((acc, field) => {
   acc[field.key] = field.type === 'checkbox' ? false : field.type === 'select' ? field.options?.[0] || '' : ''
@@ -4702,7 +4718,7 @@ const paymentHistoryPicker = reactive<any>({ open: false, row: -1, sourceColumn:
 let clientSearchRun = 0
 const preAlertFileTarget = ref('')
 const billExportMenuOpen = ref(false)
-const billDocModal = reactive<any>({ open: false, readonly: false, isRelease: false, exportingPdf: false, billType: 'ORIGINAL B/L', kind: 'B/L', company: 'TX LOGISTICS VIETNAM CO.,LTD', copySi: false, locked: false, attachments: 0, savedAt: '', signedAt: '', docNo: '', refNo: '', shipper: '', consignee: '', notify: '', notifyBackup: '', sameAsConsignee: false, preCarriage: '', receipt: '', vessel: '', pol: '', pod: '', delivery: '', marks: '', packages: '', goodsDescription: '', grossWeight: '', measurement: '', freightCharges: '', freightPayableAt: '', originalCount: '', placeOfIssue: '', dateOfIssue: '', shippedOnBoardDate: '' })
+const billDocModal = reactive<any>({ open: false, readonly: false, isRelease: false, exportingPdf: false, billType: 'ORIGINAL B/L', kind: 'B/L', company: 'TX LOGISTICS VIETNAM CO.,LTD', copySi: false, locked: false, attachments: 0, savedAt: '', signedAt: '', docNo: '', refNo: '', shipper: '', consignee: '', notify: '', notifyBackup: '', sameAsConsignee: false, preCarriage: '', receipt: '', vessel: '', pol: '', pod: '', delivery: '', marks: '', packages: '', goodsDescription: '', grossWeight: '', measurement: '', containers: [], freightCharges: '', freightPayableAt: '', originalCount: '', placeOfIssue: '', dateOfIssue: '', shippedOnBoardDate: '' })
 const deliveryOrderModal = reactive<any>({ open: false, editing: false, exporting: false, form: {} })
 const billDocRouteFields = [
   { key: 'preCarriage', label: 'PRE-CARRIAGE BY' }, { key: 'receipt', label: 'PLACE OF RECEIPT' },
@@ -4722,11 +4738,14 @@ const searchGsdClients = async () => {
   const run = ++clientSearchRun
   try {
     const role = clientRoleForLabel(gsdModal.clientRole)
+    const linerSource = String(opsParts.value?.mode || '').toUpperCase() === 'FCL'
+      ? { page: 'traders_ocean_carriers', roles: ['OCEAN CARRIER', 'OCEAN CARRIERS'] }
+      : { page: 'traders_ocean_agent', roles: ['OCEAN AGENT', 'OCEAN AGENTS'] }
     const traderSource: Record<string, { page: string; roles: string[] }> = {
       CLIENT: { page: 'traders_traders', roles: ['CLIENT'] },
       SHIPPER: { page: 'traders_traders', roles: ['SHIPPER'] },
       CNEE: { page: 'traders_traders', roles: ['CNEE'] },
-      LINER: { page: 'traders_ocean_agent', roles: ['OCEAN AGENT'] },
+      LINER: linerSource,
       AIRLINE: { page: 'traders_airlines', roles: ['AIRLINE'] },
       'ORIGIN AGENT': { page: 'traders_dest_agent', roles: ['DEST. AGENT', 'AGENT'] },
       'DESTINATION AGENT': { page: 'traders_dest_agent', roles: ['DEST. AGENT', 'AGENT'] },
@@ -5004,7 +5023,8 @@ const paymentPartyIdPreview = computed(() => {
 const traderRoleForClientRole = (role: string) => {
   const normalized = upperText(role)
   if (['ORIGIN AGENT', 'DESTINATION AGENT', 'DEST. AGENT', 'AGENT', 'AGENTS'].includes(normalized)) return 'DEST. AGENT'
-  if (['LINER', 'OCEAN AGENT', 'OCEAN AGENTS'].includes(normalized)) return 'OCEAN AGENT'
+  if (normalized === 'LINER') return String(opsParts.value?.mode || '').toUpperCase() === 'FCL' ? 'OCEAN CARRIER' : 'OCEAN AGENT'
+  if (['OCEAN AGENT', 'OCEAN AGENTS'].includes(normalized)) return 'OCEAN AGENT'
   if (['OCEAN CARRIER', 'OCEAN CARRIERS'].includes(normalized)) return 'OCEAN CARRIER'
   if (['AIRLINE', 'AIRLINES'].includes(normalized)) return 'AIRLINE'
   if (['AIR AGENT', 'AIR AGENTS'].includes(normalized)) return 'AIR AGENT'
@@ -5226,7 +5246,7 @@ const filteredTruckCompanyOptions = (value = '') => {
   return truckCompanyOptions.value.filter((option) => {
     const normalized = upperText(option).trim()
     return normalized !== needle && (!needle || normalized.includes(needle))
-  })
+  }).slice(0, 5)
 }
 const openTruckCompanyPicker = (index: number) => {
   truckCompanyPicker.index = index
@@ -5504,10 +5524,13 @@ const filteredDropdownPopupOptions = computed(() => {
   const current = dropdownPopup.mode === 'pick'
     ? upperText(displayCell(rows.value[dropdownPopup.row]?.[dropdownPopup.column], dropdownPopup.row, dropdownPopup.column)).trim()
     : ''
-  return options.filter((option) => {
+  const filtered = options.filter((option) => {
     const normalized = upperText(option).trim()
     return normalized !== current && (!needle || option.toLowerCase().includes(needle))
   })
+  // Picker-style filters only suggest five records, both before and after typing.
+  // Edit mode still exposes the full list so existing options can be managed.
+  return dropdownPopup.mode === 'pick' ? filtered.slice(0, 5) : filtered
 })
 const datePopupMonthLabel = computed(() => new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date(datePopup.viewYear, datePopup.viewMonth, 1)))
 const todayStamp = () => formatOpsDate(new Date())
@@ -8769,7 +8792,7 @@ const isGsdModalWorkflowLocked = () => {
   const label = normalizedHeaderLabel(gsdModal.column)
   // Communication/support cells stay usable after dispatch. They do not alter
   // the shipment data snapshot that was confirmed by SENT ECD.
-  if (['EXTRA SERVICE', 'NOTICE', 'NOTES', 'REMINDER'].includes(label)) return false
+  if (['EXTRA SERVICE', 'NOTICE', 'NOTES', 'REMINDER', 'TRUCK & CONT/SEAL INFO', 'TRUCKS & CONT/SEAL DETAILS', 'TRUCKING INFO', 'TRUCKING DETAIL'].includes(label)) return false
   if (isSentEcdRowLocked(gsdModal.row)) return true
   if (!isBcSentRowLocked(gsdModal.row)) return false
   // BC SENT only freezes the booking fields that were validated and sent.
@@ -9254,15 +9277,29 @@ const truckContHasLinkedVolume = (row: number, column: number) => {
   const volumeColumn = (rows.value[0] || []).findIndex((_, index) => normalizedHeaderLabel(index) === 'VOLUME')
   return volumeColumn >= 0 && volumeCellHasRecords(rows.value[row]?.[volumeColumn])
 }
+const isReceivedOnlyActionCell = (row: number, column: number) => {
+  if (row < 1) return false
+  const label = normalizedHeaderLabel(column)
+  // Expense/Collection is an approval view fed by PAYMENT REQUEST. FCD may
+  // update status/feedback inside the dialog, but it never creates a request.
+  if (['EXPENSE/COLLECT LIST', 'EXPENSE/COLLECTION LIST'].includes(label)) return true
+  if (label === 'PAYMENT REQUEST' && opsDeptUpper() === 'FCD') return true
+  // Every other form-action column owned by an earlier department is
+  // view-only here. It must remain discoverable as DETAIL even before the
+  // mirrored payload arrives, instead of suggesting that this dept can add it.
+  return isLockedOpsCell(row, column) && formButtonLabels.includes(label)
+}
 const gsdActionButtonText = (row: number, column: number) => {
   const label = normalizedHeaderLabel(column)
+  // PICKUP STATUS is synchronized from Truck & Cont/Seal and is view-only.
+  if (label === 'PICKUP STATUS') return 'DETAIL'
   if (label === 'DO INFO' && ['DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type)) && opsDeptUpper() !== 'ICD') return 'DETAIL'
   if (label === 'NOTES') return String(rows.value[row]?.[column] || '').trim() ? 'DETAIL' : 'ADD+'
   if (label === 'REMINDER' || label === 'NOTICE') return 'VIEW'
-  // PAYMENT REQUEST may contain an empty serialized form (job/ref metadata or
-  // a blank draft line). Only show DETAIL after an actual request line exists.
-  // This check must run before the generic locked-cell rule so empty mirrored
-  // cells in receiving departments still display ADD+.
+  if (isReceivedOnlyActionCell(row, column)) return 'DETAIL'
+  if (label === 'PRE-ALERT SENDING') return 'DETAIL'
+  // In the department that owns PAYMENT REQUEST, an empty serialized form
+  // (job/ref metadata or a blank draft line) is still a new ADD+ request.
   if (label === 'PAYMENT REQUEST') {
     const payment = paymentRequestFromCell(rows.value[row]?.[column])
     return payment.lines.some((line) => paymentLineHasData(line)) ? 'DETAIL' : 'ADD+'
@@ -9288,10 +9325,6 @@ const gsdActionButtonText = (row: number, column: number) => {
     const bookingNo = bookingDetailValue(rows.value[row]?.[column])
     return bookingNo || (isLockedOpsCell(row, column) ? 'DETAIL' : 'ADD+')
   }
-  // Columns received from another Dept are view-only according to the
-  // FCL/LCL/AIR structure workbooks. Empty mirrored forms must still render
-  // as DETAIL, never as an editable ADD+ action.
-  if (isLockedOpsCell(row, column) && formButtonLabels.includes(label)) return 'DETAIL'
   if (label === 'BC SENT') return cellHasData(rows.value[row]?.[column]) ? 'DETAIL' : 'ADD+'
   if (opsParts.value?.type === 'DO' && opsParts.value?.dept === 'ICD' && label === 'DO RELEASE') return 'DETAIL'
   if (label === 'BC DETAIL') return 'DETAIL'
@@ -9386,8 +9419,13 @@ const infoDetailNeedsAttention = (row: number, column: number) =>
   infoActionIsDetail(row, column) && !hasInfoRecords(row, column)
 const truckDetailNeedsAttention = (row: number, column: number) =>
   truckActionIsDetail(row, column) && !hasTruckRecords(row, column)
-const detailActionNeedsAttention = (row: number, column: number) =>
-  isDetailActionButton(row, column) && !String(rows.value[row]?.[column] ?? '').trim() && !truckContHasLinkedVolume(row, column)
+const detailActionNeedsAttention = (row: number, column: number) => {
+  const label = normalizedHeaderLabel(column)
+  if (['CLEARANCE DETAIL', 'CLEARANCE DETAILS', 'CUSTOMS CLEARANCE DETAILS'].includes(label)) {
+    return clearanceDetailsNeedsAttention(rows.value[row]?.[column])
+  }
+  return isDetailActionButton(row, column) && !String(rows.value[row]?.[column] ?? '').trim() && !truckContHasLinkedVolume(row, column)
+}
 const showActionEditIcon = (row: number, column: number) =>
   !isDetailActionButton(row, column) && showLinkedEditIcon(row, column)
 const isPlainDocumentValue = (row: number, column: number) => {
@@ -12327,6 +12365,7 @@ const billReleasePaymentReady = () => {
   return selectedExactlyOne && (!gsdModal.form.collectLater || !!String(gsdModal.form.deadline || '').trim())
 }
 const isSiSubmitModal = () => isGsdFormModalLabel('SI SUBMIT', 'MASTER SI SUBMIT')
+const isMasterSiSubmitModal = () => normalizedHeaderLabel(gsdModal.column) === 'MASTER SI SUBMIT'
 const isFclExwDcdSiModal = () => isSiSubmitModal() && opsParts.value?.mode === 'FCL' && ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && ['ECD', 'DCD'].includes(opsDeptUpper())
 // SI Submit is maintained at DCD for every origin-forwarding FCL service.
 // Container/seal identity comes from the linked workflow in EXW/FCA/FCF;
@@ -14564,10 +14603,9 @@ const gsdModalShellStyle = () => {
   if (isExpenseCollectModal()) return shell('1400px', 'min(620px, 86vh)')
   if (isSiSubmitModal()) return shell('920px', gsdModal.form.notSubmittedByShoptrans ? '76px' : 'calc(100vh - 40px)')
   if (isArrivalNoticeModal()) return shell('920px')
-  // Two cutoff groups are exactly 268px each with a 28px gap. A 612px
-  // border-box modal leaves 564px after horizontal padding, so the modal,
-  // Save/footer actions and history table end at the CY/CFS time field.
-  if (isCutoffModal()) return shell('612px')
+  // Keep both cutoff groups, Save and the complete six-column history table
+  // visible without a horizontal scrollbar.
+  if (isCutoffModal()) return shell('700px')
   if (isVolumeModal()) return shell('780px')
   if (isFreetimeModal()) return shell('600px')
   if (isRouteModal()) return shell('660px')
@@ -14897,6 +14935,18 @@ const seedDupTcdClearanceMockupData = () => {
 }
 const clearanceDeclarationsFor = (rowKey: string) => clearanceDeclarations().filter((decl) => decl.rowKeys.includes(rowKey))
 const clearanceDetailsSaved = (value: any) => clearanceDetailsFormFromCell(value).declarations.some((decl: ClearanceDeclaration) => decl.no || decl.date || decl.result)
+const clearanceDetailsNeedsAttention = (value: any) => {
+  const declarations = clearanceDetailsFormFromCell(value).declarations as ClearanceDeclaration[]
+  const started = declarations.filter((decl) =>
+    !!(decl.no || decl.date || decl.result || decl.tax || decl.fee || decl.cleared || decl.docs),
+  )
+  return started.some((decl) =>
+    !String(decl.no || '').trim() ||
+    !String(decl.date || '').trim() ||
+    !String(decl.result || '').trim() ||
+    !decl.tax || !decl.fee || !decl.cleared || !decl.docs,
+  )
+}
 const allClearanceRowsSelected = () => {
   const rowsList = clearanceRows()
   return !!rowsList.length && rowsList.every((row) => !!gsdModal.form.selected?.[row.key])
@@ -15320,7 +15370,7 @@ const someTruckContRowsSelected = () => {
   return selected > 0 && selected < truckContRecords().length
 }
 const toggleAllTruckContRows = (event: Event) => {
-  if (isReadonlyTruckContModal() || gsdModal.editing) return
+  if (isReadonlyTruckContModal()) return
   const checked = (event.target as HTMLInputElement).checked
   truckContRecords().forEach((record) => { record.selected = checked })
 }
@@ -15332,8 +15382,17 @@ const truckContRowCanEdit = (record: TruckContRecord) =>
 const parseTruckDate = (value: any) => {
   const text = String(value || '').trim()
   if (!text) return null
-  const normalized = text.includes('/') ? text.replace(/\//g, '-') : text
-  const parsed = new Date(normalized)
+  const iso = text.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/)
+  if (iso) {
+    const parsed = new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]))
+    return Number.isNaN(parsed.getTime()) ? null : parsed
+  }
+  const local = text.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/)
+  if (local) {
+    const parsed = new Date(Number(local[3]), Number(local[2]) - 1, Number(local[1]))
+    return Number.isNaN(parsed.getTime()) ? null : parsed
+  }
+  const parsed = new Date(text)
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 const formatTruckDate = (value: any) => {
@@ -15350,7 +15409,9 @@ const truckDaysAfterAta = (record: TruckContRecord) => {
   const ata = parseTruckDate(rowValueByHeader('ATA'))
   const pickup = parseTruckDate(record.eta1)
   if (!ata || !pickup) return '—'
-  return String(Math.round((pickup.getTime() - ata.getTime()) / 86400000))
+  const ataDay = Date.UTC(ata.getFullYear(), ata.getMonth(), ata.getDate())
+  const pickupDay = Date.UTC(pickup.getFullYear(), pickup.getMonth(), pickup.getDate())
+  return String(Math.round((pickupDay - ataDay) / 86400000))
 }
 const addTruckContRecord = () => {
   if (!Array.isArray(gsdModal.form.records)) gsdModal.form.records = []
@@ -15394,6 +15455,11 @@ const removeSelectedTruckContRecords = async () => {
   if (!indexes.size) return
   const ok = await askConfirm('Are you sure to remove?', '', { okText: 'OK', cancelText: 'Cancel', tone: 'remove' })
   if (!ok) return
+  if (!gsdModal.editing) {
+    gsdModal.form.editRecordsSnapshot = JSON.stringify(truckContRecords())
+    gsdModal.form.editLockedSnapshot = !!gsdModal.form.locked
+    gsdModal.form.editSentAtSnapshot = String(gsdModal.form.sentAt || '')
+  }
   if (isTcdTruckContModal()) {
     gsdModal.form.records = truckContRecords().map((record, index) => indexes.has(index)
       ? { ...emptyTruckContRecord(), contType: record.contType }
@@ -15402,6 +15468,8 @@ const removeSelectedTruckContRecords = async () => {
     const remaining = truckContRecords().filter((_, index) => !indexes.has(index))
     gsdModal.form.records = remaining.length ? remaining : [emptyTruckContRecord()]
   }
+  truckContEditingRows.value = new Set()
+  gsdModal.form.locked = false
   gsdModal.editing = true
 }
 const clearTruckContRecords = () => {
@@ -15468,8 +15536,8 @@ const saveTruckContDetails = async () => {
   const required = originServiceTruck
     ? ['truck', 'container', 'contType', 'seal', 'driver', 'eta1', 'eta2']
     : isTcdTruckContModal()
-      ? ['truck', 'container', 'contType', 'seal', 'driver', 'eta1', 'eta2', 'gdate']
-    : ['truck', 'container', 'contType', 'seal', 'driver', 'eta1', 'eta2', 'gdate', 'gtime']
+      ? ['truck', 'container', 'contType', 'seal', 'driver', 'eta1', 'eta2']
+    : ['truck', 'container', 'contType', 'seal', 'driver', 'eta1', 'eta2', 'gtime']
   if (editedRecords.some((record: any) => required.some((field) => !String(record[field] || '').trim()))) {
     showToast('Please complete all Truck & Cont/Seal fields before saving')
     return
@@ -15767,6 +15835,7 @@ const normalizePickupReturnRecord = (item: any, fallback?: TruckContRecord, inde
     driverInfo: String(item?.driverInfo || item?.driverName || item?.driver || fallback?.driver || ''),
     arrivingTime: String(item?.arrivingTime || item?.estimatedArrivingTime || item?.eta || item?.eta2 || fallback?.eta2 || ''),
     epodSign: String(item?.epodSign || fallback?.epodSign || ''),
+    epodUrl: String(item?.epodUrl || fallback?.epodUrl || ''),
   }
 }
 const pickupReturnFormFromCell = (value: any, linkedTruckValue: any = '') => {
@@ -15889,6 +15958,7 @@ const persistPickupReturnStatus = (immediate = false) => {
         driverInfo: record.driverInfo || '',
         arrivingTime: record.arrivingTime || '',
         epodSign: record.epodSign || '',
+        epodUrl: record.epodUrl || '',
       })),
       locked: !!gsdModal.form.locked,
     },
@@ -15949,6 +16019,8 @@ const billApprovalFormFromCell = (value: any) => {
     })).filter((file: any) => file.name) : [],
     exportBl: String(form.exportBl || form.exportBL || ''),
     exportFcr: String(form.exportFcr || form.exportFCR || ''),
+    billSourceMode: form.billSourceMode === 'client' ? 'client' : 'export',
+    clientBlFile: form.clientBlFile && typeof form.clientBlFile === 'object' ? form.clientBlFile : null,
     sent: !!form.sent,
     sentAt: String(form.sentAt || ''),
     sentEmails: String(form.sentEmails || ''),
@@ -16028,6 +16100,13 @@ const rawSiSourceValue = (label: string) => {
   const column = (rows.value[0] || []).findIndex((_: any, index: number) => normalizedHeaderLabel(index) === target)
   return column >= 0 ? rows.value[gsdModal.row]?.[column] : ''
 }
+const billContainersFromMasterSi = () => {
+  const source = rawSiSourceValue('MASTER SI SUBMIT') || rawSiSourceValue('SI SUBMIT')
+  if (!source) return []
+  return siSubmitFormFromCell(source).containers
+    .filter((container: any) => ['contNo', 'contType', 'sealNo', 'qty', 'gw', 'mea'].some((key) => String(container?.[key] || '').trim()))
+    .map((container: any, index: number) => ({ id: String(container?.id || `BL-CONT-${index}`), contNo: String(container?.contNo || ''), contType: String(container?.contType || ''), sealNo: String(container?.sealNo || ''), qty: String(container?.qty || ''), unit: String(container?.unit || ''), gw: String(container?.gw || ''), mea: String(container?.mea || '') }))
+}
 const siClientTextFromSource = (value: any) => {
   const parsed = typeof value === 'object' && value !== null ? value : parseJsonCell(value, null as any)
   const source = parsed && typeof parsed === 'object' && ('client' in parsed || 'CLIENT' in parsed)
@@ -16088,16 +16167,24 @@ const siDateFromSource = (value: any) => {
   const dmy = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/)
   return dmy ? `${dmy[3]}-${String(dmy[2]).padStart(2, '0')}-${String(dmy[1]).padStart(2, '0')}` : raw
 }
+const siVesselVoyageFromSource = () => {
+  const source = rawSiSourceValue('VESSEL/VOYAGE')
+  const vessel = vesselForGridDisplay(source)
+  return vessel ? [vessel.name, vessel.voyage].filter(Boolean).join(' / ') : ''
+}
 // LCL/AIR SI lists goods rows (from Volume) instead of containers and fills only empty fields.
 const syncSiLclAirFromSources = () => {
   const fillEmpty = (key: string, value: any) => { if (value && !String(gsdModal.form[key] || '').trim()) gsdModal.form[key] = value }
-  fillEmpty('bookingNo', bookingDetailValue(rawSiSourceValue('BC NO#')))
-  const vessel = vesselFromCellValue(rawSiSourceValue('VESSEL/VOYAGE')) as any
-  fillEmpty('vessel', vessel ? [vessel.name, vessel.voyage].filter(Boolean).join(' / ') : String(rawSiSourceValue('FLIGHT NO#') || '').trim())
-  fillEmpty('depDate', siDateFromSource(rawSiSourceValue('ETD')))
+  const fillLinked = (key: string, value: any) => {
+    if (isMasterSiSubmitModal()) gsdModal.form[key] = String(value || '')
+    else fillEmpty(key, value)
+  }
+  fillLinked('bookingNo', bookingDetailValue(rawSiSourceValue('BC NO#')))
+  fillLinked('vessel', siVesselVoyageFromSource() || String(rawSiSourceValue('FLIGHT NO#') || '').trim())
+  fillLinked('depDate', siDateFromSource(rawSiSourceValue('ETD')))
   const routeValue = rawSiSourceValue('ROUTE')
-  fillEmpty('pol', siRouteDisplay(routeValue, 'pol').toUpperCase())
-  fillEmpty('pod', siRouteDisplay(routeValue, 'pod').toUpperCase())
+  fillLinked('pol', siRouteDisplay(routeValue, 'pol').toUpperCase())
+  fillLinked('pod', siRouteDisplay(routeValue, 'pod').toUpperCase())
   const hasGoods = siSubmitContainers().some((item: any) => item.marks || item.qty || item.gw || item.mea)
   const volumes = volumeFormFromCell(rawSiSourceValue('VOLUME')).records
   if (!hasGoods && volumes.length) {
@@ -16115,16 +16202,16 @@ const syncSiSubmitFromSources = () => {
   if (gsdModal.form.copyShipper && shipper) gsdModal.form.shipper = shipper
   if (gsdModal.form.copyConsignee && consignee) gsdModal.form.consignee = consignee
   const booking = bookingDetailValue(rawSiSourceValue('BC NO#'))
-  if (booking) gsdModal.form.bookingNo = booking
-  const vessel = vesselFromCellValue(rawSiSourceValue('VESSEL/VOYAGE'))
-  if (vessel) gsdModal.form.vessel = [vessel.name, vessel.voyage].filter(Boolean).join(' / ')
+  if (booking || isMasterSiSubmitModal()) gsdModal.form.bookingNo = booking
+  const vesselVoyage = siVesselVoyageFromSource()
+  if (vesselVoyage || isMasterSiSubmitModal()) gsdModal.form.vessel = vesselVoyage
   const etd = siDateFromSource(rawSiSourceValue('ETD'))
-  if (etd) gsdModal.form.depDate = etd
+  if (etd || isMasterSiSubmitModal()) gsdModal.form.depDate = etd
   const routeValue = rawSiSourceValue('ROUTE')
   const pol = siRouteDisplay(routeValue, 'pol')
   const pod = siRouteDisplay(routeValue, 'pod')
-  if (pol) gsdModal.form.pol = pol.toUpperCase()
-  if (pod) gsdModal.form.pod = pod.toUpperCase()
+  if (pol || isMasterSiSubmitModal()) gsdModal.form.pol = pol.toUpperCase()
+  if (pod || isMasterSiSubmitModal()) gsdModal.form.pod = pod.toUpperCase()
   const truckValue = rawSiSourceValue('TRUCK & CONT/SEAL INFO') || rawSiSourceValue('TRUCKING INFO')
   const linked = truckContFormFromCell(truckValue).records.filter((item) => item.container || item.seal || item.contType)
   const volumes = volumeFormFromCell(rawSiSourceValue('VOLUME')).records
@@ -16477,7 +16564,7 @@ const cellHasData = (value: any): boolean => {
 const billDetailHasData = (value: any) => {
   const parsed = parseJsonCell(value, null as any)
   const form = parsed && typeof parsed === 'object' && 'form' in parsed ? (parsed as any).form || {} : {}
-  return !!(form.siSubmitted || form.siReceived || form.mnfSubmitted || form.mbl || form.hbl || form.mblFile || form.hblFile || form.exportBl || form.exportFcr || form.sentAt)
+  return !!(form.siSubmitted || form.siReceived || form.mnfSubmitted || form.mbl || form.hbl || form.mblFile || form.hblFile || form.exportBl || form.exportFcr || form.clientBlFile || form.sentAt)
 }
 const billDetailApprovalForRow = (row: number) => {
   const headers = rows.value[0] || []
@@ -16489,13 +16576,24 @@ const billDetailApprovalForRow = (row: number) => {
 }
 const billReleaseFileInput = ref<HTMLInputElement | null>(null)
 const billDetailFileInput = ref<HTMLInputElement | null>(null)
-const billDetailUploadField = ref<'siSubmittedFile' | 'mblFile' | 'hblFile'>('mblFile')
-const openBillDetailUpload = (field: 'siSubmittedFile' | 'mblFile' | 'hblFile') => {
+const billDetailUploadField = ref<'siSubmittedFile' | 'mblFile' | 'hblFile' | 'clientBlFile'>('mblFile')
+const openBillDetailUpload = (field: 'siSubmittedFile' | 'mblFile' | 'hblFile' | 'clientBlFile') => {
   if (isReadonlyExwFclEcdBillDetail() || !gsdModal.editing) return
   if (field === 'siSubmittedFile' && (!isDcdBillDetailModal() || !gsdModal.form.siSubmitted)) return
   billDetailUploadField.value = field
   billDetailFileInput.value?.click()
 }
+const billSourceMode = () => gsdModal.form.billSourceMode === 'client' ? 'client' : 'export'
+const billSourceButtonLabel = () => billSourceMode() === 'client' ? "Use Client's B/L" : 'Export (B/L, FCR)'
+const setBillSourceMode = (mode: 'export' | 'client') => {
+  gsdModal.form.billSourceMode = mode
+  billExportMenuOpen.value = mode === 'export'
+}
+const closeBillExportMenuOnOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement | null
+  if (!target?.closest('.bd-source-menu')) billExportMenuOpen.value = false
+}
+const billBlReady = () => billSourceMode() === 'client' ? !!gsdModal.form.clientBlFile?.url : !!gsdModal.form.exportBl
 const handleBillDetailFile = async (event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
@@ -16503,7 +16601,7 @@ const handleBillDetailFile = async (event: Event) => {
     try {
       const uploaded = await uploadAdminAttachment(file)
       if (billDetailUploadField.value !== 'siSubmittedFile' || gsdModal.form.siSubmitted) {
-        gsdModal.form[billDetailUploadField.value] = { name: uploaded.name, url: uploaded.url }
+        gsdModal.form[billDetailUploadField.value] = { name: uploaded.name, url: uploaded.url, type: file.type || uploaded.type || '' }
       }
     } catch (error: any) { showToast(String(error?.data?.message || error?.message || 'Could not upload the file')) }
   }
@@ -16579,10 +16677,11 @@ const linkedEntityEmail = (value: any) => {
 const billReleaseSendModal = reactive<{ open: boolean; to: string; cc: string; hint: string; sending: boolean }>({ open: false, to: '', cc: '', hint: '', sending: false })
 const billDocumentExportsForRow = (row: number) => {
   const index = (rows.value[0] || []).findIndex((_: any, column: number) => ['BILL DETAIL', 'BILL APPROVAL', 'AWB DETAIL'].includes(normalizedHeaderLabel(column)))
-  if (index < 0) return { exportBl: '', exportFcr: '' }
+  if (index < 0) return { exportBl: '', exportFcr: '', billSourceMode: 'export', clientBlFile: null as any }
   const form = billApprovalFormFromCell(rows.value[row]?.[index])
-  return { exportBl: String(form.exportBl || ''), exportFcr: String(form.exportFcr || '') }
+  return { exportBl: String(form.exportBl || ''), exportFcr: String(form.exportFcr || ''), billSourceMode: form.billSourceMode, clientBlFile: form.clientBlFile }
 }
+const rowBillReady = (documents: ReturnType<typeof billDocumentExportsForRow>) => documents.billSourceMode === 'client' ? !!documents.clientBlFile?.url : !!documents.exportBl
 const releaseBillToShipper = () => {
   if (!billReleasePaymentReady()) {
     showToast('Complete PAYMENT DETAIL before releasing the B/L')
@@ -16595,8 +16694,8 @@ const releaseBillToShipper = () => {
     return
   }
   const documents = billDocumentExportsForRow(gsdModal.row)
-  if (!documents.exportBl) {
-    showToast('Save Export B/L before releasing')
+  if (!rowBillReady(documents)) {
+    showToast(documents.billSourceMode === 'client' ? "Upload Client's B/L before releasing" : 'Save Export B/L before releasing')
     return
   }
   billReleaseSendModal.to = String(gsdModal.form.releasedEmails || shipperEmail)
@@ -16618,8 +16717,8 @@ const confirmBillReleaseToShipper = async () => {
     return
   }
   const documents = billDocumentExportsForRow(gsdModal.row)
-  if (!documents.exportBl) {
-    billReleaseSendModal.hint = 'Save Export B/L before releasing'
+  if (!rowBillReady(documents)) {
+    billReleaseSendModal.hint = documents.billSourceMode === 'client' ? "Upload Client's B/L before releasing" : 'Save Export B/L before releasing'
     return
   }
   billReleaseSendModal.sending = true
@@ -16627,9 +16726,10 @@ const confirmBillReleaseToShipper = async () => {
   try {
     const jobNo = String(rowValueByHeader('JOB NO#') || rowValueByHeader('REF#') || 'DOCUMENT').trim()
     const safeJobNo = jobNo.replace(/[^a-zA-Z0-9_-]+/g, '_')
-    const blBlob = await renderSavedBillAttachment('B/L', documents.exportBl)
-    const attachments = [await uploadBillEmailPdf(blBlob, `B-L_${safeJobNo}.pdf`)]
-    if (documents.exportFcr) {
+    const attachments = documents.billSourceMode === 'client'
+      ? [clientBillEmailAttachment(documents.clientBlFile)]
+      : [await uploadBillEmailPdf(await renderSavedBillAttachment('B/L', documents.exportBl), `B-L_${safeJobNo}.pdf`)]
+    if (documents.billSourceMode === 'export' && documents.exportFcr) {
       const fcrBlob = await renderSavedBillAttachment('FCR', documents.exportFcr)
       attachments.push(await uploadBillEmailPdf(fcrBlob, `FCR_${safeJobNo}.pdf`))
     }
@@ -16650,7 +16750,7 @@ const confirmBillReleaseToShipper = async () => {
     gsdModal.form.releasedCc = cc.join(', ')
     billReleaseSendModal.open = false
     await saveBillApproval()
-    showToast(documents.exportFcr ? 'B/L and FCR released to Shipper' : 'B/L released to Shipper')
+    showToast(documents.billSourceMode === 'export' && documents.exportFcr ? 'B/L and FCR released to Shipper' : 'B/L released to Shipper')
   } catch (error: any) {
     billReleaseSendModal.hint = error?.data?.message || error?.message || 'Could not send B/L email'
   } finally {
@@ -16701,8 +16801,8 @@ const openBillSendModal = () => {
     showToast(awbText('MBL APPROVED and SI RECEIVED are required'))
     return
   }
-  if (!gsdModal.form.exportBl) {
-    showToast('Save Export B/L before sending')
+  if (!billBlReady()) {
+    showToast(billSourceMode() === 'client' ? "Upload Client's B/L before sending" : 'Save Export B/L before sending')
     return
   }
   const shipperEmail = linkedEntityEmail(rawSiSourceValue('SHIPPER'))
@@ -16720,6 +16820,11 @@ const uploadBillEmailPdf = async (blob: Blob, filename: string) => {
   const uploaded = await uploadAdminAttachment(new File([blob], filename, { type: 'application/pdf' }))
   return { filename, url: uploaded.url, contentType: 'application/pdf' }
 }
+const clientBillEmailAttachment = (file: any) => ({
+  filename: String(file?.name || 'Client-BL'),
+  url: String(file?.url || ''),
+  contentType: String(file?.type || file?.contentType || 'application/octet-stream'),
+})
 const renderSavedBillAttachment = async (kind: 'B/L' | 'FCR', stored: string) => {
   let saved: any = null
   try { saved = stored ? JSON.parse(stored) : null } catch { saved = null }
@@ -16759,6 +16864,13 @@ const viewExportedBillPdf = async () => {
     showToast(error?.message || 'Could not open Export B/L PDF')
   }
 }
+const viewSelectedBillFile = () => {
+  if (billSourceMode() === 'client') {
+    viewBillDetailFile(gsdModal.form.clientBlFile)
+    return
+  }
+  void viewExportedBillPdf()
+}
 const confirmBillSend = async () => {
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   const to = billSendModal.to.split(/[;,]/).map((item) => item.trim()).filter(Boolean)
@@ -16771,18 +16883,19 @@ const confirmBillSend = async () => {
     billSendModal.hint = 'Enter valid CC emails separated by commas'
     return
   }
-  if (!gsdModal.form.exportBl) {
-    billSendModal.hint = 'Save Export B/L before sending'
+  if (!billBlReady()) {
+    billSendModal.hint = billSourceMode() === 'client' ? "Upload Client's B/L before sending" : 'Save Export B/L before sending'
     return
   }
   billSendModal.sending = true
   billSendModal.hint = ''
   try {
-    const blBlob = await renderSavedBillAttachment('B/L', gsdModal.form.exportBl)
     const jobNo = String(rowValueByHeader('JOB NO#') || rowValueByHeader('REF#') || 'DOCUMENT').trim()
     const safeJobNo = jobNo.replace(/[^a-zA-Z0-9_-]+/g, '_')
-    const attachments = [await uploadBillEmailPdf(blBlob, `B-L_${safeJobNo}.pdf`)]
-    if (gsdModal.form.exportFcr) {
+    const attachments = billSourceMode() === 'client'
+      ? [clientBillEmailAttachment(gsdModal.form.clientBlFile)]
+      : [await uploadBillEmailPdf(await renderSavedBillAttachment('B/L', gsdModal.form.exportBl), `B-L_${safeJobNo}.pdf`)]
+    if (billSourceMode() === 'export' && gsdModal.form.exportFcr) {
       const fcrBlob = await renderSavedBillAttachment('FCR', gsdModal.form.exportFcr)
       attachments.push(await uploadBillEmailPdf(fcrBlob, `FCR_${safeJobNo}.pdf`))
     }
@@ -16804,7 +16917,7 @@ const confirmBillSend = async () => {
     gsdModal.form.sentCc = cc.join(', ')
     billSendModal.open = false
     await saveBillApproval()
-    showToast(gsdModal.form.exportFcr ? 'B/L and FCR sent to Shipper' : 'B/L sent to Shipper')
+    showToast(billSourceMode() === 'export' && gsdModal.form.exportFcr ? 'B/L and FCR sent to Shipper' : 'B/L sent to Shipper')
   } catch (error: any) {
     billSendModal.hint = error?.data?.message || error?.message || 'Could not send B/L email'
   } finally {
@@ -16837,7 +16950,7 @@ const syncCollectionDeadlineToApprovalList = async () => {
     await props.request('/records', { method: 'POST', body: { country: 'GLOBAL', page: 'analysis_collectionlist', kind: 'analysis-statistics', data, sortOrder: 0 } })
   }
 }
-const saveBillApproval = async () => {
+const saveBillApproval = async (waitForPersistence: boolean | Event = true) => {
   if ((isBillReleaseModal() || isDoReleaseModal()) && (!!gsdModal.form.allCollected === !!gsdModal.form.collectLater)) {
     showToast(`Choose a ${isDoReleaseModal() ? 'CHARGE DETAILS' : 'PAYMENT DETAIL'} option before saving`)
     return
@@ -16878,6 +16991,8 @@ const saveBillApproval = async () => {
       files: Array.isArray(gsdModal.form.files) ? gsdModal.form.files : [],
       exportBl: gsdModal.form.exportBl || '',
       exportFcr: gsdModal.form.exportFcr || '',
+      billSourceMode: billSourceMode(),
+      clientBlFile: gsdModal.form.clientBlFile || null,
       sent: !!gsdModal.form.sent,
       sentAt: gsdModal.form.sentAt || '',
       sentEmails: gsdModal.form.sentEmails || '',
@@ -16887,19 +17002,23 @@ const saveBillApproval = async () => {
   })
   gsdModal.form.locked = true
   gsdModal.editing = false
-  scheduleSave()
-  await saveSheet()
-  if (isBillApprovalModal()) {
-    const detailLabel = normalizedHeaderLabel(gsdModal.column) === 'AWB DETAIL' ? 'AWB DETAIL' : 'BILL DETAIL'
-    for (const dept of fclStructureSyncPeers(detailLabel)) void mirrorExwFclWorkflowCell(dept, detailLabel, rows.value[gsdModal.row][gsdModal.column])
-  } else if (isBillReleaseModal()) {
-    mirrorFclLinkedCell(gsdModal.row, gsdModal.column)
+  const persistBillApproval = async () => {
+    const saved = await saveSheet()
+    if (!saved) return
+    if (isBillApprovalModal()) {
+      const detailLabel = normalizedHeaderLabel(gsdModal.column) === 'AWB DETAIL' ? 'AWB DETAIL' : 'BILL DETAIL'
+      for (const dept of fclStructureSyncPeers(detailLabel)) void mirrorExwFclWorkflowCell(dept, detailLabel, rows.value[gsdModal.row][gsdModal.column])
+    } else if (isBillReleaseModal()) {
+      mirrorFclLinkedCell(gsdModal.row, gsdModal.column)
+    }
+    try {
+      await syncCollectionDeadlineToApprovalList()
+    } catch (error: any) {
+      showToast(error?.data?.message || error?.message || 'Could not update Approval List deadline')
+    }
   }
-  try {
-    await syncCollectionDeadlineToApprovalList()
-  } catch (error: any) {
-    showToast(error?.data?.message || error?.message || 'Could not update Approval List deadline')
-  }
+  if (waitForPersistence !== false) await persistBillApproval()
+  else void persistBillApproval()
 }
 const viewBillDetailFile = (file: any) => {
   const url = String(file?.url || '').trim()
@@ -16921,11 +17040,13 @@ const toggleBillNotifySameAsConsignee = () => {
 }
 const billDocumentIssueDate = () => billTimestamp().slice(0, 10)
 const billDocumentCompanyMark = () => upperText(billDocModal.company).includes('SHOPTRANS') ? 'ST' : 'TX'
+const defaultBillGoodsDescription = () => String(opsParts.value?.mode || '').toUpperCase() === 'LCL' ? 'CFS-CFS' : 'CY-CY'
 const linkedVesselText = (value: any) => {
   const vessel = vesselFromCellValue(value)
   return vessel ? [vessel.name, vessel.voyage].filter(Boolean).join(' / ') : ''
 }
 const selectBillDocumentExport = (kind: 'B/L' | 'FCR') => {
+  gsdModal.form.billSourceMode = 'export'
   billExportMenuOpen.value = false
   void openBillDocument(kind)
 }
@@ -16957,6 +17078,7 @@ const openBillDocument = async (kind: 'B/L' | 'FCR', isRelease = false) => {
   const linkedPol = siRouteDisplay(routeValue, 'pol').toUpperCase()
   const linkedPod = siRouteDisplay(routeValue, 'pod').toUpperCase()
   const shippedDate = String(rowValueByHeader('ATD') || rowValueByHeader('ETD') || '').trim()
+  const masterSiContainers = billContainersFromMasterSi()
   const sameAsConsignee = !!saved?.sameAsConsignee || /^\(?SAME AS CONSIGNEE\)?$/i.test(String(saved?.notify || '').trim())
   Object.assign(billDocModal, {
     open: true, readonly: !isRelease && isReadonlyExwFclEcdBillDetail(), isRelease, billType: saved?.billType || 'ORIGINAL B/L',
@@ -16967,7 +17089,7 @@ const openBillDocument = async (kind: 'B/L' | 'FCR', isRelease = false) => {
     notify: sameAsConsignee ? '(SAME AS CONSIGNEE)' : saved?.notify || siClientTextFromSource(rawSiSourceValue('DESTINATION AGENT')), notifyBackup: sameAsConsignee ? '' : saved?.notify || '', sameAsConsignee,
     preCarriage: saved?.preCarriage || '', receipt: saved?.receipt || '', vessel: linkedVesselText(saved?.vessel || rawSiSourceValue('VESSEL/VOYAGE')),
     pol: String(saved?.pol || linkedPol || '').toUpperCase(), pod: String(saved?.pod || linkedPod || '').toUpperCase(), delivery: saved?.delivery || '',
-    marks: saved?.marks || '', packages: saved?.packages || '', goodsDescription: saved?.goodsDescription || '', grossWeight: saved?.grossWeight || '', measurement: saved?.measurement || '',
+    marks: saved?.marks || '', packages: saved?.packages || '', goodsDescription: saved ? (saved.goodsDescription || '') : (kind === 'B/L' ? defaultBillGoodsDescription() : ''), grossWeight: saved?.grossWeight || '', measurement: saved?.measurement || '', containers: masterSiContainers.length ? masterSiContainers : (Array.isArray(saved?.containers) ? saved.containers : []),
     freightCharges: saved?.freightCharges || '', freightPayableAt: saved?.freightPayableAt || saved?.pol || linkedPol || '', originalCount: saved?.originalCount || '3',
     placeOfIssue: saved?.placeOfIssue || 'HO CHI MINH CITY, VIETNAM', dateOfIssue: saved?.dateOfIssue || '', shippedOnBoardDate: saved?.shippedOnBoardDate || shippedDate,
     signedAt: saved?.signedAt || '',
@@ -16985,6 +17107,7 @@ const copyBillDocumentFromSi = () => {
   billDocModal.pol = siRouteDisplay(routeValue, 'pol').toUpperCase()
   billDocModal.pod = siRouteDisplay(routeValue, 'pod').toUpperCase()
   billDocModal.freightPayableAt = billDocModal.pol
+  billDocModal.containers = billContainersFromMasterSi()
 }
 const addBillAttachedSheet = () => {
   if (billDocModal.locked) return
@@ -16997,7 +17120,7 @@ const removeBillAttachedSheet = (index: number) => {
   showToast(`Attached sheet ${index} removed`)
 }
 const clearBillDocument = () => {
-  Object.assign(billDocModal, { docNo: '', refNo: '', shipper: '', consignee: '', notify: '', notifyBackup: '', sameAsConsignee: false, preCarriage: '', receipt: '', vessel: '', pol: '', pod: '', delivery: '', marks: '', packages: '', goodsDescription: '', grossWeight: '', measurement: '', freightCharges: '', freightPayableAt: '', originalCount: '3', placeOfIssue: 'HO CHI MINH CITY, VIETNAM', dateOfIssue: '', shippedOnBoardDate: '', signedAt: '', attachments: 0, savedAt: '' })
+  Object.assign(billDocModal, { docNo: '', refNo: '', shipper: '', consignee: '', notify: '', notifyBackup: '', sameAsConsignee: false, preCarriage: '', receipt: '', vessel: '', pol: '', pod: '', delivery: '', marks: '', packages: '', goodsDescription: billDocModal.kind === 'B/L' ? defaultBillGoodsDescription() : '', grossWeight: '', measurement: '', containers: billContainersFromMasterSi(), freightCharges: '', freightPayableAt: '', originalCount: '3', placeOfIssue: 'HO CHI MINH CITY, VIETNAM', dateOfIssue: '', shippedOnBoardDate: '', signedAt: '', attachments: 0, savedAt: '' })
 }
 const saveBillDocument = async () => {
   billDocModal.pol = String(billDocModal.pol || '').toUpperCase()
@@ -17018,7 +17141,8 @@ const saveBillDocument = async () => {
   }
   billDocModal.savedAt = billTimestamp()
   billDocModal.signedAt = billTimestamp()
-  const data = JSON.stringify(Object.fromEntries(['company','attachments','savedAt','signedAt','docNo','refNo','shipper','consignee','notify','sameAsConsignee','preCarriage','receipt','vessel','pol','pod','delivery','marks','packages','goodsDescription','grossWeight','measurement','freightCharges','freightPayableAt','originalCount','placeOfIssue','dateOfIssue','shippedOnBoardDate','billType'].map((key) => [key, billDocModal[key]]).concat([['locked', true]])))
+  const data = JSON.stringify(Object.fromEntries(['company','attachments','savedAt','signedAt','docNo','refNo','shipper','consignee','notify','sameAsConsignee','preCarriage','receipt','vessel','pol','pod','delivery','marks','packages','goodsDescription','grossWeight','measurement','containers','freightCharges','freightPayableAt','originalCount','placeOfIssue','dateOfIssue','shippedOnBoardDate','billType'].map((key) => [key, billDocModal[key]]).concat([['locked', true]])))
+  billDocModal.locked = true
 
   if (billDocModal.isRelease) {
     const headers = rows.value[0] || []
@@ -17039,9 +17163,8 @@ const saveBillDocument = async () => {
   } else {
     if (billDocModal.kind === 'B/L') gsdModal.form.exportBl = data
     else gsdModal.form.exportFcr = data
-    await saveBillApproval()
+    await saveBillApproval(false)
   }
-  billDocModal.locked = true
   showToast(`${billDocModal.kind} saved`)
 }
 const printBillDocument = async (download: boolean | Event = true): Promise<Blob | null> => {
@@ -17073,6 +17196,14 @@ const printBillDocument = async (download: boolean | Event = true): Promise<Blob
         fontFamily: window.getComputedStyle(sheet).fontFamily,
       })
       renderSheet.querySelectorAll<HTMLElement>('button,.att-tools,.remove-attached,.same-wrap').forEach((control) => control.remove())
+      renderSheet.querySelectorAll<HTMLElement>('.bill-container-table tbody td > span').forEach((value) => {
+        value.style.position = 'relative'
+        value.style.top = '-3px'
+      })
+      renderSheet.querySelectorAll<HTMLElement>('.co-mark > span').forEach((value) => {
+        value.style.position = 'relative'
+        value.style.top = '-2px'
+      })
       const sourceSelects = Array.from(sheet.querySelectorAll<HTMLSelectElement>('select'))
       renderSheet.querySelectorAll<HTMLSelectElement>('select').forEach((select, selectIndex) => {
         const sourceSelect = sourceSelects[selectIndex]
@@ -17451,8 +17582,8 @@ const preAlertHasHbl = () => {
   return !!number && upperText(number) !== 'N/A'
 }
 const preAlertVisibleMainRows = () => preAlertHasHbl()
-  ? preAlertMainRows.value
-  : preAlertMainRows.value.filter((item) => !['hc', 'hr'].includes(item.key))
+  ? preAlertMainRows.value.filter((item) => ['mc', 'hc'].includes(item.key))
+  : preAlertMainRows.value.filter((item) => item.key === 'mc')
 const preAlertConfirmedLocked = (key: string) => ['mc', 'hc'].includes(key)
 const hydratePreAlertFromBillDetail = () => {
   const bill = billApprovalFormFromCell(preAlertSourceCell('BILL DETAIL', 'AWB DETAIL'))
@@ -18442,7 +18573,13 @@ const persistLinkedClient = async (client: GsdClientRecord) => {
   const sourceLink = opsShipmentLink(sourceHeader, sourceRow, gsdModal.row, settings.value)
   const columnLabel = normalizedHeaderLabel(gsdModal.column)
   let targetRow = gsdModal.row
-  rows.value[targetRow][gsdModal.column] = value
+  let targetColumn = gsdModal.column
+  rows.value[targetRow][targetColumn] = value
+  // The selected party is already reflected in the reactive worksheet. Close
+  // the picker immediately; persisting the large sheet and mirroring the party
+  // to linked departments can continue without blocking the user's screen.
+  closeGsdModal()
+  dispatchLoading.value = ''
   const saved = await saveSheet()
   if (!saved && isVisibleSheet(sourceKey, sourceCountry)) {
     const refreshedHeader = (rows.value[0] || []).map((item) => String(item ?? '').trim())
@@ -18454,9 +18591,8 @@ const persistLinkedClient = async (client: GsdClientRecord) => {
     ))
     if (matchedRow > 0 && refreshedColumn >= 0) {
       targetRow = matchedRow
+      targetColumn = refreshedColumn
       rows.value[targetRow][refreshedColumn] = value
-      gsdModal.row = targetRow
-      gsdModal.column = refreshedColumn
       if (!await saveSheet()) {
         showToast(`Could not link ${clean.namecode || clean.id || clean.companyName}. Please try again`)
         return
@@ -18469,8 +18605,7 @@ const persistLinkedClient = async (client: GsdClientRecord) => {
   // Selecting an existing party is also a real source-cell change. Propagate
   // it exactly like the create/edit path so every already-linked department
   // receives the new Shipper/CNEE/Agent/Liner record.
-  await mirrorFclLinkedCell(targetRow, gsdModal.column)
-  closeGsdModal()
+  await mirrorFclLinkedCell(targetRow, targetColumn)
   } finally {
     dispatchLoading.value = ''
   }
@@ -18564,14 +18699,25 @@ const isDestinationAgentClientModal = () => (
   gsdModal.kind === 'client'
   && ['DESTINATION AGENT', 'DEST. AGENT'].includes(normalizedHeaderLabel(gsdModal.column))
 )
-const isDestinationAgentNotRequired = () => {
-  if (!isDestinationAgentClientModal()) return false
+const isOriginAgentClientModal = () => (
+  gsdModal.kind === 'client'
+  && ['ORIGIN AGENT', 'ORIGINAL AGENT'].includes(normalizedHeaderLabel(gsdModal.column))
+)
+const agentNotRequiredConfig = () => {
+  const shipmentType = upperText(opsParts.value?.type || '')
+  if (['EXW', 'FCA', 'FCF'].includes(shipmentType) && isDestinationAgentClientModal()) return { kind: 'destination', label: 'Destination agent not required' }
+  if (['DO', 'DAP', 'DDU', 'DDP'].includes(shipmentType) && isOriginAgentClientModal()) return { kind: 'origin', label: 'Origin agent not required' }
+  return null
+}
+const isAgentNotRequired = () => {
+  if (!agentNotRequiredConfig()) return false
   return upperText(clientCellText(rows.value[gsdModal.row]?.[gsdModal.column])) === 'N/A'
 }
-const toggleDestinationAgentNotRequired = async (event: Event) => {
-  if (!isDestinationAgentClientModal() || !rows.value[gsdModal.row]) return
+const toggleAgentNotRequired = async (event: Event) => {
+  const config = agentNotRequiredConfig()
+  if (!config || !rows.value[gsdModal.row]) return
   const checked = (event.target as HTMLInputElement).checked
-  dispatchLoading.value = checked ? 'Setting destination agent to N/A...' : 'Clearing destination agent...'
+  dispatchLoading.value = checked ? `Setting ${config.kind} agent to N/A...` : `Clearing ${config.kind} agent...`
   try {
     rows.value[gsdModal.row][gsdModal.column] = checked ? 'N/A' : ''
     await saveSheet()
@@ -18650,7 +18796,7 @@ const saveGsdModal = async () => {
         const role = clientRoleForLabel(gsdModal.clientRole)
         const traderRole = traderRoleForClientRole(role)
         if (!savingEditClient) {
-          const existing = await findExistingClient(payload, role)
+          const existing = await findExistingClient(payload, traderRole)
           if (existing) {
             showToast(`Client already exists: ${existing.namecode || existing.id || existing.companyName}`)
             return
@@ -18693,7 +18839,7 @@ const saveGsdModal = async () => {
           : normalizeClientRecord(saved)
         dispatchLoading.value = `Linking ${gsdModal.clientRole || 'client'} to worksheet...`
         if (!savingEditClient && role === 'CLIENT') await linkClientToTraders(clean)
-        else if (!savingEditClient) await linkPaymentPartyToTraders(clean, role)
+        else if (!savingEditClient) await linkPaymentPartyToTraders(clean, traderRole)
         rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ client: clean })
         await mirrorFclLinkedCell(gsdModal.row, gsdModal.column)
         gsdModal.selectedClient = clean
@@ -21858,7 +22004,7 @@ onBeforeUnmount(() => {
 .gsd-air-dup-ccd-cont-modal .gsd-do-cont-table td:first-child{background:#fff;color:#7a8a83}
 .gsd-air-dup-ccd-cont-modal .gsd-do-cont-table td:not(:first-child){background:#eef2f0;color:#5b6a63;font-weight:600}
 .gsd-air-dup-ccd-cont-modal .gsd-do-cont-table .empty{background:#fff;color:#8a97a0;font-weight:400;font-style:normal}
-.truck-company-cell{position:relative;overflow:visible!important}.gsd-truck-table tr:has(.truck-company-picker){position:relative;z-index:20}.truck-company-picker{position:absolute;z-index:410;left:8px;top:34px;min-width:180px;max-height:190px;overflow:auto;background:#121a1a;border:1px solid #263736;border-radius:7px;box-shadow:0 18px 38px rgba(0,0,0,.28);padding:6px 0;text-align:left}.truck-company-picker button{display:block;width:100%;height:32px;border:0;background:transparent;color:#eaf6ef;text-align:left;padding:0 14px;font-size:12px;font-weight:800;cursor:pointer}.truck-company-picker button:hover{background:#008f4c;color:#fff}.truck-company-picker-empty{padding:10px 14px;color:#b8c5bf;font-size:12px;font-weight:700;white-space:nowrap}
+.truck-company-cell{position:relative;overflow:visible!important}.gsd-truck-table tr:has(.truck-company-picker){position:relative;z-index:20}.truck-company-picker{position:absolute;z-index:410;left:8px;top:34px;min-width:180px;max-height:190px;overflow:auto;background:#121a1a;border:1px solid #263736;border-radius:7px;box-shadow:0 18px 38px rgba(0,0,0,.28);padding:6px 0;text-align:left}.truck-company-picker button{display:block;width:100%;height:32px;border:0;background:transparent;color:#eaf6ef;text-align:left;padding:0 14px;font-size:12px;font-weight:400;cursor:pointer}.truck-company-picker button:hover{background:#008f4c;color:#fff}.truck-company-picker-empty{padding:10px 14px;color:#b8c5bf;font-size:12px;font-weight:400;white-space:nowrap}
 .gsd-prs-modal{width:920px;max-width:96vw;min-height:420px;padding:28px 20px 22px;border-radius:10px;overflow:hidden;font:12px/1.35 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-prs-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-prs-title{text-align:center;font-size:13px;font-weight:900;color:#0e1512;text-transform:uppercase;margin:0 0 14px}.gsd-prs-table-wrap{overflow-x:hidden;overflow-y:auto;max-height:255px}.gsd-prs-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11.5px;color:#33413b}.gsd-prs-table th,.gsd-prs-table td{border:1px solid #cfd8d2;text-align:center;padding:6px;height:32px}.gsd-prs-table th{background:#eef3ee;color:#66736c;font-family:var(--mono,'Geist Mono',ui-monospace,monospace);font-size:10.5px;font-weight:800;letter-spacing:.02em}.gsd-prs-table td{background:#f8fbfa}.gsd-prs-table input[type=checkbox]{width:15px;height:15px;accent-color:#008f4c}.gsd-prs-table .prs-order{font-weight:700;color:#7a847d;background:#fff}.gsd-prs-table .prs-readonly{color:#33413b;background:#f8fbfa}.gsd-prs-table .prs-days{font-weight:800;color:#1f4ed8}.gsd-prs-table .prs-date{width:100%;height:26px;border:0;background:transparent;text-align:center;font:inherit;font-size:11.5px;color:#33413b;outline:none}.gsd-prs-table .prs-date:focus{background:#fff;box-shadow:inset 0 0 0 2px #00c566;border-radius:4px}.gsd-prs-table .prs-date:disabled{color:#9aa6a1;opacity:1}.gsd-prs-table .prs-empty{height:44px;color:#0e1512;font-weight:800;font-style:italic;background:#fff}.gsd-prs-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.gsd-prs-actions .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:800}.gsd-prs-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-prs-actions .edit{background:#f6c998;border-color:#f6c998;color:#fff}.gsd-prs-actions .wb-modal-btn:disabled{opacity:.55;cursor:not-allowed}
 .gsd-prs-modal:not(.gsd-prs-editing) .gsd-prs-table td,.gsd-prs-modal:not(.gsd-prs-editing) .gsd-prs-table .prs-order,.gsd-prs-modal:not(.gsd-prs-editing) .gsd-prs-table .prs-readonly{background:#eef1ef;color:#7a847d}.gsd-prs-modal:not(.gsd-prs-editing) .gsd-prs-table tbody tr{cursor:pointer}.gsd-prs-editing .gsd-prs-table td{background:#fff}.gsd-prs-editing .gsd-prs-table .prs-date:not(:disabled){background:#fff}
 .gsd-prs-modal .gsd-prs-table .prs-date:not(:disabled),.gsd-prs-modal .gsd-prs-table .prs-date:not(:disabled):focus{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;outline:0!important}
@@ -21882,8 +22028,8 @@ onBeforeUnmount(() => {
 .gsd-air-dup-tcd-trucking-status-modal{width:1360px;max-width:96vw;min-height:0;padding:22px 24px 20px;overflow:hidden}.gsd-air-dup-tcd-trucking-status-modal .gsd-prs-title{text-align:left;margin:0 0 10px;font-size:13px}.gsd-tks-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:10px}.gsd-tks-toolbar .wb-modal-btn,.gsd-air-dup-tcd-trucking-status-modal .gsd-prs-actions .wb-modal-btn{height:32px;min-height:32px;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700}.gsd-tks-toolbar .edit{background:#e67e22;border-color:#e67e22;color:#fff}.gsd-tks-toolbar .remove{background:#c0392b;border-color:#c0392b;color:#fff}.gsd-air-dup-tcd-trucking-status-modal .gsd-prs-table-wrap{max-height:330px;overflow:auto}.gsd-air-dup-tcd-trucking-status-modal .gsd-tks-table{width:100%;min-width:1124px;table-layout:fixed;font-size:12.5px}.gsd-air-dup-tcd-trucking-status-modal .gsd-tks-table th,.gsd-air-dup-tcd-trucking-status-modal .gsd-tks-table td{height:34px;padding:5px 7px}.gsd-air-dup-tcd-trucking-status-modal .gsd-tks-table th{font-family:inherit;font-size:12px;font-weight:700;color:#33413b}.gsd-air-dup-tcd-trucking-status-modal .gsd-tks-table .prs-date{height:27px;min-width:0;border:0;border-radius:0;background:transparent}.gsd-air-dup-tcd-trucking-status-modal .gsd-tks-table .prs-date:not(:disabled):focus{border-radius:4px;background:#fff}.gsd-air-dup-tcd-trucking-status-modal .gsd-tks-table .prs-date:disabled{background:transparent;color:#33413b}.gsd-tks-all{border:0;background:transparent;color:#1f4ed8;font:inherit;font-weight:700;cursor:pointer;padding:0}.gsd-air-dup-tcd-trucking-status-modal .gsd-prs-actions{margin-top:14px}.gsd-air-dup-tcd-trucking-status-modal .gsd-prs-actions .slate{background:#64748b;border-color:#64748b;color:#fff}.gsd-air-dup-fcd-trucking-status-modal .gsd-tks-table{min-width:1290px}.gsd-air-dup-fcd-trucking-status-modal .gsd-tks-all:disabled{opacity:1;color:#1f4ed8;cursor:default}.gsd-air-dup-fcd-trucking-status-modal .gsd-tks-table input:disabled{opacity:1;color:#33413b;cursor:not-allowed}.gsd-air-dup-fcd-trucking-status-modal .gsd-tks-table input[type=checkbox]:disabled{opacity:.55}
 .gsd-air-dup-icd-prs-modal .epodcell .gsd-eye-btn{margin:auto}
 .gsd-bill-modal{width:460px;max-width:94vw;padding:34px 30px 24px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-bill-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-bill-form{width:362px;margin:4px auto 8px}.gsd-bill-row{display:flex;align-items:center;justify-content:center;gap:14px;margin:18px 0}.gsd-bill-row span{width:116px;text-align:left;font-size:13px;font-weight:800;color:#33413b}.gsd-bill-row input[type=checkbox]{width:18px;height:18px;flex:none;accent-color:#008f4c}.gsd-bill-row input[type=text]{width:200px;height:38px;flex:none;border:1px solid #c9d3cf;border-radius:8px;background:#f7faf9;padding:8px 10px;text-align:center;font:inherit;color:#33413b;outline:none}.gsd-bill-actions{display:flex;justify-content:flex-end;gap:8px;width:362px;margin:18px auto 0}.gsd-bill-actions .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:800}.gsd-bill-actions .edit{background:#f6c998;border-color:#f6c998;color:#fff}.gsd-bill-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-bill-actions .wb-modal-btn:disabled{opacity:.55;cursor:not-allowed}
-.gsd-modal.gsd-bill-detail-modal,.gsd-modal.gsd-bill-modal:has(.bd-body){width:840px!important;max-width:96vw!important;padding:34px 38px 28px!important;overflow-y:auto!important;height:auto!important;min-height:0!important;max-height:calc(100vh - 48px)!important;display:block!important}
-.bd-body{max-width:648px;margin:0 auto}
+.gsd-modal.gsd-bill-detail-modal,.gsd-modal.gsd-bill-modal:has(.bd-body){width:780px!important;max-width:96vw!important;padding:34px 32px 28px!important;overflow-y:auto!important;height:auto!important;min-height:0!important;max-height:calc(100vh - 48px)!important;display:block!important}
+.bd-body{max-width:700px;margin:0 auto}
 .bd-sec-title{font-size:14px;font-weight:800;color:var(--green-d,#008f4c);letter-spacing:.06em;text-transform:uppercase;margin:2px 0 14px}
 .bd-rows{display:flex;flex-direction:column;gap:13px}
 .bd-row{display:flex;align-items:center;gap:12px}
@@ -21892,14 +22038,17 @@ onBeforeUnmount(() => {
 .bd-cb:disabled{cursor:not-allowed;opacity:.55}
 .bd-date{flex:0 0 180px;width:180px;border:1px solid #cdd6d0;border-radius:6px;padding:8px 10px;font-size:13px;color:#333;background:#fff;text-align:center;font:inherit}
 .bd-date.bd-mirror{background:#eef1ef;color:#6a736c}
-.bd-up,.bd-eye{flex:0 0 auto;width:36px;height:36px;border:1px solid #cdd6d0;background:#fff;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#7a837c;padding:0}
+.bd-up,.bd-eye{position:relative;flex:0 0 auto;width:36px;height:36px;border:1px solid #cbd7d1;background:#eef3f1;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#687a72;padding:0}
 .bd-up svg,.bd-eye svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .bd-up:hover,.bd-eye:hover{border-color:var(--green-d,#008f4c);color:var(--green-d,#008f4c)}
 .bd-up:disabled{opacity:.4;cursor:not-allowed;background:#f2f4f2}
 .bd-up:disabled:hover{border-color:#cdd6d0;color:#7a837c}
-.bd-up.has{border-color:var(--green-d,#008f4c);color:var(--green-d,#008f4c);background:#effaf3}
+.bd-up.has{border-color:#00a85a;color:#fff;background:#00a85a}
+.bd-up:hover:not(:disabled){box-shadow:none;filter:none;transform:none}
+.bd-up.has:hover:not(:disabled){border-color:#008f4c;background:#008f4c;color:#fff}
+.bd-up.has::after{content:'✓';position:absolute;right:-5px;top:-5px;display:grid;place-items:center;width:15px;height:15px;border:2px solid #fff;border-radius:50%;background:#087d4b;color:#fff;font-size:9px;font-weight:900;line-height:1}
 .bd-eye{opacity:.42;pointer-events:none}
-.bd-eye.on{opacity:1;pointer-events:auto;border-color:var(--green-d,#008f4c);color:var(--green-d,#008f4c)}
+.bd-eye.on{opacity:1;pointer-events:auto;border-color:#86d5ad;color:#087d4b;background:#e9f8f0}
 .bd-exportbtn{flex:0 0 auto;border:none;color:#fff;font-size:12px;font-weight:700;border-radius:6px;padding:8px 14px;cursor:pointer;letter-spacing:.02em}
 .bd-export-menu{position:relative;flex:0 0 auto}
 #bdExportDocument{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:150px;background:#0f4c81}
@@ -21909,6 +22058,23 @@ onBeforeUnmount(() => {
 .bd-export-dropdown{position:absolute;z-index:20;top:calc(100% + 5px);right:0;width:150px;padding:5px;border:1px solid #ccd7d1;border-radius:7px;background:#fff;box-shadow:0 8px 22px rgba(20,38,29,.2)}
 .bd-export-dropdown button{display:block;width:100%;border:0;border-radius:5px;background:#fff;padding:8px 10px;color:#25342d;font:inherit;font-size:12px;font-weight:700;text-align:left;cursor:pointer}
 .bd-export-dropdown button:hover{background:#e8f6ef;color:#087742}
+.bd-source-menu{position:relative;flex:0 0 auto}
+.bd-source-menu .bd-exportbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:160px;background:#0f4c81;color:#fff}
+.bd-source-menu .bd-exportbtn:hover:not(:disabled){background:#0c3e69}
+.bd-source-menu .bd-exportbtn:disabled{background:#c7cdc9;color:#fff;cursor:not-allowed}
+.bd-export-groups{width:220px;padding:7px}
+.bd-export-group+ .bd-export-group{margin-top:5px;padding-top:6px;border-top:1px solid #e2e8e4}
+.bd-export-group>label{display:flex;align-items:center;gap:8px;padding:7px 8px;color:#26352d;font-size:12px;font-weight:700;cursor:pointer}
+.bd-export-group>label input{width:15px;height:15px;margin:0;accent-color:#008f4c}
+.bd-export-options{margin:0 0 4px 23px;border-left:2px solid #dce8e1;padding-left:5px}
+.bd-row .bd-client-upload{position:relative;width:36px;height:36px;border:1px solid #cbd7d1;background:#eef3f1;color:#687a72}
+.bd-row .bd-client-upload:hover:not(:disabled){border-color:#8ca69a;background:#e4ece8}
+.bd-row .bd-client-upload.attached{border-color:#00a85a;background:#00a85a;color:#fff}
+.bd-row .bd-client-upload:hover:not(:disabled){box-shadow:none;filter:none;transform:none}
+.bd-row .bd-client-upload.attached:hover:not(:disabled){border-color:#008f4c;background:#008f4c;color:#fff}
+.bd-row .bd-client-upload.attached::after{content:'✓';position:absolute;right:-5px;top:-5px;display:grid;place-items:center;width:15px;height:15px;border:2px solid #fff;border-radius:50%;background:#087d4b;color:#fff;font-size:9px;font-weight:900;line-height:1}
+.bd-row .booking-eye{width:24px;height:24px;color:#0f4c81}
+.bd-row .booking-eye:disabled{color:#9aa6a1}
 .bd-div{height:1px;background:#e2e7e3;margin:20px 0}
 .bd-foot{display:flex;align-items:center;gap:9px;margin-top:24px;border-top:1px solid #eceeec;padding-top:18px;flex-wrap:wrap;justify-content:flex-end}
 .bd-sent{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#0c6b39;margin-right:auto}
@@ -21920,7 +22086,7 @@ onBeforeUnmount(() => {
 .bd-foot .bill-send:hover:not(:disabled){background:#008447;border-color:#008447}
 .bd-foot .edit:not(:disabled){background:#e67e22;border-color:#e67e22;color:#fff}
 @media(max-width:720px){.gsd-modal.gsd-bill-modal:has(.bd-body){padding:30px 18px 22px}.bd-row{flex-wrap:wrap}.bd-lab{flex-basis:130px}.bd-date{width:170px;flex-basis:170px}.bd-foot{width:100%}}
-.gsd-prealert-modal{width:486px;max-width:96vw;max-height:90vh;overflow-y:auto;padding:30px 28px 22px;border-radius:12px;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-prealert-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-pre-title{font-weight:800;font-size:14px;color:#1f2a26;margin:0 0 12px}.gsd-pre-dest{font-weight:700;font-size:13px;color:#33413b;margin:0 0 14px 14px}.gsd-pre-section{display:flex;flex-direction:column;align-items:center}.gsd-pre-row{display:flex;align-items:center;gap:12px;margin:9px 0}.gsd-pre-row.doc{width:440px;justify-content:flex-start}.gsd-pre-label{width:150px;text-align:right;font-weight:800;font-size:12.5px;color:#33413b;flex:none}.gsd-pre-row.doc .gsd-pre-label{width:170px}.gsd-pre-check{width:18px;height:18px;flex:none;accent-color:#008f4c;cursor:pointer}.gsd-pre-date,.gsd-pre-other{width:150px;height:38px;flex:none;text-align:center;padding:8px 10px;border:1px solid #c9d3cf;border-radius:8px;font:inherit;color:#33413b;background:#f7faf9;outline:none}.gsd-pre-other{text-align:left}.gsd-pre-icon{flex:none;border:none;background:none;cursor:pointer;color:#33413b;padding:2px;display:inline-flex;align-items:center;justify-content:center;line-height:0}.gsd-pre-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.gsd-pre-icon.upload.has{color:#1b7a43}.gsd-pre-icon.eye{opacity:.3;color:#9aa6a1;cursor:default}.gsd-pre-icon.eye.on{opacity:1;color:#0f4c81;cursor:pointer}.gsd-pre-icon:disabled{opacity:.4;cursor:not-allowed}.gsd-pre-divider{border-top:1px solid #e4eae7;margin:14px 0}.gsd-pre-doc-head{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 8px}.gsd-pre-doc-head span{font-weight:800;font-size:13px;color:#1f2a26}.gsd-pre-doc-head .wb-modal-btn{height:32px;min-height:32px;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:800}.gsd-pre-remarks{display:block;margin:6px 0 0}.gsd-pre-remarks span{display:block;font-weight:800;font-size:13px;color:#1f2a26;margin:0 0 6px}.gsd-pre-remarks textarea{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid #c9d3cf;border-radius:8px;font:inherit;color:#33413b;resize:vertical;outline:none}.gsd-pre-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}.gsd-pre-actions .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:800}.gsd-pre-actions .edit{background:#f6c998;border-color:#f6c998;color:#fff}.gsd-pre-actions .send{background:#0f4c81;border-color:#0f4c81;color:#fff}.gsd-pre-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-pre-actions .wb-modal-btn:disabled{opacity:.55;cursor:not-allowed}
+.gsd-prealert-modal{width:486px;max-width:96vw;max-height:90vh;overflow-y:auto;padding:30px 28px 22px;border-radius:12px;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-prealert-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-pre-title{font-weight:800;font-size:14px;color:#1f2a26;margin:0 0 12px}.gsd-pre-dest{font-weight:700;font-size:13px;color:#33413b;margin:0 0 14px 14px}.gsd-pre-section{display:flex;flex-direction:column;align-items:center}.gsd-pre-row{display:flex;align-items:center;gap:10px;margin:9px 0}.gsd-pre-row.doc{width:440px;justify-content:flex-start}.gsd-pre-label{width:140px;text-align:right;font-weight:800;font-size:12.5px;color:#33413b;flex:none}.gsd-pre-row.doc .gsd-pre-label{width:170px}.gsd-pre-check{width:18px;height:18px;flex:none;accent-color:#008f4c;cursor:pointer}.gsd-pre-date,.gsd-pre-other{width:150px;height:38px;flex:none;text-align:center;padding:8px 10px;border:1px solid #c9d3cf;border-radius:8px;font:inherit;color:#33413b;background:#f7faf9;outline:none}.gsd-pre-other{text-align:left}.gsd-pre-icon{position:relative;flex:none;width:36px;height:36px;border:1px solid #cbd7d1;border-radius:8px;background:#eef3f1;cursor:pointer;color:#687a72;padding:0;display:inline-flex;align-items:center;justify-content:center;line-height:0}.gsd-pre-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.gsd-pre-icon.upload.has{border-color:#00a85a;background:#00a85a;color:#fff}.gsd-pre-icon.upload.has::after{content:'✓';position:absolute;right:-5px;top:-5px;display:grid;place-items:center;width:15px;height:15px;border:2px solid #fff;border-radius:50%;background:#087d4b;color:#fff;font-size:9px;font-weight:900;line-height:1}.gsd-pre-icon.eye{opacity:.45;color:#9aa6a1;cursor:default}.gsd-pre-icon.eye.on{opacity:1;border-color:#86d5ad;background:#e9f8f0;color:#087d4b;cursor:pointer}.gsd-pre-icon:disabled{opacity:.45;cursor:not-allowed}.gsd-pre-divider{border-top:1px solid #e4eae7;margin:14px 0}.gsd-pre-doc-head{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 8px}.gsd-pre-doc-head span{font-weight:800;font-size:13px;color:#1f2a26}.gsd-pre-doc-head .wb-modal-btn{height:32px;min-height:32px;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:800}.gsd-pre-remarks{display:block;margin:6px 0 0}.gsd-pre-remarks span{display:block;font-weight:800;font-size:13px;color:#1f2a26;margin:0 0 6px}.gsd-pre-remarks textarea{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid #c9d3cf;border-radius:8px;font:inherit;color:#33413b;resize:vertical;outline:none}.gsd-pre-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}.gsd-pre-actions .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:800}.gsd-pre-actions .edit{background:#f6c998;border-color:#f6c998;color:#fff}.gsd-pre-actions .send{background:#0f4c81;border-color:#0f4c81;color:#fff}.gsd-pre-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-pre-actions .wb-modal-btn:disabled{opacity:.55;cursor:not-allowed}
 .gsd-cda-modal{width:fit-content;max-width:96vw;padding:30px 28px 20px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-cda-modal .gsd-modal-x,.gsd-clr-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-cda-instr{font-size:14px;font-weight:800;color:#1f2a26;margin:10px 40px 6px 0}.gsd-cda-addbar{display:flex;justify-content:flex-start;margin:8px 0 12px}.gsd-cda-table{width:auto;border-collapse:collapse;font-size:13px;color:#33413b}.gsd-cda-table th{padding:8px 10px;border-bottom:1px solid #e1e8e4;text-align:left;font-weight:800;color:#42504b}.gsd-cda-table td{padding:9px 10px;vertical-align:middle}.gsd-cda-table .cda-doc{font-weight:700;color:#1a1a1a;white-space:nowrap}.gsd-cda-table .cda-vf{text-align:center;width:104px}.gsd-cda-table .cda-up{width:372px}.gsd-cda-table .cda-act{width:44px}.gsd-cda-table input[type=checkbox]{width:18px;height:18px;accent-color:#008f4c}.cda-uphead{display:inline-block;width:160px;text-align:center}.cda-up-wrap{display:flex;align-items:center;gap:10px;width:100%}.cda-upcol{display:inline-flex;flex-direction:column;gap:3px;width:160px}.cdaup{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:160px;box-sizing:border-box;border:0;border-radius:8px;background:#1456e0;color:#fff;padding:7px 12px;font-size:12.5px;font-weight:800;white-space:nowrap;cursor:pointer}.cdaup.has{background:#0e9f57}.cdaup:disabled{background:#cfd8e6;cursor:not-allowed}.cdaup svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.cdafn{width:160px;box-sizing:border-box;border:1px solid #e2e8e4;border-radius:5px;background:#fff;padding:2px 7px;color:#44524c;font-size:10.5px;line-height:1.3}.cdaname{width:150px;flex:0 0 150px;box-sizing:border-box;border:1px solid #d6ddd9;border-radius:7px;background:#fff;padding:6px 9px;text-align:center;font-size:12.5px}.cda-rm{border:0;background:transparent;color:#c0392b;font-size:15px;font-weight:900;line-height:1;cursor:pointer}.cda-eye{margin-left:auto}.gsd-cda-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;padding-right:44px}.gsd-cda-actions .edit{background:#e67e22;border-color:#e67e22;color:#fff}.gsd-cda-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-clr-modal{width:1180px;max-width:96vw;max-height:90vh;padding:30px 26px 24px;border-radius:12px;overflow:auto;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-clr-title{text-align:center;font-size:13px;font-weight:900;color:#0e1512;text-transform:uppercase;margin:0 0 8px}.gsd-clr-scroll{overflow:auto;max-height:300px;margin-top:6px}.gsd-clr-table{width:100%;border-collapse:collapse;table-layout:auto;font-size:12.5px;color:#33413b}.gsd-clr-table th,.gsd-clr-table td{border:1px solid #d5ddd9;padding:8px 10px;text-align:center;vertical-align:middle}.gsd-clr-table th{background:#f1f5f3;font-weight:800;color:#33413b;white-space:nowrap}.gsd-clr-table td.clr-ro{background:#f7faf9;color:#5b6a63;font-weight:700}.clr-allcell{width:44px}.clr-declcell{min-width:230px}.clr-dcap{display:inline-flex;align-items:center;gap:8px}.clr-dcapbox{text-align:center}.clr-plus{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;border-radius:6px;background:#008f4c;color:#fff;font-size:16px;font-weight:900;line-height:1;cursor:pointer}.clr-plus.dim{background:#b7c2bc;cursor:not-allowed}.clr-declwrap{display:flex;flex-direction:column;gap:6px;align-items:stretch;max-width:80%;margin:0 auto}.clr-declrow{display:flex;align-items:center;gap:6px}.clr-din{flex:1 1 auto;min-width:120px;border:1px solid #c9d3cf;border-radius:6px;padding:6px 8px;text-align:center;font:inherit}.clr-din.clr-baderr{border-color:#c0392b;background:#fff5f4}.clr-tick{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:0;border-radius:6px;background:#008f4c;color:#fff;font-size:14px;cursor:pointer}.clr-link{flex:1 1 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #cfe0d6;border-radius:6px;background:#eaf6ef;padding:6px 8px;cursor:pointer}.clr-link b{color:#0a6b3b;font-size:12.5px}.clr-link.clr-link-red{background:#fdecea;border-color:#c0392b}.clr-link.clr-link-red b{color:#c0392b}.clr-dots{display:inline-flex;gap:4px}.clr-dot{width:8px;height:8px;border-radius:50%;background:#d0d7de}.clr-dot.on{background:#008f4c}.gsd-clr-panels{display:flex;flex-direction:column;gap:14px;margin-top:14px}.clr-panel{border:1px solid #dfe6e2;border-radius:10px;background:#fff;padding:16px 18px}.clr-phead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;color:#5b6a63;font-size:12px;letter-spacing:.04em}.clr-phead b{margin-left:6px;color:#1f2a26;font-size:13px}.clr-pclose{border:0;background:transparent;color:#8a97a0;font-size:15px;cursor:pointer}.clr-prow{display:flex;align-items:flex-end;flex-wrap:wrap;gap:20px}.clr-fld{display:flex;flex-direction:column;gap:5px}.clr-fld span{font-size:12px;font-weight:800;color:#33413b}.clr-fld input[type=text],.clr-fld input[type=date]{min-width:190px;border:1px solid #c9d3cf;border-radius:7px;padding:7px 9px;font:inherit}.clr-res{display:flex;align-items:center;gap:16px}.clr-rchip{display:inline-flex;align-items:center;border:1.5px solid #cfd8d4;border-radius:20px;background:#fff;padding:7px 14px;color:#5b6a63;font-size:12.5px;cursor:pointer}.clr-rchip.on-green{background:#e8f6ee;border-color:#008f4c;color:#0a6b3b;font-weight:800}.clr-rchip.on-red{background:#fdecea;border-color:#c0392b;color:#c0392b;font-weight:800}.clr-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}.clr-step{display:flex;align-items:center;gap:8px;border:1px solid #d5ddd9;border-radius:8px;background:#fbfdfc;padding:9px 11px}.clr-step.dim{opacity:.5}.clr-step input{width:16px;height:16px;accent-color:#008f4c}.clr-step span{font-size:12px;font-weight:700;color:#33413b}.clr-step em{margin-left:auto;color:#0a6b3b;font-size:11px;font-style:normal;white-space:nowrap}.clr-warn{margin-top:8px;color:#c0392b;font-size:11.5px}.clr-pfoot{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}.clr-pfoot .edit{background:#e67e22;border-color:#e67e22;color:#fff}.clr-pfoot .primary{background:#008f4c;border-color:#008f4c;color:#fff}.clr-empty{height:44px;background:#fff;color:#0e1512;font-weight:800;font-style:italic}
 .gsd-clr-table .clr-declhead,.gsd-clr-table .clr-declcell{width:180px;min-width:180px}
 .gsd-clr-table .clr-declwrap{max-width:100%}
@@ -22236,7 +22402,7 @@ onBeforeUnmount(() => {
 .blform .co-name{font-size:19px;font-weight:800;color:#0f4c81;letter-spacing:.4px}
 .blform .co-sub{font-size:10.5px;color:#333;line-height:1.5;margin-top:3px}
 .blform .co-mark{width:52px;height:52px;border:2.5px solid #0f4c81;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:#0f4c81;flex:0 0 auto}
-.blform .co-mark{position:relative;display:block;box-sizing:border-box}.blform .co-mark>span{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);margin:0;text-align:center;font:800 18px/1 Arial,Helvetica,sans-serif;color:#0f4c81}
+.blform .co-mark{position:relative;display:flex;align-items:center;justify-content:center;box-sizing:border-box}.blform .co-mark>span{position:static;transform:none;margin:0;text-align:center;font:800 18px/1 Arial,Helvetica,sans-serif;color:#0f4c81}
 .blform .net-line{font-size:8.5px;color:#0f4c81;letter-spacing:.6px;margin-top:4px;font-weight:600;line-height:1.5}
 .blform .doc-title-row{display:flex;justify-content:space-between;align-items:flex-end;margin:10px 0 8px}
 .blform .doc-title{font-size:21px;font-weight:800;letter-spacing:3px;color:#111}
@@ -22268,6 +22434,14 @@ onBeforeUnmount(() => {
 .blform .ctab td.ctr{text-align:center}
 .blform .ctab td[data-ph]:empty::before{content:attr(data-ph);color:#b7bfc7}
 .blform .ctab tr.grow td{height:150px}
+.blform .bill-container-title{margin:7px 0 4px;color:#0f4c81;font-size:9px;font-weight:800;letter-spacing:.6px;text-transform:uppercase}
+.blform .bill-container-table{table-layout:fixed}
+.blform .bill-container-table th{padding:4px 3px;font-size:8px}
+.blform .bill-container-table td{height:20px;padding:0 5px;font-size:9px;line-height:1;vertical-align:middle;white-space:normal;overflow-wrap:anywhere}
+.blform .bill-container-table td>span{display:flex;align-items:center;min-height:20px;line-height:1.1}
+.blform .bill-container-table td.ctr>span{justify-content:center}
+.blform .bill-container-table td.num>span{justify-content:flex-end}
+.blform .bill-container-table .bill-container-empty td{color:#8a969f;text-align:center;font-style:italic}
 .blform .clause{font-size:9px;color:#444;margin-top:8px;line-height:1.5}
 .blform .sig-row{display:flex;justify-content:flex-end;margin-top:auto;padding-top:18px}
 .blform .sig{width:46%;text-align:center}
@@ -22670,6 +22844,24 @@ onBeforeUnmount(() => {
 .gsd-cutoff-date svg,.gsd-cutoff-time>svg{width:16px;height:16px;flex:0 0 16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .gsd-cutoff-inputs .gsd-cutoff-time{display:flex;align-items:center;justify-content:space-between;width:108px;height:38px;box-sizing:border-box;border:1px solid #cfd8d2;border-radius:8px;background:#fff;padding:0 10px;color:#33413b;font:inherit;font-size:13px;cursor:pointer}
 .gsd-cutoff-time:hover,.gsd-cutoff-time:focus{border-color:#00a85a;box-shadow:0 0 0 2px rgba(0,168,90,.1);outline:none}.gsd-cutoff-time .placeholder{color:#7a847d}.gsd-cutoff-time>svg{margin-left:auto}
+.gsd-cutoff-modal{width:700px;padding:26px 20px 16px}
+.gsd-cutoff-entry{display:grid;grid-template-columns:minmax(0,1fr) 60px;align-items:end;gap:12px;margin:0 0 10px}
+.gsd-cutoff-entry .gsd-cutoff-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:0}
+.gsd-cutoff-entry .gsd-cutoff-label{margin-bottom:6px}
+.gsd-cutoff-entry .gsd-cutoff-inputs{gap:8px}
+.gsd-cutoff-entry .gsd-cutoff-inputs .gsd-cutoff-date{width:145px}
+.gsd-cutoff-entry .gsd-cutoff-inputs .gsd-cutoff-time{width:105px}
+.gsd-cutoff-entry .gsd-cutoff-savebar{display:block;min-height:0;margin:0}
+.gsd-cutoff-entry .gsd-cutoff-savebar .wb-modal-btn{width:60px;height:38px;min-height:38px;padding:0}
+.gsd-cutoff-modal .gsd-cutoff-hint{min-height:0;margin:0 0 8px}
+.gsd-cutoff-modal .gsd-cutoff-history{margin-top:0;padding-top:8px}
+.gsd-cutoff-modal .gsd-cutoff-table{border-collapse:separate;border-spacing:0}
+.gsd-cutoff-table col.cutoff-stt{width:56px}.gsd-cutoff-table col.cutoff-date-col{width:128px}.gsd-cutoff-table col.cutoff-time-col{width:92px}.gsd-cutoff-table col.cutoff-status-col{width:100px}
+.gsd-cutoff-table th,.gsd-cutoff-table td{box-sizing:border-box;padding:6px 8px}
+.gsd-cutoff-table thead tr:first-child th{top:0!important;height:31px}
+.gsd-cutoff-table thead tr:nth-child(2) th{top:31px!important;height:29px;font-size:10.5px}
+.gsd-cutoff-table th.cutoff-stt,.gsd-cutoff-table td:first-child{width:auto}
+.gsd-cutoff-modal .gsd-cutoff-footer{margin-top:9px}
 .datepop.modal-datepop{z-index:700}
 .cutoff-timepop{position:fixed;z-index:710;width:224px;box-sizing:border-box;border:1px solid #d3dacf;border-radius:12px;background:#fff;padding:12px;box-shadow:0 18px 45px rgba(14,40,27,.24);color:#33413b;font:13px/1.35 var(--sans,'Geist',sans-serif)}
 .ctp-head,.ctp-labels,.ctp-actions{display:flex;align-items:center}.ctp-head{justify-content:space-between;margin-bottom:10px}.ctp-head strong{font-size:13px;color:#17231d}.ctp-head span{border-radius:999px;background:#edf5f0;padding:3px 7px;color:#6c7b73;font-size:10px;font-weight:700}.ctp-labels{gap:8px;margin:0 0 5px}.ctp-labels span{width:92px;text-align:center;color:#7a847d;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
@@ -22739,7 +22931,30 @@ onBeforeUnmount(() => {
    stay inside the table region so they do not keep increasing modal height. */
 .gsd-five-row-scroll{max-height:214px!important;overflow-x:auto!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-gutter:stable}
 .gsd-five-row-scroll table thead th{position:sticky;top:0;z-index:4;background:#eef3ee}
+.gsd-cutoff-history.gsd-five-row-scroll{overflow-x:hidden!important}
+.gsd-prs-table-wrap.gsd-five-row-scroll{position:relative}
+.gsd-prs-table-wrap.gsd-five-row-scroll .gsd-prs-table{border-collapse:separate;border-spacing:0}
+.gsd-prs-table-wrap.gsd-five-row-scroll .gsd-prs-table thead th{position:sticky!important;top:0!important;z-index:8!important;background:#eef3ee!important;background-clip:padding-box}
 .gsd-five-row-scroll:has(.truck-company-picker){max-height:none!important;overflow:visible!important}
+/* Keep Clearance Docs Approval compact when many OTHER rows are added. */
+.gsd-cda-modal{width:min(720px,96vw);max-height:calc(100vh - 32px);box-sizing:border-box}
+.gsd-cda-scroll{max-height:min(390px,calc(100vh - 210px));overflow-x:hidden;overflow-y:auto;padding-right:12px;box-sizing:border-box;scrollbar-gutter:stable}
+.gsd-cda-scroll .gsd-cda-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0}
+.gsd-cda-scroll .gsd-cda-table col:first-child{width:160px}
+.gsd-cda-scroll .gsd-cda-table col.cda-vf{width:70px}
+.gsd-cda-scroll .gsd-cda-table col.cda-up{width:300px}
+.gsd-cda-scroll .gsd-cda-table col.cda-act{width:46px}
+.gsd-cda-scroll .gsd-cda-table thead th{position:sticky;top:0;z-index:3;background:#fff;background-clip:padding-box}
+.gsd-cda-scroll .gsd-cda-table .cda-vf{width:auto}
+.gsd-cda-scroll .gsd-cda-table .cda-up{width:auto}
+.gsd-cda-scroll .gsd-cda-table .cda-act{width:auto;min-width:0;padding-left:6px;padding-right:6px;text-align:center}
+.gsd-cda-scroll .cda-up-wrap{gap:6px;min-width:0}
+.gsd-cda-scroll .cda-upcol,.gsd-cda-scroll .cdaup,.gsd-cda-scroll .cdafn{width:135px}
+.gsd-cda-scroll .cdaname{width:115px;flex-basis:115px;min-width:0}
+.gsd-cda-scroll .cda-eye{flex:0 0 36px;margin-left:auto}
+.gsd-cda-scroll .cda-rm{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;padding:0;border-radius:50%;font-size:19px;line-height:1}
+.gsd-cda-scroll .cda-rm:hover:not(:disabled){background:#fdecea;color:#a93226}
+.gsd-cda-modal>.gsd-modal-x{width:28px;height:28px;font-size:17px}
 /* A confirmed workflow checkbox makes the complete row read-only. Keep the
    full modal visible for review, but clearly disable every mutating control. */
 .gsd-workflow-locked input:not([type="hidden"]),.gsd-workflow-locked select,.gsd-workflow-locked textarea{pointer-events:none!important;cursor:not-allowed!important;opacity:.68!important}
