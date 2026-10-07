@@ -10149,7 +10149,9 @@ const paymentRequestHistoryColumn = () => {
 const searchPaymentHistory = async (sourceColumn = paymentRequestHistoryColumn()) => {
   const searchRun = ++paymentHistorySearchRun
   const term = paymentSearchRef.value.trim().toLowerCase()
-  if (sourceColumn < 0) {
+  // Suggestions are only useful once the user starts typing; an empty box used to
+  // list every past job and also triggered the cross-service sheet lookups.
+  if (sourceColumn < 0 || !term) {
     paymentSearchResults.value = []
     return
   }
@@ -10194,10 +10196,10 @@ const searchPaymentHistory = async (sourceColumn = paymentRequestHistoryColumn()
     }))
   }
   if (searchRun !== paymentHistorySearchRun) return
-  paymentSearchResults.value = matches.reverse().slice(0, 50)
+  paymentSearchResults.value = matches.reverse().slice(0, 5)
 }
 const openPaymentHistoryFilter = () => {
-  paymentSearchOpen.value = true
+  paymentSearchOpen.value = !!paymentSearchRef.value.trim()
   searchPaymentHistory()
 }
 const selectPaymentHistoryMatch = (match: PaymentHistoryMatch) => {
@@ -10206,13 +10208,13 @@ const selectPaymentHistoryMatch = (match: PaymentHistoryMatch) => {
 }
 const openArrivalPaymentHistoryFilter = () => {
   paymentSearchRef.value = String(gsdModal.form.refLastBiz || '')
-  paymentSearchOpen.value = true
+  paymentSearchOpen.value = !!paymentSearchRef.value.trim()
   searchPaymentHistory(paymentRequestHistoryColumn())
 }
 const searchArrivalPaymentHistory = () => {
   paymentSearchRef.value = String(gsdModal.form.refLastBiz || '')
   if (gsdModal.editing) {
-    paymentSearchOpen.value = true
+    paymentSearchOpen.value = !!paymentSearchRef.value.trim()
     searchPaymentHistory(paymentRequestHistoryColumn())
   }
 }
@@ -22612,7 +22614,10 @@ onBeforeUnmount(() => {
 .ddpop.ops-simple .ddedit{display:none}.ddpop.ops-simple .ddlist{padding-bottom:4px}.ddpop.ops-simple .ddopt{min-height:34px;padding:8px 12px;font-weight:500;color:#24332b}.ddpop.ops-simple .ddopt:first-child{background:#2468c7;color:#fff}.ddpop.ops-simple .ddopt:hover{background:#e8f7ed;color:#087a3d}.ddpop.ops-simple .ddopt:first-child:hover{background:#2468c7;color:#fff}
 .gsd-bill-sent{margin-right:auto;color:#087a3d;font-size:12px;font-weight:800}
 .bill-document-sheet.attached h2{margin:40px 0;color:#0f4c81;letter-spacing:.08em}.bill-document-sheet.attached .attached-content{min-height:820px;border:1px solid #0f4c81;padding:18px;color:#7c8995;white-space:pre-wrap}.bill-document-sheet.attached footer{margin-top:45px}
-.payment-history-overlay{z-index:620}.payment-history-modal{width:min(1120px,96vw);max-height:84vh;padding:28px 22px 18px;border-radius:10px;overflow:hidden;display:flex;flex-direction:column}.payment-history-head{text-align:center;margin-bottom:14px}.payment-history-head b{display:block;color:#0e1512;font-size:14px}.payment-history-head span{display:block;margin-top:5px;color:#5f6e66;font-size:11.5px}.payment-history-scroll{overflow:auto;border:1px solid #d6dfd9}.payment-history-scroll table{width:1300px;border-collapse:collapse;font-size:11px}.payment-history-scroll th,.payment-history-scroll td{border:1px solid #d6dfd9;padding:7px 8px;text-align:center;white-space:nowrap}.payment-history-scroll th{background:#eef3ee;color:#33413b;font-weight:800}.payment-history-scroll td.warning{box-shadow:inset 0 0 0 2px #c0392b;background:#fff5f4;color:#9f2f27}.payment-history-scroll input[type=checkbox]{width:15px;height:15px;accent-color:#008f4c}.payment-history-hint{padding:8px 2px;color:#c0392b;font-size:11px}.payment-history-actions{display:flex;justify-content:flex-end;gap:8px}.payment-history-actions button{height:34px;border:0;border-radius:7px;padding:0 16px;color:#fff;font-size:12px;font-weight:800}.payment-history-actions .cancel{background:#64748b}.payment-history-actions .select{background:#008f4c}.payment-history-actions button:disabled{opacity:.45;cursor:not-allowed}
+.payment-history-overlay{z-index:620}.payment-history-modal{width:min(1120px,96vw);max-height:84vh;padding:28px 22px 18px;border-radius:10px;overflow:hidden;display:flex;flex-direction:column}.payment-history-head{text-align:center;margin-bottom:14px}.payment-history-head b{display:block;color:#0e1512;font-size:14px}.payment-history-head span{display:block;margin-top:5px;color:#5f6e66;font-size:11.5px}.payment-history-scroll{overflow:auto;border:1px solid #d6dfd9}.payment-history-scroll table{width:1300px;border-collapse:separate;border-spacing:0;font-size:11px}
+.payment-history-scroll th:first-child,.payment-history-scroll td:first-child{position:sticky;left:0;z-index:2}
+.payment-history-scroll td:first-child{background:#fff}
+.payment-history-scroll th:first-child{z-index:3}.payment-history-scroll th,.payment-history-scroll td{border:1px solid #d6dfd9;padding:7px 8px;text-align:center;white-space:nowrap}.payment-history-scroll th{background:#eef3ee;color:#33413b;font-weight:800}.payment-history-scroll td.warning{box-shadow:inset 0 0 0 2px #c0392b;background:#fff5f4;color:#9f2f27}.payment-history-scroll input[type=checkbox]{width:15px;height:15px;accent-color:#008f4c}.payment-history-hint{padding:8px 2px;color:#c0392b;font-size:11px}.payment-history-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.payment-history-actions button{height:34px;border:0;border-radius:7px;padding:0 16px;color:#fff;font-size:12px;font-weight:800}.payment-history-actions .cancel{background:#64748b}.payment-history-actions .select{background:#008f4c}.payment-history-actions button:disabled{opacity:.45;cursor:not-allowed}
 .payment-history-search{display:flex;align-items:center;gap:10px;margin-bottom:10px}.payment-history-search input{flex:1;height:36px;border:1px solid #cfd8d2;border-radius:8px;padding:0 12px;font:inherit;font-size:12.5px;outline:none;text-transform:uppercase}.payment-history-search input:focus{border-color:#00a860;box-shadow:0 0 0 2px rgba(0,168,96,.12)}.payment-history-search span{min-width:66px;color:#647067;font-size:11.5px;text-align:right}.payment-history-jobs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;max-height:154px;margin-bottom:12px;overflow:auto}.payment-history-jobs button{display:grid;gap:3px;min-width:0;padding:9px 11px;border:1px solid #d7e0da;border-radius:8px;background:#fff;color:#26342d;text-align:left;cursor:pointer}.payment-history-jobs button:hover,.payment-history-jobs button.active{border-color:#00a860;background:#ecf9f2;box-shadow:inset 0 0 0 1px #00a860}.payment-history-jobs button b{overflow:hidden;text-overflow:ellipsis;font-size:12px}.payment-history-jobs button span{overflow:hidden;text-overflow:ellipsis;color:#526159;font-size:11px}.payment-history-jobs button em{color:#7b877f;font-size:10.5px;font-style:normal}.payment-history-empty{grid-column:1/-1;padding:24px;border:1px dashed #d6dfd9;border-radius:8px;color:#7a847d;text-align:center;font-size:12px}.payment-history-selected{margin:0 0 8px;padding:8px 10px;border-radius:7px;background:#eef7f2;color:#405048;font-size:11.5px}.payment-history-selected b{color:#0d7040}
 .bill-document-sheet.attached{position:relative;font-family:Arial,Helvetica,sans-serif;color:#0f4c81;padding:46px 34px 32px}.bill-document-sheet.attached header h1{font-size:24px;letter-spacing:.01em}.bill-document-sheet.attached header p{font-size:11px}.bill-document-sheet.attached header b{font-size:9px;letter-spacing:.12em}.attached-title{display:flex;align-items:end;justify-content:space-between;border-bottom:2px solid #0f4c81;padding:22px 0 6px}.attached-title h2{margin:0!important;font-size:22px!important;letter-spacing:.1em!important}.attached-title span{font-size:12px}.attached-blno{text-align:right;font-size:12px;margin:8px 0 5px}.attached-cargo{table-layout:fixed;margin-top:0}.attached-cargo th{height:32px;font-size:9px}.attached-cargo td{height:166px;background:#fff}.remove-attached{display:block;margin:12px 0 0 auto;border:0;border-radius:8px;background:#c0392b;color:#fff;padding:9px 16px;font-size:12px;font-weight:800;cursor:pointer}.remove-attached:hover{background:#a23227}.bill-document-sheet.attached footer{border-top:1px solid #9eb3c5;padding-top:5px;margin-top:16px;font-size:10px;color:#56616c}
 .gsd-bill-detail .bill-export.bl{background:#0f4c81;border-color:#0f4c81;color:#fff}.gsd-bill-detail .bill-export.bl:hover{background:#0c3e69}.gsd-bill-detail .bill-export.fcr{background:#0f766e;border-color:#0f766e;color:#fff}.gsd-bill-detail .bill-export.fcr:hover{background:#0b5c56}
@@ -22904,15 +22909,16 @@ onBeforeUnmount(() => {
 .gsd-si-modal .si-table input { box-sizing: border-box; width: 100%; height: 30px; border: 0; background: transparent; padding: 6px 5px; color: #33413b; text-align: center; font: inherit; font-size: 12px; outline: none; }
 .gsd-si-modal .si-table input:focus { box-shadow: inset 0 0 0 2px #00c566; }
 .gsd-si-modal .si-table input:disabled { background: #f1f5f4; color: #46524d; opacity: 1; }
-.gsd-si-modal .si-order { color: #667; }.gsd-si-modal .si-remove-cell button, .gsd-si-modal .si-file-remove { width: 20px; height: 20px; border: 0; border-radius: 50%; background: #c0392b; padding: 0; color: #fff; font-size: 13px; font-weight: 700; line-height: 1; cursor: pointer; }
+.gsd-si-modal .si-order { color: #667; }.gsd-si-modal .si-remove-cell button, .gsd-si-modal .si-file-remove { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 0; border-radius: 0; background: transparent; padding: 0; color: #c0392b; font-size: 15px; font-weight: 700; line-height: 1; cursor: pointer; }
+.si-file-remove:hover { color: #96271b; }
 .gsd-si-modal .si-add-container { min-height: 30px; margin: 10px 0 2px; border-color: #1b7a43; background: #1b7a43; color: #fff; font-size: 12px; font-weight: 700; }
 .gsd-si-modal .si-marks { min-height: 33px; resize: vertical; }
-.gsd-si-modal .si-attachment { display: flex; align-items: center; gap: 8px; margin-top: 3px; min-height: 25px; flex-wrap: wrap; text-transform: none; }
+.gsd-si-modal .si-attachment { display: flex; align-items: center; gap: 8px; margin-top: 3px; min-height: 25px; flex-wrap: nowrap; min-width: 0; text-transform: none; }
 .gsd-si-modal .si-attachment em { color: #9aa6a1; font-size: 11.5px; font-style: italic; }
-.gsd-si-modal .si-attach-button { display: inline-flex; align-items: center; gap: 5px; border: 0; border-radius: 6px; background: #1f7ae0; padding: 5px 11px; color: #fff; font-size: 11.5px; font-weight: 700; cursor: pointer; }
+.gsd-si-modal .si-attach-button { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px; border: 0; border-radius: 6px; background: #1f7ae0; padding: 5px 11px; color: #fff; font-size: 11.5px; font-weight: 700; cursor: pointer; }
 .gsd-si-modal .si-attach-button svg, .gsd-si-modal .si-file-icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.gsd-si-modal .si-file-name { max-width: 160px; overflow: hidden; color: #1f2a26; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.gsd-si-modal .si-file-icon { display: inline-flex; border: 0; background: transparent; padding: 2px; color: #1f4ed8; cursor: pointer; }
+.gsd-si-modal .si-file-name { flex: 0 1 auto; min-width: 0; max-width: 160px; overflow: hidden; color: #1f2a26; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.gsd-si-modal .si-file-icon { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 0; background: transparent; padding: 0; color: #1f4ed8; cursor: pointer; }
 .gsd-si-modal .si-signature { width: 300px; margin: 26px 0 0 auto; color: #555; text-align: center; font-size: 11px; font-weight: 700; }
 .gsd-si-modal .si-signature b { display: block; margin-top: 4px; color: #1f2a26; font-size: 12px; }.gsd-si-modal .si-signature span { display: block; height: 50px; border-bottom: 1px solid #333; }.gsd-si-modal .si-signature strong { display: block; padding-top: 4px; color: #1f2a26; font-size: 12px; }.gsd-si-modal .si-signed-stamp { display: block; margin-top: 7px; color: #159447; font-style: normal; font-size: 11px; font-weight: 800; }
 @media (max-width: 700px) { .gsd-si-modal .si-toolbar { align-items: flex-start; flex-direction: column; }.gsd-si-modal .si-toolbar-actions { margin-left: 0; }.gsd-si-modal .si-g2, .gsd-si-modal .si-g3 { grid-template-columns: 1fr; }.gsd-si-modal .si-letterhead { flex-direction: column; }.gsd-si-modal .si-title-block { text-align: left; } }
