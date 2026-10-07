@@ -1776,8 +1776,8 @@
                     <td>{{ index + 1 }}</td>
                     <td v-if="!isAirDoIcdContSealModal() && !isAirDupIcdContSealModal()">{{ record.type }}</td>
                     <td v-if="!isAirDoIcdContSealModal() && !isAirDupIcdContSealModal()">{{ record.purpose }}</td>
-                    <td><input v-model.trim="record.container" :disabled="isReadonlyDoContSealModal()" @input="uppercaseDoContSealField(record, 'container')" /></td>
-                    <td><input v-model.trim="record.seal" :disabled="isReadonlyDoContSealModal()" @input="uppercaseDoContSealField(record, 'seal')" /></td>
+                    <td><input v-model.trim="record.container" :disabled="isReadonlyDoContSealModal() || !gsdModal.editing" @input="uppercaseDoContSealField(record, 'container')" /></td>
+                    <td><input v-model.trim="record.seal" :disabled="isReadonlyDoContSealModal() || !gsdModal.editing" @input="uppercaseDoContSealField(record, 'seal')" /></td>
                   </tr>
                   <tr v-if="!doContSealRecords().length">
                     <td :colspan="isAirDoIcdContSealModal() || isAirDupIcdContSealModal() ? 3 : 5" class="empty">No volume defined yet</td>
@@ -1785,10 +1785,10 @@
                 </tbody>
               </table>
             </div>
-            <div class="gsd-do-cont-foot">
-              <button v-if="!isReadonlyDoContSealModal()" class="wb-modal-btn slate" type="button" :disabled="!doContSealHasContent()" @click="clearDoContSealRecords">Clear</button>
-              <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
-              <button v-if="!isReadonlyDoContSealModal()" class="wb-modal-btn primary" type="button" :disabled="!doContSealChanged()" @click="saveDoContSealRecords">Save</button>
+            <div v-if="!isReadonlyDoContSealModal()" class="gsd-do-cont-foot">
+              <button class="wb-modal-btn slate" type="button" :disabled="!gsdModal.editing || !doContSealHasContent()" @click="clearDoContSealRecords">Clear</button>
+              <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="gsdModal.editing = true">Edit</button>
+              <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing || !doContSealChanged()" @click="saveDoContSealRecords">Save</button>
             </div>
             </template>
           </template>
@@ -8105,7 +8105,7 @@ const AIR_STRUCTURE_LOCKS: Record<string, string[]> = {
   'DO:ICD': ["TIME","BU","DEALT INFO","SALES","JOB NO#","ICD OPS","DO+","CLIENT"],
   'DO:FCD': ["TIME","BU","DEALT INFO","SALES","ICD OPS","DO+","CLIENT","SHIPPER","CNEE","ORIGIN AGENT","DESTINATION AGENT","AIRLINE","REF#","HAWB NO#","MAWB NO#","ATD","ATA","VOLUME","ROUTE","FLIGHT NO#","ARRIVAL NOTICE SENDING"],
   'DAP:GSD': ["TIME","JOB NO#"],
-  'DAP:ICD': ["TIME","BU","DEALT INFO","SALES","JOB NO#","ICD OPS","DAP+","CLIENT","CONT/SEAL INFO","DELIVERY DETAIL"],
+  'DAP:ICD': ["TIME","BU","DEALT INFO","SALES","JOB NO#","ICD OPS","DAP+","CLIENT","DELIVERY DETAIL"],
   'DAP:TCD': ["TIME","BU","DEALT INFO","SALES","ICD OPS","CLIENT","SHIPPER","CNEE","DESTINATION AGENT","AIRLINE","REF#","HAWB NO#","MAWB NO#","VOLUME","ROUTE","FLIGHT NO#","ATD","ATA","DO VALIDITY"],
   'DAP:FCD': ["TIME","BU","DEALT INFO","SALES","ICD OPS","DAP+","CLIENT","SHIPPER","CNEE","ORIGIN AGENT","DESTINATION AGENT","AIRLINE","REF#","HAWB NO#","MAWB NO#","ATD","ATA","VOLUME","ROUTE","FLIGHT NO#","DELIVERY DETAIL","TRUCKING INFO"],
   'DDU:GSD': ["TIME","JOB NO#"],
@@ -8149,7 +8149,7 @@ const LCL_STRUCTURE_LOCKS: Record<string, string[]> = {
   'DO:ICD': ["TIME","BU","DEALT INFO","SALES","JOB NO#","ICD OPS","DO+","CLIENT"],
   'DO:FCD': ["TIME","BU","DEALT INFO","SALES","ICD OPS","DO+","CLIENT","SHIPPER","CNEE","ORIGIN AGENT","DESTINATION AGENT","LINER","REF#","HBL NO#","MBL NO#","ATD","ATA","VOLUME","ROUTE","VESSEL/VOYAGE","ARRIVAL NOTICE SENDING"],
   'DAP:GSD': ["TIME","JOB NO#"],
-  'DAP:ICD': ["TIME","BU","DEALT INFO","SALES","JOB NO#","ICD OPS","DAP+","CLIENT","CONT/SEAL INFO","DELIVERY DETAIL"],
+  'DAP:ICD': ["TIME","BU","DEALT INFO","SALES","JOB NO#","ICD OPS","DAP+","CLIENT","DELIVERY DETAIL"],
   'DAP:TCD': ["TIME","BU","DEALT INFO","SALES","ICD OPS","CLIENT","SHIPPER","CNEE","DESTINATION AGENT","LINER","REF#","HBL NO#","MBL NO#","VOLUME","ROUTE","VESSEL/VOYAGE","ATD","ATA","DO VALIDITY"],
   'DAP:FCD': ["TIME","BU","DEALT INFO","SALES","ICD OPS","DAP+","CLIENT","SHIPPER","CNEE","ORIGIN AGENT","DESTINATION AGENT","LINER","REF#","HBL NO#","MBL NO#","ATD","ATA","VOLUME","ROUTE","VESSEL/VOYAGE","TRUCKING INFO"],
   'DDU:GSD': ["TIME","JOB NO#"],
@@ -8182,7 +8182,7 @@ const isFclStructureLockedColumn = (column: number) => {
   if (dept === 'ECD') return ['TIME', 'BU', 'DEALT INFO', 'SALES', 'JOB NO#', 'ECD OPS', flow, type === 'EXW' ? 'EFA+' : flow, 'CLIENT', 'PICKUP DETAIL', 'TRUCK & CONT/SEAL INFO', 'TRUCKING INFO', 'BILL DETAIL', 'BILL RELEASE'].includes(label)
   if (dept === 'ICD') {
     const locked = ['TIME', 'BU', 'DEALT INFO', 'SALES', 'JOB NO#', 'ICD OPS', flow, 'CLIENT']
-    if (type === 'DAP') locked.push('DELIVERY DETAIL', 'CONT/SEAL INFO')
+    if (type === 'DAP') locked.push('DELIVERY DETAIL')
     if (['DDU', 'DDP'].includes(type)) locked.push('DELIVERY DETAIL', 'PICKUP/RETURN STATUS', 'PICKUP STATUS')
     return locked.includes(label)
   }
@@ -11225,8 +11225,21 @@ const openGsdModal = async (row: number, column: number) => {
         gsdModal.editing = true
       } else if (label === 'VOLUME') {
         gsdModal.formFields = []
-        gsdModal.form = volumeFormFromCell(rawText)
-        gsdModal.editing = !isReadonlyTcdVolumeModal()
+        let volumeValue: any = rawText
+        if (isLinkedOriginImportRow(row)) {
+          const linkedVolume = await loadLinkedOriginCell(row, ['VOLUME'])
+          if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
+          if (String(linkedVolume || '').trim()) {
+            volumeValue = linkedVolume
+            if (linkedVolume !== rawText) {
+              rows.value[row][column] = linkedVolume
+              mirrorFclLinkedCell(row, column)
+              scheduleSave()
+            }
+          }
+        }
+        gsdModal.form = volumeFormFromCell(volumeValue)
+        gsdModal.editing = !isReadonlyTcdVolumeModal() && !isLinkedOriginImportRow(row)
       } else if (label === 'FREETIME CONFIRMATION') {
         gsdModal.formFields = []
         gsdModal.form = freetimeFormFromCell(rawText)
@@ -11268,11 +11281,24 @@ const openGsdModal = async (row: number, column: number) => {
         }
       } else if ((isDoSheet() || isDapSheet() || isDupSheet()) && label === 'CONT/SEAL INFO') {
         gsdModal.formFields = []
-        const linkedValue = isReadonlyCcdDduContSealModal() ? await linkedCcdContSealValue(row, rawText) : rawText
+        let linkedValue: any = isReadonlyCcdDduContSealModal() ? await linkedCcdContSealValue(row, rawText) : rawText
+        if (isLinkedOriginImportRow(row) && !isReadonlyCcdDduContSealModal()) {
+          const originRecords = await loadLinkedOriginContSealRecords(row)
+          if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
+          if (originRecords.length) {
+            linkedValue = JSON.stringify({ form: { linkedOrigin: true, records: originRecords } })
+            if (linkedValue !== rawText) {
+              rows.value[row][column] = linkedValue
+              mirrorFclLinkedCell(row, column)
+              scheduleSave()
+            }
+          }
+        }
         gsdModal.form = doContSealFormFromCell(linkedValue)
         gsdModal.form.originalRecordsSignature = doContSealRecordsSignature()
         const linkedReadonly = isReadonlyDoContSealModal()
-        gsdModal.editing = !linkedReadonly
+        // Saved data opens locked behind Edit; an empty form opens ready to type.
+        gsdModal.editing = !linkedReadonly && !doContSealHasContent()
       } else if (label === 'TRUCK & CONT/SEAL INFO' || label === 'CONT/SEAL INFO' || label === 'TRUCKING INFO' || label === 'TRUCKING DETAIL') {
         gsdModal.formFields = []
         const linkedValue = await linkedEcdTruckContValue(row, rawText)
@@ -12525,6 +12551,76 @@ const linkedEcdBillReleaseValue = async (row: number, label: string, fallback: a
     return fallback
   }
 }
+// An import row (DO/DAP/DDU/DDP) created from an export service (EXW/FCA/FCF).
+// Its VOLUME and CONT/SEAL belong to the export side and are view-only here.
+const isLinkedOriginImportRow = (row: number) => {
+  const parsed = opsParts.value
+  if (row < 1 || !parsed || !['DO', 'DAP', 'DDU', 'DDP'].includes(upperText(parsed.type))) return false
+  if (settings.value?.crossServiceInboundRows?.[String(row)]) return true
+  const flowColumn = (rows.value[0] || []).findIndex((_, index) => normalizedHeaderLabel(index) === `${upperText(parsed.type)}+`)
+  return flowColumn >= 0 && ['EXW', 'FCA', 'FCF'].includes(upperText(rows.value[row]?.[flowColumn]))
+}
+// Reads one cell of the export-side row this import row was created from.
+const loadLinkedOriginCell = async (row: number, labels: string[], depts: string[] = ['ECD', 'DCD']) => {
+  const current = opsParts.value
+  if (!current || !isLinkedOriginImportRow(row)) return ''
+  const currentHeader = (rows.value[0] || []).map((item: any) => String(item ?? '').trim())
+  const currentRow = rows.value[row] || []
+  const flowColumn = currentHeader.findIndex((label) => upperText(label) === `${upperText(current.type)}+`)
+  const flowType = upperText(flowColumn >= 0 ? currentRow[flowColumn] : '')
+  // Only ICD carries the DO+/DAP+ column; elsewhere the export type is unknown,
+  // so the shipment link alone identifies the source row.
+  const originTypes = ['EXW', 'FCA', 'FCF'].includes(flowType) ? [flowType] : ['EXW', 'FCA', 'FCF']
+  const shipmentLink = opsShipmentLink(currentHeader, currentRow, row, settings.value)
+  for (const originType of originTypes) {
+    for (const sourceDept of depts) {
+      const base = opsBaseForType(originType as any)
+      const sourceHeader = opsHeaderFor(base, current.mode, sourceDept as any, originType as any)
+      const sourceColumn = sourceHeader.findIndex((label) => labels.includes(upperText(label)))
+      if (sourceColumn < 0) continue
+      try {
+        const sourceKey = opsLeafKey(base, current.mode, originType as any, sourceDept as any)
+        const sheet = await props.request(`/workbook/sheets/${encodeURIComponent(sheetStorageKey(sourceKey))}`)
+        const extracted = extractWorkbookRows(Array.isArray(sheet?.rows) ? sheet.rows.map((item: any[]) => [...item]) : [], sheet)
+        const sourceRows = alignRowsToHeader(extracted.rows, sourceHeader).rows
+        const sourceSettings = extracted.settings || sheet?.settings || {}
+        let sourceRowIndex = shipmentLink
+          ? sourceRows.findIndex((item, index) => index > 0 && opsShipmentLink(sourceHeader, item, index, sourceSettings) === shipmentLink)
+          : -1
+        if (sourceRowIndex < 1 && originTypes.length === 1) {
+          sourceRowIndex = sourceRows.findIndex((item, index) => index > 0 && ['REF#', 'HBL NO#', 'MBL NO#'].some((label) => {
+            const currentColumn = currentHeader.indexOf(label)
+            const matchColumn = sourceHeader.indexOf(label)
+            const currentValue = currentColumn >= 0 ? String(currentRow[currentColumn] || '').trim() : ''
+            return !!currentValue && matchColumn >= 0 && currentValue === String(item[matchColumn] || '').trim()
+          }))
+        }
+        const value = sourceRowIndex > 0 ? sourceRows[sourceRowIndex]?.[sourceColumn] : ''
+        if (String(value ?? '').trim()) return value
+      } catch (error: any) {
+        if (requestStatus(error) !== 404) console.warn(`Could not load linked ${labels[0]} from ${originType} ${sourceDept}`, error)
+      }
+    }
+  }
+  return ''
+}
+// Export containers come from MASTER SI SUBMIT, falling back to the trucking record.
+const loadLinkedOriginContSealRecords = async (row: number) => {
+  const toRecord = (item: any, index: number) => ({
+    key: `ORIGIN-${index}`,
+    type: String(item?.contType || item?.type || ''),
+    purpose: '',
+    container: upperText(item?.contNo || item?.container || item?.containerNo || ''),
+    seal: upperText(item?.sealNo || item?.seal || ''),
+  })
+  const hasCont = (item: any) => !!String(item?.contNo || item?.container || item?.containerNo || item?.sealNo || item?.seal || '').trim()
+  const siValue = await loadLinkedOriginCell(row, ['MASTER SI SUBMIT', 'SI SUBMIT'])
+  const fromSi = String(siValue || '').trim() ? siSubmitFormFromCell(siValue).containers.filter(hasCont) : []
+  if (fromSi.length) return fromSi.map(toRecord)
+  const truckValue = await loadLinkedOriginCell(row, ['TRUCK & CONT/SEAL INFO', 'TRUCKING INFO'], ['ECD', 'TCD'])
+  const fromTruck = String(truckValue || '').trim() ? truckContFormFromCell(truckValue).records.filter(hasCont) : []
+  return fromTruck.map(toRecord)
+}
 const linkedOriginContSealHasData = () => {
   if (!isDoContSealModal() || !settings.value?.crossServiceInboundRows?.[String(gsdModal.row)]) return false
   const value = rows.value[gsdModal.row]?.[gsdModal.column]
@@ -12536,7 +12632,7 @@ const linkedOriginContSealHasData = () => {
 }
 const isReadonlyDoContSealModal = () => isReadonlyCcdDduContSealModal() || (
   !isStandaloneManualOpsRow(gsdModal.row) && isDoContSealModal() && (
-    isDoFcdSheet() || isDapFcdSheet() || isDupFcdSheet() || linkedOriginContSealHasData()
+    isDoFcdSheet() || isDapFcdSheet() || isDupFcdSheet() || linkedOriginContSealHasData() || isLinkedOriginImportRow(gsdModal.row)
   )
 )
 const isTruckContModal = () => !isDoContSealModal() && isGsdFormModalLabel('TRUCK & CONT/SEAL INFO', 'TRUCKS & CONT/SEAL DETAILS', 'CONT/SEAL INFO', 'TRUCKING INFO', 'TRUCKING DETAIL')
@@ -13148,7 +13244,7 @@ const isExpenseCollectModal = () => isGsdFormModalLabel('EXPENSE/COLLECT LIST', 
 const isCcdCutoffModal = () => !isStandaloneManualOpsRow(gsdModal.row) && isCutoffModal() && (isExwCcdSheet() || isExwTcdSheet() || isExwDcdSheet() || isExwFcdSheet() || isFcaTcdSheet() || isFcaDcdSheet() || isFcaFcdSheet() || isFcfDcdSheet())
 const isDapTcdVolumeDetailModal = () => isVolumeModal() && isDapTcdSheet()
 const isReadonlyTcdVolumeModal = () => isVolumeModal() && opsDeptUpper() === 'TCD'
-const isCcdVolumeModal = () => isReadonlyTcdVolumeModal() || (!isStandaloneManualOpsRow(gsdModal.row) && isVolumeModal() && (isExwCcdSheet() || isExwTcdSheet() || isExwDcdSheet() || isExwFcdSheet() || isFcaTcdSheet() || isFcaDcdSheet() || isFcaFcdSheet() || isFcfDcdSheet() || isFcfFcdSheet() || isDapTcdSheet() || isDapFcdSheet() || (isLclSheet() && (isDoFcdSheet() || isDupFcdSheet()))))
+const isCcdVolumeModal = () => isReadonlyTcdVolumeModal() || (isVolumeModal() && isLinkedOriginImportRow(gsdModal.row)) || (!isStandaloneManualOpsRow(gsdModal.row) && isVolumeModal() && (isExwCcdSheet() || isExwTcdSheet() || isExwDcdSheet() || isExwFcdSheet() || isFcaTcdSheet() || isFcaDcdSheet() || isFcaFcdSheet() || isFcfDcdSheet() || isFcfFcdSheet() || isDapTcdSheet() || isDapFcdSheet() || (isLclSheet() && (isDoFcdSheet() || isDupFcdSheet()))))
 const expenseCurrencies = ['ALL', 'USD', 'VND', 'EUR', 'CNY', 'JPY']
 const expenseFeedbackInvalidReasonIds = ref<Set<string>>(new Set())
 // Expense/collection approval is fed by PAYMENT REQUEST. Never seed this
@@ -15533,6 +15629,8 @@ const doContSealFormFromCell = (value: any) => {
   const parsed = parseJsonCell(value, null as any)
   const form = parsed && typeof parsed === 'object' && 'form' in parsed ? (parsed as any).form || {} : parsed || {}
   const saved = Array.isArray((form as any).records) ? (form as any).records : []
+  // Records copied from the export side list its containers, not this sheet's volume lines.
+  if ((form as any).linkedOrigin && saved.length) return { records: saved.map((item: any) => normalizeDoContSealRecord(item)) }
   const savedByKey = new Map(saved.map((item: any) => [String(item?.key || ''), item]))
   const volumeRows = (isAirDoIcdContSealModal() || isAirDupIcdContSealModal()) ? [] : doContSealVolumeRows()
   const records = volumeRows.length
@@ -15587,6 +15685,7 @@ const persistDoContSealRecords = (immediate = false) => {
 }
 const saveDoContSealRecords = () => {
   persistDoContSealRecords(true)
+  gsdModal.editing = false
 }
 const normalizeTruckTimeValue = (value: any) => {
   const text = String(value || '').trim().toUpperCase().replace(/\./g, '')
