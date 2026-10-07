@@ -987,8 +987,6 @@
           'gsd-wide-form-modal': gsdModal.kind === 'form' && isWideGsdForm(gsdModal.title) && !hasSpecializedGsdModalLayout(),
           'gsd-payment-modal': isPaymentRequestModal(),
           'gsd-edit-payment-modal': usesFullPaymentRequestLayout(),
-          'gsd-air-payment-modal': isPaymentRequestModal() && isAirSheet(),
-          'gsd-air-fca-tcd-payment-modal': isPaymentRequestModal() && isAirSheet() && isFcaTcdSheet(),
           'gsd-expcol-modal': isExpenseCollectModal(),
           'gsd-workflow-locked': isGsdModalWorkflowLocked(),
         }"
@@ -2722,7 +2720,7 @@
                   </span>
                 </template>
               </div>
-              <button class="pay-send" type="button" :disabled="!paymentCanSendSelection()" @click="sendPaymentRequest"><template v-if="isAirSheet()">Send<br />request</template><template v-else>Send request</template></button>
+              <button class="pay-send" type="button" :disabled="!paymentCanSendSelection()" @click="sendPaymentRequest">Send request</button>
             </div>
             <div class="gsd-pay-scroll">
               <table class="gsd-pay-table" :class="{ 'air-pay-table': usesFullPaymentRequestLayout() }">
@@ -4772,12 +4770,12 @@ const billDocRouteFields = [
 const searchGsdClients = async () => {
   if (gsdModal.kind !== 'client' || gsdModal.clientView !== 'search') {
     gsdClientResults.value = []
-    return [] as GsdClientRecord[]
+    return
   }
   const term = gsdModal.text.trim()
   if (!term) {
     gsdClientResults.value = []
-    return [] as GsdClientRecord[]
+    return
   }
   const run = ++clientSearchRun
   try {
@@ -4796,14 +4794,10 @@ const searchGsdClients = async () => {
       AGENT: { page: 'traders_dest_agent', roles: ['DEST. AGENT', 'AGENT'] },
     }
     const source = traderSource[role] || traderSource.CLIENT
-    // The records endpoint applies a broad/inconsistent search across nested
-    // fields. Load the role page once per query and apply the selected ID or
-    // NameCode matching locally so valid suggestions are never dropped.
-    const res = await props.request(`/records?country=${encodeURIComponent(countryViewId())}&page=${encodeURIComponent(source.page)}&search=&limit=1000&skip=0`)
+    const res = await props.request(`/records?country=${encodeURIComponent(countryViewId())}&page=${encodeURIComponent(source.page)}&search=${encodeURIComponent(term)}&limit=1000&skip=0`)
+    if (run !== clientSearchRun) return
     const records = Array.isArray(res?.items) ? res.items : []
-    const query = upperText(term)
-    const mode = gsdModal.clientMode === 'namecode' ? 'namecode' : 'id'
-    const results = records.map((record: any) => {
+    gsdClientResults.value = records.map((record: any) => {
       const data = record?.data && typeof record.data === 'object' ? record.data : record
       return normalizeClientRecord({
         ...data,
@@ -4816,19 +4810,11 @@ const searchGsdClients = async () => {
       })
     }).filter((client: GsdClientRecord) => {
       const roles = (client.roles || []).map(upperText)
-      const searchable = mode === 'namecode'
-        ? [client.namecode]
-        : [client.id, client.entityId]
-      return source.roles.some((allowed) => roles.includes(allowed))
-        && upperText(client.status || 'ACTIVE') !== 'INACTIVE'
-        && searchable.some((value) => upperText(value || '').includes(query))
+      return source.roles.some((allowed) => roles.includes(allowed)) && upperText(client.status || 'ACTIVE') !== 'INACTIVE'
     }).slice(0, 20)
-    if (run === clientSearchRun) gsdClientResults.value = results
-    return results
   } catch (error) {
     console.error('Could not search clients', error)
     if (run === clientSearchRun) gsdClientResults.value = []
-    return [] as GsdClientRecord[]
   }
 }
 watch(() => [gsdModal.open, gsdModal.kind, gsdModal.clientView, gsdModal.clientMode, gsdModal.text], searchGsdClients)
@@ -5260,10 +5246,6 @@ const loadRouteReferenceData = async () => {
 const uppercaseClientSearch = () => {
   gsdModal.text = upperText(gsdModal.text)
   gsdModal.selectedClient = null
-  // Hide results for the previous query immediately and invalidate its
-  // in-flight response. The watcher will issue the new search next.
-  clientSearchRun += 1
-  gsdClientResults.value = []
 }
 const uppercaseClientField = (field: keyof ReturnType<typeof emptyClientForm>) => {
   ;(gsdModal.clientForm as any)[field] = upperText((gsdModal.clientForm as any)[field])
@@ -5472,11 +5454,23 @@ const openTruckDriverPicker = async (record: TruckContRecord, targetIndex: numbe
     showToast('Could not load drivers from Internal Directory')
   }
 }
+// Reference Data > Hauliers builds the ID as <country code><ddmmyy><running number>,
+// where the number continues after the IDs already issued that day. Keep both paths identical.
+const nextHaulierAutoId = (country: any) => {
+  const prefix = `${entityCountryCode(country)}${ddmmyy()}`
+  const used = Object.values(truckCompanyRecordMap.value)
+    .map((item: any) => upperText(item?.id))
+    .filter((id: string) => id.startsWith(prefix))
+    .map((id: string) => Number(id.slice(prefix.length)))
+    .filter((value: number) => Number.isFinite(value))
+  return `${prefix}${String(used.length ? Math.max(...used) + 1 : 1).padStart(2, '0')}`
+}
 const saveTruckCompany = async () => {
   const payload = clientFormFromRecord(truckCompanyModal.form)
   payload.city = optionMatch(cityOptions.value, payload.city) || upperText(payload.city)
   payload.country = optionMatch(countryOptions.value, payload.country) || upperText(payload.country)
   if (!validateClientForm(payload)) return
+  const autoId = nextHaulierAutoId(payload.country)
   truckCompanyModal.saving = true
   try {
     const saved = await props.request('/records', {
@@ -5488,8 +5482,8 @@ const saveTruckCompany = async () => {
         sortOrder: 0,
         data: {
           recdate: new Date().toISOString().slice(0, 10),
-          id: payload.id,
-          namecode: payload.namecode,
+          id: autoId,
+          namecode: payload.namecode || autoId,
           role: 'HAULIER',
           roles: ['HAULIER'],
           gsd: currentTraderCreator(),
@@ -5541,8 +5535,6 @@ const saveTruckCompany = async () => {
 }
 const clearGsdClientDetail = () => {
   gsdModal.selectedClient = null
-  clientSearchRun += 1
-  gsdClientResults.value = []
 }
 const isSelectedGsdClient = (client: GsdClientRecord) => {
   const current = gsdModal.selectedClient
@@ -6621,6 +6613,29 @@ const saveSheet = async (
   }
 }
 
+// Payment actions are intentionally sent in the background, so a user can
+// send the next line before the previous request finishes. Serialize only the
+// source-sheet writes to keep their optimistic versions from racing. Each
+// queued write carries its own snapshot, preserving rapid consecutive sends.
+const paymentSheetSaveChains = new Map<string, Promise<boolean>>()
+const queuePaymentSheetSave = (
+  requestedKey: string,
+  requestedCountry: string,
+  payloadSnapshot: ReturnType<typeof sheetPayload>,
+) => {
+  const storageKey = sheetStorageKey(requestedKey, requestedCountry)
+  cancelOwnedSaveTimer(requestedKey, requestedCountry)
+  const previous = paymentSheetSaveChains.get(storageKey) || Promise.resolve(true)
+  const write = previous
+    .catch(() => false)
+    .then(() => saveSheet(requestedKey, payloadSnapshot, requestedCountry))
+  paymentSheetSaveChains.set(storageKey, write)
+  void write.finally(() => {
+    if (paymentSheetSaveChains.get(storageKey) === write) paymentSheetSaveChains.delete(storageKey)
+  })
+  return write
+}
+
 const scheduleSave = () => {
   saveState.value = 'Saving...'
   const requestedKey = activeKey.value
@@ -6825,9 +6840,15 @@ const leastLoadedDepartmentStaff = (department: string, header: string[], dataRo
 }
 const saveOpsEdit = async () => {
   if (!opsEditingRow.value) return
+  const edit = opsEditingRow.value
+  const doHblColumn = (rows.value[0] || []).findIndex((_, column) =>
+    upperText(opsParts.value?.type) === 'DO' && normalizedHeaderLabel(column) === 'HBL NO#')
+  if (doHblColumn >= 0 && !String(rows.value[edit.row]?.[doHblColumn] ?? '').trim()) {
+    showToast('HBL NO# is required for DO')
+    return
+  }
   dispatchLoading.value = 'Saving manual row...'
   try {
-  const edit = opsEditingRow.value
   normalizeOpsMoneyRow(edit.row)
   const actionColumn = headerIndexOf(['ACTION'])
   if (actionColumn >= 0 && !String(rows.value[edit.row]?.[actionColumn] || '').trim()) rows.value[edit.row][actionColumn] = 'ACTIVE'
@@ -9198,6 +9219,8 @@ const isExwFclFreeTextMblColumn = (column: number) =>
   ['EXW', 'FCA', 'FCF', 'DO'].includes(String(opsParts.value?.type || '').toUpperCase()) &&
   opsParts.value?.mode === 'FCL' &&
   normalizedHeaderLabel(column) === 'MBL NO#'
+const isDoDirectHblColumn = (column: number) =>
+  upperText(opsParts.value?.type) === 'DO' && normalizedHeaderLabel(column) === 'HBL NO#'
 const isDoInfoCell = (row: number, column: number) =>
   row > 0 && ['ICD', 'TCD', 'CCD', 'ECD', 'FCD'].includes(opsDeptUpper()) && normalizedHeaderLabel(column) === 'DO INFO'
 const canManageDoInfo = () => opsDeptUpper() === 'ICD'
@@ -9339,6 +9362,7 @@ const isGsdActionButtonColumn = (column: number) =>
   // generic text cell.
   (normalizedHeaderLabel(column) === 'BC NO#' || !isExwCcdPlainTextColumn(column)) &&
   normalizedHeaderLabel(column) !== 'MBL NO#' &&
+  !isDoDirectHblColumn(column) &&
   !isDoInfoCell(1, column) &&
   gsdButtonLabels.includes(normalizedHeaderLabel(column))
 const isGsdActionButtonCell = (row: number, column: number) => {
@@ -9348,6 +9372,9 @@ const isGsdActionButtonCell = (row: number, column: number) => {
   // MBL NO# is always maintained as an inline free-text value on the grid.
   // It must never fall back to the legacy generic form modal.
   if (label === 'MBL NO#') return false
+  // DO always requires a direct HBL number. Its owning ICD sheet edits this
+  // exactly like MBL NO#; downstream departments keep their existing locks.
+  if (isDoDirectHblColumn(column)) return false
   if (isStandaloneManualOpsRow(row) && gsdButtonLabels.includes(label)) return true
   if (opsParts.value?.mode === 'FCL' && isExwEcdSheet() && label === 'CUTOFF DETAIL') return true
   // AIR origin and ICD mockups keep HBL available before assignment.
@@ -9616,6 +9643,11 @@ const detailActionNeedsAttention = (row: number, column: number) => {
   const label = normalizedHeaderLabel(column)
   if (['CLEARANCE DETAIL', 'CLEARANCE DETAILS', 'CUSTOMS CLEARANCE DETAILS'].includes(label)) {
     return clearanceDetailsNeedsAttention(rows.value[row]?.[column])
+  }
+  // DO keeps the alert on PRE-ALERT CONFIRMATION until every confirmation is ticked.
+  if (label === 'PRE-ALERT CONFIRMATION' && isDoSheet() && row > 0) {
+    const form = preAlertConfirmationFormFromCell(rows.value[row]?.[column])
+    return !(form.mblConfirmed && form.hblConfirmed && form.mblReleased && form.hblReleased)
   }
   return isDetailActionButton(row, column) && !String(rows.value[row]?.[column] ?? '').trim() && !truckContHasLinkedVolume(row, column)
 }
@@ -10053,23 +10085,29 @@ const persistPaymentRequest = async (immediate = false, syncAfterSend = false) =
   const payload = paymentPayload()
   const hasData = String(payload.jobNo || payload.refNo || payload.issueFrom || payload.issueBank || '').trim() || payload.lines.some((line) => paymentLineHasData(line as PaymentLine))
   rows.value[gsdModal.row][gsdModal.column] = hasData ? JSON.stringify({ payment: payload }) : ''
-  scheduleSave()
-  if (immediate) {
-    const saved = await saveSheet()
-    if (!saved) throw new Error('Could not save Payment Request')
-    if (syncAfterSend) {
-      const peers = fclStructureSyncPeers('PAYMENT REQUEST')
-      const sentPayload = JSON.stringify({ payment: {
-        ...payload,
-        lines: payload.lines.filter((line) => !!String(line.sentAt || line.reqDate || '').trim()),
-      } })
-      const results = await Promise.all(peers.map((dept) => mirrorExwFclWorkflowCell(dept, 'PAYMENT REQUEST', sentPayload)))
-      const requiredReceiver = opsDeptUpper() === 'FCD' ? 'ECD' : peers.includes('FCD') ? 'FCD' : ''
-      if (requiredReceiver) {
-        const receiverIndex = peers.indexOf(requiredReceiver as FclStructureDept)
-        if (receiverIndex < 0 || results[receiverIndex] !== true) throw new Error(`Could not deliver Payment Request to ${requiredReceiver}`)
-      }
-    }
+  if (!immediate) {
+    scheduleSave()
+    return
+  }
+  const peers = syncAfterSend ? fclStructureSyncPeers('PAYMENT REQUEST') : []
+  const requiredReceiver = syncAfterSend ? (opsDeptUpper() === 'FCD' ? 'ECD' : peers.includes('FCD') ? 'FCD' : '') : ''
+  const sentPayload = JSON.stringify({ payment: {
+    ...payload,
+    lines: payload.lines.filter((line) => !!String(line.sentAt || line.reqDate || '').trim()),
+  } })
+  const sourceKey = activeKey.value
+  const sourceCountry = loadedCountryId.value
+  const sourcePayload = sheetPayload(sourceKey, false, sourceCountry)
+  // Persist the source and mirror one immutable snapshot at the same time.
+  // Do not leave a scheduled autosave that can overwrite the sent state.
+  const [saved, results] = await Promise.all([
+    queuePaymentSheetSave(sourceKey, sourceCountry, sourcePayload),
+    Promise.all(peers.map((dept) => mirrorExwFclWorkflowCell(dept, 'PAYMENT REQUEST', sentPayload))),
+  ])
+  if (!saved) throw new Error('Could not save Payment Request')
+  if (requiredReceiver) {
+    const receiverIndex = peers.indexOf(requiredReceiver as FclStructureDept)
+    if (receiverIndex < 0 || results[receiverIndex] !== true) throw new Error(`Could not deliver Payment Request to ${requiredReceiver}`)
   }
 }
 const paymentInvalidKey = (line: PaymentLine, field: keyof PaymentLine) => `${line.id}:${String(field)}`
@@ -10119,17 +10157,11 @@ const paymentHasSelection = () => gsdModal.payment.lines.some((line) => line.sel
 const selectedPaymentLines = () => gsdModal.payment.lines.filter((line) => line.selected)
 const paymentRequiredFields: Array<keyof PaymentLine> = ['chargeName', 'payTo', 'payAt', 'curPay', 'totalPay', 'collectFrom', 'collectAt', 'curCollect', 'totalCollect']
 const paymentLineIsPending = (line: PaymentLine) => (!line.sentAt || line.editing) && paymentLineHasData(line)
-const paymentLineIsReadyToSend = (line: PaymentLine) => {
-  if (!paymentLineIsPending(line) || paymentRequiredFields.some((key) => !String(line[key] || '').trim())) return false
-  return !!optionMatch(paymentChargeOptions.value, line.chargeName) &&
-    !!optionMatch(paymentCountries.value, line.payAt) &&
-    !!optionMatch(paymentCountries.value, line.collectAt) &&
-    !!optionMatch(paymentCurrencies.value, line.curPay) &&
-    !!optionMatch(paymentCurrencies.value, line.curCollect)
-}
 const pendingPaymentLines = () => gsdModal.payment.lines.filter(paymentLineIsPending)
-const readyPaymentLines = () => gsdModal.payment.lines.filter(paymentLineIsReadyToSend)
-const paymentCanSendSelection = () => readyPaymentLines().length > 0
+const selectedPendingPaymentLines = () => gsdModal.payment.lines.filter((line) => line.selected && paymentLineIsPending(line))
+// Keep Send available for selected draft rows so validation can highlight any
+// missing fields. Do not silently send only the valid subset of a selection.
+const paymentCanSendSelection = () => selectedPendingPaymentLines().length > 0
 const isExwFclTcdPaymentNoteLocked = () =>
   !isStandaloneManualOpsRow(gsdModal.row) && isPaymentRequestModal() && ['EXW', 'FCA'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && opsDeptUpper() === 'TCD'
 const isExwFclCcdPaymentNoteLocked = () =>
@@ -10544,27 +10576,13 @@ const uploadPaymentDocs = (index: number, side: PaymentDocSide) => {
   input.click()
 }
 const sendPaymentRequest = async () => {
-  const target = readyPaymentLines()
+  const target = selectedPendingPaymentLines()
   if (!target.length) {
-    const pending = pendingPaymentLines()
-    if (!pending.length) {
+    if (!pendingPaymentLines().length) {
       showToast('Add a new row or click Edit on a sent row before sending a request')
       return
     }
-    const invalid = new Set<string>()
-    pending.forEach((line) => {
-      paymentRequiredFields.forEach((key) => {
-        if (!String(line[key] || '').trim()) invalid.add(paymentInvalidKey(line, key))
-      })
-      if (line.chargeName && !optionMatch(paymentChargeOptions.value, line.chargeName)) invalid.add(paymentInvalidKey(line, 'chargeName'))
-      if (line.payAt && !optionMatch(paymentCountries.value, line.payAt)) invalid.add(paymentInvalidKey(line, 'payAt'))
-      if (line.collectAt && !optionMatch(paymentCountries.value, line.collectAt)) invalid.add(paymentInvalidKey(line, 'collectAt'))
-      if (line.curPay && !optionMatch(paymentCurrencies.value, line.curPay)) invalid.add(paymentInvalidKey(line, 'curPay'))
-      if (line.curCollect && !optionMatch(paymentCurrencies.value, line.curCollect)) invalid.add(paymentInvalidKey(line, 'curCollect'))
-    })
-    paymentInvalidFields.value = invalid
-    showToast('Complete the required fields in the new or edited row(s)')
-    nextTick(() => document.querySelector<HTMLInputElement>('.gsd-payment-modal .pcell.invalid')?.focus())
+    showToast('Select the row(s) to send')
     return
   }
   const invalid = new Set<string>()
@@ -10610,16 +10628,16 @@ const sendPaymentRequest = async () => {
       }
     : line)
   await nextTick()
-  try {
-    await persistPaymentRequest(true, true)
+  showToast(`Sending ${target.length} payment request line(s)...`)
+  void persistPaymentRequest(true, true).then(() => {
     showToast(`${target.length} payment request line(s) sent`)
-  } catch (error: any) {
+  }).catch((error: any) => {
     gsdModal.payment.lines.forEach((line) => {
       if (targetIds.has(line.id)) line.editing = true
     })
     persistPaymentRequest()
     showToast(error?.data?.message || error?.message || 'Could not send Payment Request')
-  }
+  })
 }
 const gsdFormFieldsFor = (label: string): GsdFormField[] => {
   if (label === 'PAYMENT REQUEST') return [
@@ -11065,11 +11083,8 @@ const openGsdModal = async (row: number, column: number) => {
       } else if (rawText && upperText(rawText) !== 'N/A') {
         gsdModal.clientMode = 'namecode'
         gsdModal.text = upperText(rawText)
-        // Use this request's own result for exact resolution. A watcher may
-        // start a newer request while this one is pending; relying on the
-        // shared result list made the modal intermittently stay on Search.
-        const matches = await searchGsdClients()
-        const exact = matches.find((item) => upperText(item.namecode) === upperText(rawText) || upperText(item.id) === upperText(rawText))
+        await searchGsdClients()
+        const exact = gsdClientResults.value.find((item) => upperText(item.namecode) === upperText(rawText) || upperText(item.id) === upperText(rawText))
         if (exact) {
           gsdModal.selectedClient = exact
           gsdModal.clientForm = clientFormFromRecord(exact)
@@ -13234,28 +13249,32 @@ const persistExpenseCollect = async (immediate = false, syncAfterFeedback = fals
       lines: expenseCollectLines().map((line: any) => ({ ...line, selected: false })),
     },
   })
-  scheduleSave()
-  if (immediate) {
-    const saved = await saveSheet()
-    if (!saved) throw new Error('Could not save Payment Approval feedback')
-    // Return approval results through the linked PAYMENT REQUEST cells.
-    if (syncAfterFeedback && ['DCD', 'FCD'].includes(opsDeptUpper())) {
-      const feedbackPayload = JSON.stringify({ payment: {
-        jobNo: String(gsdModal.form.job || ''),
-        refNo: String(gsdModal.form.ref || ''),
-        issueFrom: String(gsdModal.form.issueFrom || ''),
-        issueBank: String(gsdModal.form.issueBank || ''),
-        lines: expenseCollectLines()
-          .filter((line: any) => !!String(line.statusDetails || '').trim())
-          .map((line: any) => normalizePaymentLine(line)),
-      } })
-      const peers = fclStructureSyncPeers('PAYMENT REQUEST')
-      const results = await Promise.all(peers.map((dept) => mirrorExwFclWorkflowCell(dept, 'PAYMENT REQUEST', feedbackPayload)))
-      if (opsDeptUpper() === 'FCD') {
-        const ecdIndex = peers.indexOf('ECD')
-        if (ecdIndex < 0 || results[ecdIndex] !== true) throw new Error('Could not return Payment Approval feedback to ECD')
-      }
-    }
+  if (!immediate) {
+    scheduleSave()
+    return
+  }
+  const shouldSync = syncAfterFeedback && ['DCD', 'FCD'].includes(opsDeptUpper())
+  const peers = shouldSync ? fclStructureSyncPeers('PAYMENT REQUEST') : []
+  const feedbackPayload = JSON.stringify({ payment: {
+    jobNo: String(gsdModal.form.job || ''),
+    refNo: String(gsdModal.form.ref || ''),
+    issueFrom: String(gsdModal.form.issueFrom || ''),
+    issueBank: String(gsdModal.form.issueBank || ''),
+    lines: expenseCollectLines()
+      .filter((line: any) => !!String(line.statusDetails || '').trim())
+      .map((line: any) => normalizePaymentLine(line)),
+  } })
+  const sourceKey = activeKey.value
+  const sourceCountry = loadedCountryId.value
+  const sourcePayload = sheetPayload(sourceKey, false, sourceCountry)
+  const [saved, results] = await Promise.all([
+    queuePaymentSheetSave(sourceKey, sourceCountry, sourcePayload),
+    Promise.all(peers.map((dept) => mirrorExwFclWorkflowCell(dept, 'PAYMENT REQUEST', feedbackPayload))),
+  ])
+  if (!saved) throw new Error('Could not save Payment Approval feedback')
+  if (shouldSync && opsDeptUpper() === 'FCD') {
+    const ecdIndex = peers.indexOf('ECD')
+    if (ecdIndex < 0 || results[ecdIndex] !== true) throw new Error('Could not return Payment Approval feedback to ECD')
   }
 }
 const unlockExpenseCollectSelected = () => {
@@ -13288,10 +13307,10 @@ const sendExpenseCollectFeedback = async () => {
   })
   expenseFeedbackInvalidReasonIds.value = new Set()
   const targetIds = new Set(selected.map((line: any) => String(line.id)))
-  try {
-    await persistExpenseCollect(true, true)
+  showToast('Sending feedback...')
+  void persistExpenseCollect(true, true).then(() => {
     showToast('Feedback sent')
-  } catch (error: any) {
+  }).catch((error: any) => {
     expenseCollectLines().forEach((line: any) => {
       if (targetIds.has(String(line.id))) {
         line.editing = true
@@ -13300,7 +13319,7 @@ const sendExpenseCollectFeedback = async () => {
     })
     persistExpenseCollect()
     showToast(error?.data?.message || error?.message || 'Could not send feedback to ECD')
-  }
+  })
 }
 const toggleExpenseAllVisible = (event: Event) => {
   const checked = !!(event.target as HTMLInputElement).checked
@@ -22039,9 +22058,17 @@ const finishOpsCellEdit = (row: number, column: number, event: Event) => {
   const rawNext = ((event.target as HTMLElement).innerText || '').trim()
   const next = isOpsMoneyColumn(column) && rawNext ? formatMoneyValue(rawNext) : rawNext
   const current = String(rows.value[row]?.[column] ?? '')
+  if (isDoDirectHblColumn(column) && !next) {
+    ;(event.target as HTMLElement).innerText = displayCell(current, row, column)
+    showToast('HBL NO# is required for DO')
+    return
+  }
   if (next === current) return
   rows.value[row][column] = next
   mirrorFclLinkedCell(row, column)
+  if (isDoDirectHblColumn(column) && opsDeptUpper() === 'ICD') {
+    void mirrorExwFclDocumentNumber('HBL NO#', next, row)
+  }
   if (isExwFclFreeTextMblColumn(column) && ['ECD', 'DCD'].includes(opsDeptUpper())) {
     void mirrorExwFclDocumentNumber('MBL NO#', next, row)
   }
