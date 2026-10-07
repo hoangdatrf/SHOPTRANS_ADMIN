@@ -894,9 +894,9 @@
       <div class="do-info-modal" :class="{ editing: doInfoModal.editing }" role="dialog" aria-modal="true" aria-label="DO information">
         <button class="do-info-x" type="button" aria-label="Close" @click="closeDoInfoModal">×</button>
         <div class="do-info-row">
-          <label class="do-info-choice"><input v-model="doInfoModal.mblEnabled" type="checkbox" :disabled="!doInfoModal.editing || !canManageDoInfo()" @change="toggleDoInfoKind('mbl')" /><span>Upload<br>{{ awbText('MBL DO:') }}</span></label>
+          <label class="do-info-choice"><input v-model="doInfoModal.mblEnabled" type="checkbox" :disabled="!doInfoModal.editing || !canManageDoInfo()" @change="toggleDoInfoKind('mbl')" /><span>{{ awbText('MBL DO:') }}</span></label>
           <input v-model="doInfoModal.mblNo" type="text" :placeholder="awbText('MBL DO No#')" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.mblEnabled" />
-          <input v-model="doInfoModal.mblDate" type="date" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.mblEnabled" />
+          <input :value="formatCutoffDate(doInfoModal.mblDate)" type="text" readonly title="Set automatically when MBL DO is ticked" />
           <button class="gsd-pre-icon upload do-info-upload" :class="{ has: !!doInfoModal.mblFile.name }" type="button" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.mblEnabled" :title="doInfoModal.mblFile.name || awbText('Upload MBL DO')" @click="chooseDoInfoFile('mbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg></button>
           <button v-if="doInfoModal.mblFile.dataUrl" class="gsd-pre-icon eye on do-info-view" type="button" :title="awbText('View MBL DO')" @click="viewDoInfoFile('mbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
           <div class="do-info-validity">
@@ -907,9 +907,8 @@
         <div class="do-info-row">
           <label class="do-info-choice"><input v-model="doInfoModal.hblEnabled" type="checkbox" :disabled="!doInfoModal.editing || !canManageDoInfo()" @change="toggleDoInfoKind('hbl')" /><span>{{ awbText('HBL DO:') }}</span></label>
           <input v-model="doInfoModal.hblNo" type="text" :placeholder="awbText('HBL DO No#')" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.hblEnabled" />
-          <input v-model="doInfoModal.hblDate" type="date" placeholder="dd/mm/yyyy" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.hblEnabled" />
-          <button class="gsd-pre-icon upload do-info-upload" :class="{ has: !!doInfoModal.hblFile.name }" type="button" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.hblEnabled" :title="doInfoModal.hblFile.name || awbText('Upload HBL DO')" @click="chooseDoInfoFile('hbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg></button>
-          <button v-if="doInfoModal.hblFile.dataUrl" class="gsd-pre-icon eye on do-info-view" type="button" :title="awbText('View HBL DO')" @click="viewDoInfoFile('hbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          <input :value="formatCutoffDate(doInfoModal.hblDate)" type="text" readonly title="Set automatically when HBL DO is ticked" />
+          <button class="gsd-pre-icon eye on do-info-view" type="button" :disabled="!doInfoModal.hblEnabled" :title="awbText('View the Delivery Order exported from DO RELEASE')" @click="viewDoInfoDeliveryOrder"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
         <div v-if="canManageDoInfo()" class="do-info-actions">
           <button class="clear" type="button" :disabled="!doInfoHasData()" @click="clearDoInfoModal">Clear</button>
@@ -3091,9 +3090,8 @@
         <div class="do-document-scroll"><div id="delivery-order-document" class="do-document-sheet">
           <div class="do-document-head"><div><b>{{ deliveryOrderCompanyName() }}</b><span>3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam</span><span>Tel: 84.028-35470468 &nbsp; Fax: 84.028-35470469</span></div><div><strong>DELIVERY ORDER</strong><small>{{ docSubtitle() }}</small></div></div>
           <div class="do-doc-grid two"><label><span>D/O NO.</span><input v-model="deliveryOrderModal.form.doNo" :disabled="!deliveryOrderModal.editing" /></label><label><span>DATE</span><input v-model="deliveryOrderModal.form.doDate" type="date" :disabled="!deliveryOrderModal.editing" /></label></div>
-          <label v-if="!isLclSheet()"><span>TO (CY)</span><input v-model="deliveryOrderModal.form.toParty" :disabled="!deliveryOrderModal.editing" /></label>
-          <label v-else><span>{{ isAirMode() ? 'TO (AIR CARGO WAREHOUSE)' : 'TO (CFS / WAREHOUSE)' }}</span><textarea v-model="deliveryOrderModal.form.toParty" rows="2" :disabled="!deliveryOrderModal.editing"></textarea></label>
-          <div class="do-doc-grid two"><label><span class="do-doc-party-head"><b>SHIPPER</b><em><input v-model="deliveryOrderModal.form.copyShipper" type="checkbox" :disabled="!deliveryOrderModal.editing" @change="toggleDeliveryOrderPartyCopy('SHIPPER')" /> Copy from Shipper</em></span><textarea v-model="deliveryOrderModal.form.shipper" rows="2" :disabled="!deliveryOrderModal.editing" @input="deliveryOrderModal.form.copyShipper = false"></textarea></label><label><span class="do-doc-party-head"><b>CONSIGNEE</b><em><input v-model="deliveryOrderModal.form.copyConsignee" type="checkbox" :disabled="!deliveryOrderModal.editing" @change="toggleDeliveryOrderPartyCopy('CNEE')" /> Copy from Consignee</em></span><textarea v-model="deliveryOrderModal.form.consignee" rows="2" :disabled="!deliveryOrderModal.editing" @input="deliveryOrderModal.form.copyConsignee = false"></textarea></label></div>
+          <label><span>{{ !isLclSheet() ? 'TO (CY)' : isAirMode() ? 'TO (AIR CARGO WAREHOUSE)' : 'TO (CFS / WAREHOUSE)' }}</span><textarea v-model="deliveryOrderModal.form.toParty" rows="3" :disabled="!deliveryOrderModal.editing"></textarea></label>
+          <div class="do-doc-grid two"><label><span class="do-doc-party-head"><b>SHIPPER</b></span><textarea v-model="deliveryOrderModal.form.shipper" rows="2" :disabled="!deliveryOrderModal.editing"></textarea></label><label><span class="do-doc-party-head"><b>CONSIGNEE</b></span><textarea v-model="deliveryOrderModal.form.consignee" rows="2" :disabled="!deliveryOrderModal.editing"></textarea></label></div>
           <label><span class="do-doc-party-head"><b>NOTIFY PARTY</b><em><input v-model="deliveryOrderModal.form.sameAsConsignee" type="checkbox" :disabled="!deliveryOrderModal.editing" @change="toggleDeliveryOrderNotify" /> Same as Consignee</em></span><textarea v-model="deliveryOrderModal.form.notify" rows="2" :disabled="!deliveryOrderModal.editing || deliveryOrderModal.form.sameAsConsignee" @input="deliveryOrderModal.form.sameAsConsignee = false"></textarea></label>
           <div v-if="isAirMode()" class="do-doc-grid three"><label><span>FLIGHT NO.</span><input v-model="deliveryOrderModal.form.vessel" :disabled="!deliveryOrderModal.editing" /></label><label><span>AWB NO.</span><input v-model="deliveryOrderModal.form.blNo" :disabled="!deliveryOrderModal.editing" /></label><label><span>VALID UNTIL</span><input v-model="deliveryOrderModal.form.validUntil" type="date" :disabled="!deliveryOrderModal.editing" /></label></div>
           <div v-if="!isAirMode()" class="do-doc-grid three"><label><span>VESSEL/VOYAGE</span><input v-model="deliveryOrderModal.form.vessel" :disabled="!deliveryOrderModal.editing" /></label><label><span>B/L NO.</span><input v-model="deliveryOrderModal.form.blNo" :disabled="!deliveryOrderModal.editing" /></label><label><span>VALID UNTIL</span><input v-model="deliveryOrderModal.form.validUntil" type="date" :disabled="!deliveryOrderModal.editing" /></label></div>
@@ -9277,7 +9275,12 @@ const doInfoCanSave = () => {
 }
 const toggleDoInfoKind = (kind: 'mbl' | 'hbl') => {
   const enabled = kind === 'mbl' ? doInfoModal.mblEnabled : doInfoModal.hblEnabled
-  if (enabled) return
+  // Ticking stamps the day it was issued; the date is never picked by hand.
+  if (enabled) {
+    if (kind === 'mbl') doInfoModal.mblDate = doInfoModal.mblDate || todayIso()
+    else doInfoModal.hblDate = doInfoModal.hblDate || todayIso()
+    return
+  }
   if (kind === 'mbl') {
     doInfoModal.mblNo = ''
     doInfoModal.mblDate = ''
@@ -9293,7 +9296,7 @@ const clearDoInfoModal = async () => {
   if (!(await askConfirm(awbText('Clear all MBL DO and HBL DO information?'), 'Clear DO information'))) return
   rows.value[doInfoModal.row][doInfoModal.column] = ''
   mirrorFclLinkedCell(doInfoModal.row, doInfoModal.column)
-  for (const dept of fclLinkedRecipients()) void mirrorExwFclWorkflowCell(dept, 'DO VALIDITY', '', doInfoModal.row)
+  for (const dept of fclLinkedRecipients()) void mirrorExwFclWorkflowCell(dept, 'DO INFO', '', doInfoModal.row)
   Object.assign(doInfoModal, {
     editing: true,
     mblEnabled: false,
@@ -9330,6 +9333,20 @@ const chooseDoInfoFile = (kind: 'mbl' | 'hbl') => {
   }
   input.click()
 }
+// HBL DO holds no upload of its own: it shows the Delivery Order that DO RELEASE exports.
+const viewDoInfoDeliveryOrder = () => {
+  const row = doInfoModal.row
+  const column = (rows.value[0] || []).findIndex((_, index) => normalizedHeaderLabel(index) === 'DO RELEASE')
+  if (row < 1 || column < 0) {
+    showToast('No DO RELEASE record on this sheet')
+    return
+  }
+  gsdModal.row = row
+  gsdModal.column = column
+  gsdModal.form = billReleaseFormFromCell(rows.value[row]?.[column])
+  openDeliveryOrderDocument()
+  deliveryOrderModal.editing = false
+}
 const viewDoInfoFile = (kind: 'mbl' | 'hbl') => {
   const file = kind === 'mbl' ? doInfoModal.mblFile : doInfoModal.hblFile
   if (!file.dataUrl) return
@@ -9352,7 +9369,8 @@ const saveDoInfoModal = () => {
   })
   rows.value[doInfoModal.row][doInfoModal.column] = value
   mirrorFclLinkedCell(doInfoModal.row, doInfoModal.column)
-  for (const dept of fclLinkedRecipients()) void mirrorExwFclWorkflowCell(dept, 'DO VALIDITY', doInfoModal.validity, doInfoModal.row)
+  // TCD/CCD only view this form, so they receive the whole DO INFO payload.
+  for (const dept of fclLinkedRecipients()) void mirrorExwFclWorkflowCell(dept, 'DO INFO', value, doInfoModal.row)
   scheduleSave()
   doInfoModal.editing = false
 }
@@ -17892,6 +17910,19 @@ const deliveryOrderSourceSi = () => {
   return column >= 0 ? siSubmitFormFromCell(rows.value[gsdModal.row]?.[column]) : siSubmitFormFromCell(null)
 }
 const newDeliveryOrderContainer = (source: any = {}) => ({ id: String(source.id || `DO-CONT-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`), contNo: String(source.contNo || ''), contType: String(source.contType || ''), sealNo: String(source.sealNo || ''), qty: String(source.qty || ''), gw: String(source.gw || ''), mea: String(source.mea || ''), marks: String(source.marks || '') })
+// The Delivery Order starts from the Arrival Notice. Edits here stay here, but a
+// later Arrival Notice change overwrites the fields it owns.
+const deliveryOrderArrivalSource = () => {
+  const column = (rows.value[0] || []).findIndex((_: any, index: number) => ['ARRIVAL NOTICE DETAIL', 'ARRIVAL NOTICE SENDING'].includes(normalizedHeaderLabel(index)))
+  if (column < 0) return null as any
+  const previousColumn = gsdModal.column
+  gsdModal.column = column
+  try {
+    return arrivalNoticeFormFromCell(rows.value[gsdModal.row]?.[column])
+  } finally {
+    gsdModal.column = previousColumn
+  }
+}
 const openDeliveryOrderDocument = () => {
   const si = deliveryOrderSourceSi()
   const saved = gsdModal.form.deliveryOrder && typeof gsdModal.form.deliveryOrder === 'object' ? gsdModal.form.deliveryOrder : {}
@@ -17907,20 +17938,33 @@ const openDeliveryOrderDocument = () => {
   const vesselText = String(vesselData && (vesselData.name || vesselData.voyage)
     ? [vesselData.name, vesselData.voyage].filter(Boolean).join(' / ')
     : vesselSource).trim()
+  const arrival = deliveryOrderArrivalSource()
+  const fromArrival = {
+    shipper: String(arrival?.shipper || ''),
+    consignee: String(arrival?.consignee || ''),
+    notify: String(arrival?.notify || ''),
+    description: String(arrival?.description || ''),
+    placeDelivery: String(arrival?.podl || arrival?.pod || ''),
+  }
+  const arrivalStamp = JSON.stringify(fromArrival)
+  const arrivalChanged = !!arrival && String(saved.arrivalStamp || '') !== arrivalStamp
+  const fieldFromArrival = (key: keyof typeof fromArrival, fallback: string) =>
+    arrivalChanged && fromArrival[key] ? fromArrival[key] : String(saved[key] || fromArrival[key] || fallback || '')
   deliveryOrderModal.form = {
     company: String(saved.company || si.company || 'tx'),
+    arrivalStamp,
     doNo: String(saved.doNo || rowValueByHeader('HBL NO#') || rowValueByHeader('HAWB NO#') || rowValueByHeader('MBL NO#') || rowValueByHeader('MAWB NO#') || ''),
     doDate: String(saved.doDate || todayIso()),
-    toParty: String(saved.toParty || (isLclSheet() ? arrivalNoticeDetail().cfs || '' : rowValueByHeader('LINER')) || ''),
-    copyShipper: !!saved.copyShipper, copyConsignee: !!saved.copyConsignee,
-    shipper: String(saved.shipper || si.shipper || ''), consignee: String(saved.consignee || si.consignee || ''),
-    notify: String(saved.notify || si.notify || ''), notifyBackup: String(saved.notifyBackup || ''),
+    toParty: String(saved.toParty || ''),
+    copyShipper: false, copyConsignee: false,
+    shipper: fieldFromArrival('shipper', si.shipper), consignee: fieldFromArrival('consignee', si.consignee),
+    notify: fieldFromArrival('notify', si.notify), notifyBackup: String(saved.notifyBackup || ''),
     sameAsConsignee: !!saved.sameAsConsignee || /^\(?SAME AS CONSIGNEE\)?$/i.test(String(saved.notify || si.notify || '').trim()),
     shipperBackup: String(saved.shipperBackup || ''), consigneeBackup: String(saved.consigneeBackup || ''),
     vessel: vesselText, blNo: String(saved.blNo || rowValueByHeader('HBL NO#') || rowValueByHeader('HAWB NO#') || rowValueByHeader('MBL NO#') || rowValueByHeader('MAWB NO#') || ''),
     validUntil: isoDateValue(saved.validUntil || gsdModal.form.validity || ''), containers,
-    description: String(saved.description || si.description || ''), marks: String(saved.marks || si.marks || ''), unit: String(saved.unit || si.unit || 'CONT'),
-    placeDelivery: String(saved.placeDelivery || si.podl || ''), remarks: String(saved.remarks || si.specialInst || ''),
+    description: fieldFromArrival('description', si.description || 'AS PER BILL'), marks: String(saved.marks || si.marks || ''), unit: String(saved.unit || si.unit || 'CONT'),
+    placeDelivery: fieldFromArrival('placeDelivery', si.podl), remarks: String(saved.remarks || si.specialInst || ''),
   }
   deliveryOrderModal.editing = !gsdModal.form.deliveryOrder
   deliveryOrderModal.open = true
@@ -17958,7 +18002,27 @@ const deliveryOrderTotal = (field: 'qty' | 'gw' | 'mea') => {
   const total = (deliveryOrderModal.form.containers || []).reduce((sum: number, item: any) => sum + (Number.parseFloat(String(item?.[field] || '0')) || 0), 0)
   return String(Number(total.toFixed(field === 'mea' ? 3 : 2)))
 }
+const deliveryOrderRequiredFields = () => [
+  { key: 'doNo', label: 'D/O NO.' },
+  { key: 'doDate', label: 'DATE' },
+  { key: 'toParty', label: !isLclSheet() ? 'TO (CY)' : isAirMode() ? 'TO (AIR CARGO WAREHOUSE)' : 'TO (CFS / WAREHOUSE)' },
+  { key: 'shipper', label: 'SHIPPER' },
+  { key: 'consignee', label: 'CONSIGNEE' },
+  { key: 'notify', label: 'NOTIFY PARTY' },
+  { key: 'vessel', label: isAirMode() ? 'FLIGHT NO.' : 'VESSEL/VOYAGE' },
+  { key: 'blNo', label: isAirMode() ? 'AWB NO.' : 'B/L NO.' },
+  { key: 'validUntil', label: 'VALID UNTIL' },
+  // LCL/AIR list the goods in a table instead of the DESCRIPTION field.
+  ...(isLclSheet() ? [] : [{ key: 'description', label: 'DESCRIPTION' }]),
+]
 const saveDeliveryOrderDocument = async () => {
+  const missing = deliveryOrderRequiredFields()
+    .filter((field) => !String((deliveryOrderModal.form as any)[field.key] || '').trim())
+    .map((field) => field.label)
+  if (missing.length) {
+    showToast(`Fill all fields: ${missing.join(', ')}`)
+    return
+  }
   const documentData = JSON.parse(JSON.stringify(deliveryOrderModal.form))
   gsdModal.form.deliveryOrder = documentData
   const current = parseJsonCell(rows.value[gsdModal.row]?.[gsdModal.column], {} as any)
