@@ -1484,10 +1484,10 @@
             <div v-else class="gsd-route-add">
               <div class="gsd-route-grid">
                 <label><span>POL</span><input v-model.trim="gsdModal.form.pol" type="text" @input="uppercaseRouteAdd('pol')" /></label>
-                <label><span>COUNTRY/AREA</span><select v-model="gsdModal.form.polC" @change="uppercaseRouteAdd('polC')"><option value="">Select country/area</option><option v-for="country in routeCountryOptions" :key="`route-pol-${country}`" :value="country">{{ country }}</option></select></label>
+                <label><span>COUNTRY/AREA</span><input v-model.trim="gsdModal.form.polC" type="text" list="gsd-route-pol-countries" autocomplete="off" placeholder="Type to filter" @input="uppercaseRouteAdd('polC')" @change="uppercaseRouteAdd('polC')" /><datalist id="gsd-route-pol-countries"><option v-for="country in optionsWithoutCurrent(routeCountryOptions, gsdModal.form.polC)" :key="`route-pol-${country}`" :value="country" /></datalist></label>
                 <label><span>CODE</span><input v-model.trim="gsdModal.form.polCode" type="text" @input="uppercaseRouteAdd('polCode')" /></label>
                 <label><span>POD</span><input v-model.trim="gsdModal.form.pod" type="text" @input="uppercaseRouteAdd('pod')" /></label>
-                <label><span>COUNTRY/AREA</span><select v-model="gsdModal.form.podC" @change="uppercaseRouteAdd('podC')"><option value="">Select country/area</option><option v-for="country in routeCountryOptions" :key="`route-pod-${country}`" :value="country">{{ country }}</option></select></label>
+                <label><span>COUNTRY/AREA</span><input v-model.trim="gsdModal.form.podC" type="text" list="gsd-route-pod-countries" autocomplete="off" placeholder="Type to filter" @input="uppercaseRouteAdd('podC')" @change="uppercaseRouteAdd('podC')" /><datalist id="gsd-route-pod-countries"><option v-for="country in optionsWithoutCurrent(routeCountryOptions, gsdModal.form.podC)" :key="`route-pod-${country}`" :value="country" /></datalist></label>
                 <label><span>CODE</span><input v-model.trim="gsdModal.form.podCode" type="text" @input="uppercaseRouteAdd('podCode')" /></label>
                 <label class="gsd-route-check"><span>MNF SUBMIT</span><input v-model="gsdModal.form.mnfSubmit" class="gsd-pre-check" type="checkbox" @change="uppercaseRouteAdd('mnfSubmit')" /></label>
               </div>
@@ -2345,8 +2345,8 @@
             <div class="gsd-pc-free">
               <label><span>DEM</span><input v-model.trim="gsdModal.form.dem" type="number" min="0" step="1" :disabled="!gsdModal.editing || isFclDduCcdPreAlertConfirmationModal() || gsdModal.form.linkedFromOrigin" placeholder="0" /></label>
               <label><span>DET</span><input v-model.trim="gsdModal.form.det" type="number" min="0" step="1" :disabled="!gsdModal.editing || isFclDduCcdPreAlertConfirmationModal() || gsdModal.form.linkedFromOrigin" placeholder="0" /></label>
+              <div class="gsd-pc-freesave"><button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing || gsdModal.form.linkedFromOrigin || !preAlertFreetimeHasInput()" @click="savePreAlertConfirmation">Save</button></div>
             </div>
-            <div class="gsd-pc-savebar"><button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing || !preAlertFreetimeHasInput()" @click="savePreAlertConfirmation">Save</button></div>
             <div class="gsd-pc-hist">
               <table class="gsd-record-table">
                 <thead><tr><th>DEM</th><th>DET</th><th>STATUS</th></tr></thead>
@@ -11306,6 +11306,19 @@ const openGsdModal = async (row: number, column: number) => {
             ...currentHistory.filter((item: any) => String(item.id) !== linkedId).map((item: any) => ({ ...item, status: 'Expired' })),
           ]
         }
+        const originFreetime = await loadLinkedOriginFreetime(row)
+        if (originFreetime) {
+          gsdModal.form.dem = String(originFreetime.dem ?? '')
+          gsdModal.form.det = String(originFreetime.det ?? '')
+          gsdModal.form.linkedFromOrigin = true
+          gsdModal.form.history = [{
+            id: `origin-freetime-${originFreetime.id}`,
+            dem: String(originFreetime.dem ?? 0),
+            det: String(originFreetime.det ?? 0),
+            status: 'Applied',
+            ts: originFreetime.ts,
+          }]
+        }
         gsdModal.editing = (isAirDoIcdPreAlertConfirmationModal() || isAirDupCompactPreAlertConfirmationModal() || isFclDduCcdPreAlertConfirmationModal()) ? true : !gsdModal.form.locked
       } else if (label === 'EXPENSE/COLLECT LIST' || label === 'EXPENSE/COLLECTION LIST' || (label === 'PAYMENT REQUEST' && opsDeptUpper() === 'FCD')) {
         gsdModal.formFields = []
@@ -12591,6 +12604,47 @@ const isArrivalNoticeSendingModal = () => isGsdFormModalLabel('ARRIVAL NOTICE SE
 const isArrivalNoticeModal = () => isArrivalNoticeDetailModal() || isArrivalNoticeSendingModal()
 const arrivalNoticeExporting = ref(false)
 const arrivalNoticeIsCrossLinked = () => !!settings.value?.crossServiceInboundRows?.[String(gsdModal.row)]
+const loadLinkedOriginFreetime = async (row: number) => {
+  const current = opsParts.value
+  if (!current || row < 1) return null
+  if (!settings.value?.crossServiceInboundRows?.[String(row)]) return null
+  const currentHeader = (rows.value[0] || []).map((item: any) => String(item ?? '').trim())
+  const currentRow = rows.value[row] || []
+  const originColumn = currentHeader.findIndex((label) => upperText(label) === `${upperText(current.type)}+`)
+  const originType = upperText(originColumn >= 0 ? currentRow[originColumn] : '')
+  if (!['EXW', 'FCA', 'FCF'].includes(originType)) return null
+  const shipmentLink = opsShipmentLink(currentHeader, currentRow, row, settings.value)
+  for (const sourceDept of ['ECD', 'DCD'] as const) {
+    const sourceKey = opsLeafKey(opsBaseForType(originType as any), current.mode, originType as any, sourceDept)
+    try {
+      const sheet = await props.request(`/workbook/sheets/${encodeURIComponent(sheetStorageKey(sourceKey))}`)
+      const sourceHeader = opsHeaderFor(opsBaseForType(originType as any), current.mode, sourceDept, originType as any)
+      const extracted = extractWorkbookRows(Array.isArray(sheet?.rows) ? sheet.rows.map((item: any[]) => [...item]) : [], sheet)
+      const sourceRows = alignRowsToHeader(extracted.rows, sourceHeader).rows
+      const sourceSettings = extracted.settings || sheet?.settings || {}
+      let sourceRowIndex = shipmentLink
+        ? sourceRows.findIndex((item, index) => index > 0 && opsShipmentLink(sourceHeader, item, index, sourceSettings) === shipmentLink)
+        : -1
+      if (sourceRowIndex < 1) {
+        sourceRowIndex = sourceRows.findIndex((item, index) => index > 0 && ['REF#', 'HBL NO#', 'MBL NO#'].some((label) => {
+          const currentColumn = currentHeader.indexOf(label)
+          const sourceColumn = sourceHeader.indexOf(label)
+          const currentValue = currentColumn >= 0 ? String(currentRow[currentColumn] || '').trim() : ''
+          return !!currentValue && sourceColumn >= 0 && currentValue === String(item[sourceColumn] || '').trim()
+        }))
+      }
+      const freetimeColumn = sourceHeader.findIndex((label) => upperText(label) === 'FREETIME CONFIRMATION')
+      if (sourceRowIndex < 1 || freetimeColumn < 0) continue
+      const latest = freetimeFormFromCell(sourceRows[sourceRowIndex]?.[freetimeColumn]).records
+        .slice()
+        .sort((left: FreetimeRecord, right: FreetimeRecord) => Number(right.ts || 0) - Number(left.ts || 0))[0]
+      if (latest) return latest
+    } catch (error: any) {
+      if (requestStatus(error) !== 404) console.warn(`Could not load linked FREETIME CONFIRMATION from ${sourceDept}`, error)
+    }
+  }
+  return null
+}
 const loadLinkedExportMasterSiContainers = async (row: number) => {
   const current = opsParts.value
   if (!current || row < 1 || !arrivalNoticeIsCrossLinked()) return [] as any[]
@@ -14902,7 +14956,7 @@ const gsdModalShellStyle = () => {
   if (isPreAlertConfirmationModal()) {
     if (isAirDoIcdPreAlertConfirmationModal()) return shell('720px')
     if (isAirDupCompactPreAlertConfirmationModal()) return shell('880px')
-    return shell('980px')
+    return shell('620px')
   }
   if (isPreAlertModal()) return shell('486px')
   if (isClearanceDocsModal()) return shell('700px')
@@ -22432,8 +22486,8 @@ onBeforeUnmount(() => {
 .gsd-client-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 18px}.gsd-client-search{display:grid;grid-template-columns:124px minmax(0,1fr);gap:10px;align-items:center}.gsd-client-search select,.gsd-client-search input{width:100%;min-width:0;height:36px;border:1px solid #d3dacf;border-radius:7px;background:#fff;font:inherit;font-size:12px;color:#3a463f;outline:none}.gsd-client-search select{padding:0 28px 0 10px;font-weight:700}.gsd-client-search input{padding:0 10px}.gsd-client-search select:focus,.gsd-client-search input:focus{border-color:#00c566;box-shadow:0 0 0 2px rgba(0,197,102,.12)}.gsd-client-search input::placeholder{color:#9aa69c}.gsd-client-results{margin-top:12px}.gsd-client-row{display:grid;grid-template-columns:140px 1fr 1fr;align-items:center;width:100%;min-height:38px;border:1px solid #e4e9e2;border-radius:7px;background:#fff;padding:0 12px;text-align:left;cursor:pointer}.gsd-client-row:hover{border-color:#00c566;background:#f7fffa}.gsd-client-row .nc{color:#008f4c;font-size:12px;font-weight:800}.gsd-client-row .id{color:#6f7d72;font-family:Geist Mono,monospace;font-size:10px}.gsd-client-row .co{color:#3a463f;font-size:11px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gsd-client-empty{display:grid;place-items:center;min-height:38px;margin-top:12px;border:1px solid #e4e9e2;border-radius:7px;background:#fff;color:#7a847d;font-size:11.5px}.gsd-client-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:12px}.gsd-client-actions .wb-modal-btn{min-height:32px;border-radius:7px;padding:6px 14px;font-size:12px}.gsd-client-search select:disabled,.gsd-client-search input:disabled{background:#fafbf9;color:#3a463f}
 .gsd-new-client-title{font-size:14px;font-weight:800;color:#0e1512;margin:0 0 10px}.gsd-new-client-form{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}.gsd-new-client-form label{display:grid;gap:5px}.gsd-new-client-form label.full{grid-column:1 / -1}.gsd-new-client-form span{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#7a847d}.gsd-new-client-form input,.gsd-new-client-form select{height:36px;border:1px solid #d3dacf;border-radius:8px;background:#fff;padding:0 10px;font:inherit;font-size:13px;color:#3a463f;outline:none}.gsd-new-client-form input:focus,.gsd-new-client-form select:focus{border-color:#00c566;box-shadow:0 0 0 2px rgba(0,197,102,.12)}.gsd-new-client-form .auto-id{border-style:dashed;background:#fafbf9;color:#9aa69c;font-style:italic}.gsd-new-client-form .with-plus{grid-template-columns:1fr 34px}.gsd-new-client-form .with-plus span{grid-column:1 / -1}.gsd-new-client-form .with-plus input{min-width:0}.gsd-new-client-form .with-plus button{width:34px;height:34px;align-self:end;border:0;border-radius:8px;background:#008f4c;color:#fff;font-size:18px;font-weight:800;cursor:pointer}.gsd-new-client-form .with-plus button:disabled{opacity:.55;cursor:not-allowed}
 .gsd-form-modal{width:min(620px,94vw);border-radius:12px;overflow:hidden}.gsd-wide-form-modal{width:min(1040px,94vw);max-height:calc(100vh - 56px);display:flex;flex-direction:column}.gsd-wide-form-modal .gsd-form-grid{grid-template-columns:repeat(4,minmax(0,1fr));overflow:auto;padding-right:2px}.gsd-wide-form-modal .gsd-modal-actions{flex:0 0 auto}.gsd-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;margin-top:14px}.gsd-form-grid .gsd-form-item{display:grid;gap:5px;min-width:0}.gsd-form-grid .gsd-form-item.full{grid-column:1 / -1}.gsd-form-grid span{font-size:11px;font-weight:800;text-transform:none;letter-spacing:0;color:#7a847d}.gsd-form-grid input,.gsd-form-grid select,.gsd-form-grid textarea{width:100%;border:1px solid #d3dacf;border-radius:8px;background:#fff;padding:0 10px;font:inherit;font-size:13px;color:#3a463f;outline:none}.gsd-form-grid input,.gsd-form-grid select{height:36px}.gsd-form-grid textarea{min-height:84px;padding:9px 10px;resize:vertical}.gsd-form-grid input:focus,.gsd-form-grid select:focus,.gsd-form-grid textarea:focus{border-color:#00c566;box-shadow:0 0 0 2px rgba(0,197,102,.12)}.gsd-form-check{display:flex!important;grid-template-columns:none!important;align-items:center;gap:9px;height:36px;border:1px solid #d3dacf;border-radius:8px;padding:0 10px;background:#fff}.gsd-form-check input{width:15px;height:15px;accent-color:#008f4c}.gsd-form-check em{font-style:normal;font-size:12px;font-weight:700;color:#3a463f}
-.gsd-pc-title{text-align:center;font-size:13px;font-weight:800;color:#0e1512;margin:6px 0 22px}.gsd-pc-links{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 18px;margin:-12px auto 20px;padding:9px 14px;border:1px solid #cfe6d8;border-radius:8px;background:#f1faf5;color:#33413b;font-size:11px}.gsd-pc-links span{white-space:nowrap}.gsd-pc-linked-label{border-radius:4px;background:#008f4c;color:#fff;padding:3px 7px;font-weight:800}.gsd-pc-links b{color:#0c5231}.gsd-pc-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin:0 auto 14px;max-width:620px}.gsd-pc-col{display:grid;gap:14px}.gsd-pc-row{display:grid;grid-template-columns:126px 22px minmax(0,1fr);align-items:center;gap:10px}.gsd-pc-row span{font-size:12px;font-weight:800;color:#33413b;text-align:right}.gsd-pc-row input[type=checkbox]{width:15px;height:15px;accent-color:#008f4c}.gsd-pc-row input[type=text]{height:36px;border:1px solid #d3dacf;border-radius:8px;background:#f4f8f7;padding:0 10px;font:inherit;font-size:12.5px;color:#3a463f}.gsd-pc-sep{height:1px;background:#dfe5df;margin:14px 0 14px}.gsd-pc-free-title{text-align:center;font-size:12px;font-weight:800;color:#33413b;margin-bottom:10px}.gsd-pc-free{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:360px;margin:0 auto}.gsd-pc-free label{display:grid;gap:5px}.gsd-pc-free span{font-size:11px;font-weight:800;color:#33413b}.gsd-pc-free input{height:36px;border:1px solid #d3dacf;border-radius:8px;padding:0 10px;font:inherit}.gsd-pc-savebar{display:flex;justify-content:flex-end;margin:10px auto;max-width:360px}.gsd-pc-hist{max-width:560px;margin:0 auto}.gsd-pc-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
-.gsd-pc-modal{width:min(980px,96vw);max-width:96vw;padding:48px 38px 24px;border-radius:12px;overflow:hidden}.gsd-pc-modal .gsd-modal-x{right:13px;top:12px}.gsd-pc-modal.gsd-wide-form-modal{max-height:calc(100vh - 60px)}.gsd-pc-modal .gsd-pc-title{margin:0 0 26px}.gsd-pc-modal .gsd-pc-grid{max-width:none;gap:36px;margin-bottom:18px}.gsd-pc-modal .gsd-pc-row{grid-template-columns:130px 20px minmax(120px,1fr);gap:12px}.gsd-pc-modal .gsd-pc-row input[type=text]{min-width:0;width:100%}.gsd-pc-modal .gsd-pc-sep{margin:18px 0 16px}.gsd-pc-modal .gsd-pc-free{max-width:none;gap:28px}.gsd-pc-modal .gsd-pc-savebar{max-width:none;margin:12px 0 18px}.gsd-pc-modal .gsd-pc-hist{max-width:none}.gsd-pc-modal .gsd-record-table tr{cursor:pointer}.gsd-pc-modal .gsd-record-table tr.selected td{background:#e8f8ef}.gsd-pc-modal .gsd-pc-actions{margin-top:16px}
+.gsd-pc-title{text-align:center;font-size:13px;font-weight:800;color:#0e1512;margin:6px 0 22px}.gsd-pc-links{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 18px;margin:-12px auto 20px;padding:9px 14px;border:1px solid #cfe6d8;border-radius:8px;background:#f1faf5;color:#33413b;font-size:11px}.gsd-pc-links span{white-space:nowrap}.gsd-pc-linked-label{border-radius:4px;background:#008f4c;color:#fff;padding:3px 7px;font-weight:800}.gsd-pc-links b{color:#0c5231}.gsd-pc-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:0 auto 14px;max-width:560px}.gsd-pc-col{display:grid;gap:14px}.gsd-pc-row{display:grid;grid-template-columns:112px 20px minmax(0,1fr);align-items:center;gap:8px}.gsd-pc-row span{font-size:12px;font-weight:800;color:#33413b;text-align:right}.gsd-pc-row input[type=checkbox]{width:15px;height:15px;accent-color:#008f4c}.gsd-pc-row input[type=text]{height:36px;border:1px solid #d3dacf;border-radius:8px;background:#f4f8f7;padding:0 10px;font:inherit;font-size:12.5px;color:#3a463f}.gsd-pc-sep{height:1px;background:#dfe5df;margin:14px 0 14px}.gsd-pc-free-title{text-align:center;font-size:12px;font-weight:800;color:#33413b;margin-bottom:10px}.gsd-pc-free{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:360px;margin:0 auto}.gsd-pc-free label{display:grid;gap:5px}.gsd-pc-free span{font-size:11px;font-weight:800;color:#33413b}.gsd-pc-free input{height:36px;border:1px solid #d3dacf;border-radius:8px;padding:0 10px;font:inherit}.gsd-pc-savebar{display:flex;justify-content:flex-end;margin:10px auto;max-width:360px}.gsd-pc-hist{max-width:500px;margin:0 auto}.gsd-pc-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.gsd-pc-modal{width:min(720px,96vw);max-width:96vw;padding:42px 28px 22px;border-radius:12px;overflow:hidden}.gsd-pc-modal .gsd-modal-x{right:13px;top:12px}.gsd-pc-modal.gsd-wide-form-modal{max-height:calc(100vh - 60px)}.gsd-pc-modal .gsd-pc-title{margin:0 0 26px}.gsd-pc-modal .gsd-pc-grid{max-width:none;gap:36px;margin-bottom:18px}.gsd-pc-modal .gsd-pc-row{grid-template-columns:130px 20px minmax(120px,1fr);gap:12px}.gsd-pc-modal .gsd-pc-row input[type=text]{min-width:0;width:100%}.gsd-pc-modal .gsd-pc-sep{margin:18px 0 16px}.gsd-pc-modal .gsd-pc-free{max-width:none;gap:28px}.gsd-pc-modal .gsd-pc-savebar{max-width:none;margin:12px 0 18px}.gsd-pc-modal .gsd-pc-hist{max-width:none}.gsd-pc-modal .gsd-record-table tr{cursor:pointer}.gsd-pc-modal .gsd-record-table tr.selected td{background:#e8f8ef}.gsd-pc-modal .gsd-pc-actions{margin-top:16px}
 .gsd-pc-modal .gsd-pc-doc-grid{gap:46px;margin-bottom:16px}.gsd-pc-modal .gsd-pc-doc-grid .gsd-pc-row{grid-template-columns:200px 20px 150px}.gsd-pc-modal .gsd-pc-doc-grid .gsd-pc-row span{font-size:11px;color:#8a958f}
 .gsd-air-do-icd-pc-modal{width:720px;max-width:96vw;padding:28px 34px 22px}
 .gsd-air-do-icd-pc-modal .gsd-pc-title{margin:0 0 28px;font-size:13px;font-weight:800}
@@ -22458,6 +22512,28 @@ onBeforeUnmount(() => {
 .gsd-air-dup-icd-pc-modal .gsd-pc-doc-grid .gsd-pc-row{grid-template-columns:206px 18px 150px;gap:9px}
 .gsd-air-dup-icd-pc-modal .gsd-pc-doc-grid .gsd-pc-row span{text-align:center;font-size:13px;font-weight:700;color:#33413b;white-space:nowrap}
 .gsd-air-dup-icd-pc-modal .gsd-pc-row:has(input[type=checkbox]:disabled){opacity:.5}
+/* Pre-Alert Confirmation: one shared row template so the checkboxes of both
+   sections sit on the same vertical line, and fixed-width inputs so the
+   dialog is only as wide as its content. */
+.gsd-modal.gsd-pc-modal{width:min(620px,96vw);max-width:96vw;padding:34px 34px 18px}
+.gsd-pc-modal .gsd-pc-title{margin:0 0 18px}
+.gsd-pc-modal .gsd-pc-sep{margin:14px 0 12px}
+.gsd-pc-modal .gsd-pc-free-title{margin:0 0 12px}
+.gsd-pc-modal .gsd-pc-actions{margin-top:12px}
+.gsd-pc-modal .gsd-pc-freesave{display:flex;align-items:flex-end}
+.gsd-pc-modal .gsd-pc-freesave .wb-modal-btn{height:34px;min-height:34px;padding:0 16px}
+.gsd-pc-modal .gsd-pc-grid,.gsd-pc-modal .gsd-pc-doc-grid{grid-template-columns:auto auto;justify-content:center;gap:10px 34px;max-width:none}
+.gsd-pc-modal .gsd-pc-row,.gsd-pc-modal .gsd-pc-doc-grid .gsd-pc-row{grid-template-columns:130px 18px 118px;gap:9px;align-items:center}
+.gsd-pc-modal .gsd-pc-row span,.gsd-pc-modal .gsd-pc-doc-grid .gsd-pc-row span{text-align:right;font-size:11.5px;line-height:1.25;white-space:normal}
+.gsd-pc-modal .gsd-pc-row input[type=text]{width:118px;min-width:0;padding:7px 4px;font-size:11.5px}
+.gsd-pc-modal .gsd-pc-free{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end;gap:12px;max-width:none;width:100%;margin:0 0 14px}
+.gsd-pc-modal .gsd-pc-free label{gap:4px}
+.gsd-pc-modal .gsd-pc-free input{width:100%}
+.gsd-pc-modal .gsd-pc-freesave .wb-modal-btn{min-width:96px}
+.gsd-pc-modal .gsd-pc-free input{height:34px}
+.gsd-pc-modal .gsd-pc-savebar{display:none}
+.gsd-pc-modal .gsd-pc-hist{max-width:none;margin:0}
+.gsd-pc-modal .gsd-pc-hist table{width:100%}
 .gsd-air-dup-icd-pc-modal .gsd-pc-ccd-close{display:flex;justify-content:flex-end;margin-top:8px}
 .gsd-air-dup-icd-pc-modal .gsd-pc-ccd-close .wb-modal-btn{height:32px;min-height:32px;padding:7px 16px;border-radius:7px}
 .gsd-payment-modal{width:min(1220px,96vw);height:min(560px,82vh);padding:0;border-radius:10px;overflow:hidden;display:flex;flex-direction:column}.gsd-payment-modal .gsd-modal-x{right:12px;top:11px;width:24px;height:24px;font-size:13px;z-index:2}.gsd-pay-head{position:relative;min-height:52px;padding:12px 48px 9px 14px;border-bottom:1px solid #e0e6df;display:flex;align-items:center;justify-content:center}.gsd-pay-meta{position:absolute;left:14px;top:12px;display:flex;align-items:center;gap:26px}.gsd-pay-meta label{display:flex;align-items:center;gap:6px;color:#3d4a43;font-size:11px;font-weight:800;white-space:nowrap}.gsd-pay-meta input{width:108px;height:24px;border:0;border-bottom:1px solid #d3dacf;background:transparent;padding:0 4px;font:inherit;font-size:12px;outline:none}.gsd-pay-meta input:focus{border-bottom-color:#00a860}.gsd-pay-title{font-size:14px;font-weight:900;color:#0e1512;text-align:center;letter-spacing:.01em}.gsd-pay-tools{height:44px;padding:7px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e0e6df}.gsd-pay-left-tools{display:flex;align-items:center;gap:8px}.gsd-pay-tools button{height:28px;border:0;border-radius:6px;padding:0 13px;color:#fff;font-size:11px;font-weight:800;cursor:pointer}.gsd-pay-tools button:disabled{opacity:.45;cursor:not-allowed}.gsd-pay-tools .pay-add{background:#008f4c}.gsd-pay-tools .pay-remove{background:#c0392b}.gsd-pay-tools .pay-edit{background:#d97706}.gsd-pay-tools .pay-cancel{background:#94a3b8}.gsd-pay-tools .pay-send{background:#1f7ae0}.gsd-pay-scroll{flex:1 1 auto;overflow:auto;background:#fff}.gsd-pay-table{width:2050px;border-collapse:collapse;table-layout:fixed;font-size:11px}.gsd-pay-table th,.gsd-pay-table td{border:1px solid #dfe6df;padding:5px 6px;text-align:center;vertical-align:middle}.gsd-pay-table th{height:30px;background:#eef3ee;color:#3f4c45;font-size:10.5px;font-weight:800}.gsd-pay-table .grp-pay{background:#fff2ee}.gsd-pay-table .grp-col{background:#eef8f1}.gsd-pay-table .grp-dr{background:#f7fbf8}.gsd-pay-table .pchg{background:#fff}.gsd-pay-table tr.selrow td{background:#e9f8ef}.gsd-pay-table .pcell{width:100%;height:27px;border:1px solid #dce4dc;border-radius:4px;background:#fff;padding:0 7px;font:inherit;font-size:11px;text-align:center;outline:none}.gsd-pay-table .pcell:focus{border-color:#00c566;box-shadow:0 0 0 2px rgba(0,197,102,.12)}.gsd-pay-table .pcell:disabled{background:#f8faf8;color:#647067}.gsd-pay-table .note{text-align:left}.gsd-pay-table .pay-upload{height:25px;min-width:70px;border:0;border-radius:4px;background:#1f7ae0;color:#fff;font-size:10px;font-weight:800;cursor:pointer}.gsd-pay-table .pay-upload:disabled{background:#aeb9c3;cursor:not-allowed}.gsd-pay-table .pay-hplus{display:inline-grid;place-items:center;width:16px;height:16px;margin-left:4px;border:0;border-radius:4px;background:#00a860;color:#fff;font-size:11px;font-weight:900;cursor:pointer}.gsd-pay-table .pay-check{width:34px}.gsd-pay-table .pay-check input,.gsd-pay-table .pay-ready input{width:14px;height:14px;accent-color:#00a860}.gsd-pay-table .pay-gap{background:#fff!important;border-color:#fff!important}.gsd-pay-table .pay-empty{height:70px;color:#7d887f;font-weight:800;font-style:italic}.gsd-pay-table .pay-sent,.gsd-pay-table .pay-approved{color:#3f4c45;font-size:10.5px;white-space:nowrap}
