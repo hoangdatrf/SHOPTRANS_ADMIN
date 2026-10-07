@@ -924,7 +924,7 @@
         <textarea :value="shipmentNotesDraft" autofocus placeholder="Enter notes for this shipment..." @input="handleShipmentNotesInput"></textarea>
       </div>
     </div>
-    <div v-if="gsdModal.open" class="wb-modal-overlay gsd-modal-overlay" @mousedown.self="closeGsdModal">
+    <div v-if="gsdModal.open" class="wb-modal-overlay gsd-modal-overlay" :class="{ 'gsd-child-document-open': billDocModal.open && !billDocBackgroundRendering }" @mousedown.self="closeGsdModal">
       <div
         class="wb-modal gsd-modal"
         :style="gsdModalShellStyle()"
@@ -967,6 +967,7 @@
           'gsd-air-pickup-status-modal': isAirSheet() && isLclPickupStatusModal() && !isDestinationIcdPickupStatusModal(),
           'gsd-bill-modal': isBillApprovalModal() || isBillReleaseModal() || isDoReleaseModal(),
           'gsd-bill-detail-modal': isBillApprovalModal(),
+          'gsd-bill-mbl-only-modal': isBillMblOnlyDetailModal(),
           'gsd-ecd-bill-detail-readonly': isReadonlyExwFclEcdBillDetail(),
           'gsd-do-release-modal': isDoReleaseModal(),
           'gsd-si-modal': isSiSubmitModal(),
@@ -2164,17 +2165,17 @@
                 <div><div class="si-lh-name">{{ siCompanyName() }}</div><div class="si-lh-addr">3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam</div><div class="si-lh-contact">Tel: 84.028-35470468&nbsp;&nbsp;&nbsp;Fax: 84.028-35470469</div></div>
                 <div class="si-title-block"><div class="si-doc-title">SHIPPING INSTRUCTION</div><div class="si-doc-sub">{{ docSubtitle() }}</div></div>
               </div>
-              <div v-if="isLclSheet()" class="si-g2"><label class="si-f"><span>SI No.</span><input v-model.trim="gsdModal.form.siNo" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Date</span><input v-model="gsdModal.form.siIssueDate" type="date" :disabled="!gsdModal.editing" /></label></div>
-              <div class="si-g2"><div class="si-f"><div class="si-party-head"><span>Shipper</span><label><input v-model="gsdModal.form.copyShipper" type="checkbox" :disabled="!gsdModal.editing" @change="toggleSiPartyCopy('SHIPPER')" /> Copy from Shipper</label></div><textarea v-model="gsdModal.form.shipper" rows="3" :disabled="!gsdModal.editing" @input="gsdModal.form.copyShipper = false"></textarea></div><div class="si-f"><div class="si-party-head"><span>Consignee</span><label><input v-model="gsdModal.form.copyConsignee" type="checkbox" :disabled="!gsdModal.editing" @change="toggleSiPartyCopy('CNEE')" /> Copy from Consignee</label></div><textarea v-model="gsdModal.form.consignee" rows="3" :disabled="!gsdModal.editing" @input="gsdModal.form.copyConsignee = false"></textarea></div></div>
-              <label class="si-f"><span>Notify Party</span><textarea v-model="gsdModal.form.notify" rows="2" :disabled="!gsdModal.editing"></textarea></label>
+              <div v-if="isLclSheet()" class="si-g2"><label class="si-f"><span>SI No.</span><input v-model.trim="gsdModal.form.siNo" type="text" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('siNo') }" /></label><label class="si-f"><span>Date</span><input v-model="gsdModal.form.siIssueDate" type="date" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('siIssueDate') }" /></label></div>
+              <div class="si-g2"><div class="si-f"><div class="si-party-head"><span>Shipper</span><label><input v-model="gsdModal.form.copyShipper" type="checkbox" :disabled="!gsdModal.editing" @change="toggleSiPartyCopy('SHIPPER')" /> Copy from Shipper</label></div><textarea v-model="gsdModal.form.shipper" rows="3" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('shipper') }" @input="gsdModal.form.copyShipper = false"></textarea></div><div class="si-f"><div class="si-party-head"><span>Consignee</span><label><input v-model="gsdModal.form.copyConsignee" type="checkbox" :disabled="!gsdModal.editing" @change="toggleSiPartyCopy('CNEE')" /> Copy from Consignee</label></div><textarea v-model="gsdModal.form.consignee" rows="3" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('consignee') }" @input="gsdModal.form.copyConsignee = false"></textarea></div></div>
+              <label class="si-f"><span>Notify Party</span><textarea v-model="gsdModal.form.notify" rows="2" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('notify') }"></textarea></label>
               <div v-if="isAirMode()" class="si-g3"><label class="si-f"><span>Booking No.</span><input v-model="gsdModal.form.bookingNo" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" /></label><label class="si-f"><span>Flight No.</span><input v-model="gsdModal.form.vessel" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" /></label><label class="si-f"><span>Flight Date</span><input v-model="gsdModal.form.depDate" type="date" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" /></label></div>
-              <div v-if="!isAirMode()" class="si-g3"><label class="si-f"><span>Booking No.</span><input v-model="gsdModal.form.bookingNo" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" /></label><label class="si-f"><span>Vessel/Voyage</span><input v-model="gsdModal.form.vessel" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" /></label><label class="si-f"><span>Departure Date</span><input v-model="gsdModal.form.depDate" type="date" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" /></label></div>
-              <div v-if="!isAirMode()" class="si-g2"><label class="si-f"><span>Place of Receipt</span><input v-model="gsdModal.form.por" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Port of Loading</span><input v-model="gsdModal.form.pol" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" @input="uppercaseSiPort('pol')" /></label></div>
-              <div v-if="!isAirMode()" class="si-g2"><label class="si-f"><span>Port of Discharge</span><input v-model="gsdModal.form.pod" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" @input="uppercaseSiPort('pod')" /></label><label class="si-f"><span>Place of Delivery</span><input v-model="gsdModal.form.podl" type="text" :disabled="!gsdModal.editing" /></label></div>
+              <div v-if="!isAirMode()" class="si-g3"><label class="si-f"><span>Booking No.</span><input v-model="gsdModal.form.bookingNo" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" :class="{ 'si-invalid': siInvalidFields.has('bookingNo') }" /></label><label class="si-f"><span>Vessel/Voyage</span><input v-model="gsdModal.form.vessel" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" :class="{ 'si-invalid': siInvalidFields.has('vessel') }" /></label><label class="si-f"><span>Departure Date</span><input v-model="gsdModal.form.depDate" type="date" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" :class="{ 'si-invalid': siInvalidFields.has('depDate') }" /></label></div>
+              <div v-if="!isAirMode()" class="si-g2"><label class="si-f"><span>Place of Receipt</span><input v-model="gsdModal.form.por" type="text" :disabled="!gsdModal.editing" /></label><label class="si-f"><span>Port of Loading</span><input v-model="gsdModal.form.pol" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" :class="{ 'si-invalid': siInvalidFields.has('pol') }" @input="uppercaseSiPort('pol')" /></label></div>
+              <div v-if="!isAirMode()" class="si-g2"><label class="si-f"><span>Port of Discharge</span><input v-model="gsdModal.form.pod" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" :class="{ 'si-invalid': siInvalidFields.has('pod') }" @input="uppercaseSiPort('pod')" /></label><label class="si-f"><span>Place of Delivery</span><input v-model="gsdModal.form.podl" type="text" :disabled="!gsdModal.editing" /></label></div>
               <div v-if="isAirMode()" class="si-g2"><label class="si-f"><span>Airport of Loading</span><input v-model="gsdModal.form.pol" type="text" :disabled="!gsdModal.editing" @input="uppercaseSiPort('pol')" /></label><label class="si-f"><span>Airport of Discharge</span><input v-model="gsdModal.form.pod" type="text" :disabled="!gsdModal.editing" @input="uppercaseSiPort('pod')" /></label></div>
               <label v-if="isAirMode()" class="si-f"><span>To (Air Cargo Warehouse)</span><textarea v-model="gsdModal.form.toWarehouse" rows="2" :disabled="!gsdModal.editing"></textarea></label>
               <div class="si-section-title">Freight Term</div>
-              <div class="si-radio"><label><input v-model="gsdModal.form.freight" type="radio" value="Prepaid" :disabled="!gsdModal.editing" /> Freight Prepaid</label><label><input v-model="gsdModal.form.freight" type="radio" value="Collect" :disabled="!gsdModal.editing" /> Freight Collect</label></div>
+              <div class="si-radio" :class="{ 'si-invalid-group': siInvalidFields.has('freight') }"><label><input v-model="gsdModal.form.freight" type="radio" value="Prepaid" :disabled="!gsdModal.editing" /> Freight Prepaid</label><label><input v-model="gsdModal.form.freight" type="radio" value="Collect" :disabled="!gsdModal.editing" /> Freight Collect</label></div>
               <div v-if="!isLclSheet()" class="si-section-title">Container &amp; Seal Information</div>
               <div v-if="!isLclSheet()" class="si-table-wrap gsd-five-row-scroll"><table class="si-table"><thead><tr><th>#</th><th>ContNo#</th><th>ContType</th><th>SealNo#</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th></tr></thead><tbody><tr v-for="(container, index) in siSubmitContainers()" :key="container.id"><td class="si-order">{{ index + 1 }}</td><td><input v-model="container.contNo" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.contType" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.sealNo" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.qty" type="number" min="0" step="1" :disabled="!gsdModal.editing" /></td><td><input v-model="container.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="container.gw" type="number" min="0" step="0.01" :disabled="!gsdModal.editing" /></td><td><input v-model="container.mea" type="number" min="0" step="0.001" :disabled="!gsdModal.editing" /></td></tr></tbody></table></div>
               <button v-if="!isFclExwDcdSiModal() && !isLclSheet()" class="wb-modal-btn si-add-container" type="button" :disabled="!gsdModal.editing" @click="addSiSubmitContainer">+ Add Container</button>
@@ -2182,15 +2183,16 @@
               <div v-if="isLclSheet()" class="si-table-wrap gsd-five-row-scroll"><table class="si-table"><thead><tr><th>#</th><th>Marks &amp; Numbers</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th><th v-if="isAirMode()">C.W (KG)</th></tr></thead><tbody><tr v-for="(container, index) in siSubmitContainers()" :key="container.id"><td class="si-order">{{ index + 1 }}</td><td><input v-model="container.marks" :disabled="!gsdModal.editing" /></td><td><input v-model="container.qty" type="number" min="0" step="1" :disabled="!gsdModal.editing" /></td><td><input v-model="container.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="container.gw" type="number" min="0" step="0.01" :disabled="!gsdModal.editing" /></td><td><input v-model="container.mea" type="number" min="0" step="0.001" :disabled="!gsdModal.editing" /></td><td v-if="isAirMode()"><input :value="siGoodsChargeable(container)" readonly /></td></tr></tbody></table></div>
               <button v-if="isLclSheet()" class="wb-modal-btn si-add-container" type="button" :disabled="!gsdModal.editing" @click="addSiSubmitContainer">+ Add Row</button>
               <div v-if="!isLclSheet()" class="si-section-title">Cargo Description</div>
-              <label v-if="!isLclSheet()" class="si-f si-description"><span>Description</span><textarea v-model="gsdModal.form.description" rows="2" :disabled="!gsdModal.editing"></textarea></label>
+              <label v-if="!isLclSheet()" class="si-f si-description"><span>Description</span><textarea v-model="gsdModal.form.description" rows="2" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('description') }"></textarea></label>
               <div v-if="!isLclSheet()" class="si-g3"><label class="si-f"><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="si-marks" rows="1" :disabled="!gsdModal.editing"></textarea><span class="si-attachment"><button class="si-attach-button" type="button" :disabled="!gsdModal.editing" @click="siMarksFileInput?.click()"><svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5 5 0 0 1-7-7l9-9a3.3 3.3 0 0 1 4.7 4.7l-9 9a1.7 1.7 0 0 1-2.4-2.4l8.1-8.1"/></svg>AttFile</button><span v-if="gsdModal.form.marksFile" class="si-file-name">{{ gsdModal.form.marksFile.name }}</span><button v-if="gsdModal.form.marksFile" class="si-file-icon" type="button" title="View" @click="viewSiMarksFile"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button><button v-if="gsdModal.form.marksFile" class="si-file-remove" type="button" title="Remove" :disabled="!gsdModal.editing" @click="removeSiMarksFile">&times;</button><em v-if="!gsdModal.editing && !gsdModal.form.marksFile">No file attached</em></span></label><label class="si-f"><span>QTY</span><input :value="siSubmitTotal('qty')" type="text" readonly /></label><label class="si-f"><span>Unit</span><input v-model="gsdModal.form.unit" type="text" :disabled="!gsdModal.editing" /></label></div>
               <div v-if="!isLclSheet()" class="si-g2"><label class="si-f"><span>GW (KG)</span><input :value="siSubmitTotal('gw')" type="text" readonly /></label><label class="si-f"><span>MEA. (CBM)</span><input :value="siSubmitTotal('mea')" type="text" readonly /></label></div>
-              <label class="si-f"><span>Special Instructions</span><textarea v-model="gsdModal.form.specialInst" rows="3" :disabled="!gsdModal.editing"></textarea></label>
+              <label class="si-f"><span>Special Instructions</span><textarea v-model="gsdModal.form.specialInst" rows="3" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('specialInst') }"></textarea></label>
               <div class="si-sign-row">
                 <div v-if="isLclSheet()" class="si-signature si-signature-left"><div>SHIPPER'S CONFIRMATION</div><b>&nbsp;</b><span></span><strong>&nbsp;</strong></div>
                 <div class="si-signature"><div>{{ isLclSheet() ? 'RECEIVED BY' : 'ARRANGED BY' }}</div><b>{{ siCompanyName() }}</b><span></span><strong>NGUYEN HUU PHUOC</strong><em v-if="gsdModal.form.signedAt" class="si-signed-stamp">✓ Signed · {{ gsdModal.form.signedAt }}</em></div>
               </div>
               <input ref="siMarksFileInput" type="file" hidden @change="handleSiMarksFile" />
+              <datalist id="si-unit-reference-options"><option v-for="option in siUnitOptions()" :key="option" :value="option" /></datalist>
             </div></div></fieldset>
           </template>
           <template v-else-if="isBillApprovalModal() || isBillReleaseModal() || isDoReleaseModal()">
@@ -2201,7 +2203,7 @@
                   <label><input v-model="gsdModal.form.allCollected" type="checkbox" :disabled="!billPaymentDetailEditable()" @change="syncBillReleasePayment('all')" /> All charges collected</label>
                   <span class="gsd-release-later">
                     <label><input v-model="gsdModal.form.collectLater" type="checkbox" :disabled="!billPaymentDetailEditable()" @change="syncBillReleasePayment('later')" /> Collect later, collection deadline</label>
-                    <input v-model="gsdModal.form.deadline" type="date" :disabled="!billPaymentDetailEditable() || !gsdModal.form.collectLater" @change="saveEcdPaymentDetail" />
+                    <input v-model="gsdModal.form.deadline" type="date" :disabled="!billPaymentDetailEditable() || !gsdModal.form.collectLater" />
                   </span>
                 </div>
                 <div class="gsd-release-divider"></div>
@@ -2237,17 +2239,17 @@
                 <span v-if="gsdModal.form.releasedAt" class="bd-sent"><span class="bd-check">✓</span> {{ isAwbReleaseModal() ? 'AWB' : 'B/L' }} released &middot; {{ gsdModal.form.releasedAt }}</span>
                 <button class="wb-modal-btn slate" type="button" :disabled="!gsdModal.editing" @click="clearBillRelease">Clear</button>
                 <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="enableBillApprovalEdit">Edit</button>
-                <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing || !billReleasePaymentReady()" @click="saveBillApproval">Save</button>
-                <button v-if="!isDoReleaseModal()" class="wb-modal-btn release-send" type="button" :disabled="gsdModal.editing || !billReleasePaymentReady() || !gsdModal.form.locked || gsdModal.form.released" @click="releaseBillToShipper">Release B/L to Shipper</button>
+                <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing || !billReleasePaymentReady() || !billReleaseDirty()" @click="saveBillApproval">Save</button>
+                <button v-if="!isDoReleaseModal()" class="wb-modal-btn release-send" type="button" :disabled="billReleaseDirty() || !billReleasePaymentReady() || !gsdModal.form.locked || gsdModal.form.released" @click="releaseBillToShipper">Release B/L to Shipper</button>
               </div>
             </template>
             <template v-else-if="isBillApprovalModal()">
               <div class="bd-body">
                 <div class="bd-sec-title">{{ isAwbDetailModal() ? 'MAWB DETAILS' : awbText('MBL DETAILS') }}</div>
                 <div class="bd-rows">
-                  <div class="bd-row"><span class="bd-lab">SI SUBMITTED:</span><input v-model="gsdModal.form.siSubmitted" type="checkbox" class="bd-cb" :disabled="!isDcdBillDetailModal() || !gsdModal.editing" @change="syncBillDetailTimestamp('siSubmitted')" /><input v-model.trim="gsdModal.form.siSubmittedAt" type="text" class="bd-date bd-mirror" readonly placeholder="dd/mm/yyyy hh:mm" /><button v-if="!isReadonlyExwFclEcdBillDetail()" class="bd-up" :class="{ has: !!gsdModal.form.siSubmittedFile?.url }" type="button" :disabled="!isDcdBillDetailModal() || !gsdModal.editing || !gsdModal.form.siSubmitted" title="Upload SI Submitted file" @click="openBillDetailUpload('siSubmittedFile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M8 9l4-4 4 4"/><path d="M5 18.5h14"/></svg></button><button class="bd-eye" :class="{ on: !!gsdModal.form.siSubmittedFile?.url }" type="button" :disabled="!gsdModal.form.siSubmittedFile?.url" title="View SI Submitted file" @click="viewBillDetailFile(gsdModal.form.siSubmittedFile)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+                  <div class="bd-row"><span class="bd-lab">SI SUBMITTED:</span><input v-model="gsdModal.form.siSubmitted" type="checkbox" class="bd-cb" disabled /><input v-model.trim="gsdModal.form.siSubmittedAt" type="text" class="bd-date bd-mirror" readonly placeholder="dd/mm/yyyy hh:mm" /><button v-if="!isReadonlyExwFclEcdBillDetail() && gsdModal.form.siSubmittedSource !== 'master-si'" class="bd-up" :class="{ has: !!gsdModal.form.siSubmittedFile?.url }" type="button" :disabled="!gsdModal.editing || !gsdModal.form.siSubmitted" title="Upload SI Submitted file" @click="openBillDetailUpload('siSubmittedFile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M8 9l4-4 4 4"/><path d="M5 18.5h14"/></svg></button><button class="bd-eye" :class="{ on: !!gsdModal.form.siSubmittedFile?.url }" type="button" :disabled="!gsdModal.form.siSubmittedFile?.url" title="View SI Submitted file" @click="viewBillDetailFile(gsdModal.form.siSubmittedFile)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                   <div v-if="billDetailShowsMnf()" class="bd-row"><span class="bd-lab">MNF SUBMIT:</span><input v-model="gsdModal.form.mnfSubmitted" type="checkbox" class="bd-cb" :disabled="!gsdModal.editing" @change="syncBillDetailTimestamp('mnfSubmitted')" /><input v-model.trim="gsdModal.form.mnfSubmittedAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /></div>
-                  <div class="bd-row"><span class="bd-lab">{{ isAwbDetailModal() ? 'MAWB APPROVED:' : awbText('MBL APPROVED:') }}</span><input v-model="gsdModal.form.mbl" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing" @change="syncBillTimestamp('mbl')" /><input v-model.trim="gsdModal.form.mblAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><button v-if="!isReadonlyExwFclEcdBillDetail()" class="bd-up" :class="{ has: !!gsdModal.form.mblFile?.url }" type="button" :disabled="!gsdModal.editing" title="Upload" @click="openBillDetailUpload('mblFile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M8 9l4-4 4 4"/><path d="M5 18.5h14"/></svg></button><button class="bd-eye" :class="{ on: !!gsdModal.form.mblFile?.url }" type="button" :disabled="!gsdModal.form.mblFile?.url" title="View" @click="viewBillDetailFile(gsdModal.form.mblFile)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+                  <div class="bd-row"><span class="bd-lab" :class="{ 'bd-required-label': isBillMblOnlyDetailModal() }">{{ isAwbDetailModal() ? 'MAWB APPROVED:' : awbText('MBL APPROVED:') }}</span><input v-model="gsdModal.form.mbl" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing" @change="syncBillTimestamp('mbl')" /><input v-model.trim="gsdModal.form.mblAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><button v-if="!isReadonlyExwFclEcdBillDetail()" class="bd-up" :class="{ has: !!gsdModal.form.mblFile?.url, required: isBillMblOnlyDetailModal() && !gsdModal.form.mblFile?.url }" type="button" :disabled="!gsdModal.editing || !gsdModal.form.mbl" :title="gsdModal.form.mblFile?.name ? `Uploaded: ${gsdModal.form.mblFile.name}` : isBillMblOnlyDetailModal() ? 'Supporting document is required' : 'Upload MBL Approved file'" @click="openBillDetailUpload('mblFile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M8 9l4-4 4 4"/><path d="M5 18.5h14"/></svg></button><button class="bd-eye" :class="{ on: !!gsdModal.form.mblFile?.url }" type="button" :disabled="!gsdModal.form.mblFile?.url" title="View" @click="viewBillDetailFile(gsdModal.form.mblFile)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                 </div>
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-div"></div>
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-sec-title">{{ isAwbDetailModal() ? 'HAWB DETAILS' : awbText('HBL DETAILS') }}</div>
@@ -2283,8 +2285,8 @@
             <div v-if="!isEcdBillReleaseModal() && !isDoReleaseModal()" class="bd-foot" :class="{ 'bd-foot-readonly': isReadonlyExwFclEcdBillDetail() }">
               <span v-if="gsdModal.form.sentAt" class="bd-sent"><span class="bd-check">✓</span> B/L sent · {{ gsdModal.form.sentAt }}</span>
               <button v-if="!isReadonlyExwFclEcdBillDetail()" class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="enableBillApprovalEdit">Edit</button>
-              <button v-if="!isReadonlyExwFclEcdBillDetail()" class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing" @click="saveBillApproval">Save</button>
-              <button v-if="isBillApprovalModal() && ['ECD', 'DCD'].includes(opsDeptUpper())" class="wb-modal-btn bill-send" type="button" :disabled="gsdModal.editing || !gsdModal.form.locked || !gsdModal.form.mbl || !gsdModal.form.siReceived || !billBlReady() || !!gsdModal.form.sentAt" @click="openBillSendModal">Send B/L to Shipper</button>
+              <button v-if="!isReadonlyExwFclEcdBillDetail()" class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing || !billDetailDirty()" @click="saveBillApproval">Save</button>
+              <button v-if="isBillApprovalModal() && !isBillMblOnlyDetailModal() && ['ECD', 'DCD'].includes(opsDeptUpper())" class="wb-modal-btn bill-send" type="button" :disabled="gsdModal.editing || !gsdModal.form.locked || !gsdModal.form.mbl || !gsdModal.form.siReceived || !billBlReady() || !!gsdModal.form.sentAt" @click="openBillSendModal">Send B/L to Shipper</button>
               <button v-if="!isBillApprovalModal()" class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
             </div>
           </template>
@@ -3312,7 +3314,7 @@
       </div>
     </div>
     <input ref="preDocsFileInput" type="file" hidden @change="handlePreDocsFile" />
-    <div v-if="billDocModal.open" class="wb-modal-overlay bill-doc-overlay">
+    <div v-if="billDocModal.open" class="wb-modal-overlay bill-doc-overlay" :class="{ 'bill-doc-background-render': billDocBackgroundRendering }">
       <div class="bill-doc-modal blmou" :class="{ 'bill-doc-readonly': billDocModal.readonly }" role="dialog" aria-modal="true">
         <div class="bl-toolbar">
           <div class="bl-tleft">
@@ -4706,6 +4708,7 @@ let hblNumberDraft = ''
 const dealtFileInput = ref<HTMLInputElement | null>(null)
 const pickupBookingFileInput = ref<HTMLInputElement | null>(null)
 const pickupInvalidFields = ref(new Set<string>())
+const siInvalidFields = ref(new Set<string>())
 const preAlertFileInput = ref<HTMLInputElement | null>(null)
 const clearanceDocFileInput = ref<HTMLInputElement | null>(null)
 const clearanceDocUploadTarget = ref<string>('')
@@ -4753,6 +4756,7 @@ let clientSearchRun = 0
 const preAlertFileTarget = ref('')
 const billExportMenuOpen = ref(false)
 const billDocModal = reactive<any>({ open: false, readonly: false, isRelease: false, exportingPdf: false, billType: 'ORIGINAL B/L', kind: 'B/L', company: 'TX LOGISTICS VIETNAM CO.,LTD', copySi: false, locked: false, attachments: 0, savedAt: '', signedAt: '', docNo: '', refNo: '', shipper: '', consignee: '', notify: '', notifyBackup: '', sameAsConsignee: false, preCarriage: '', receipt: '', vessel: '', pol: '', pod: '', delivery: '', marks: '', packages: '', goodsDescription: '', grossWeight: '', measurement: '', containers: [], freightCharges: '', freightPayableAt: '', originalCount: '', placeOfIssue: '', dateOfIssue: '', shippedOnBoardDate: '' })
+const billDocBackgroundRendering = ref(false)
 const deliveryOrderModal = reactive<any>({ open: false, editing: false, exporting: false, form: {} })
 const billDocRouteFields = [
   { key: 'preCarriage', label: 'PRE-CARRIAGE BY' }, { key: 'receipt', label: 'PLACE OF RECEIPT' },
@@ -8900,7 +8904,7 @@ const isGsdModalWorkflowLocked = () => {
   const label = normalizedHeaderLabel(gsdModal.column)
   // Communication/support cells stay usable after dispatch. They do not alter
   // the shipment data snapshot that was confirmed by SENT ECD.
-  if (['EXTRA SERVICE', 'NOTICE', 'NOTES', 'REMINDER', 'TRUCK & CONT/SEAL INFO', 'TRUCKS & CONT/SEAL DETAILS', 'TRUCKING INFO', 'TRUCKING DETAIL'].includes(label)) return false
+  if (['EXTRA SERVICE', 'NOTICE', 'NOTES', 'REMINDER', 'TRUCK & CONT/SEAL INFO', 'TRUCKS & CONT/SEAL DETAILS', 'TRUCKING INFO', 'TRUCKING DETAIL', 'BILL DETAIL', 'AWB DETAIL', 'BILL RELEASE', 'AWB RELEASE'].includes(label)) return false
   if (isSentEcdRowLocked(gsdModal.row)) return true
   if (!isBcSentRowLocked(gsdModal.row)) return false
   // BC SENT only freezes the booking fields that were validated and sent.
@@ -11151,6 +11155,7 @@ const openGsdModal = async (row: number, column: number) => {
         void loadTruckCompanyOptions()
       } else if (['SI SUBMIT', 'MASTER SI SUBMIT'].includes(label)) {
         gsdModal.formFields = []
+        siInvalidFields.value = new Set()
         gsdModal.form = siSubmitFormFromCell(rawText)
         if (isLinkedFclDcdSiModal()) {
           await Promise.all([loadRouteReferenceData(), loadEntityOptions('country')])
@@ -11159,6 +11164,7 @@ const openGsdModal = async (row: number, column: number) => {
         // synchronized after pressing Edit, which left the initial form blank
         // even though the shipment row already contained all linked values.
         syncSiSubmitFromSources()
+        bindSiUnitInputs()
         gsdModal.editing = !gsdModal.form.locked
         restoreOpsScroll()
       } else if (label === 'BILL DETAIL' || label === 'AWB DETAIL') {
@@ -11178,14 +11184,21 @@ const openGsdModal = async (row: number, column: number) => {
           const siColumn = (rows.value[0] || []).findIndex((_, index) => ['SI SUBMIT', 'MASTER SI SUBMIT'].includes(normalizedHeaderLabel(index)))
           if (siColumn >= 0) {
             const siForm = siSubmitFormFromCell(rows.value[row]?.[siColumn])
-            gsdModal.form.siSubmitted = !!siForm.locked
-            gsdModal.form.siSubmittedAt = siForm.submittedAt || ''
-            gsdModal.form.siSubmittedFile = siForm.marksFile || null
+            // BILL DETAIL owns the saved SI SUBMITTED state and attachment.
+            // Linked SI data is only a default; it must never overwrite a
+            // value/file that was already saved directly in this modal.
+            if (siForm.locked) {
+              gsdModal.form.siSubmitted = true
+              gsdModal.form.siSubmittedAt = siForm.submittedAt || gsdModal.form.siSubmittedAt
+              gsdModal.form.siSubmittedSource = siForm.notSubmittedByShoptrans ? 'external' : 'master-si'
+              if (!siForm.notSubmittedByShoptrans) gsdModal.form.siSubmittedFile = siForm.pdfFile || null
+            }
           }
         }
-        // An empty BILL DETAIL opened from ADD+ starts directly in edit mode.
-        // Only an actually saved/filled record requires the Edit button.
-        gsdModal.editing = !billDetailHasData(rawText) || !gsdModal.form.locked
+        // BILL DETAIL is immediately editable whenever it is opened. Users
+        // should not need an extra Edit click before updating its workflow.
+        gsdModal.editing = true
+        billDetailInitialSnapshot.value = billDetailSnapshot()
       } else if (label === 'BILL RELEASE' || label === 'AWB RELEASE' || (label === 'DO RELEASE' && isDoIcdSheet())) {
         gsdModal.formFields = []
         let releaseValue: any = rawText
@@ -11218,7 +11231,8 @@ const openGsdModal = async (row: number, column: number) => {
             gsdModal.form.hblAt = String(preAlert.hblReleasedAt || '')
           }
         }
-        gsdModal.editing = !gsdModal.form.locked
+        gsdModal.editing = true
+        billReleaseInitialSnapshot.value = billReleaseSnapshot()
         restoreOpsScroll()
       } else if (label === 'ARRIVAL NOTICE SENDING' || label === 'ARRIVAL NOTICE DETAIL') {
         gsdModal.formFields = []
@@ -11331,7 +11345,7 @@ const openGsdModal = async (row: number, column: number) => {
       // The Excel structure files are authoritative for inbound/locked
       // columns. Keep every corresponding modal in read-only mode even when
       // the stored payload has not been marked as locked yet.
-      if (isLockedOpsCell(row, column) || isGsdModalWorkflowLocked()) gsdModal.editing = false
+      if ((!isBillApprovalModal() && !isBillReleaseModal() && isLockedOpsCell(row, column)) || isGsdModalWorkflowLocked()) gsdModal.editing = false
       if (label === 'DO INFO' && ['DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type)) && ['TCD', 'CCD'].includes(opsDeptUpper())) gsdModal.editing = false
     } else {
       gsdModal.text = rawText
@@ -12500,6 +12514,7 @@ const hblRequiredForRow = (row: number) => {
   return gsdModal.form?.hblRequired !== false
 }
 const currentRowRequiresHbl = () => isAwbDetailModal() || isAwbReleaseModal() || hblRequiredForRow(gsdModal.row)
+const isBillMblOnlyDetailModal = () => isBillApprovalModal() && !currentRowRequiresHbl()
 // BILL DETAIL is shared between DCD and ECD. SI SUBMITTED remains owned by
 // DCD, while ECD can maintain the approval/receipt/export workflow.
 const isReadonlyExwFclEcdBillDetail = () => false
@@ -12509,7 +12524,7 @@ const isDoReleaseModal = () => isDoIcdSheet() && isGsdFormModalLabel('DO RELEASE
 // ECD and DCD share the complete BILL RELEASE workflow from the mockup.
 const isEcdBillReleaseModal = () => isBillReleaseModal() && ['ECD', 'DCD'].includes(upperText(opsParts.value?.dept || ''))
 const isEcdPaymentOnlyBillRelease = () => isBillReleaseModal() && opsDeptUpper() === 'ECD'
-const billPaymentDetailEditable = () => isDoReleaseModal() ? gsdModal.editing : isEcdPaymentOnlyBillRelease()
+const billPaymentDetailEditable = () => (isBillReleaseModal() || isDoReleaseModal()) && gsdModal.editing
 const billReleasePaymentReady = () => {
   const selectedExactlyOne = !!gsdModal.form.allCollected !== !!gsdModal.form.collectLater
   return selectedExactlyOne && (!gsdModal.form.collectLater || !!String(gsdModal.form.deadline || '').trim())
@@ -16236,6 +16251,7 @@ const billApprovalFormFromCell = (value: any) => {
     siSubmitted: !!form.siSubmitted,
     siSubmittedAt: String(form.siSubmittedAt || ''),
     siSubmittedFile: form.siSubmittedFile || null,
+    siSubmittedSource: String(form.siSubmittedSource || ''),
     mnfSubmitted: !!form.mnfSubmitted,
     mnfSubmittedAt: String(form.mnfSubmittedAt || ''),
     mbl: !!form.mbl,
@@ -16311,6 +16327,7 @@ const siSubmitFormFromCell = (value: any) => {
     notSubmittedByShoptrans: !!saved.notSubmittedByShoptrans,
     submittedAt: String(saved.submittedAt || ''),
     signedAt: String(saved.signedAt || ''),
+    pdfFile: saved.pdfFile && typeof saved.pdfFile === 'object' ? saved.pdfFile : null,
     locked: !!(saved.locked ?? saved._saved),
   }
 }
@@ -16335,6 +16352,22 @@ const toggleSiNotSubmitted = () => {
   }
 }
 const siSubmitContainers = () => Array.isArray(gsdModal.form.containers) ? gsdModal.form.containers : []
+const siUnitOptions = () => {
+  const volume = volumeFormFromCell(rawSiSourceValue('VOLUME'))
+  const values = ['PALLET', 'PALLETS', 'CARTON', 'CARTONS', 'PACKAGE', 'PACKAGES', 'BAG', 'BAGS', 'BOX', 'BOXES', 'CTNS', 'PLTS', 'PCES']
+  for (const option of volume.typeOptions || []) values.push(String(option || ''))
+  for (const record of volume.records || []) values.push(String(record?.unit || record?.type || ''))
+  return [...new Set(values.map((value) => upperText(value).trim()).filter(Boolean))]
+}
+const bindSiUnitInputs = () => nextTick(() => {
+  const modal = document.querySelector<HTMLElement>('.gsd-si-modal')
+  if (!modal) return
+  const unitColumn = isLclSheet() ? 4 : 6
+  modal.querySelectorAll<HTMLInputElement>(`.si-table tbody td:nth-child(${unitColumn}) input`).forEach((input) => input.setAttribute('list', 'si-unit-reference-options'))
+  modal.querySelectorAll<HTMLElement>('.si-f').forEach((field) => {
+    if (upperText(field.querySelector('span')?.textContent || '') === 'UNIT') field.querySelector<HTMLInputElement>('input')?.setAttribute('list', 'si-unit-reference-options')
+  })
+})
 const rawSiSourceValue = (label: string) => {
   const target = upperText(label).trim()
   const column = (rows.value[0] || []).findIndex((_: any, index: number) => normalizedHeaderLabel(index) === target)
@@ -16494,6 +16527,7 @@ const addSiSubmitContainer = () => {
   if (!gsdModal.editing) return
   if (!Array.isArray(gsdModal.form.containers)) gsdModal.form.containers = []
   gsdModal.form.containers.push(newSiSubmitContainer())
+  bindSiUnitInputs()
 }
 const removeSiSubmitContainer = (index: number) => {
   if (!gsdModal.editing) return
@@ -16525,22 +16559,69 @@ const enableSiSubmitEdit = () => {
   gsdModal.editing = true
   syncSiSubmitFromSources()
 }
-const saveSiSubmit = () => {
-  gsdModal.form.locked = true
+const validateSiSubmit = () => {
   if (gsdModal.form.notSubmittedByShoptrans) {
-    gsdModal.form.submittedAt = ''
-    gsdModal.form.signedAt = ''
-  } else {
-    if (!gsdModal.form.submittedAt) gsdModal.form.submittedAt = billTimestamp()
-    gsdModal.form.signedAt = billTimestamp()
+    siInvalidFields.value = new Set()
+    nextTick(() => document.querySelectorAll('.gsd-si-modal .si-table-wrap').forEach((element) => element.classList.remove('si-invalid-group')))
+    return true
   }
+  const required = ['shipper', 'consignee', 'notify', 'bookingNo', 'vessel', 'depDate', 'pol', 'pod']
+  if (isLclSheet()) required.push('siNo', 'siIssueDate')
+  else required.push('description', 'marks', 'unit')
+  const invalid = new Set(required.filter((key) => !String(gsdModal.form[key] || '').trim()))
+  if (!String(gsdModal.form.freight || '').trim()) invalid.add('freight')
+  const cargoRows = siSubmitContainers().filter((item: any) => Object.entries(item || {}).some(([key, value]) => key !== 'id' && String(value || '').trim()))
+  // ContNo, ContType and SealNo are linked read-only values. Only the fields
+  // users can actually complete in this modal participate in validation.
+  const requiredCargoKeys = isLclSheet() ? ['marks', 'qty', 'unit', 'gw', 'mea'] : ['qty', 'unit', 'gw', 'mea']
+  if (!cargoRows.length || cargoRows.some((item: any) => requiredCargoKeys.some((key) => !String(item?.[key] || '').trim()))) invalid.add('containers')
+  siInvalidFields.value = invalid
+  nextTick(() => {
+    document.querySelectorAll('.gsd-si-modal .si-table-wrap').forEach((element) => element.classList.toggle('si-invalid-group', invalid.has('containers')))
+    const fieldKeys: Record<string, string> = { 'DESCRIPTION': 'description', 'MARKS & NUMBERS': 'marks', 'UNIT': 'unit', 'SPECIAL INSTRUCTIONS': 'specialInst' }
+    document.querySelectorAll<HTMLElement>('.gsd-si-modal .si-f').forEach((field) => {
+      const key = fieldKeys[upperText(field.querySelector('span')?.textContent || '')]
+      if (key) field.querySelector<HTMLElement>('input,textarea')?.classList.toggle('si-invalid', invalid.has(key))
+    })
+  })
+  if (!invalid.size) return true
+  showToast('Please complete all required SI fields highlighted in red')
+  nextTick(() => document.querySelector<HTMLElement>('.gsd-si-modal .si-invalid')?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+  return false
+}
+const syncMasterSiToBillDetail = (pdfFile: any = gsdModal.form.pdfFile || null) => {
+  const billColumn = (rows.value[0] || []).findIndex((_: any, index: number) => ['BILL DETAIL', 'BILL APPROVAL', 'AWB DETAIL'].includes(normalizedHeaderLabel(index)))
+  if (billColumn < 0) return
+  const raw = parseJsonCell(rows.value[gsdModal.row]?.[billColumn], {} as any)
+  const container = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}
+  const form = container && typeof container.form === 'object' ? container.form : {}
+  const external = !!gsdModal.form.notSubmittedByShoptrans
+  rows.value[gsdModal.row][billColumn] = JSON.stringify({
+    ...container,
+    form: {
+      ...form,
+      siSubmitted: true,
+      siSubmittedAt: gsdModal.form.submittedAt,
+      siSubmittedSource: external ? 'external' : 'master-si',
+      siSubmittedFile: external ? (form.siSubmittedFile || null) : pdfFile,
+    },
+  })
+}
+const saveSiSubmit = async () => {
+  if (!validateSiSubmit()) return
+  gsdModal.form.locked = true
+  const submittedAt = billTimestamp()
+  gsdModal.form.submittedAt = submittedAt
+  gsdModal.form.signedAt = gsdModal.form.notSubmittedByShoptrans ? '' : submittedAt
   rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ form: { ...gsdModal.form }, _saved: true })
+  syncMasterSiToBillDetail()
   gsdModal.editing = false
   scheduleSave()
-  void saveSheet()
+  await saveSheet()
+  if (!gsdModal.form.notSubmittedByShoptrans) await exportSiSubmitPdf(false)
 }
 const siExportingPdf = ref(false)
-const exportSiSubmitPdf = async () => {
+const exportSiSubmitPdf = async (download: boolean | Event = true) => {
   if (!gsdModal.form.locked || siExportingPdf.value) return
   const sheet = document.querySelector<HTMLElement>('.gsd-si-modal .si-sheet')
   if (!sheet) return
@@ -16571,6 +16652,9 @@ const exportSiSubmitPdf = async () => {
         clonedSheet.style.width = `${sheet.scrollWidth}px`
         clonedSheet.style.maxWidth = 'none'
         clonedSheet.style.margin = '0'
+        clonedSheet.style.opacity = '1'
+        clonedSheet.style.filter = 'none'
+        clonedSheet.style.background = '#ffffff'
         const sourceControls = Array.from(sheet.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input,textarea,select'))
         const clonedControls = Array.from(clonedSheet.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input,textarea,select'))
         clonedControls.forEach((control, index) => {
@@ -16596,9 +16680,9 @@ const exportSiSubmitPdf = async () => {
           display.style.minHeight = `${fieldHeight}px`
           display.style.border = style.border
           display.style.borderRadius = style.borderRadius
-          display.style.background = style.backgroundColor
+          display.style.background = '#ffffff'
           display.style.padding = style.padding
-          display.style.color = style.color
+          display.style.color = '#1f2a26'
           display.style.font = style.font
           display.style.lineHeight = style.lineHeight === 'normal' ? '1.35' : style.lineHeight
           display.style.textAlign = style.textAlign
@@ -16648,6 +16732,17 @@ const exportSiSubmitPdf = async () => {
           .gsd-si-modal .si-pdf-field-text {
             display: inline-block;
             transform: translateY(-7px);
+          }
+          .gsd-si-modal .si-sheet,
+          .gsd-si-modal .si-sheet * {
+            opacity: 1 !important;
+            filter: none !important;
+          }
+          .gsd-si-modal .si-pdf-field-value,
+          .gsd-si-modal .si-table th,
+          .gsd-si-modal .si-table td {
+            background: #fff !important;
+            color: #1f2a26 !important;
           }
           .gsd-si-modal .si-f > span:first-child,
           .gsd-si-modal .si-party-head > span,
@@ -16739,7 +16834,14 @@ const exportSiSubmitPdf = async () => {
       pageIndex += 1
     }
     const reference = String(gsdModal.form.bookingNo || rowValueByHeader('JOB NO#') || 'DOCUMENT').trim().replace(/[^a-zA-Z0-9_-]+/g, '_')
-    pdf.save(`SI_${reference}.pdf`)
+    const filename = `SI_${reference}.pdf`
+    const blob = pdf.output('blob')
+    const uploaded = await uploadAdminAttachment(new File([blob], filename, { type: 'application/pdf' }))
+    gsdModal.form.pdfFile = uploaded
+    rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ form: { ...gsdModal.form }, _saved: true })
+    syncMasterSiToBillDetail(uploaded)
+    await saveSheet()
+    if (download !== false) pdf.save(filename)
   } catch (error) {
     console.error('Unable to export SI PDF', error)
     showToast('Unable to export SI PDF. Please try again.')
@@ -16809,7 +16911,10 @@ const cellHasData = (value: any): boolean => {
 const billDetailHasData = (value: any) => {
   const parsed = parseJsonCell(value, null as any)
   const form = parsed && typeof parsed === 'object' && 'form' in parsed ? (parsed as any).form || {} : {}
-  return !!(form.siSubmitted || form.siReceived || form.mnfSubmitted || form.mbl || form.hbl || form.mblFile || form.hblFile || form.exportBl || form.exportFcr || form.clientBlFile || form.sentAt)
+  // SI SUBMITTED is mirrored from Master SI and does not mean that Bill
+  // Detail itself has been saved. A first-time form must therefore open in
+  // edit mode even when SI data is already available.
+  return !!(form.saved || form.siReceived || form.mnfSubmitted || form.mbl || form.hbl || form.mblFile || form.hblFile || form.exportBl || form.exportFcr || form.clientBlFile || form.sentAt)
 }
 const billDetailApprovalForRow = (row: number) => {
   const headers = rows.value[0] || []
@@ -16821,18 +16926,53 @@ const billDetailApprovalForRow = (row: number) => {
 }
 const billReleaseFileInput = ref<HTMLInputElement | null>(null)
 const billDetailFileInput = ref<HTMLInputElement | null>(null)
+const billReleaseInitialSnapshot = ref('')
+const billReleaseSnapshot = () => {
+  const { locked: _locked, ...form } = gsdModal.form || {}
+  return JSON.stringify(form)
+}
+const billReleaseDirty = () => billReleaseInitialSnapshot.value !== billReleaseSnapshot()
+const billDetailInitialSnapshot = ref('')
+const billDetailSnapshot = () => {
+  const { locked: _locked, billSourceMode: _autoSavedSource, ...form } = gsdModal.form || {}
+  return JSON.stringify(form)
+}
+const billDetailDirty = () => !isBillApprovalModal() || billDetailInitialSnapshot.value !== billDetailSnapshot()
 const billDetailUploadField = ref<'siSubmittedFile' | 'mblFile' | 'hblFile' | 'clientBlFile'>('mblFile')
 const openBillDetailUpload = (field: 'siSubmittedFile' | 'mblFile' | 'hblFile' | 'clientBlFile') => {
   if (isReadonlyExwFclEcdBillDetail() || !gsdModal.editing) return
-  if (field === 'siSubmittedFile' && (!isDcdBillDetailModal() || !gsdModal.form.siSubmitted)) return
+  if (field === 'siSubmittedFile' && (!gsdModal.form.siSubmitted || gsdModal.form.siSubmittedSource === 'master-si')) return
+  if (field === 'mblFile' && !gsdModal.form.mbl) return
   billDetailUploadField.value = field
-  billDetailFileInput.value?.click()
+  const input = billDetailFileInput.value
+  if (!input) {
+    showToast('Upload control is not available. Please reopen Bill Detail.')
+    return
+  }
+  // Reset before opening so choosing the same file again still emits change.
+  input.value = ''
+  input.click()
 }
 const billSourceMode = () => gsdModal.form.billSourceMode === 'client' ? 'client' : 'export'
 const billSourceButtonLabel = () => billSourceMode() === 'client' ? "Use Client's B/L" : 'Export (B/L, FCR)'
+const persistBillSourceMode = async () => {
+  if (!isBillApprovalModal() || gsdModal.row <= 0 || gsdModal.column < 0) return
+  const raw = parseJsonCell(rows.value[gsdModal.row]?.[gsdModal.column], {} as any)
+  const container = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}
+  const savedForm = container && typeof container.form === 'object' ? container.form : {}
+  rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({
+    ...container,
+    form: { ...savedForm, billSourceMode: billSourceMode() },
+  })
+  const saved = await saveSheet()
+  if (!saved) return
+  const detailLabel = normalizedHeaderLabel(gsdModal.column) === 'AWB DETAIL' ? 'AWB DETAIL' : 'BILL DETAIL'
+  for (const dept of fclStructureSyncPeers(detailLabel)) void mirrorExwFclWorkflowCell(dept, detailLabel, rows.value[gsdModal.row][gsdModal.column])
+}
 const setBillSourceMode = (mode: 'export' | 'client') => {
   gsdModal.form.billSourceMode = mode
   billExportMenuOpen.value = mode === 'export'
+  void persistBillSourceMode()
 }
 const closeBillExportMenuOnOutside = (event: MouseEvent) => {
   const target = event.target as HTMLElement | null
@@ -16847,6 +16987,7 @@ const handleBillDetailFile = async (event: Event) => {
       const uploaded = await uploadAdminAttachment(file)
       if (billDetailUploadField.value !== 'siSubmittedFile' || gsdModal.form.siSubmitted) {
         gsdModal.form[billDetailUploadField.value] = { name: uploaded.name, url: uploaded.url, type: file.type || uploaded.type || '' }
+        showToast(`${uploaded.name} uploaded`)
       }
     } catch (error: any) { showToast(String(error?.data?.message || error?.message || 'Could not upload the file')) }
   }
@@ -16856,7 +16997,6 @@ const syncBillReleasePayment = (selected: 'all' | 'later') => {
   if (selected === 'all' && gsdModal.form.allCollected) gsdModal.form.collectLater = false
   if (selected === 'later' && gsdModal.form.collectLater) gsdModal.form.allCollected = false
   if (!gsdModal.form.collectLater) gsdModal.form.deadline = ''
-  if (isEcdPaymentOnlyBillRelease()) void saveEcdPaymentDetail()
 }
 const saveEcdPaymentDetail = async () => {
   if (!isEcdPaymentOnlyBillRelease()) return
@@ -16896,10 +17036,6 @@ const handleBillReleaseFile = async (event: Event) => {
 }
 const clearBillRelease = () => {
   if (!gsdModal.editing) return
-  if (isEcdPaymentOnlyBillRelease()) {
-    Object.assign(gsdModal.form, { mbl: false, mblAt: '', mblFile: null, hbl: false, hblAt: '', released: false, releasedAt: '', releasedEmails: '', releasedCc: '' })
-    return
-  }
   Object.assign(gsdModal.form, { allCollected: false, collectLater: false, deadline: '', mbl: false, mblAt: '', mdo: false, mdoAt: '', mblFile: null, hbl: false, hblAt: '', hdo: false, hdoAt: '', validity: '', released: false, releasedAt: '', releasedEmails: '', releasedCc: '' })
 }
 const syncDoReleaseTimestamp = (field: 'mdo' | 'hdo') => {
@@ -16927,6 +17063,7 @@ const billDocumentExportsForRow = (row: number) => {
   return { exportBl: String(form.exportBl || ''), exportFcr: String(form.exportFcr || ''), billSourceMode: form.billSourceMode, clientBlFile: form.clientBlFile }
 }
 const rowBillReady = (documents: ReturnType<typeof billDocumentExportsForRow>) => documents.billSourceMode === 'client' ? !!documents.clientBlFile?.url : !!documents.exportBl
+const releaseBillFileReady = (documents: ReturnType<typeof billDocumentExportsForRow>) => rowBillReady(documents) || !!gsdModal.form.mblFile?.url
 const releaseBillToShipper = () => {
   if (!billReleasePaymentReady()) {
     showToast('Complete PAYMENT DETAIL before releasing the B/L')
@@ -16939,8 +17076,8 @@ const releaseBillToShipper = () => {
     return
   }
   const documents = billDocumentExportsForRow(gsdModal.row)
-  if (!rowBillReady(documents)) {
-    showToast(documents.billSourceMode === 'client' ? "Upload Client's B/L before releasing" : 'Save Export B/L before releasing')
+  if (!releaseBillFileReady(documents)) {
+    showToast(documents.billSourceMode === 'client' ? "Upload Client's B/L or an MBL release file before releasing" : 'Save Export B/L or upload an MBL release file before releasing')
     return
   }
   billReleaseSendModal.to = String(gsdModal.form.releasedEmails || shipperEmail)
@@ -16962,8 +17099,8 @@ const confirmBillReleaseToShipper = async () => {
     return
   }
   const documents = billDocumentExportsForRow(gsdModal.row)
-  if (!rowBillReady(documents)) {
-    billReleaseSendModal.hint = documents.billSourceMode === 'client' ? "Upload Client's B/L before releasing" : 'Save Export B/L before releasing'
+  if (!releaseBillFileReady(documents)) {
+    billReleaseSendModal.hint = documents.billSourceMode === 'client' ? "Upload Client's B/L or an MBL release file before releasing" : 'Save Export B/L or upload an MBL release file before releasing'
     return
   }
   billReleaseSendModal.sending = true
@@ -16971,10 +17108,13 @@ const confirmBillReleaseToShipper = async () => {
   try {
     const jobNo = String(rowValueByHeader('JOB NO#') || rowValueByHeader('REF#') || 'DOCUMENT').trim()
     const safeJobNo = jobNo.replace(/[^a-zA-Z0-9_-]+/g, '_')
-    const attachments = documents.billSourceMode === 'client'
-      ? [clientBillEmailAttachment(documents.clientBlFile)]
-      : [await uploadBillEmailPdf(await renderSavedBillAttachment('B/L', documents.exportBl), `B-L_${safeJobNo}.pdf`)]
-    if (documents.billSourceMode === 'export' && documents.exportFcr) {
+    const useUploadedReleaseFile = !rowBillReady(documents) && !!gsdModal.form.mblFile?.url
+    const attachments = useUploadedReleaseFile
+      ? [clientBillEmailAttachment(gsdModal.form.mblFile)]
+      : documents.billSourceMode === 'client'
+        ? [clientBillEmailAttachment(documents.clientBlFile)]
+        : [await uploadBillEmailPdf(await renderSavedBillAttachment('B/L', documents.exportBl), `B-L_${safeJobNo}.pdf`)]
+    if (!useUploadedReleaseFile && documents.billSourceMode === 'export' && documents.exportFcr) {
       const fcrBlob = await renderSavedBillAttachment('FCR', documents.exportFcr)
       attachments.push(await uploadBillEmailPdf(fcrBlob, `FCR_${safeJobNo}.pdf`))
     }
@@ -17005,9 +17145,10 @@ const confirmBillReleaseToShipper = async () => {
 const syncBillTimestamp = (field: 'mbl' | 'hbl') => {
   if (field === 'mbl') {
     gsdModal.form.mblAt = gsdModal.form.mbl ? billTimestamp() : ''
-    if (isBillReleaseModal() && !gsdModal.form.mbl) {
+    if ((isBillReleaseModal() || isBillApprovalModal()) && !gsdModal.form.mbl) {
       gsdModal.form.mblFile = null
-      if (billReleaseFileInput.value) billReleaseFileInput.value.value = ''
+      if (isBillReleaseModal() && billReleaseFileInput.value) billReleaseFileInput.value.value = ''
+      if (isBillApprovalModal() && billDetailFileInput.value) billDetailFileInput.value.value = ''
     }
   }
   else gsdModal.form.hblAt = gsdModal.form.hbl ? billTimestamp() : ''
@@ -17031,12 +17172,6 @@ const enableBillApprovalEdit = () => {
     gsdModal.form.sentAt = ''
     gsdModal.form.sentEmails = ''
     gsdModal.form.sentCc = ''
-  }
-  if (isBillReleaseModal() && !isEcdPaymentOnlyBillRelease()) {
-    gsdModal.form.released = false
-    gsdModal.form.releasedAt = ''
-    gsdModal.form.releasedEmails = ''
-    gsdModal.form.releasedCc = ''
   }
 }
 const billSendModal = reactive<{ open: boolean; to: string; cc: string; hint: string; sending: boolean }>({ open: false, to: '', cc: '', hint: '', sending: false })
@@ -17075,6 +17210,7 @@ const renderSavedBillAttachment = async (kind: 'B/L' | 'FCR', stored: string) =>
   try { saved = stored ? JSON.parse(stored) : null } catch { saved = null }
   if (!saved || !saved.locked) throw new Error(`Save Export ${kind} before sending`)
   const snapshot = { ...billDocModal }
+  billDocBackgroundRendering.value = true
   try {
     Object.assign(billDocModal, saved, { open: true, readonly: false, isRelease: false, exportingPdf: false, kind, locked: true })
     await nextTick()
@@ -17083,6 +17219,7 @@ const renderSavedBillAttachment = async (kind: 'B/L' | 'FCR', stored: string) =>
     return blob
   } finally {
     Object.assign(billDocModal, snapshot)
+    billDocBackgroundRendering.value = false
     await nextTick()
   }
 }
@@ -17196,6 +17333,10 @@ const syncCollectionDeadlineToApprovalList = async () => {
   }
 }
 const saveBillApproval = async (waitForPersistence: boolean | Event = true) => {
+  if (isBillMblOnlyDetailModal() && (!gsdModal.form.mbl || !gsdModal.form.mblFile?.url)) {
+    showToast('Tick MBL APPROVED and upload the supporting document before saving')
+    return
+  }
   if ((isBillReleaseModal() || isDoReleaseModal()) && (!!gsdModal.form.allCollected === !!gsdModal.form.collectLater)) {
     showToast(`Choose a ${isDoReleaseModal() ? 'CHARGE DETAILS' : 'PAYMENT DETAIL'} option before saving`)
     return
@@ -17206,12 +17347,14 @@ const saveBillApproval = async (waitForPersistence: boolean | Event = true) => {
   }
   rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({
     form: {
+      saved: true,
       allCollected: !!gsdModal.form.allCollected,
       collectLater: !!gsdModal.form.collectLater,
       deadline: gsdModal.form.collectLater ? gsdModal.form.deadline || '' : '',
       siSubmitted: !!gsdModal.form.siSubmitted,
       siSubmittedAt: gsdModal.form.siSubmittedAt || '',
       siSubmittedFile: gsdModal.form.siSubmittedFile || null,
+      siSubmittedSource: gsdModal.form.siSubmittedSource || '',
       mnfSubmitted: !!gsdModal.form.mnfSubmitted,
       mnfSubmittedAt: gsdModal.form.mnfSubmittedAt || '',
       mbl: !!gsdModal.form.mbl,
@@ -17246,6 +17389,8 @@ const saveBillApproval = async (waitForPersistence: boolean | Event = true) => {
     },
   })
   gsdModal.form.locked = true
+  if (isBillApprovalModal()) billDetailInitialSnapshot.value = billDetailSnapshot()
+  if (isBillReleaseModal() || isDoReleaseModal()) billReleaseInitialSnapshot.value = billReleaseSnapshot()
   gsdModal.editing = false
   const persistBillApproval = async () => {
     const saved = await saveSheet()
@@ -17293,6 +17438,7 @@ const linkedVesselText = (value: any) => {
 const selectBillDocumentExport = (kind: 'B/L' | 'FCR') => {
   gsdModal.form.billSourceMode = 'export'
   billExportMenuOpen.value = false
+  void persistBillSourceMode()
   void openBillDocument(kind)
 }
 const openBillDocument = async (kind: 'B/L' | 'FCR', isRelease = false) => {
@@ -22067,6 +22213,7 @@ onBeforeUnmount(() => {
 .loadmore-info{font-size:11px;color:#9aa69c;margin-top:8px}
 .color-palette{position:fixed;z-index:120;display:grid;grid-template-columns:repeat(6,1fr);gap:6px;width:188px;padding:9px;background:#fff;border:1px solid #d3dacf;border-radius:10px;box-shadow:0 1px 2px rgba(14,21,18,.05),0 10px 30px rgba(14,21,18,.06)}.color-swatch{width:22px;height:22px;padding:0!important;border:1px solid rgba(0,0,0,.14)!important;border-radius:6px!important;transition:transform .12s}.color-swatch:hover{transform:scale(1.14)}.clear-color{grid-column:1/-1;padding:5px!important;background:#f5f7f4!important;border:1px solid #e4e9e2!important;border-radius:7px!important;color:#7a847d!important;font-size:11.5px!important;font-weight:600!important}
 .wb-modal-overlay{position:fixed;inset:0;z-index:220;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(14,21,18,.4);backdrop-filter:blur(2px)}
+.gsd-modal-overlay.gsd-child-document-open{background:transparent!important;backdrop-filter:none!important}
 .wb-confirm-overlay{z-index:520}
 .wsmodal-overlay{background:rgba(10,30,18,.42)!important;backdrop-filter:none!important}.wsmodal{width:390px;max-width:92vw;overflow:hidden;border-radius:12px;background:#fff;box-shadow:0 18px 50px rgba(0,0,0,.3)}.wsmodal-head{padding:16px 18px 4px;font-size:15px;font-weight:750;color:#0f3d23}.wsmodal-body{padding:4px 18px 10px;color:#5d7567;font-size:13px;line-height:1.5}.wsmodal-input{display:block;margin:0 18px 12px;padding:9px 11px;border:1px solid #c4e6d1;border-radius:8px;background:#fff;font:inherit;font-size:13px;color:#16241c;width:calc(100% - 36px);outline:none;text-transform:uppercase;box-sizing:border-box;resize:vertical}.wsmodal-input:focus{box-shadow:inset 0 0 0 2px #2ec46b}.wsmodal-error{margin:-4px 18px 12px;font-size:12px;color:#c0392b}.pdcrow{margin:2px 0 6px}.pdcbtn{display:inline-flex;align-items:center;gap:7px;background:#1b7a43;border-color:#1b7a43;color:#fff}.pdcbtn svg{width:14px;height:14px}.pdcbadge{background:#c0392b;color:#fff;border-radius:9px;font-size:10.5px;font-weight:800;padding:1px 7px}.pdc-modal{width:560px;max-width:94vw}.pdc-title{padding:14px 18px 6px;text-align:center;font-weight:800;font-size:14px;color:#16241c}.pdc-body{padding:0 18px 8px;display:grid;gap:10px;max-height:60vh;overflow:auto}.pdc-sec{display:grid;gap:6px}.pdc-label{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#33413b}.pdc-label input[type=checkbox]{width:15px;height:15px;accent-color:#1b7a43}.pdc-name{flex:1;height:30px;border:1px solid #d6ddd9;border-radius:7px;padding:0 9px;font:inherit;font-size:12.5px}.pdc-files{display:flex;flex-wrap:wrap;gap:6px}.pdc-file{display:inline-flex;align-items:center;gap:4px;border:1px solid #d6ddd9;border-radius:7px;padding:3px 6px;background:#f7faf9}.pdc-view{border:0;background:none;font:inherit;font-size:12px;color:#1b6b43;text-decoration:underline;cursor:pointer;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pdc-del{border:0;background:none;color:#c0392b;font-size:13px;cursor:pointer}.pdc-up{width:24px;height:24px;border:1px solid #1b7a43;border-radius:6px;background:#1b7a43;color:#fff;font-size:14px;font-weight:800;cursor:pointer}.pdc-up:disabled{opacity:.45;cursor:not-allowed}.pdc-addrow{display:flex;justify-content:flex-end}.bc-overlay{z-index:74}.bc-mou{width:1020px;max-width:97vw;height:92vh;background:#fff;border-radius:12px;box-shadow:0 24px 70px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden}.bc-topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-bottom:0;background:#0f4c81}.bc-toplabel{font-weight:800;font-size:14px;color:#fff}.bc-topbtns{display:flex;gap:8px}.bc-x{position:static;border:0;border-radius:7px;padding:6px 14px;background:#c0392b;color:#fff;font-size:12px;font-weight:700;cursor:pointer}.bc-x:hover{background:#a23227}.bc-frame{flex:1;width:100%;border:0;background:#fff}.gsd-viewer{width:390px}.gsd-pu-viewer{width:620px;max-width:94vw}.gsd-viewer-head{padding:14px 18px 8px;font-size:14px;font-weight:800;color:#16241c}.gsd-viewer-grid{padding:0 18px 6px;display:grid;gap:8px}.gsd-viewer-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}.gsd-viewer-row.two{grid-template-columns:1fr 1fr}.gsd-viewer-row label{display:grid;gap:4px}.gsd-viewer-row span{font-size:11px;font-weight:800;color:#5d7567}.gsd-viewer-row input{height:32px;border:1px solid #d6ddd9;border-radius:7px;background:#f7faf9;padding:0 9px;font:inherit;font-size:12.5px;color:#33413b}.gsd-viewer-detail{padding:0 18px 8px}.gsd-viewer-detail .drow{display:grid;grid-template-columns:150px 1fr;border-bottom:1px solid #eef3ef;padding:7px 0;font-size:12.5px}.gsd-viewer-detail .dk{font-weight:700;color:#5d7567}.gsd-viewer-detail .dv{color:#16241c}.gsd-viewer-detail .dv.empty{color:#9aa8a0}.clr-senddocs{display:flex;justify-content:flex-end;padding:12px 0 4px}.wsmodal-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;background:#eef9f1;border-top:1px solid #c4e6d1}.wsmodal-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid #c4e6d1;background:#fff;color:#15532f;padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:650;cursor:pointer;line-height:1}.wsmodal-btn:hover{background:#eef9f1}.wsmodal-btn.primary{background:#1b7a43;border-color:#1b7a43;color:#fff}.wsmodal-btn.primary:hover{background:#15532f}.wsmodal-btn.danger{color:#c0392b;border-color:#e7b9b3;background:#fff}.wsmodal-btn.danger:hover{background:#fdecea}.wsmodal.no-title .wsmodal-body{padding:22px 26px 16px;text-align:center;font-weight:700;font-size:13.5px;color:#33413b}.wsmodal.no-title .wsmodal-foot{justify-content:center;background:#fff;border-top:0;padding:0 26px 22px}.wsmodal-btn.solid-danger{background:#c0392b;border-color:#c0392b;color:#fff}.wsmodal-btn.solid-danger:hover{background:#a23227}.wsmodal-btn.solid-grey{background:#64748b;border-color:#64748b;color:#fff}.wsmodal-btn.solid-grey:hover{background:#51606e}
 .bc-edit,.bc-save{border:0;border-radius:6px;padding:6px 14px;color:#fff;font-size:12px;font-weight:700;cursor:pointer}
@@ -22308,12 +22455,13 @@ onBeforeUnmount(() => {
 .gsd-air-dup-tcd-trucking-status-modal{width:1360px;max-width:96vw;min-height:0;padding:22px 24px 20px;overflow:hidden}.gsd-air-dup-tcd-trucking-status-modal .gsd-prs-title{text-align:left;margin:0 0 10px;font-size:13px}.gsd-tks-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:10px}.gsd-tks-toolbar .wb-modal-btn,.gsd-air-dup-tcd-trucking-status-modal .gsd-prs-actions .wb-modal-btn{height:32px;min-height:32px;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700}.gsd-tks-toolbar .edit{background:#e67e22;border-color:#e67e22;color:#fff}.gsd-tks-toolbar .remove{background:#c0392b;border-color:#c0392b;color:#fff}.gsd-air-dup-tcd-trucking-status-modal .gsd-prs-table-wrap{max-height:330px;overflow:auto}.gsd-air-dup-tcd-trucking-status-modal .gsd-tks-table{width:100%;min-width:1124px;table-layout:fixed;font-size:12.5px}.gsd-air-dup-tcd-trucking-status-modal .gsd-tks-table th,.gsd-air-dup-tcd-trucking-status-modal .gsd-tks-table td{height:34px;padding:5px 7px}.gsd-air-dup-tcd-trucking-status-modal .gsd-tks-table th{font-family:inherit;font-size:12px;font-weight:700;color:#33413b}.gsd-air-dup-tcd-trucking-status-modal .gsd-tks-table .prs-date{height:27px;min-width:0;border:0;border-radius:0;background:transparent}.gsd-air-dup-tcd-trucking-status-modal .gsd-tks-table .prs-date:not(:disabled):focus{border-radius:4px;background:#fff}.gsd-air-dup-tcd-trucking-status-modal .gsd-tks-table .prs-date:disabled{background:transparent;color:#33413b}.gsd-tks-all{border:0;background:transparent;color:#1f4ed8;font:inherit;font-weight:700;cursor:pointer;padding:0}.gsd-air-dup-tcd-trucking-status-modal .gsd-prs-actions{margin-top:14px}.gsd-air-dup-tcd-trucking-status-modal .gsd-prs-actions .slate{background:#64748b;border-color:#64748b;color:#fff}.gsd-air-dup-fcd-trucking-status-modal .gsd-tks-table{min-width:1290px}.gsd-air-dup-fcd-trucking-status-modal .gsd-tks-all:disabled{opacity:1;color:#1f4ed8;cursor:default}.gsd-air-dup-fcd-trucking-status-modal .gsd-tks-table input:disabled{opacity:1;color:#33413b;cursor:not-allowed}.gsd-air-dup-fcd-trucking-status-modal .gsd-tks-table input[type=checkbox]:disabled{opacity:.55}
 .gsd-air-dup-icd-prs-modal .epodcell .gsd-eye-btn{margin:auto}
 .gsd-bill-modal{width:460px;max-width:94vw;padding:34px 30px 24px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-bill-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-bill-form{width:362px;margin:4px auto 8px}.gsd-bill-row{display:flex;align-items:center;justify-content:center;gap:14px;margin:18px 0}.gsd-bill-row span{width:116px;text-align:left;font-size:13px;font-weight:800;color:#33413b}.gsd-bill-row input[type=checkbox]{width:18px;height:18px;flex:none;accent-color:#008f4c}.gsd-bill-row input[type=text]{width:200px;height:38px;flex:none;border:1px solid #c9d3cf;border-radius:8px;background:#f7faf9;padding:8px 10px;text-align:center;font:inherit;color:#33413b;outline:none}.gsd-bill-actions{display:flex;justify-content:flex-end;gap:8px;width:362px;margin:18px auto 0}.gsd-bill-actions .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:800}.gsd-bill-actions .edit{background:#f6c998;border-color:#f6c998;color:#fff}.gsd-bill-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-bill-actions .wb-modal-btn:disabled{opacity:.55;cursor:not-allowed}
-.gsd-modal.gsd-bill-detail-modal,.gsd-modal.gsd-bill-modal:has(.bd-body){width:780px!important;max-width:96vw!important;padding:34px 32px 28px!important;overflow-y:auto!important;height:auto!important;min-height:0!important;max-height:calc(100vh - 48px)!important;display:block!important}
+.gsd-modal.gsd-bill-detail-modal,.gsd-modal.gsd-bill-modal:has(.bd-body){width:780px!important;max-width:96vw!important;padding:34px 32px 28px!important;overflow:visible!important;height:auto!important;min-height:0!important;max-height:none!important;display:block!important}
 .bd-body{max-width:700px;margin:0 auto}
 .bd-sec-title{font-size:14px;font-weight:800;color:var(--green-d,#008f4c);letter-spacing:.06em;text-transform:uppercase;margin:2px 0 14px}
 .bd-rows{display:flex;flex-direction:column;gap:13px}
 .bd-row{display:flex;align-items:center;gap:12px}
 .bd-lab{flex:0 0 160px;font-size:13.5px;font-weight:700;color:#333;letter-spacing:.02em}
+.bd-required-label::after{content:' *';color:#c0392b}
 .bd-cb{width:19px;height:19px;cursor:pointer;flex:0 0 auto;accent-color:var(--green-d,#008f4c)}
 .bd-cb:disabled{cursor:not-allowed;opacity:.55}
 .bd-date{flex:0 0 180px;width:180px;border:1px solid #cdd6d0;border-radius:6px;padding:8px 10px;font-size:13px;color:#333;background:#fff;text-align:center;font:inherit}
@@ -22323,9 +22471,12 @@ onBeforeUnmount(() => {
 .bd-up:hover,.bd-eye:hover{border-color:var(--green-d,#008f4c);color:var(--green-d,#008f4c)}
 .bd-up:disabled{opacity:.4;cursor:not-allowed;background:#f2f4f2}
 .bd-up:disabled:hover{border-color:#cdd6d0;color:#7a837c}
+.bd-up.required:not(.has){border-color:#d88b84;background:#fff5f4;color:#b53a2f}
 .bd-up.has{border-color:#00a85a;color:#fff;background:#00a85a}
-.bd-up:hover:not(:disabled){box-shadow:none;filter:none;transform:none}
-.bd-up.has:hover:not(:disabled){border-color:#008f4c;background:#008f4c;color:#fff}
+.bd-up:hover:not(:disabled){border-color:#b9c8c1;background:#eef3f1;color:#687a72;box-shadow:0 1px 3px rgba(26,55,41,.12);filter:none;transform:none}
+.bd-up.has:hover:not(:disabled){border-color:#00a85a;background:#00a85a;color:#fff}
+.wb-modal-overlay .bd-up:disabled,.wb-modal-overlay .bd-up:disabled:hover{opacity:.4!important;filter:none!important;box-shadow:none!important;transform:none!important;border-color:#cdd6d0!important;background:#f2f4f2!important;color:#7a837c!important}
+.wb-modal-overlay .bd-up.has:disabled,.wb-modal-overlay .bd-up.has:disabled:hover{opacity:.62!important;border-color:#00a85a!important;background:#00a85a!important;color:#fff!important}
 .bd-up.has::after{content:'✓';position:absolute;right:-5px;top:-5px;display:grid;place-items:center;width:15px;height:15px;border:2px solid #fff;border-radius:50%;background:#087d4b;color:#fff;font-size:9px;font-weight:900;line-height:1}
 .bd-eye{opacity:.42;pointer-events:none}
 .bd-eye.on{opacity:1;pointer-events:auto;border-color:#86d5ad;color:#087d4b;background:#e9f8f0}
@@ -22365,6 +22516,12 @@ onBeforeUnmount(() => {
 .bd-foot .bill-send:not(:disabled){background:#008f4c;border-color:#008f4c}
 .bd-foot .bill-send:hover:not(:disabled){background:#008447;border-color:#008447}
 .bd-foot .edit:not(:disabled){background:#e67e22;border-color:#e67e22;color:#fff}
+.gsd-modal.gsd-bill-detail-modal.gsd-bill-mbl-only-modal{width:540px!important;max-width:94vw!important;padding:28px 24px 20px!important}
+.gsd-bill-mbl-only-modal .bd-body{max-width:492px}
+.gsd-bill-mbl-only-modal .bd-row{gap:9px}
+.gsd-bill-mbl-only-modal .bd-lab{flex-basis:142px}
+.gsd-bill-mbl-only-modal .bd-date{width:168px;flex-basis:168px}
+.gsd-bill-mbl-only-modal .bd-foot{margin-top:16px;padding-top:14px;flex-wrap:nowrap}
 @media(max-width:720px){.gsd-modal.gsd-bill-modal:has(.bd-body){padding:30px 18px 22px}.bd-row{flex-wrap:wrap}.bd-lab{flex-basis:130px}.bd-date{width:170px;flex-basis:170px}.bd-foot{width:100%}}
 .gsd-prealert-modal{width:486px;max-width:96vw;max-height:90vh;overflow-y:auto;padding:30px 28px 22px;border-radius:12px;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-prealert-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-pre-title{font-weight:800;font-size:14px;color:#1f2a26;margin:0 0 12px}.gsd-pre-dest{font-weight:700;font-size:13px;color:#33413b;margin:0 0 14px 14px}.gsd-pre-section{display:flex;flex-direction:column;align-items:center}.gsd-pre-row{display:flex;align-items:center;gap:10px;margin:9px 0}.gsd-pre-row.doc{width:440px;justify-content:flex-start}.gsd-pre-label{width:140px;text-align:right;font-weight:800;font-size:12.5px;color:#33413b;flex:none}.gsd-pre-row.doc .gsd-pre-label{width:170px}.gsd-pre-check{width:18px;height:18px;flex:none;accent-color:#008f4c;cursor:pointer}.gsd-pre-date,.gsd-pre-other{width:150px;height:38px;flex:none;text-align:center;padding:8px 10px;border:1px solid #c9d3cf;border-radius:8px;font:inherit;color:#33413b;background:#f7faf9;outline:none}.gsd-pre-other{text-align:left}.gsd-pre-icon{position:relative;flex:none;width:36px;height:36px;border:1px solid #cbd7d1;border-radius:8px;background:#eef3f1;cursor:pointer;color:#687a72;padding:0;display:inline-flex;align-items:center;justify-content:center;line-height:0}.gsd-pre-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.gsd-pre-icon.upload.has{border-color:#00a85a;background:#00a85a;color:#fff}.gsd-pre-icon.upload.has::after{content:'✓';position:absolute;right:-5px;top:-5px;display:grid;place-items:center;width:15px;height:15px;border:2px solid #fff;border-radius:50%;background:#087d4b;color:#fff;font-size:9px;font-weight:900;line-height:1}.gsd-pre-icon.eye{opacity:.45;color:#9aa6a1;cursor:default}.gsd-pre-icon.eye.on{opacity:1;border-color:#86d5ad;background:#e9f8f0;color:#087d4b;cursor:pointer}.gsd-pre-icon:disabled{opacity:.45;cursor:not-allowed}.gsd-pre-divider{border-top:1px solid #e4eae7;margin:14px 0}.gsd-pre-doc-head{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 8px}.gsd-pre-doc-head span{font-weight:800;font-size:13px;color:#1f2a26}.gsd-pre-doc-head .wb-modal-btn{height:32px;min-height:32px;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:800}.gsd-pre-remarks{display:block;margin:6px 0 0}.gsd-pre-remarks span{display:block;font-weight:800;font-size:13px;color:#1f2a26;margin:0 0 6px}.gsd-pre-remarks textarea{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid #c9d3cf;border-radius:8px;font:inherit;color:#33413b;resize:vertical;outline:none}.gsd-pre-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}.gsd-pre-actions .wb-modal-btn{height:34px;min-height:34px;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:800}.gsd-pre-actions .edit{background:#f6c998;border-color:#f6c998;color:#fff}.gsd-pre-actions .send{background:#0f4c81;border-color:#0f4c81;color:#fff}.gsd-pre-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-pre-actions .wb-modal-btn:disabled{opacity:.55;cursor:not-allowed}
 .gsd-cda-modal{width:fit-content;max-width:96vw;padding:30px 28px 20px;border-radius:12px;overflow:hidden;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-cda-modal .gsd-modal-x,.gsd-clr-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-cda-instr{font-size:14px;font-weight:800;color:#1f2a26;margin:10px 40px 6px 0}.gsd-cda-addbar{display:flex;justify-content:flex-start;margin:8px 0 12px}.gsd-cda-table{width:auto;border-collapse:collapse;font-size:13px;color:#33413b}.gsd-cda-table th{padding:8px 10px;border-bottom:1px solid #e1e8e4;text-align:left;font-weight:800;color:#42504b}.gsd-cda-table td{padding:9px 10px;vertical-align:middle}.gsd-cda-table .cda-doc{font-weight:700;color:#1a1a1a;white-space:nowrap}.gsd-cda-table .cda-vf{text-align:center;width:104px}.gsd-cda-table .cda-up{width:372px}.gsd-cda-table .cda-act{width:44px}.gsd-cda-table input[type=checkbox]{width:18px;height:18px;accent-color:#008f4c}.cda-uphead{display:inline-block;width:160px;text-align:center}.cda-up-wrap{display:flex;align-items:center;gap:10px;width:100%}.cda-upcol{display:inline-flex;flex-direction:column;gap:3px;width:160px}.cdaup{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:160px;box-sizing:border-box;border:0;border-radius:8px;background:#1456e0;color:#fff;padding:7px 12px;font-size:12.5px;font-weight:800;white-space:nowrap;cursor:pointer}.cdaup.has{background:#0e9f57}.cdaup:disabled{background:#cfd8e6;cursor:not-allowed}.cdaup svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.cdafn{width:160px;box-sizing:border-box;border:1px solid #e2e8e4;border-radius:5px;background:#fff;padding:2px 7px;color:#44524c;font-size:10.5px;line-height:1.3}.cdaname{width:150px;flex:0 0 150px;box-sizing:border-box;border:1px solid #d6ddd9;border-radius:7px;background:#fff;padding:6px 9px;text-align:center;font-size:12.5px}.cda-rm{border:0;background:transparent;color:#c0392b;font-size:15px;font-weight:900;line-height:1;cursor:pointer}.cda-eye{margin-left:auto}.gsd-cda-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;padding-right:44px}.gsd-cda-actions .edit{background:#e67e22;border-color:#e67e22;color:#fff}.gsd-cda-actions .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-clr-modal{width:1180px;max-width:96vw;max-height:90vh;padding:30px 26px 24px;border-radius:12px;overflow:auto;font:13px/1.4 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-clr-title{text-align:center;font-size:13px;font-weight:900;color:#0e1512;text-transform:uppercase;margin:0 0 8px}.gsd-clr-scroll{overflow:auto;max-height:300px;margin-top:6px}.gsd-clr-table{width:100%;border-collapse:collapse;table-layout:auto;font-size:12.5px;color:#33413b}.gsd-clr-table th,.gsd-clr-table td{border:1px solid #d5ddd9;padding:8px 10px;text-align:center;vertical-align:middle}.gsd-clr-table th{background:#f1f5f3;font-weight:800;color:#33413b;white-space:nowrap}.gsd-clr-table td.clr-ro{background:#f7faf9;color:#5b6a63;font-weight:700}.clr-allcell{width:44px}.clr-declcell{min-width:230px}.clr-dcap{display:inline-flex;align-items:center;gap:8px}.clr-dcapbox{text-align:center}.clr-plus{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;border-radius:6px;background:#008f4c;color:#fff;font-size:16px;font-weight:900;line-height:1;cursor:pointer}.clr-plus.dim{background:#b7c2bc;cursor:not-allowed}.clr-declwrap{display:flex;flex-direction:column;gap:6px;align-items:stretch;max-width:80%;margin:0 auto}.clr-declrow{display:flex;align-items:center;gap:6px}.clr-din{flex:1 1 auto;min-width:120px;border:1px solid #c9d3cf;border-radius:6px;padding:6px 8px;text-align:center;font:inherit}.clr-din.clr-baderr{border-color:#c0392b;background:#fff5f4}.clr-tick{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:0;border-radius:6px;background:#008f4c;color:#fff;font-size:14px;cursor:pointer}.clr-link{flex:1 1 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #cfe0d6;border-radius:6px;background:#eaf6ef;padding:6px 8px;cursor:pointer}.clr-link b{color:#0a6b3b;font-size:12.5px}.clr-link.clr-link-red{background:#fdecea;border-color:#c0392b}.clr-link.clr-link-red b{color:#c0392b}.clr-dots{display:inline-flex;gap:4px}.clr-dot{width:8px;height:8px;border-radius:50%;background:#d0d7de}.clr-dot.on{background:#008f4c}.gsd-clr-panels{display:flex;flex-direction:column;gap:14px;margin-top:14px}.clr-panel{border:1px solid #dfe6e2;border-radius:10px;background:#fff;padding:16px 18px}.clr-phead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;color:#5b6a63;font-size:12px;letter-spacing:.04em}.clr-phead b{margin-left:6px;color:#1f2a26;font-size:13px}.clr-pclose{border:0;background:transparent;color:#8a97a0;font-size:15px;cursor:pointer}.clr-prow{display:flex;align-items:flex-end;flex-wrap:wrap;gap:20px}.clr-fld{display:flex;flex-direction:column;gap:5px}.clr-fld span{font-size:12px;font-weight:800;color:#33413b}.clr-fld input[type=text],.clr-fld input[type=date]{min-width:190px;border:1px solid #c9d3cf;border-radius:7px;padding:7px 9px;font:inherit}.clr-res{display:flex;align-items:center;gap:16px}.clr-rchip{display:inline-flex;align-items:center;border:1.5px solid #cfd8d4;border-radius:20px;background:#fff;padding:7px 14px;color:#5b6a63;font-size:12.5px;cursor:pointer}.clr-rchip.on-green{background:#e8f6ee;border-color:#008f4c;color:#0a6b3b;font-weight:800}.clr-rchip.on-red{background:#fdecea;border-color:#c0392b;color:#c0392b;font-weight:800}.clr-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}.clr-step{display:flex;align-items:center;gap:8px;border:1px solid #d5ddd9;border-radius:8px;background:#fbfdfc;padding:9px 11px}.clr-step.dim{opacity:.5}.clr-step input{width:16px;height:16px;accent-color:#008f4c}.clr-step span{font-size:12px;font-weight:700;color:#33413b}.clr-step em{margin-left:auto;color:#0a6b3b;font-size:11px;font-style:normal;white-space:nowrap}.clr-warn{margin-top:8px;color:#c0392b;font-size:11.5px}.clr-pfoot{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}.clr-pfoot .edit{background:#e67e22;border-color:#e67e22;color:#fff}.clr-pfoot .primary{background:#008f4c;border-color:#008f4c;color:#fff}.clr-empty{height:44px;background:#fff;color:#0e1512;font-weight:800;font-style:italic}
@@ -22658,6 +22815,7 @@ onBeforeUnmount(() => {
 .uX{position:absolute;right:12px;top:12px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;background:#c0392b;font-size:12.5px;font-weight:700;border:none;padding:0;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.18);z-index:1}
 .uX:hover{background:#a23227}
 .bill-doc-overlay{z-index:610;background:rgba(10,30,18,.42)!important;align-items:center!important;justify-content:center!important}
+.bill-doc-overlay.bill-doc-background-render{transform:translateX(-200vw)!important;background:transparent!important;pointer-events:none!important}
 .bill-doc-modal,.blmou{width:auto;max-width:none;padding:0;background:#eef1f4;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;max-height:94vh;box-shadow:0 18px 50px rgba(0,0,0,.28)}
 .bl-toolbar{display:flex;align-items:center;gap:10px;background:#fff;border-bottom:1px solid #dfe4ea;padding:11px 52px 11px 16px;position:relative;flex:0 0 auto}
 .bl-tleft{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -22919,6 +23077,8 @@ onBeforeUnmount(() => {
 .gsd-si-modal .si-party-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:18px;color:#555;font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}.gsd-si-modal .si-party-head label{display:inline-flex;align-items:center;gap:6px;color:#16406e;font-size:10.5px;font-weight:700;letter-spacing:0;text-transform:none;cursor:pointer;white-space:nowrap}.gsd-si-modal .si-party-head input{width:15px;height:15px;margin:0;accent-color:#008f4c;cursor:pointer}.gsd-si-modal .si-party-head input:disabled{cursor:not-allowed}
 .gsd-si-modal .si-f > input, .gsd-si-modal .si-f > textarea { box-sizing: border-box; width: 100%; border: 1px solid #c9d3cf; border-radius: 7px; background: #fff; padding: 7px 9px; color: #1f2a26; font: inherit; font-size: 13px; outline: none; }
 .gsd-si-modal .si-f > input:focus, .gsd-si-modal .si-f > textarea:focus { box-shadow: inset 0 0 0 2px #00c566; }
+.gsd-si-modal .si-f > input.si-invalid,.gsd-si-modal .si-f > textarea.si-invalid{border-color:#d63a3a!important;background:#fff5f4!important;box-shadow:inset 0 0 0 1px #d63a3a}
+.gsd-si-modal .si-invalid-group{border:1px solid #d63a3a;border-radius:7px;background:#fff5f4;padding:6px 8px}
 .gsd-si-modal .si-f > input:disabled, .gsd-si-modal .si-f > textarea:disabled, .gsd-si-modal .si-f > input[readonly] { background: #f1f5f4; color: #46524d; opacity: 1; }
 .gsd-si-modal .si-section-title { margin: 16px 0 8px; border-bottom: 1px solid #16406e; padding-bottom: 3px; color: #16406e; font-size: 12.5px; font-weight: 800; }
 .gsd-si-modal .si-radio { display: flex; gap: 26px; }
