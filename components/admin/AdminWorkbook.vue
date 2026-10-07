@@ -677,7 +677,7 @@
                       @mousedown.stop
                       @click.stop="openGsdModal(rowIndex, columnIndex)"
                     >
-                      <span>{{ clientCellText(rows[rowIndex]?.[columnIndex]) }}</span>
+                      <span>{{ isForcedNotRequiredAgentCell(rowIndex, columnIndex) ? 'N/A' : clientCellText(rows[rowIndex]?.[columnIndex]) }}</span>
                     </button>
                     <button
                       v-else-if="isDoInfoCell(rowIndex, columnIndex)"
@@ -994,7 +994,7 @@
         }"
         role="dialog"
         aria-modal="true"
-        @mousedown="closePickupBcMenuOnOutside($event); closeBillExportMenuOnOutside($event); clearVesselHistorySelectionOnBlank($event)"
+        @mousedown="closePickupBcMenuOnOutside($event); closeBillExportMenuOnOutside($event); closeBillReleaseMenuOnOutside($event); clearVesselHistorySelectionOnBlank($event)"
       >
         <button class="gsd-modal-x" type="button" title="Close" aria-label="Close" @pointerup.stop.prevent="closeGsdModal" @click.stop="closeGsdModal">&times;</button>
         <div v-if="gsdModal.loading && (isPaymentRequestModal() || isExpenseCollectModal())" class="payment-loading-screen" role="status" aria-live="polite">
@@ -1144,14 +1144,14 @@
             <div class="gsd-client-body">
               <template v-if="gsdModal.clientView === 'search'">
                 <div class="gsd-client-search">
-                  <select v-model="gsdModal.clientMode" :disabled="!gsdModal.editing" @change="clearGsdClientDetail">
+                  <select v-model="gsdModal.clientMode" :disabled="!gsdModal.editing || !canEditClientLinkCell(gsdModal.row, gsdModal.column)" @change="clearGsdClientDetail">
                     <option value="id">By ID</option>
                     <option value="namecode">By NameCode</option>
                   </select>
                   <input
                     ref="gsdClientSearchInput"
                     v-model.trim="gsdModal.text"
-                    :disabled="!gsdModal.editing"
+                    :disabled="!gsdModal.editing || !canEditClientLinkCell(gsdModal.row, gsdModal.column)"
                     type="text"
                     placeholder="Type ID or NameCode..."
                     @input="uppercaseClientSearch"
@@ -1162,7 +1162,7 @@
                   <input type="checkbox" :checked="isAgentNotRequired()" :disabled="!canEditClientLinkCell(gsdModal.row, gsdModal.column)" @change="toggleAgentNotRequired" />
                   <span>{{ agentNotRequiredConfig()?.label }}</span>
                 </label>
-                <div v-if="gsdModal.text.trim()" class="gsd-client-results">
+                <div v-if="gsdModal.text.trim() && canEditClientLinkCell(gsdModal.row, gsdModal.column)" class="gsd-client-results">
                   <button
                     v-for="client in gsdClientResults"
                     :key="client.entityId || client.id || client.namecode"
@@ -1178,7 +1178,7 @@
                   <div v-if="!gsdClientResults.length" class="gsd-client-empty">No client found. Use "Add New" to create one.</div>
                 </div>
                 <div class="gsd-client-actions">
-                  <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing" @click="openNewClientForm">Add New</button>
+                  <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing || !canEditClientLinkCell(gsdModal.row, gsdModal.column)" @click="openNewClientForm">Add New</button>
                 </div>
               </template>
 
@@ -2210,7 +2210,7 @@
                 <div class="gsd-release-title">{{ isAwbReleaseModal() ? 'AWB RELEASE' : 'BILL RELEASE' }}</div>
                 <div class="gsd-release-rows">
                   <div class="gsd-release-row"><input v-model="gsdModal.form.mbl" type="checkbox" :disabled="isDoReleaseModal() || !gsdModal.editing || !billReleasePaymentReady()" @change="syncBillTimestamp('mbl')" /><span>{{ isAwbReleaseModal() ? 'MAWB RELEASE:' : awbText('MBL RELEASE:') }}</span><input v-model.trim="gsdModal.form.mblAt" type="text" readonly placeholder="dd/mm/yyyy hh:mm" /><button v-if="!isDoReleaseModal()" class="gsd-release-icon" :class="{ has: !!gsdModal.form.mblFile?.url }" type="button" :disabled="!gsdModal.editing || !billReleasePaymentReady() || !gsdModal.form.mbl" :title="gsdModal.form.mblFile?.name ? `Uploaded: ${gsdModal.form.mblFile.name}` : 'Upload'" @click="billReleaseFileInput?.click()"><svg viewBox="0 0 24 24"><path d="M12 16V5M8 9l4-4 4 4"/><path d="M5 18.5h14"/></svg></button><button v-if="!isDoReleaseModal()" class="gsd-release-eye" :class="{ on: !!gsdModal.form.mblFile?.url }" type="button" :disabled="!gsdModal.form.mbl || !gsdModal.form.mblFile?.url" :title="gsdModal.form.mblFile?.name ? `View ${gsdModal.form.mblFile.name}` : 'No uploaded file'" @click="viewBillDetailFile(gsdModal.form.mblFile)"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
-                  <div v-if="isAwbReleaseModal() || currentRowRequiresHbl()" class="gsd-release-row"><input v-model="gsdModal.form.hbl" type="checkbox" :disabled="isDoReleaseModal() || !gsdModal.editing || !billReleasePaymentReady()" @change="syncBillTimestamp('hbl')" /><span>{{ isAwbReleaseModal() ? 'HAWB RELEASE:' : awbText('HBL RELEASE:') }}</span><input v-model.trim="gsdModal.form.hblAt" type="text" readonly placeholder="dd/mm/yyyy hh:mm" /><button v-if="!isDoReleaseModal()" class="wb-modal-btn release-export" type="button" :disabled="!billReleasePaymentReady() || !gsdModal.form.hbl" @click="openBillDocument('B/L', true)">{{ isAwbReleaseModal() ? 'Export AWB' : 'Export B/L' }}</button></div>
+                  <div v-if="isAwbReleaseModal() || currentRowRequiresHbl()" class="gsd-release-row"><input v-model="gsdModal.form.hbl" type="checkbox" :disabled="isDoReleaseModal() || !gsdModal.editing || !billReleasePaymentReady()" @change="syncBillTimestamp('hbl')" /><span>{{ isAwbReleaseModal() ? 'HAWB RELEASE:' : awbText('HBL RELEASE:') }}</span><input v-model.trim="gsdModal.form.hblAt" type="text" readonly placeholder="dd/mm/yyyy hh:mm" /><button v-if="!isDoReleaseModal() && !billReleaseUsesClientBl()" class="wb-modal-btn release-export" type="button" :disabled="!billReleasePaymentReady() || !gsdModal.form.hbl" @click="openBillDocument('B/L', true)">{{ isAwbReleaseModal() ? 'Export AWB' : 'Export B/L' }}</button><button v-else-if="!isDoReleaseModal()" class="gsd-release-eye on" type="button" :disabled="!billReleaseClientFile()?.url" :title="billReleaseClientFile()?.name ? `View ${billReleaseClientFile().name}` : 'No Customer B/L uploaded'" @click="viewBillDetailFile(billReleaseClientFile())"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                 </div>
                 <template v-if="isDoReleaseModal()">
                   <div class="gsd-release-divider"></div>
@@ -2240,7 +2240,13 @@
                 <button class="wb-modal-btn slate" type="button" :disabled="!gsdModal.editing" @click="clearBillRelease">Clear</button>
                 <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="enableBillApprovalEdit">Edit</button>
                 <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing || !billReleasePaymentReady() || !billReleaseDirty()" @click="saveBillApproval">Save</button>
-                <button v-if="!isDoReleaseModal()" class="wb-modal-btn release-send" type="button" :disabled="billReleaseDirty() || !billReleasePaymentReady() || !gsdModal.form.locked || gsdModal.form.released" @click="releaseBillToShipper">Release B/L to Shipper</button>
+                <div v-if="!isDoReleaseModal()" class="release-send-menu">
+                  <button class="wb-modal-btn release-send" type="button" :disabled="billReleaseDirty() || !billReleasePaymentReady() || !gsdModal.form.locked || gsdModal.form.released || !releaseSelectedBillReady()" @click="billReleaseTargetMenuOpen = !billReleaseTargetMenuOpen">Release B/L <span class="bd-export-caret">&#9662;</span></button>
+                  <div v-if="billReleaseTargetMenuOpen" class="release-send-options">
+                    <button type="button" @click="releaseBillTo('shipper')">Release B/L to Shipper</button>
+                    <button v-if="billReleaseHasDestinationAgent()" type="button" @click="releaseBillTo('destination')">Release B/L to Destination Agent</button>
+                  </div>
+                </div>
               </div>
             </template>
             <template v-else-if="isBillApprovalModal()">
@@ -2254,7 +2260,7 @@
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-div"></div>
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-sec-title">{{ isAwbDetailModal() ? 'HAWB DETAILS' : awbText('HBL DETAILS') }}</div>
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-rows">
-                  <div class="bd-row"><span class="bd-lab">SI RECEIVED:</span><input v-model="gsdModal.form.siReceived" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing" @change="syncBillDetailTimestamp('siReceived')" /><input v-model.trim="gsdModal.form.siReceivedAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><div class="bd-source-menu"><button class="bd-exportbtn" type="button" :disabled="!gsdModal.form.siReceived" @click="billExportMenuOpen = !billExportMenuOpen">{{ billSourceButtonLabel() }}<span class="bd-export-caret">&#9662;</span></button><div v-if="billExportMenuOpen" class="bd-export-dropdown bd-export-groups"><div class="bd-export-group"><label><input type="checkbox" :checked="billSourceMode() === 'export'" @change="setBillSourceMode('export')" /> Export (B/L, FCR)</label><div v-if="billSourceMode() === 'export'" class="bd-export-options"><button type="button" @click="selectBillDocumentExport('B/L')">Export B/L</button><button type="button" @click="selectBillDocumentExport('FCR')">Export FCR</button></div></div><div class="bd-export-group"><label><input type="checkbox" :checked="billSourceMode() === 'client'" @change="setBillSourceMode('client')" /> Use Client's B/L</label></div></div></div><template v-if="billSourceMode() === 'client'"><button class="booking-icon bd-client-upload" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.editing" :title="gsdModal.form.clientBlFile?.url ? 'Replace Client B/L' : 'Upload Client B/L'" @click="openBillDetailUpload('clientBlFile')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5" /></svg></button><button class="booking-eye" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.form.clientBlFile?.url" :title="gsdModal.form.clientBlFile?.url ? 'View Client B/L' : 'No file attached'" @click="viewBillDetailFile(gsdModal.form.clientBlFile)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></template></div>
+                  <div class="bd-row"><span class="bd-lab">SI RECEIVED:</span><input v-model="gsdModal.form.siReceived" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing" @change="syncBillDetailTimestamp('siReceived')" /><input v-model.trim="gsdModal.form.siReceivedAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><div class="bd-source-menu"><button class="bd-exportbtn" type="button" :disabled="!gsdModal.form.siReceived" @click="billExportMenuOpen = !billExportMenuOpen">{{ billSourceButtonLabel() }}<span class="bd-export-caret">&#9662;</span></button><div v-if="billExportMenuOpen" class="bd-export-dropdown bd-export-groups"><div class="bd-export-group"><label><input type="checkbox" :checked="billSourceMode() === 'export'" @change="setBillSourceMode('export')" /> Export (B/L, FCR)</label><div v-if="billSourceMode() === 'export'" class="bd-export-options"><button type="button" @click="selectBillDocumentExport('B/L')">Export B/L</button><button type="button" @click="selectBillDocumentExport('FCR')">Export FCR</button></div></div><div class="bd-export-group"><label><input type="checkbox" :checked="billSourceMode() === 'client'" @change="setBillSourceMode('client')" /> Use Client's B/L</label></div></div></div><template v-if="billSourceMode() === 'client'"><button class="booking-icon bd-client-upload" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.editing" title="Upload Customer B/L" @click="openBillDetailUpload('clientBlFile')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5" /></svg></button><button class="booking-eye" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.form.clientBlFile?.url" :title="gsdModal.form.clientBlFile?.url ? 'View Customer B/L' : 'No file attached'" @click="viewBillDetailFile(gsdModal.form.clientBlFile)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></template></div>
                   <div class="bd-row"><span class="bd-lab">{{ isAwbDetailModal() ? 'HAWB APPROVED:' : awbText('HBL APPROVED:') }}</span><input v-model="gsdModal.form.hbl" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing || !gsdModal.form.siReceived" @change="syncBillTimestamp('hbl')" /><input v-model.trim="gsdModal.form.hblAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><button class="bd-eye" :class="{ on: !!gsdModal.form.hbl && (isAwbDetailModal() ? !!gsdModal.form.hblFile?.url : billBlReady()) }" type="button" :disabled="!gsdModal.form.hbl || (isAwbDetailModal() ? !gsdModal.form.hblFile?.url : !billBlReady())" :title="isAwbDetailModal() ? 'View HAWB file' : billSourceMode() === 'client' ? 'View Client B/L' : 'View Export B/L PDF'" @click="isAwbDetailModal() ? viewBillDetailFile(gsdModal.form.hblFile) : viewSelectedBillFile()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                 </div>
                 <input ref="billDetailFileInput" type="file" hidden @change="handleBillDetailFile" />
@@ -2286,7 +2292,7 @@
               <span v-if="gsdModal.form.sentAt" class="bd-sent"><span class="bd-check">✓</span> B/L sent · {{ gsdModal.form.sentAt }}</span>
               <button v-if="!isReadonlyExwFclEcdBillDetail()" class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="enableBillApprovalEdit">Edit</button>
               <button v-if="!isReadonlyExwFclEcdBillDetail()" class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing || !billDetailDirty()" @click="saveBillApproval">Save</button>
-              <button v-if="isBillApprovalModal() && !isBillMblOnlyDetailModal() && ['ECD', 'DCD'].includes(opsDeptUpper())" class="wb-modal-btn bill-send" type="button" :disabled="gsdModal.editing || !gsdModal.form.locked || !gsdModal.form.mbl || !gsdModal.form.siReceived || !billBlReady() || !!gsdModal.form.sentAt" @click="openBillSendModal">Send B/L to Shipper</button>
+              <button v-if="isBillApprovalModal() && !isBillMblOnlyDetailModal() && ['ECD', 'DCD'].includes(opsDeptUpper())" class="wb-modal-btn bill-send" type="button" :disabled="!billDetailCanSend()" @click="openBillSendModal">Send B/L to Shipper</button>
               <button v-if="!isBillApprovalModal()" class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
             </div>
           </template>
@@ -2382,7 +2388,7 @@
               </div>
             </div>
             <div v-if="preAlertShowsDestClearanceDocs()" class="pdcrow">
-              <button class="wb-modal-btn pdcbtn" type="button" @click="openPreDocsModal">
+              <button class="wb-modal-btn pdcbtn" type="button" :disabled="preAlertDestinationLocked()" @click="openPreDocsModal">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                 Attach Dest. Clearance Docs<span v-if="preDocsFileCount()" class="pdcbadge">{{ preDocsFileCount() }}</span>
               </button>
@@ -2414,9 +2420,9 @@
             </label>
             <div class="gsd-pre-actions">
               <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
-              <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="enablePreAlertEdit">Edit</button>
+              <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || preAlertDestinationLocked()" @click="enablePreAlertEdit">Edit</button>
               <button class="wb-modal-btn primary" type="button" :disabled="!preAlertCanSave()" @click="savePreAlert">Save</button>
-              <button class="wb-modal-btn send" type="button" :disabled="gsdModal.editing" @click="sendPreAlert">Send to Dest. Agent</button>
+              <button class="wb-modal-btn send" type="button" :disabled="gsdModal.editing || preAlertDestinationLocked()" @click="sendPreAlert">Send to Dest. Agent</button>
             </div>
             <input ref="preAlertFileInput" type="file" hidden @change="handlePreAlertFile" />
           </template>
@@ -3520,8 +3526,8 @@
     <div v-if="billReleaseSendModal.open" class="wb-modal-overlay" style="z-index:630" @mousedown.self="billReleaseSendModal.open = false">
       <div class="wb-modal bds-box" role="dialog" aria-modal="true">
         <button class="uX" type="button" @click="billReleaseSendModal.open = false">✕</button>
-        <div class="bds-title">Release B/L to Shipper</div>
-        <label class="bds-field"><span>To Shipper</span><input v-model="billReleaseSendModal.to" type="email" readonly /></label>
+        <div class="bds-title">Release B/L to {{ billReleaseSendModal.target === 'destination' ? 'Destination Agent' : 'Shipper' }}</div>
+        <label class="bds-field"><span>To {{ billReleaseSendModal.target === 'destination' ? 'Destination Agent' : 'Shipper' }}</span><input v-model="billReleaseSendModal.to" type="email" readonly /></label>
         <label class="bds-field"><span>CC emails</span><textarea v-model="billReleaseSendModal.cc" class="bds-emails" placeholder="Enter CC emails, separated by commas" @input="billReleaseSendModal.hint = ''"></textarea></label>
         <div class="bds-hint">{{ billReleaseSendModal.hint }}</div>
         <div class="bds-foot">
@@ -9113,8 +9119,24 @@ const isDestinationIcdPartySelectorCell = (row: number, column: number) => {
   return ['SHIPPER', 'CNEE', 'CONSIGNEE', 'ORIGIN AGENT', 'ORIGINAL AGENT', 'DESTINATION AGENT', 'DEST. AGENT', 'LINER', 'AIRLINE', 'AGENT']
     .includes(normalizedHeaderLabel(column))
 }
+const agentForcedNotRequired = (row: number, kind: 'origin' | 'destination') => {
+  const shipmentType = upperText(opsParts.value?.type || '')
+  const applies = kind === 'destination'
+    ? ['EXW', 'FCA', 'FCF'].includes(shipmentType)
+    : ['DO', 'DAP', 'DDU', 'DDP'].includes(shipmentType)
+  if (!applies) return false
+  const sourceColumn = (rows.value[0] || []).findIndex((_, index) => normalizedHeaderLabel(index) === `${shipmentType}+`)
+  if (sourceColumn < 0) return false
+  return !normalizeDropdownOption(rows.value[row]?.[sourceColumn])
+}
+const isForcedNotRequiredAgentCell = (row: number, column: number) => {
+  const label = normalizedHeaderLabel(column)
+  return (['DESTINATION AGENT', 'DEST. AGENT'].includes(label) && agentForcedNotRequired(row, 'destination'))
+    || (['ORIGIN AGENT', 'ORIGINAL AGENT'].includes(label) && agentForcedNotRequired(row, 'origin'))
+}
 const canEditClientLinkCell = (row: number, column: number) => {
   if (!isClientLinkCell(row, column)) return false
+  if (isForcedNotRequiredAgentCell(row, column)) return false
   // Destination ICD owns these operational parties even when the shipment row
   // was linked from the origin service. Keep CLIENT inbound/read-only, while
   // allowing blank party cells to expose their ADD+ selector immediately.
@@ -11201,6 +11223,7 @@ const openGsdModal = async (row: number, column: number) => {
         billDetailInitialSnapshot.value = billDetailSnapshot()
       } else if (label === 'BILL RELEASE' || label === 'AWB RELEASE' || (label === 'DO RELEASE' && isDoIcdSheet())) {
         gsdModal.formFields = []
+        billReleaseTargetMenuOpen.value = false
         let releaseValue: any = rawText
         if (opsDeptUpper() === 'DCD' && !String(rawText || '').trim() && ['BILL RELEASE', 'AWB RELEASE'].includes(label)) {
           releaseValue = await linkedEcdBillReleaseValue(row, label, rawText)
@@ -11262,11 +11285,12 @@ const openGsdModal = async (row: number, column: number) => {
         gsdModal.formFields = []
         gsdModal.form = preAlertFormFromCell(rawText)
         await loadPreAlertDestinationAgent()
+        if (preAlertDestinationLocked()) gsdModal.form.destAgent = 'N/A'
         hydratePreAlertFromBillDetail()
         gsdModal.form.initialSnapshot = preAlertSnapshot(gsdModal.form)
         // An unsent pre-alert is still a working draft. Open it ready for
         // input; only a document that has actually been sent is read-only.
-        gsdModal.editing = !gsdModal.form.sent
+        gsdModal.editing = !gsdModal.form.sent && !preAlertDestinationLocked()
       } else if (label === 'PRE-ALERT CONFIRMATION') {
         gsdModal.formFields = []
         gsdModal.form = preAlertConfirmationFormFromCell(rawText)
@@ -12942,6 +12966,7 @@ const sendArrivalNotice = async () => {
   showToast(isUpdate ? 'Updated Arrival Notice sent to CNEE' : 'Arrival Notice sent to CNEE')
 }
 const isPreAlertModal = () => isGsdFormModalLabel('PRE-ALERT SENDING')
+const preAlertDestinationLocked = () => agentForcedNotRequired(gsdModal.row, 'destination')
 const preAlertForwardingOption = () => {
   for (const label of ['EFA+', 'EXW+', 'FCA+', 'FCF+']) {
     const value = upperText(rowValueByHeader(label))
@@ -16978,7 +17003,12 @@ const closeBillExportMenuOnOutside = (event: MouseEvent) => {
   const target = event.target as HTMLElement | null
   if (!target?.closest('.bd-source-menu')) billExportMenuOpen.value = false
 }
+const closeBillReleaseMenuOnOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement | null
+  if (!target?.closest('.release-send-menu')) billReleaseTargetMenuOpen.value = false
+}
 const billBlReady = () => billSourceMode() === 'client' ? !!gsdModal.form.clientBlFile?.url : !!gsdModal.form.exportBl
+const billDetailCanSend = () => !gsdModal.form.sentAt && !!gsdModal.form.mbl && !!gsdModal.form.siReceived && billBlReady()
 const handleBillDetailFile = async (event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
@@ -17055,32 +17085,74 @@ const linkedEntityEmail = (value: any) => {
   const email = source.email ?? source.EMAIL ?? source.mail ?? source.MAIL
   return String(email || '').trim()
 }
-const billReleaseSendModal = reactive<{ open: boolean; to: string; cc: string; hint: string; sending: boolean }>({ open: false, to: '', cc: '', hint: '', sending: false })
+const billReleaseTargetMenuOpen = ref(false)
+const billReleaseSendModal = reactive<{ open: boolean; target: 'shipper' | 'destination'; to: string; cc: string; hint: string; sending: boolean }>({ open: false, target: 'shipper', to: '', cc: '', hint: '', sending: false })
 const billDocumentExportsForRow = (row: number) => {
   const index = (rows.value[0] || []).findIndex((_: any, column: number) => ['BILL DETAIL', 'BILL APPROVAL', 'AWB DETAIL'].includes(normalizedHeaderLabel(column)))
-  if (index < 0) return { exportBl: '', exportFcr: '', billSourceMode: 'export', clientBlFile: null as any }
+  if (index < 0) return { exportBl: '', exportFcr: '', billSourceMode: 'export', clientBlFile: null as any, sentAt: '' }
   const form = billApprovalFormFromCell(rows.value[row]?.[index])
-  return { exportBl: String(form.exportBl || ''), exportFcr: String(form.exportFcr || ''), billSourceMode: form.billSourceMode, clientBlFile: form.clientBlFile }
+  return { exportBl: String(form.exportBl || ''), exportFcr: String(form.exportFcr || ''), billSourceMode: form.billSourceMode, clientBlFile: form.clientBlFile, sentAt: String(form.sentAt || '') }
 }
-const rowBillReady = (documents: ReturnType<typeof billDocumentExportsForRow>) => documents.billSourceMode === 'client' ? !!documents.clientBlFile?.url : !!documents.exportBl
-const releaseBillFileReady = (documents: ReturnType<typeof billDocumentExportsForRow>) => rowBillReady(documents) || !!gsdModal.form.mblFile?.url
-const releaseBillToShipper = () => {
+const savedExportBillReady = (value: any) => {
+  if (!String(value || '').trim()) return false
+  try {
+    const document = JSON.parse(String(value))
+    return !!document?.savedAt
+  } catch {
+    return false
+  }
+}
+const billReleaseDocuments = () => billDocumentExportsForRow(gsdModal.row)
+const billReleaseUsesClientBl = () => billReleaseDocuments().billSourceMode === 'client'
+const billReleaseClientFile = () => billReleaseDocuments().clientBlFile
+const billReleasePreAlertHasHbl = () => preAlertHasHbl()
+const billReleaseDestinationAgentValue = () => rawSiSourceValue('DESTINATION AGENT') || rawSiSourceValue('DEST. AGENT') || rowValueByHeader('DESTINATION AGENT') || rowValueByHeader('DEST. AGENT')
+const billReleaseHasDestinationAgent = () => {
+  const value = billReleaseDestinationAgentValue()
+  const label = upperText(emailCellDisplayValue('DESTINATION AGENT', value) || clientCellText(value) || value)
+  return !!label && label !== 'N/A' && label !== 'NA' && label !== '-'
+}
+const releaseSelectedBillReady = () => {
+  const documents = billReleaseDocuments()
+  if (!billReleasePreAlertHasHbl()) return !!gsdModal.form.mblFile?.url
+  return documents.billSourceMode === 'client'
+    ? !!documents.clientBlFile?.url
+    : savedExportBillReady(documents.exportBl)
+}
+const releaseBillTo = (target: 'shipper' | 'destination') => {
+  billReleaseTargetMenuOpen.value = false
   if (!billReleasePaymentReady()) {
     showToast('Complete PAYMENT DETAIL before releasing the B/L')
     return
   }
   if (!gsdModal.form.locked || gsdModal.form.released) return
-  const shipperEmail = linkedEntityEmail(rawSiSourceValue('SHIPPER'))
-  if (!shipperEmail) {
-    showToast('Shipper does not have a valid email')
-    return
-  }
   const documents = billDocumentExportsForRow(gsdModal.row)
-  if (!releaseBillFileReady(documents)) {
-    showToast(documents.billSourceMode === 'client' ? "Upload Client's B/L or an MBL release file before releasing" : 'Save Export B/L or upload an MBL release file before releasing')
+  const hasHbl = billReleasePreAlertHasHbl()
+  if (hasHbl && !documents.sentAt) {
+    showToast('Create & send B/L in BILL DETAIL first')
     return
   }
-  billReleaseSendModal.to = String(gsdModal.form.releasedEmails || shipperEmail)
+  if (target === 'destination' && !billReleaseHasDestinationAgent()) return
+  if (target === 'destination' && (!hasHbl || !gsdModal.form.mblFile?.url)) {
+    showToast('Attach both MBL Release and HBL Release files before releasing to Destination Agent')
+    return
+  }
+  const recipientEmail = target === 'destination'
+    ? linkedEntityEmail(billReleaseDestinationAgentValue())
+    : linkedEntityEmail(rawSiSourceValue('SHIPPER'))
+  if (!recipientEmail) {
+    showToast(`${target === 'destination' ? 'Destination Agent' : 'Shipper'} does not have a valid email`)
+    return
+  }
+  const selectedHblMissing = documents.billSourceMode === 'client' ? !documents.clientBlFile?.url : !savedExportBillReady(documents.exportBl)
+  if ((hasHbl && selectedHblMissing) || (!hasHbl && !gsdModal.form.mblFile?.url)) {
+    showToast(hasHbl
+      ? documents.billSourceMode === 'client' ? 'Upload Customer B/L before releasing it' : 'Save Export B/L before releasing it'
+      : 'Upload MBL Release file before releasing it to Shipper')
+    return
+  }
+  billReleaseSendModal.target = target
+  billReleaseSendModal.to = String(recipientEmail)
   billReleaseSendModal.cc = String(gsdModal.form.releasedCc || '')
   billReleaseSendModal.hint = ''
   billReleaseSendModal.sending = false
@@ -17091,7 +17163,7 @@ const confirmBillReleaseToShipper = async () => {
   const to = billReleaseSendModal.to.split(/[;,]/).map((item) => item.trim()).filter(Boolean)
   const cc = billReleaseSendModal.cc.split(/[;,]/).map((item) => item.trim()).filter(Boolean)
   if (!to.length || to.some((item) => !emailPattern.test(item))) {
-    billReleaseSendModal.hint = 'Shipper does not have a valid email'
+    billReleaseSendModal.hint = `${billReleaseSendModal.target === 'destination' ? 'Destination Agent' : 'Shipper'} does not have a valid email`
     return
   }
   if (cc.some((item) => !emailPattern.test(item))) {
@@ -17099,8 +17171,20 @@ const confirmBillReleaseToShipper = async () => {
     return
   }
   const documents = billDocumentExportsForRow(gsdModal.row)
-  if (!releaseBillFileReady(documents)) {
-    billReleaseSendModal.hint = documents.billSourceMode === 'client' ? "Upload Client's B/L or an MBL release file before releasing" : 'Save Export B/L or upload an MBL release file before releasing'
+  const hasHbl = billReleasePreAlertHasHbl()
+  if (hasHbl && !documents.sentAt) {
+    billReleaseSendModal.hint = 'Create & send B/L in BILL DETAIL first'
+    return
+  }
+  if (billReleaseSendModal.target === 'destination' && (!hasHbl || !gsdModal.form.mblFile?.url)) {
+    billReleaseSendModal.hint = 'Attach both MBL Release and HBL Release files before releasing to Destination Agent'
+    return
+  }
+  const selectedHblMissing = documents.billSourceMode === 'client' ? !documents.clientBlFile?.url : !savedExportBillReady(documents.exportBl)
+  if ((hasHbl && selectedHblMissing) || (!hasHbl && !gsdModal.form.mblFile?.url)) {
+    billReleaseSendModal.hint = hasHbl
+      ? documents.billSourceMode === 'client' ? 'Upload Customer B/L before releasing it' : 'Save Export B/L before releasing it'
+      : 'Upload MBL Release file before releasing it to Shipper'
     return
   }
   billReleaseSendModal.sending = true
@@ -17108,16 +17192,14 @@ const confirmBillReleaseToShipper = async () => {
   try {
     const jobNo = String(rowValueByHeader('JOB NO#') || rowValueByHeader('REF#') || 'DOCUMENT').trim()
     const safeJobNo = jobNo.replace(/[^a-zA-Z0-9_-]+/g, '_')
-    const useUploadedReleaseFile = !rowBillReady(documents) && !!gsdModal.form.mblFile?.url
-    const attachments = useUploadedReleaseFile
-      ? [clientBillEmailAttachment(gsdModal.form.mblFile)]
-      : documents.billSourceMode === 'client'
+    const hblAttachments = hasHbl
+      ? documents.billSourceMode === 'client'
         ? [clientBillEmailAttachment(documents.clientBlFile)]
-        : [await uploadBillEmailPdf(await renderSavedBillAttachment('B/L', documents.exportBl), `B-L_${safeJobNo}.pdf`)]
-    if (!useUploadedReleaseFile && documents.billSourceMode === 'export' && documents.exportFcr) {
-      const fcrBlob = await renderSavedBillAttachment('FCR', documents.exportFcr)
-      attachments.push(await uploadBillEmailPdf(fcrBlob, `FCR_${safeJobNo}.pdf`))
-    }
+        : [await uploadBillEmailPdf(await renderSavedBillAttachment('B/L', documents.exportBl, true), `B-L_${safeJobNo}.pdf`)]
+      : []
+    const attachments = billReleaseSendModal.target === 'destination'
+      ? [clientBillEmailAttachment(gsdModal.form.mblFile), ...hblAttachments]
+      : hasHbl ? hblAttachments : [clientBillEmailAttachment(gsdModal.form.mblFile)]
     await props.request('/workbook/send-bill-email', {
       method: 'POST',
       body: {
@@ -17135,7 +17217,9 @@ const confirmBillReleaseToShipper = async () => {
     gsdModal.form.releasedCc = cc.join(', ')
     billReleaseSendModal.open = false
     await saveBillApproval()
-    showToast(documents.billSourceMode === 'export' && documents.exportFcr ? 'B/L and FCR released to Shipper' : 'B/L released to Shipper')
+    showToast(billReleaseSendModal.target === 'destination'
+      ? 'MBL and HBL released to Destination Agent'
+      : hasHbl ? 'HBL released to Shipper' : 'MBL released to Shipper')
   } catch (error: any) {
     billReleaseSendModal.hint = error?.data?.message || error?.message || 'Could not send B/L email'
   } finally {
@@ -17167,16 +17251,10 @@ const syncBillDetailTimestamp = (field: 'siReceived' | 'siSubmitted' | 'mnfSubmi
 const enableBillApprovalEdit = () => {
   gsdModal.editing = true
   gsdModal.form.locked = false
-  if (isBillApprovalModal()) {
-    gsdModal.form.sent = false
-    gsdModal.form.sentAt = ''
-    gsdModal.form.sentEmails = ''
-    gsdModal.form.sentCc = ''
-  }
 }
 const billSendModal = reactive<{ open: boolean; to: string; cc: string; hint: string; sending: boolean }>({ open: false, to: '', cc: '', hint: '', sending: false })
 const openBillSendModal = () => {
-  if (gsdModal.editing || !gsdModal.form.locked) return
+  if (gsdModal.form.sentAt) return
   if (!gsdModal.form.mbl || !gsdModal.form.siReceived) {
     showToast(awbText('MBL APPROVED and SI RECEIVED are required'))
     return
@@ -17205,14 +17283,14 @@ const clientBillEmailAttachment = (file: any) => ({
   url: String(file?.url || ''),
   contentType: String(file?.type || file?.contentType || 'application/octet-stream'),
 })
-const renderSavedBillAttachment = async (kind: 'B/L' | 'FCR', stored: string) => {
+const renderSavedBillAttachment = async (kind: 'B/L' | 'FCR', stored: string, isRelease = false) => {
   let saved: any = null
   try { saved = stored ? JSON.parse(stored) : null } catch { saved = null }
   if (!saved || !saved.locked) throw new Error(`Save Export ${kind} before sending`)
   const snapshot = { ...billDocModal }
   billDocBackgroundRendering.value = true
   try {
-    Object.assign(billDocModal, saved, { open: true, readonly: false, isRelease: false, exportingPdf: false, kind, locked: true })
+    Object.assign(billDocModal, saved, { open: true, readonly: false, isRelease, exportingPdf: false, kind, locked: true })
     await nextTick()
     const blob = await printBillDocument(false)
     if (!blob) throw new Error(`Could not create Export ${kind} PDF`)
@@ -17345,6 +17423,31 @@ const saveBillApproval = async (waitForPersistence: boolean | Event = true) => {
     showToast('Collection deadline is required when Collect later is selected')
     return
   }
+  if (isBillApprovalModal() && gsdModal.form.sentAt && billDetailDirty()) {
+    let initialSentAt = ''
+    try { initialSentAt = String(JSON.parse(billDetailInitialSnapshot.value || '{}')?.sentAt || '') } catch { initialSentAt = '' }
+    // A saved edit reopens the send action. Do not clear the timestamp created
+    // by the send flow itself, which calls this same persistence function.
+    if (initialSentAt && initialSentAt === String(gsdModal.form.sentAt || '')) {
+      gsdModal.form.sent = false
+      gsdModal.form.sentAt = ''
+      gsdModal.form.sentEmails = ''
+      gsdModal.form.sentCc = ''
+    }
+  }
+  if (isBillReleaseModal() && gsdModal.form.releasedAt && billReleaseDirty()) {
+    let initialReleasedAt = ''
+    try { initialReleasedAt = String(JSON.parse(billReleaseInitialSnapshot.value || '{}')?.releasedAt || '') } catch { initialReleasedAt = '' }
+    // Saving a real edit after a previous release opens the release action
+    // again. Preserve the new timestamp when this save is initiated by the
+    // release-email flow itself.
+    if (initialReleasedAt && initialReleasedAt === String(gsdModal.form.releasedAt || '')) {
+      gsdModal.form.released = false
+      gsdModal.form.releasedAt = ''
+      gsdModal.form.releasedEmails = ''
+      gsdModal.form.releasedCc = ''
+    }
+  }
   rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({
     form: {
       saved: true,
@@ -17460,8 +17563,12 @@ const openBillDocument = async (kind: 'B/L' | 'FCR', isRelease = false) => {
   }
   let saved: any = null
   try { saved = stored ? JSON.parse(stored) : null } catch { saved = null }
-  if (isRelease && (!saved || !saved.savedAt || !sentAt)) {
+  if (isRelease && !sentAt) {
     showToast('Create & send B/L in BILL DETAIL first')
+    return
+  }
+  if (isRelease && (!saved || !saved.savedAt)) {
+    showToast('Save Export B/L in BILL DETAIL first')
     return
   }
   await loadRouteReferenceData()
@@ -17545,8 +17652,12 @@ const saveBillDocument = async () => {
       rows.value[gsdModal.row][index] = JSON.stringify({ form: { ...detailForm } })
       if (billDocModal.kind === 'B/L') gsdModal.form.exportBl = data
       else gsdModal.form.exportFcr = data
-      scheduleSave()
-      await saveSheet()
+      // Reflect the saved document immediately and persist it once in the
+      // background. Waiting for a full worksheet refresh made this small
+      // modal action feel unnecessarily slow.
+      void saveSheet().then((saved) => {
+        if (!saved) showToast('Could not persist Export B/L. Please try Save again.')
+      })
     } else {
       showToast('Could not find BILL DETAIL to save the export document')
       return
@@ -18370,6 +18481,7 @@ const persistPreAlert = (immediate = false) => {
   if (immediate) void saveSheet()
 }
 const savePreAlert = async () => {
+  if (preAlertDestinationLocked()) return
   if (!preAlertIsDirty()) return
   const previousSent = !!gsdModal.form.sent
   const previousSentAt = String(gsdModal.form.sentAt || '')
@@ -18393,6 +18505,7 @@ const savePreAlert = async () => {
   gsdModal.form.initialSnapshot = preAlertSnapshot()
 }
 const enablePreAlertEdit = () => {
+  if (preAlertDestinationLocked()) return
   gsdModal.form.locked = false
   gsdModal.editing = true
 }
@@ -18461,6 +18574,10 @@ const crossServiceSourceSnapshot = async (row: number) => {
   return { header, row: header.map((label) => values.get(label) ?? '') }
 }
 const sendPreAlert = async () => {
+  if (preAlertDestinationLocked()) {
+    showToast('Destination agent is not required for this shipment')
+    return
+  }
   if (!gsdModal.form.locked) {
     showToast('Save before sending')
     return
@@ -19129,7 +19246,9 @@ const agentNotRequiredConfig = () => {
   return null
 }
 const isAgentNotRequired = () => {
-  if (!agentNotRequiredConfig()) return false
+  const config = agentNotRequiredConfig()
+  if (!config) return false
+  if (agentForcedNotRequired(gsdModal.row, config.kind as 'origin' | 'destination')) return true
   return upperText(clientCellText(rows.value[gsdModal.row]?.[gsdModal.column])) === 'N/A'
 }
 const toggleAgentNotRequired = async (event: Event) => {
@@ -21313,9 +21432,26 @@ const openDropdownPopup = (row: number, column: number, event?: MouseEvent, targ
   closeDatePopup()
 }
 const closeDropdownPopup = () => { dropdownPopup.open = false }
+const syncForcedAgentFromServiceOption = (row: number, column: number, option: string) => {
+  const sourceLabel = normalizedHeaderLabel(column)
+  const shipmentType = upperText(opsParts.value?.type || '')
+  const outbound = ['EXW', 'FCA', 'FCF'].includes(shipmentType) && sourceLabel === `${shipmentType}+`
+  const inbound = ['DO', 'DAP', 'DDU', 'DDP'].includes(shipmentType) && sourceLabel === `${shipmentType}+`
+  if (!outbound && !inbound) return
+  const agentLabels = outbound ? ['DESTINATION AGENT', 'DEST. AGENT'] : ['ORIGIN AGENT', 'ORIGINAL AGENT']
+  const agentColumn = (rows.value[0] || []).findIndex((_, index) => agentLabels.includes(normalizedHeaderLabel(index)))
+  if (agentColumn < 0) return
+  const forced = !normalizeDropdownOption(option)
+  const current = upperText(clientCellText(rows.value[row]?.[agentColumn]))
+  if (forced) rows.value[row][agentColumn] = 'N/A'
+  else if (current === 'N/A') rows.value[row][agentColumn] = ''
+  else return
+  mirrorFclLinkedCell(row, agentColumn)
+}
 const selectDropdownOption = (option: string) => {
   if (dropdownPopup.mode === 'edit') return
   rows.value[dropdownPopup.row][dropdownPopup.column] = option
+  syncForcedAgentFromServiceOption(dropdownPopup.row, dropdownPopup.column, option)
   mirrorFclLinkedCell(dropdownPopup.row, dropdownPopup.column)
   scheduleSave()
   closeDropdownPopup()
@@ -23377,6 +23513,7 @@ onBeforeUnmount(() => {
 .gsd-release-actions .wb-modal-btn.release-send{transition:background-color .15s ease,border-color .15s ease,box-shadow .15s ease}
 .gsd-release-actions .wb-modal-btn.release-send:hover:not(:disabled),.gsd-release-actions .wb-modal-btn.release-send:focus-visible:not(:disabled){background:#0b5f59;border-color:#0b5f59;color:#fff;box-shadow:0 2px 8px rgba(15,118,110,.24)}
 .gsd-release-actions .wb-modal-btn.release-send:active:not(:disabled){background:#094f4a;border-color:#094f4a}
+.release-send-menu{position:relative}.release-send-options{position:absolute;right:0;bottom:calc(100% + 6px);z-index:12;min-width:238px;padding:5px;background:#fff;border:1px solid #d8e0dc;border-radius:8px;box-shadow:0 8px 24px rgba(31,42,38,.16)}.release-send-options button{display:block;width:100%;border:0;border-radius:6px;background:#fff;padding:9px 10px;text-align:left;color:#26342e;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}.release-send-options button:hover{background:#eaf7f0;color:#087443}
 .gsd-prs-actions .wb-modal-btn.primary:disabled{opacity:1!important;filter:none!important;background:#b9d9c9!important;border-color:#b9d9c9!important;color:#fff!important}
 /* Table-based editors show one header plus five data rows. Additional records
    stay inside the table region so they do not keep increasing modal height. */
