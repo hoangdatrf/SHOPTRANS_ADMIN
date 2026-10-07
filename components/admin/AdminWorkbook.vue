@@ -735,9 +735,9 @@
                       @mousedown.stop
                       @click.stop="openDropdownPopup(rowIndex, columnIndex, $event)"
                     >
-                      <span>{{ displayCell(rows[rowIndex]?.[columnIndex], rowIndex, columnIndex) }}</span>
+                      <span>{{ opsGridCellText(rows[rowIndex]?.[columnIndex], rowIndex, columnIndex) }}</span>
                     </button>
-                    <span v-else>{{ displayCell(rows[rowIndex]?.[columnIndex], rowIndex, columnIndex) }}</span>
+                    <span v-else>{{ opsGridCellText(rows[rowIndex]?.[columnIndex], rowIndex, columnIndex) }}</span>
                   </td>
                 </template>
               </tr>
@@ -4772,12 +4772,12 @@ const billDocRouteFields = [
 const searchGsdClients = async () => {
   if (gsdModal.kind !== 'client' || gsdModal.clientView !== 'search') {
     gsdClientResults.value = []
-    return
+    return [] as GsdClientRecord[]
   }
   const term = gsdModal.text.trim()
   if (!term) {
     gsdClientResults.value = []
-    return
+    return [] as GsdClientRecord[]
   }
   const run = ++clientSearchRun
   try {
@@ -4796,10 +4796,14 @@ const searchGsdClients = async () => {
       AGENT: { page: 'traders_dest_agent', roles: ['DEST. AGENT', 'AGENT'] },
     }
     const source = traderSource[role] || traderSource.CLIENT
-    const res = await props.request(`/records?country=${encodeURIComponent(countryViewId())}&page=${encodeURIComponent(source.page)}&search=${encodeURIComponent(term)}&limit=1000&skip=0`)
-    if (run !== clientSearchRun) return
+    // The records endpoint applies a broad/inconsistent search across nested
+    // fields. Load the role page once per query and apply the selected ID or
+    // NameCode matching locally so valid suggestions are never dropped.
+    const res = await props.request(`/records?country=${encodeURIComponent(countryViewId())}&page=${encodeURIComponent(source.page)}&search=&limit=1000&skip=0`)
     const records = Array.isArray(res?.items) ? res.items : []
-    gsdClientResults.value = records.map((record: any) => {
+    const query = upperText(term)
+    const mode = gsdModal.clientMode === 'namecode' ? 'namecode' : 'id'
+    const results = records.map((record: any) => {
       const data = record?.data && typeof record.data === 'object' ? record.data : record
       return normalizeClientRecord({
         ...data,
@@ -4812,11 +4816,19 @@ const searchGsdClients = async () => {
       })
     }).filter((client: GsdClientRecord) => {
       const roles = (client.roles || []).map(upperText)
-      return source.roles.some((allowed) => roles.includes(allowed)) && upperText(client.status || 'ACTIVE') !== 'INACTIVE'
+      const searchable = mode === 'namecode'
+        ? [client.namecode]
+        : [client.id, client.entityId]
+      return source.roles.some((allowed) => roles.includes(allowed))
+        && upperText(client.status || 'ACTIVE') !== 'INACTIVE'
+        && searchable.some((value) => upperText(value || '').includes(query))
     }).slice(0, 20)
+    if (run === clientSearchRun) gsdClientResults.value = results
+    return results
   } catch (error) {
     console.error('Could not search clients', error)
     if (run === clientSearchRun) gsdClientResults.value = []
+    return [] as GsdClientRecord[]
   }
 }
 watch(() => [gsdModal.open, gsdModal.kind, gsdModal.clientView, gsdModal.clientMode, gsdModal.text], searchGsdClients)
@@ -5248,6 +5260,10 @@ const loadRouteReferenceData = async () => {
 const uppercaseClientSearch = () => {
   gsdModal.text = upperText(gsdModal.text)
   gsdModal.selectedClient = null
+  // Hide results for the previous query immediately and invalidate its
+  // in-flight response. The watcher will issue the new search next.
+  clientSearchRun += 1
+  gsdClientResults.value = []
 }
 const uppercaseClientField = (field: keyof ReturnType<typeof emptyClientForm>) => {
   ;(gsdModal.clientForm as any)[field] = upperText((gsdModal.clientForm as any)[field])
@@ -5525,6 +5541,8 @@ const saveTruckCompany = async () => {
 }
 const clearGsdClientDetail = () => {
   gsdModal.selectedClient = null
+  clientSearchRun += 1
+  gsdClientResults.value = []
 }
 const isSelectedGsdClient = (client: GsdClientRecord) => {
   const current = gsdModal.selectedClient
@@ -6378,6 +6396,32 @@ const loadSheet = async () => {
 
     backfillGeneratedJobNumbers(rowsLoaded)
 
+    // A blank `+` service is a deliberate "not required" choice. Persist the
+    // linked Agent as N/A while loading older/dispatched rows as well, because
+    // those rows may have been created before the source-side normalization.
+    let forcedAgentNormalized = false
+    if (parsed && ['EXW', 'FCA', 'FCF', 'DO', 'DAP', 'DDU', 'DDP'].includes(upperText(parsed.type))) {
+      const shipmentType = upperText(parsed.type)
+      const header = rowsLoaded[0] || []
+      const sourceLabels = shipmentType === 'EXW' ? ['EXW+', 'EFA+'] : [`${shipmentType}+`]
+      const sourceColumn = header.findIndex((cell) => sourceLabels.includes(upperText(cell)))
+      const agentLabels = ['EXW', 'FCA', 'FCF'].includes(shipmentType)
+        ? ['DESTINATION AGENT', 'DEST. AGENT']
+        : ['ORIGIN AGENT', 'ORIGINAL AGENT']
+      const agentColumn = header.findIndex((cell) => agentLabels.includes(upperText(cell)))
+      if (sourceColumn >= 0) rowsLoaded.forEach((row, index) => {
+        if (index <= 0 || normalizeDropdownOption(row?.[sourceColumn])) return
+        if (String(row?.[sourceColumn] ?? '').trim() !== '\u2014') {
+          row[sourceColumn] = '\u2014'
+          forcedAgentNormalized = true
+        }
+        if (agentColumn >= 0 && upperText(clientCellText(row?.[agentColumn])) !== 'N/A') {
+          row[agentColumn] = 'N/A'
+          forcedAgentNormalized = true
+        }
+      })
+    }
+
     if (parsed && ['TCD', 'CCD', 'DCD'].includes(String(parsed.dept || '').toUpperCase())) {
       const modeColumn = (rowsLoaded[0] || []).findIndex((cell) => String(cell ?? '').trim().toUpperCase() === 'MODE')
       const manualRows = new Set<number>((settingsLoaded.manualOpsRows || []).map(Number))
@@ -6395,7 +6439,7 @@ const loadSheet = async () => {
     formatting.value = formattingLoaded
     merges.value = mergesLoaded
     settings.value = settingsLoaded
-    if (mergedLegacyDcdData) scheduleSave()
+    if (mergedLegacyDcdData || forcedAgentNormalized) scheduleSave()
     sanitizeOpsStructuralSettings()
     recalibrateStatusCounts()
     const loadedUpdatedAt = responseUpdatedAt(sheet)
@@ -8981,7 +9025,10 @@ const normalizeDropdownOption = (value: any) => {
   const option = String(value ?? '').trim()
   return !option || /^[-–—]+$/.test(option) ? '' : option
 }
-const isForwardingOptionColumn = (column: number) => ['EFA+', 'EXW+', 'FCA+', 'FCF+'].includes(normalizedHeaderLabel(column))
+const isForwardingOptionColumn = (column: number) => {
+  const label = upperText(headerLabel(column)).replace(/\s+/g, '')
+  return ['EFA+', 'EXW+', 'FCA+', 'FCF+'].includes(label)
+}
 const uniqueDropdownOptions = (values: any[], includeBlank = false) => {
   const result: string[] = []
   const seen = new Set<string>()
@@ -9027,6 +9074,9 @@ const opsNativeDropdownValue = (row: number, column: number) => {
 const opsNativeDropdownOptions = (row: number, column: number) => {
   const options = dropdownOptions(column)
   const current = opsNativeDropdownValue(row, column)
+  if (isForwardingOptionColumn(column)) {
+    return [...new Set([current, ...options].map((option) => normalizeDropdownOption(option) || '\u2014'))]
+  }
   return uniqueDropdownOptions(
     options.some((option) => option.toLocaleUpperCase() === current.toLocaleUpperCase()) ? options : [current, ...options],
     !current,
@@ -9125,7 +9175,8 @@ const agentForcedNotRequired = (row: number, kind: 'origin' | 'destination') => 
     ? ['EXW', 'FCA', 'FCF'].includes(shipmentType)
     : ['DO', 'DAP', 'DDU', 'DDP'].includes(shipmentType)
   if (!applies) return false
-  const sourceColumn = (rows.value[0] || []).findIndex((_, index) => normalizedHeaderLabel(index) === `${shipmentType}+`)
+  const sourceLabels = shipmentType === 'EXW' ? ['EXW+', 'EFA+'] : [`${shipmentType}+`]
+  const sourceColumn = (rows.value[0] || []).findIndex((_, index) => sourceLabels.includes(normalizedHeaderLabel(index)))
   if (sourceColumn < 0) return false
   return !normalizeDropdownOption(rows.value[row]?.[sourceColumn])
 }
@@ -11014,8 +11065,11 @@ const openGsdModal = async (row: number, column: number) => {
       } else if (rawText && upperText(rawText) !== 'N/A') {
         gsdModal.clientMode = 'namecode'
         gsdModal.text = upperText(rawText)
-        await searchGsdClients()
-        const exact = gsdClientResults.value.find((item) => upperText(item.namecode) === upperText(rawText) || upperText(item.id) === upperText(rawText))
+        // Use this request's own result for exact resolution. A watcher may
+        // start a newer request while this one is pending; relying on the
+        // shared result list made the modal intermittently stay on Search.
+        const matches = await searchGsdClients()
+        const exact = matches.find((item) => upperText(item.namecode) === upperText(rawText) || upperText(item.id) === upperText(rawText))
         if (exact) {
           gsdModal.selectedClient = exact
           gsdModal.clientForm = clientFormFromRecord(exact)
@@ -14711,7 +14765,7 @@ const validatePickupDetails = () => {
   }
   return true
 }
-const persistPickupModal = (immediate = false) => {
+const persistPickupModal = (immediate = false, schedulePersistence = true) => {
   const allowCopy = pickupShowsCopy()
   const allowBooking = pickupShowsBookingUpload()
   rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({
@@ -14740,19 +14794,20 @@ const persistPickupModal = (immediate = false) => {
       sentAt: gsdModal.form.sentAt || '',
     },
   })
-  scheduleSave()
+  if (schedulePersistence) scheduleSave()
   if (immediate) void saveSheet()
 }
 const savePickupDetails = async () => {
   if (!pickupCanEdit() || !validatePickupDetails()) return
   gsdModal.form.saved = true
-  persistPickupModal(false)
+  // Update the cell and lock the modal immediately. Do not queue the generic
+  // autosave as this flow persists one captured worksheet snapshot itself.
+  persistPickupModal(false, false)
   const savedRow = gsdModal.row
   const savedColumn = gsdModal.column
   const savedValue = rows.value[savedRow][savedColumn]
   const savedKey = activeKey.value
   const savedCountry = loadedCountryId.value
-  const savedPayload = sheetPayload(savedKey, false, savedCountry)
   const savedType = upperText(opsParts.value?.type || '')
   const savedMode = upperText(opsParts.value?.mode || '')
   const savedDept = opsDeptUpper()
@@ -14761,6 +14816,11 @@ const savePickupDetails = async () => {
   // propagation must not keep the modal in edit mode for several seconds.
   gsdModal.editing = false
   void (async () => {
+    // Let Vue paint the saved/read-only state before serializing a potentially
+    // large workbook. This makes the Save response feel immediate.
+    await nextTick()
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()))
+    const savedPayload = sheetPayload(savedKey, false, savedCountry)
     const saved = await saveSheet(savedKey, savedPayload, savedCountry)
     if (!saved) {
       if (isVisibleSheet(savedKey, savedCountry) && gsdModal.open && gsdModal.row === savedRow && gsdModal.column === savedColumn) {
@@ -14838,7 +14898,7 @@ const sendPickupToTarget = async () => {
     gsdModal.form.sentAt = confirmedSentAt
     gsdModal.form.saved = true
     gsdModal.editing = false
-    persistPickupModal(false)
+    persistPickupModal(false, false)
     if (['EXW', 'FCA', 'DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase()) && ['FCL', 'LCL'].includes(String(opsParts.value?.mode || '').toUpperCase()) && opsDeptUpper() === 'TCD') {
       const targetLabel = isDeliveryDetailsModal() ? 'DELIVERY DETAIL' : 'PICKUP DETAIL'
       await Promise.all(fclTcdMirrorDepts().map((dept) => mirrorExwFclWorkflowCell(dept, targetLabel, rows.value[gsdModal.row][gsdModal.column])))
@@ -21451,7 +21511,10 @@ const setDropdownValue = (row: number, column: number, event: Event) => {
     showToast('Column locked')
     return
   }
-  rows.value[row][column] = (event.target as HTMLSelectElement).value
+  const selected = (event.target as HTMLSelectElement).value
+  const stored = isForwardingOptionColumn(column) && !normalizeDropdownOption(selected) ? '\u2014' : selected
+  rows.value[row][column] = stored
+  syncForcedAgentFromServiceOption(row, column, stored)
   mirrorFclLinkedCell(row, column)
   scheduleSave()
 }
@@ -21489,8 +21552,9 @@ const closeDropdownPopup = () => { dropdownPopup.open = false }
 const syncForcedAgentFromServiceOption = (row: number, column: number, option: string) => {
   const sourceLabel = normalizedHeaderLabel(column)
   const shipmentType = upperText(opsParts.value?.type || '')
-  const outbound = ['EXW', 'FCA', 'FCF'].includes(shipmentType) && sourceLabel === `${shipmentType}+`
-  const inbound = ['DO', 'DAP', 'DDU', 'DDP'].includes(shipmentType) && sourceLabel === `${shipmentType}+`
+  const sourceLabels = shipmentType === 'EXW' ? ['EXW+', 'EFA+'] : [`${shipmentType}+`]
+  const outbound = ['EXW', 'FCA', 'FCF'].includes(shipmentType) && sourceLabels.includes(sourceLabel)
+  const inbound = ['DO', 'DAP', 'DDU', 'DDP'].includes(shipmentType) && sourceLabels.includes(sourceLabel)
   if (!outbound && !inbound) return
   const agentLabels = outbound ? ['DESTINATION AGENT', 'DEST. AGENT'] : ['ORIGIN AGENT', 'ORIGINAL AGENT']
   const agentColumn = (rows.value[0] || []).findIndex((_, index) => agentLabels.includes(normalizedHeaderLabel(index)))
@@ -21504,8 +21568,11 @@ const syncForcedAgentFromServiceOption = (row: number, column: number, option: s
 }
 const selectDropdownOption = (option: string) => {
   if (dropdownPopup.mode === 'edit') return
-  rows.value[dropdownPopup.row][dropdownPopup.column] = option
-  syncForcedAgentFromServiceOption(dropdownPopup.row, dropdownPopup.column, option)
+  const label = normalizedHeaderLabel(dropdownPopup.column)
+  const isServiceOption = ['EFA+', 'EXW+', 'FCA+', 'FCF+', 'DO+', 'DAP+', 'DDU+', 'DDP+', 'DUP+'].includes(label)
+  const storedOption = isServiceOption && !normalizeDropdownOption(option) ? '\u2014' : option
+  rows.value[dropdownPopup.row][dropdownPopup.column] = storedOption
+  syncForcedAgentFromServiceOption(dropdownPopup.row, dropdownPopup.column, storedOption)
   mirrorFclLinkedCell(dropdownPopup.row, dropdownPopup.column)
   scheduleSave()
   closeDropdownPopup()
@@ -22005,8 +22072,7 @@ const formatAdminDateDisplay = (value: any) => {
 const displayCell = (value: any, row: number, column: number) => {
   const format = cellFormatOf(row, column)
   if (row > 0 && isForwardingOptionColumn(column)) {
-    const forwardingValue = String(value ?? '').trim()
-    return !forwardingValue || /^[-–—]+$/.test(forwardingValue) ? '—' : forwardingValue
+    return normalizeDropdownOption(value) || '\u2014'
   }
   if (row > 0 && isOpsStaffColumn(column)) return canonicalOpsStaffName(value, column)
   if (row > 0 && normalizedHeaderLabel(column) === 'ACTION' && (value == null || value === '')) return 'ACTIVE'
@@ -22055,6 +22121,13 @@ const displayCell = (value: any, row: number, column: number) => {
     return formatAdminDateDisplay(value)
   }
   return formatAdminDateDisplay(value)
+}
+const opsGridCellText = (value: any, row: number, column: number) => {
+  const label = upperText(rows.value[0]?.[column]).replace(/\s+/g, '')
+  if (row > 0 && ['EXW+', 'EFA+', 'FCA+', 'FCF+'].includes(label)) {
+    return normalizeDropdownOption(value) || '\u2014'
+  }
+  return displayCell(value, row, column)
 }
 
 const columnLetter = (index: number) => {
