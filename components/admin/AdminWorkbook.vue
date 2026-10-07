@@ -6117,6 +6117,9 @@ watch(opsParts, (p) => {
 }, { immediate: true })
 
 let sheetLoadRun = 0
+// One-off repairs of legacy data. Re-running them on every dept switch costs an
+// extra sheet fetch each time, so each sheet is only repaired once per session.
+const legacyHydratedSheets = new Set<string>()
 const loadSheet = async () => {
   const run = ++sheetLoadRun
   const requestedKey = activeKey.value
@@ -6234,6 +6237,14 @@ const loadSheet = async () => {
       // the DCD tab disappears. ECD values win when both sides already have data.
       if (parsed.dept === 'ECD' && ['EXW', 'FCA', 'FCF'].includes(upperText(parsed.type))) {
         try {
+          if (legacyHydratedSheets.has(`dcd-merge:${requestedStorageKey}`)) throw { skip: true }
+          legacyHydratedSheets.add(`dcd-merge:${requestedStorageKey}`)
+          const migratedColumns = ['MASTER SI SUBMIT', 'BILL DETAIL', 'AWB DETAIL', 'BILL RELEASE', 'AWB RELEASE', 'PAYMENT REQUEST']
+            .map((label) => target.indexOf(label))
+            .filter((index) => index >= 0)
+          const needsLegacyMerge = migratedColumns.length > 0 && rowsLoaded.some((row, index) =>
+            index > 0 && migratedColumns.some((columnIndex) => !String(row?.[columnIndex] || '').trim()))
+          if (!needsLegacyMerge) throw { skip: true }
           const dcdLeaf = opsLeafKey(parsed.base, parsed.mode, parsed.type, 'DCD')
           const dcdKey = opsStatusKey(dcdLeaf, parsed.status)
           const dcdSheet = await props.request(`/workbook/sheets/${encodeURIComponent(sheetStorageKey(dcdKey, requestedCountry))}`)
@@ -6268,7 +6279,7 @@ const loadSheet = async () => {
             }
           })
         } catch (error: any) {
-          if (requestStatus(error) !== 404) console.warn('Could not merge legacy DCD workflow into ECD', error)
+          if (!error?.skip && requestStatus(error) !== 404) console.warn('Could not merge legacy DCD workflow into ECD', error)
         }
       }
       // Populate the GSD overview from ECD records that already existed before
@@ -6280,6 +6291,11 @@ const loadSheet = async () => {
         target.includes('ECD OPS')
       ) {
         try {
+          if (legacyHydratedSheets.has(`ecd-ops:${requestedStorageKey}`)) throw { skip: true }
+          legacyHydratedSheets.add(`ecd-ops:${requestedStorageKey}`)
+          const ecdOpsColumnIndex = target.findIndex((label) => upperText(label) === 'ECD OPS')
+          const needsEcdOwner = ecdOpsColumnIndex >= 0 && rowsLoaded.some((row, index) => index > 0 && !String(row?.[ecdOpsColumnIndex] || '').trim())
+          if (!needsEcdOwner) throw { skip: true }
           const ecdKey = opsLeafKey(parsed.base, parsed.mode, parsed.type, 'ECD')
           const ecdStorageKey = sheetStorageKey(ecdKey, requestedCountry)
           const ecdSheet = await props.request(`/workbook/sheets/${encodeURIComponent(ecdStorageKey)}`)
@@ -6304,7 +6320,7 @@ const loadSheet = async () => {
             if (ecdOwner) sourceRow[sourceEcdOpsColumn] = ecdOwner
           })
         } catch (error: any) {
-          if (requestStatus(error) !== 404) console.warn('Could not hydrate ECD OPS on GSD', error)
+          if (!error?.skip && requestStatus(error) !== 404) console.warn('Could not hydrate ECD OPS on GSD', error)
         }
       }
 
@@ -6317,6 +6333,11 @@ const loadSheet = async () => {
         target.includes('ICD OPS')
       ) {
         try {
+          if (legacyHydratedSheets.has(`icd-ops:${requestedStorageKey}`)) throw { skip: true }
+          legacyHydratedSheets.add(`icd-ops:${requestedStorageKey}`)
+          const icdOpsColumnIndex = target.findIndex((label) => upperText(label) === 'ICD OPS')
+          const needsIcdOwner = icdOpsColumnIndex >= 0 && rowsLoaded.some((row, index) => index > 0 && !String(row?.[icdOpsColumnIndex] || '').trim())
+          if (!needsIcdOwner) throw { skip: true }
           const icdKey = opsLeafKey(parsed.base, parsed.mode, parsed.type, 'ICD')
           const icdStorageKey = sheetStorageKey(icdKey, requestedCountry)
           const icdSheet = await props.request(`/workbook/sheets/${encodeURIComponent(icdStorageKey)}`)
@@ -6341,7 +6362,7 @@ const loadSheet = async () => {
             if (icdOwner) sourceRow[sourceIcdOpsColumn] = icdOwner
           })
         } catch (error: any) {
-          if (requestStatus(error) !== 404) console.warn('Could not hydrate ICD OPS on GSD', error)
+          if (!error?.skip && requestStatus(error) !== 404) console.warn('Could not hydrate ICD OPS on GSD', error)
         }
       }
 
@@ -8472,21 +8493,25 @@ const formatHeaderLabel = (value: any) => {
     })
     .join('')
 }
-const headerLabel = (column: number) => {
-  const label = formatHeaderLabel(rows.value[0]?.[column])
+const HEADER_LABEL_ALIASES: Record<string, string> = {
+  'EXW+': 'EFA+',
+  'ORIGIN AGENT': 'ORIGINAL AGENT',
+  'CUT OFF DETAIL': 'CUT OFF DETAILS',
+  // AIR shows HAWB NO# but must follow the same logic as HBL NO# in FCL/LCL.
+  'HAWB NO#': 'HBL NO#',
+}
+// Both labels are read thousands of times per render (every cell checks its own
+// column). Derive them once per header row instead of re-parsing on each call.
+const headerLabelCache = computed(() => (rows.value[0] || []).map((cell) => {
+  const label = formatHeaderLabel(cell)
   return label.toUpperCase() === 'BILL APPROVAL' ? 'BILL DETAIL' : label
-}
-const normalizedHeaderLabel = (column: number) => {
-  const label = headerLabel(column).toUpperCase()
-  const aliases: Record<string, string> = {
-    'EXW+': 'EFA+',
-    'ORIGIN AGENT': 'ORIGINAL AGENT',
-    'CUT OFF DETAIL': 'CUT OFF DETAILS',
-    // AIR shows HAWB NO# but must follow the same logic as HBL NO# in FCL/LCL.
-    'HAWB NO#': 'HBL NO#',
-  }
-  return aliases[label] || label
-}
+}))
+const normalizedHeaderLabelCache = computed(() => headerLabelCache.value.map((label) => {
+  const upper = label.toUpperCase()
+  return HEADER_LABEL_ALIASES[upper] || upper
+}))
+const headerLabel = (column: number) => headerLabelCache.value[column] ?? ''
+const normalizedHeaderLabel = (column: number) => normalizedHeaderLabelCache.value[column] ?? ''
 const opsColumnOptionKey = (column: number) => `${activeKey.value}:${column}`
 const isFclExwOrFcaEcdSheet = () => ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && ['FCL', 'LCL', 'AIR'].includes(String(opsParts.value?.mode || '').toUpperCase()) && opsParts.value?.dept === 'ECD'
 const fclExwOrFcaDownstreamDepts = (): Array<'TCD' | 'CCD' | 'DCD' | 'FCD'> =>
