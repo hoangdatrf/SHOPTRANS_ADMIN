@@ -2234,9 +2234,11 @@
               </div>
               <div class="gsd-release-actions">
                 <span v-if="gsdModal.form.releasedAt" class="bd-sent"><span class="bd-check">✓</span> {{ isAwbReleaseModal() ? 'AWB' : 'B/L' }} released &middot; {{ gsdModal.form.releasedAt }}</span>
+                <span v-if="isDoReleaseModal() && gsdModal.form.doSentAt" class="bd-sent"><span class="bd-check">✓</span> D/O sent &middot; {{ gsdModal.form.doSentAt }}</span>
                 <button class="wb-modal-btn slate" type="button" :disabled="!gsdModal.editing" @click="clearBillRelease">Clear</button>
                 <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="enableBillApprovalEdit">Edit</button>
                 <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing || !billReleasePaymentReady() || !billReleaseDirty()" @click="saveBillApproval">Save</button>
+                <button v-if="isDoReleaseModal()" class="wb-modal-btn release-send" type="button" :disabled="doReleasePreparing || !gsdModal.form.locked || billReleaseDirty() || !gsdModal.form.hdo || !gsdModal.form.deliveryOrder" title="Send the saved HBL DO to Consignee" @click="openDoReleaseSend">{{ doReleasePreparing ? 'Preparing PDF...' : 'Send to Consignee' }}</button>
                 <div v-if="!isDoReleaseModal()" class="release-send-menu">
                   <button class="wb-modal-btn release-send" type="button" :disabled="billReleaseDirty() || !billReleasePaymentReady() || !gsdModal.form.locked || gsdModal.form.released || !releaseSelectedBillReady()" @click="billReleaseTargetMenuOpen = !billReleaseTargetMenuOpen">Release B/L <span class="bd-export-caret">&#9662;</span></button>
                   <div v-if="billReleaseTargetMenuOpen" class="release-send-options">
@@ -3084,7 +3086,7 @@
           <label class="do-document-company"><span>Company:</span><select v-model="deliveryOrderModal.form.company" :disabled="!deliveryOrderModal.editing"><option value="tx">TX LOGISTICS VIETNAM CO., LTD</option><option value="shoptrans">SHOPTRANS VIETNAM CO., LTD</option></select></label>
           <div class="do-document-actions"><button class="wb-modal-btn edit" type="button" :disabled="deliveryOrderModal.editing" @click="deliveryOrderModal.editing = true">Edit</button>
           <button class="wb-modal-btn primary" type="button" :disabled="!deliveryOrderModal.editing" @click="saveDeliveryOrderDocument">Save</button>
-          <button class="wb-modal-btn export" type="button" :disabled="deliveryOrderModal.editing || deliveryOrderModal.exporting" @click="exportDeliveryOrderPdf">{{ deliveryOrderModal.exporting ? 'Exporting...' : 'Export PDF' }}</button>
+          <button class="wb-modal-btn export" type="button" :disabled="deliveryOrderModal.editing || deliveryOrderModal.exporting" @click="exportDeliveryOrderPdf()">{{ deliveryOrderModal.exporting ? 'Exporting...' : 'Export PDF' }}</button>
           <button class="do-document-close" type="button" title="Close" @click="closeDeliveryOrderDocument">×</button></div>
         </div>
         <div class="do-document-scroll"><div id="delivery-order-document" class="do-document-sheet">
@@ -3529,6 +3531,19 @@
         <div class="bds-foot">
           <button class="wb-modal-btn bds-no" type="button" @click="billReleaseSendModal.open = false">NO</button>
           <button class="wb-modal-btn primary" type="button" :disabled="billReleaseSendModal.sending" @click="confirmBillReleaseToShipper">{{ billReleaseSendModal.sending ? 'SENDING...' : 'YES' }}</button>
+        </div>
+      </div>
+    </div>
+    <div v-if="doReleaseSendModal.open" class="wb-modal-overlay" style="z-index:630" @mousedown.self="doReleaseSendModal.open = false">
+      <div class="wb-modal bds-box" role="dialog" aria-modal="true">
+        <button class="uX" type="button" @click="doReleaseSendModal.open = false">✕</button>
+        <div class="bds-title">Send Delivery Order to Consignee</div>
+        <label class="bds-field"><span>To Consignee</span><input v-model="doReleaseSendModal.to" type="email" readonly /></label>
+        <label class="bds-field"><span>CC emails</span><textarea v-model="doReleaseSendModal.cc" class="bds-emails" placeholder="Enter CC emails, separated by commas" @input="doReleaseSendModal.hint = ''"></textarea></label>
+        <div class="bds-hint">{{ doReleaseSendModal.hint }}</div>
+        <div class="bds-foot">
+          <button class="wb-modal-btn bds-no" type="button" @click="doReleaseSendModal.open = false">NO</button>
+          <button class="wb-modal-btn primary" type="button" :disabled="doReleaseSendModal.sending" @click="confirmDoReleaseSend">{{ doReleaseSendModal.sending ? 'SENDING...' : 'YES' }}</button>
         </div>
       </div>
     </div>
@@ -17168,6 +17183,10 @@ const billReleaseFormFromCell = (value: any) => {
     hdoAt: String(form.hdoAt || ''),
     validity: String(form.validity || form.doValidity || ''),
     deliveryOrder: form.deliveryOrder && typeof form.deliveryOrder === 'object' ? form.deliveryOrder : null,
+    deliveryOrderFile: form.deliveryOrderFile && typeof form.deliveryOrderFile === 'object' ? form.deliveryOrderFile : null,
+    doSentAt: String(form.doSentAt || ''),
+    doSentEmails: String(form.doSentEmails || ''),
+    doSentCc: String(form.doSentCc || ''),
     hblRequired: form.hblRequired !== false,
     released: !!form.released,
     releasedAt: String(form.releasedAt || ''),
@@ -17341,7 +17360,7 @@ const handleBillReleaseFile = async (event: Event) => {
 }
 const clearBillRelease = () => {
   if (!gsdModal.editing) return
-  Object.assign(gsdModal.form, { allCollected: false, collectLater: false, deadline: '', mbl: false, mblAt: '', mdo: false, mdoAt: '', mblFile: null, hbl: false, hblAt: '', hdo: false, hdoAt: '', validity: '', released: false, releasedAt: '', releasedEmails: '', releasedCc: '' })
+  Object.assign(gsdModal.form, { allCollected: false, collectLater: false, deadline: '', mbl: false, mblAt: '', mdo: false, mdoAt: '', mblFile: null, hbl: false, hblAt: '', hdo: false, hdoAt: '', validity: '', deliveryOrderFile: null, doSentAt: '', doSentEmails: '', doSentCc: '', released: false, releasedAt: '', releasedEmails: '', releasedCc: '' })
 }
 const syncDoReleaseTimestamp = (field: 'mdo' | 'hdo') => {
   gsdModal.form[`${field}At`] = gsdModal.form[field] ? billTimestamp() : ''
@@ -17359,6 +17378,81 @@ const linkedEntityEmail = (value: any) => {
   if (!source || typeof source !== 'object') return ''
   const email = source.email ?? source.EMAIL ?? source.mail ?? source.MAIL
   return String(email || '').trim()
+}
+const doReleaseSendModal = reactive({ open: false, to: '', cc: '', hint: '', sending: false })
+const doReleasePreparing = ref(false)
+const openDoReleaseSend = async () => {
+  if (!isDoReleaseModal() || !gsdModal.form.locked || billReleaseDirty()) return
+  if (!gsdModal.form.hdo || !gsdModal.form.deliveryOrder) {
+    showToast('Save the HBL DO before sending')
+    return
+  }
+  const consigneeEmail = linkedEntityEmail(rawSiSourceValue('CNEE') || rowValueByHeader('CNEE'))
+  if (!consigneeEmail) {
+    showToast('Consignee does not have a valid email')
+    return
+  }
+  if (!gsdModal.form.deliveryOrderFile?.url) {
+    doReleasePreparing.value = true
+    try {
+      if (deliveryOrderSavePromise) await deliveryOrderSavePromise
+      openDeliveryOrderDocument()
+      deliveryOrderModal.editing = false
+      await nextTick()
+      const uploaded = await exportDeliveryOrderPdf(false)
+      deliveryOrderModal.open = false
+      if (!uploaded?.url) return
+    } finally {
+      deliveryOrderModal.open = false
+      doReleasePreparing.value = false
+    }
+  }
+  Object.assign(doReleaseSendModal, { open: true, to: consigneeEmail, cc: String(gsdModal.form.doSentCc || ''), hint: '', sending: false })
+}
+const confirmDoReleaseSend = async () => {
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const to = doReleaseSendModal.to.split(/[;,]/).map((item) => item.trim()).filter(Boolean)
+  const cc = doReleaseSendModal.cc.split(/[;,]/).map((item) => item.trim()).filter(Boolean)
+  if (!to.length || to.some((item) => !emailPattern.test(item))) {
+    doReleaseSendModal.hint = 'Consignee does not have a valid email'
+    return
+  }
+  if (cc.some((item) => !emailPattern.test(item))) {
+    doReleaseSendModal.hint = 'Enter valid CC emails separated by commas'
+    return
+  }
+  const file = gsdModal.form.deliveryOrderFile
+  if (!file?.url) {
+    doReleaseSendModal.hint = 'Export and save the HBL DO PDF before sending'
+    return
+  }
+  doReleaseSendModal.sending = true
+  doReleaseSendModal.hint = ''
+  try {
+    const documentData = gsdModal.form.deliveryOrder || {}
+    const result = await props.request('/workbook/send-delivery-order-email', {
+      method: 'POST',
+      body: {
+        to: to.join(', '), cc: cc.join(', '),
+        jobNo: rowValueByHeader('JOB NO#') || rowValueByHeader('REF#'), refNo: rowValueByHeader('REF#'),
+        hblNo: rowValueByHeader('HBL NO#'), doNo: documentData.doNo,
+        consignee: emailCellDisplayValue('CNEE', rawSiSourceValue('CNEE') || rowValueByHeader('CNEE')),
+        vessel: rowValueByHeader('VESSEL/VOYAGE'), route: rowValueByHeader('ROUTE'), ata: rowValueByHeader('ATA'),
+        placeDelivery: documentData.placeDelivery, validity: documentData.validUntil || gsdModal.form.validity,
+        attachment: clientBillEmailAttachment(file),
+      },
+    })
+    gsdModal.form.doSentAt = String(result?.data?.sentAt || result?.sentAt || billTimestamp())
+    gsdModal.form.doSentEmails = to.join(', ')
+    gsdModal.form.doSentCc = cc.join(', ')
+    doReleaseSendModal.open = false
+    await saveBillApproval()
+    showToast('Delivery Order sent to Consignee')
+  } catch (error: any) {
+    doReleaseSendModal.hint = error?.data?.message || error?.message || 'Could not send Delivery Order email'
+  } finally {
+    doReleaseSendModal.sending = false
+  }
 }
 const billReleaseTargetMenuOpen = ref(false)
 const billReleaseSendModal = reactive<{ open: boolean; target: 'shipper' | 'destination'; to: string; cc: string; hint: string; sending: boolean }>({ open: false, target: 'shipper', to: '', cc: '', hint: '', sending: false })
@@ -17750,6 +17844,10 @@ const saveBillApproval = async (waitForPersistence: boolean | Event = true) => {
       hdoAt: gsdModal.form.hdoAt || '',
       validity: gsdModal.form.validity || '',
       deliveryOrder: gsdModal.form.deliveryOrder || null,
+      deliveryOrderFile: gsdModal.form.deliveryOrderFile || null,
+      doSentAt: gsdModal.form.doSentAt || '',
+      doSentEmails: gsdModal.form.doSentEmails || '',
+      doSentCc: gsdModal.form.doSentCc || '',
       released: !!gsdModal.form.released,
       releasedAt: gsdModal.form.releasedAt || '',
       releasedEmails: gsdModal.form.releasedEmails || '',
@@ -18139,6 +18237,7 @@ const deliveryOrderRequiredFields = () => [
   // LCL/AIR list the goods in a table instead of the DESCRIPTION field.
   ...(isLclSheet() ? [] : [{ key: 'description', label: 'DESCRIPTION' }]),
 ]
+let deliveryOrderSavePromise: Promise<boolean> | null = null
 const saveDeliveryOrderDocument = async () => {
   const missing = deliveryOrderRequiredFields()
     .filter((field) => !String((deliveryOrderModal.form as any)[field.key] || '').trim())
@@ -18149,14 +18248,25 @@ const saveDeliveryOrderDocument = async () => {
   }
   const documentData = JSON.parse(JSON.stringify(deliveryOrderModal.form))
   gsdModal.form.deliveryOrder = documentData
+  gsdModal.form.deliveryOrderFile = null
   const current = parseJsonCell(rows.value[gsdModal.row]?.[gsdModal.column], {} as any)
   const currentForm = current && typeof current === 'object' && current.form && typeof current.form === 'object' ? current.form : {}
-  rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ ...current, form: { ...currentForm, deliveryOrder: documentData } })
-  await saveSheet()
+  rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ ...current, form: { ...currentForm, deliveryOrder: documentData, deliveryOrderFile: null } })
   deliveryOrderModal.editing = false
+  const previousReleaseSnapshot = billReleaseInitialSnapshot.value
+  billReleaseInitialSnapshot.value = billReleaseSnapshot()
   showToast('Delivery Order saved')
+  // Keep the modal responsive; persist the large worksheet in the background.
+  // Send waits for this promise before it prepares the PDF, so no data is lost.
+  deliveryOrderSavePromise = saveSheet()
+  void deliveryOrderSavePromise.then((saved) => {
+    if (!saved) {
+      billReleaseInitialSnapshot.value = previousReleaseSnapshot
+      showToast('Could not save Delivery Order')
+    }
+  }).finally(() => { deliveryOrderSavePromise = null })
 }
-const exportDeliveryOrderPdf = async () => {
+const exportDeliveryOrderPdf = async (download = true) => {
   const sheet = document.getElementById('delivery-order-document')
   if (!sheet || deliveryOrderModal.exporting) return
   deliveryOrderModal.exporting = true
@@ -18226,8 +18336,19 @@ const exportDeliveryOrderPdf = async () => {
       sourceY += sliceHeight
       pageIndex += 1
     }
-    pdf.save(`Delivery-Order-${String(deliveryOrderModal.form.doNo || rowValueByHeader('JOB NO#') || 'document').replace(/[^a-z0-9_-]+/gi, '-')}.pdf`)
-  } catch (error) { console.error(error); showToast('Unable to export Delivery Order PDF') }
+    const filename = `Delivery-Order-${String(deliveryOrderModal.form.doNo || rowValueByHeader('JOB NO#') || 'document').replace(/[^a-z0-9_-]+/gi, '-')}.pdf`
+    const blob = pdf.output('blob')
+    const uploaded = await uploadAdminAttachment(new File([blob], filename, { type: 'application/pdf' }))
+    gsdModal.form.deliveryOrderFile = uploaded
+    const current = parseJsonCell(rows.value[gsdModal.row]?.[gsdModal.column], {} as any)
+    const currentForm = current && typeof current === 'object' && current.form && typeof current.form === 'object' ? current.form : {}
+    rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ ...current, form: { ...currentForm, deliveryOrder: gsdModal.form.deliveryOrder, deliveryOrderFile: uploaded } })
+    await saveSheet()
+    billReleaseInitialSnapshot.value = billReleaseSnapshot()
+    if (download) pdf.save(filename)
+    if (download) showToast('HBL DO PDF exported and ready to send')
+    return uploaded
+  } catch (error) { console.error(error); showToast('Unable to export Delivery Order PDF'); return null }
   finally { printSheet?.remove(); deliveryOrderModal.exporting = false }
 }
 const exportBillDetailPdf = (kind: 'B/L' | 'FCR' | 'D/O') => {
@@ -18595,7 +18716,7 @@ const workbookBackgroundFrozen = computed(() => !!(
   || truckDriverModal.open || paymentOptionModal.open || volumeUnitModal.open
   || paymentPartyModal.open || billDocModal.open || deliveryOrderModal.open
   || opsColumnModal.open || bcModal.open || bookingDetailModal.open || paymentNoteModal.open
-  || billReleaseSendModal.open || billSendModal.open || preDocsModal.open
+  || billReleaseSendModal.open || billSendModal.open || doReleaseSendModal.open || preDocsModal.open
 ))
 const frozenWorkbookMemoToken = {}
 // A fresh token keeps normal worksheet renders untouched. While a modal is
