@@ -22353,15 +22353,18 @@ const handleOpsCellDblClick = async (row: number, column: number, event: MouseEv
     return
   }
   if (!isOpsConfirmableFreeTextCell(row, column) || isEditingCell(row, column)) return
+  // Keep the cell reference before awaiting the confirmation dialog. Browsers
+  // clear event.currentTarget once the synchronous event handler has yielded.
+  const targetCell = event.currentTarget as HTMLElement
   event.preventDefault()
   event.stopPropagation()
   const confirmed = await askConfirm(`Edit ${headerLabel(column).toUpperCase()}?`, 'EDIT', { okText: 'EDIT', cancelText: 'Cancel' })
   if (!confirmed || !isOpsConfirmableFreeTextCell(row, column)) return
   editingCell.value = { row, column }
   await nextTick()
-  const cell = (event.currentTarget as HTMLElement).querySelector<HTMLElement>('.ops-textcell')
+  const cell = targetCell.querySelector<HTMLElement>('.ops-textcell')
   if (!cell) return
-  cell.focus()
+  cell.focus({ preventScroll: true })
   const range = document.createRange()
   range.selectNodeContents(cell)
   range.collapse(false)
