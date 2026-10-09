@@ -19,6 +19,7 @@ export const useAdminConsoleStore = defineStore('adminConsole', {
   state: () => ({
     token: null as string | null,
     admin: null as AdminConsoleUser | null,
+    profileVerifiedAt: 0,
   }),
   getters: {
     isAuthenticated: (state) => Boolean(state.token && state.admin?.id),
@@ -40,6 +41,7 @@ export const useAdminConsoleStore = defineStore('adminConsole', {
       const data = unwrap(response)
       this.token = data.access_token
       this.admin = data.admin
+      this.profileVerifiedAt = Date.now()
       return data
     },
     async fetchProfile() {
@@ -49,16 +51,19 @@ export const useAdminConsoleStore = defineStore('adminConsole', {
           headers: this.headers(),
         })
         this.admin = unwrap(response)
+        this.profileVerifiedAt = Date.now()
         return this.admin
       } catch (error) {
         this.token = null
         this.admin = null
+        this.profileVerifiedAt = 0
         throw error
       }
     },
     async logout() {
       this.token = null
       this.admin = null
+      this.profileVerifiedAt = 0
     },
   },
   persist: true,

@@ -143,7 +143,10 @@
           </div>
         </div>
 
-        <div class="ops-tablewrap">
+        <div class="ops-tablewrap" :class="{ loading }">
+          <div v-if="loading" class="ops-table-loading">
+            <AdminLoadingScreen compact message="Processing" />
+          </div>
           <table class="ops-ms-table">
             <colgroup>
               <col style="width:34px" />
@@ -170,10 +173,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="loading">
-                <td :colspan="visibleColumns.length + 1" class="ops-empty">Loading worksheet...</td>
-              </tr>
-              <tr v-else-if="!opsBodyRows.length">
+              <tr v-if="!loading && !opsBodyRows.length">
                 <td :colspan="visibleColumns.length + 1" class="ops-empty">
                   <b>No {{ activeType?.toLowerCase() || 'ops' }} / {{ activeMode?.toLowerCase() || 'mode' }} / {{ activeDept?.toLowerCase() || 'dept' }} yet.</b>
                   <span v-if="canAddOpsRow()">Click <b style="display:inline">Add Row</b> to create the first record.</span>
@@ -312,6 +312,8 @@
                     v-else-if="isOpsEditingRow(rowIndex) && !isLockedOpsCell(rowIndex, columnIndex) && !isWorkflowLockedOpsCell(rowIndex, columnIndex)"
                     class="ops-edit-input"
                     :class="{ time: isOpsTimeColumn(columnIndex), date: isOpsRowDateColumn(columnIndex), 'has-date-value': isOpsRowDateColumn(columnIndex) && !!opsEditInputValue(rows[rowIndex]?.[columnIndex], columnIndex) }"
+                    :data-ops-row="rowIndex"
+                    :data-ops-column="columnIndex"
                     :type="isOpsTimeColumn(columnIndex) ? 'datetime-local' : isOpsRowDateColumn(columnIndex) ? 'date' : 'text'"
                     :value="opsEditInputValue(rows[rowIndex]?.[columnIndex], columnIndex)"
                     @input="updateOpsEditCell(rowIndex, columnIndex, $event)"
@@ -546,7 +548,7 @@
     </div>
 
     <div v-memo="[workbookBackgroundMemoKey()]" class="sheet-shell">
-      <AdminLoadingScreen v-if="loading" compact message="Loading worksheet" />
+      <AdminLoadingScreen v-if="loading" compact message="Processing" />
       <div v-else-if="!rows.length" class="sheet-empty">No worksheet data.</div>
       <div v-else class="sheet-grid">
         <button class="corner" type="button" title="Select all rows" @mousedown.prevent="startSel('all', 0, 0)"></button>
@@ -6141,6 +6143,14 @@ const loadSheet = async () => {
   const requestedCountry = countryViewId()
   const requestedStorageKey = sheetStorageKey(requestedKey, requestedCountry)
   loading.value = true
+  if (isOpsPage.value && process.client) {
+    void nextTick(() => {
+      const tableWrap = document.querySelector<HTMLElement>('.ops-tablewrap')
+      if (!tableWrap) return
+      tableWrap.scrollLeft = 0
+      tableWrap.scrollTop = 0
+    })
+  }
   saveError.value = ''
   selectedCell.value = null
   selectionAnchor.value = null
@@ -6246,6 +6256,19 @@ const loadSheet = async () => {
         mergesLoaded = mergesLoaded
           .map((m) => [m[0], aligned.oldToNew.get(m[1]), m[2], aligned.oldToNew.get(m[3])])
           .filter((m): m is number[] => m[1] !== undefined && m[3] !== undefined && m[1] < width && m[3] < width)
+      }
+      // The primary worksheet is ready at this point. Paint it immediately;
+      // the compatibility hydrations below only fill missing legacy values
+      // and must not keep the whole Operations screen behind a loader.
+      if (run === sheetLoadRun && activeKey.value === requestedKey && countryViewId() === requestedCountry) {
+        rows.value = rowsLoaded
+        columnWidths.value = widthsLoaded
+        rowHeights.value = rowHeightsLoaded
+        formatting.value = formattingLoaded
+        merges.value = mergesLoaded
+        settings.value = settingsLoaded
+        loading.value = false
+        await nextTick()
       }
       // DCD was consolidated into ECD. Import the DCD-owned workflow values
       // from legacy sheets so existing SI/Bill work remains available after
@@ -7030,10 +7053,16 @@ const canDeleteSelectedOpsRows = computed(() => {
 const canCopySelectedOpsRows = computed(() =>
   isOpsPage.value && canCopyOpsRows() && !opsEditingRow.value && opsSelectedRows.value.size > 0,
 )
-const editSelectedOpsRow = () => {
+const editSelectedOpsRow = async () => {
   if (!canEditSelectedOpsRow.value) return
   const row = [...opsSelectedRows.value][0]
   opsEditingRow.value = { row, isNew: false, snapshot: rows.value[row].slice() }
+  const mblColumn = (rows.value[0] || []).findIndex((_, column) => normalizedHeaderLabel(column) === 'MBL NO#')
+  if (mblColumn < 0) return
+  await nextTick()
+  const input = document.querySelector<HTMLInputElement>(`.ops-edit-input[data-ops-row="${row}"][data-ops-column="${mblColumn}"]`)
+  input?.focus({ preventScroll: false })
+  input?.select()
 }
 
 const copyOpsGridCellValue = (row: number, column: number) => {
@@ -22712,6 +22741,7 @@ onBeforeUnmount(() => {
 .ops-status-lbl{font-size:11.5px;color:var(--muted);font-weight:800;white-space:nowrap}
 .ops-adv-filter{margin:0 22px 12px;padding:8px 12px;background:var(--g-50);border:1px solid var(--g-line);border-radius:10px}.ops-adv-rows{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}.ops-adv-row{display:inline-flex;align-items:center;gap:8px}.ops-adv-row select,.ops-adv-row input{height:30px;border:1px solid var(--g-line);border-radius:8px;background:#fff;padding:0 9px;font:inherit;font-size:12.5px;outline:none}.ops-adv-row input{width:150px}.ops-adv-row select:focus,.ops-adv-row input:focus{border-color:var(--g-600);box-shadow:0 0 0 2px rgba(34,161,85,.12)}.ops-adv-remove{height:30px;border:1px solid #e7b9b3;border-radius:8px;background:#fff;color:var(--danger);padding:0 10px;font-size:12px;font-weight:800;cursor:pointer}.ops-adv-remove:hover{background:var(--danger-bg)}.ops-adv-empty{color:var(--muted);font-size:12.5px}.ops-adv-actions{display:flex;gap:8px;margin-top:6px}
 .ops-tablewrap{flex:1;min-height:0;overflow:auto;position:relative;margin:0 22px 22px;border:1px solid var(--g-line);border-radius:10px;box-shadow:var(--shadow);background:#fff;padding-bottom:40px}
+.ops-tablewrap.loading{overflow:hidden}.ops-tablewrap.loading .ops-ms-table{visibility:hidden}.ops-table-loading{position:absolute;inset:0;z-index:12;display:grid;place-items:center;background:#fff;pointer-events:none}.ops-table-loading :deep(.admin-loading-screen){position:absolute;inset:0}.ops-table-loading :deep(.admin-loading-card){transform:translateY(-8px)}
 .ops-ms-foot{padding:10px 22px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--g-line);background:var(--white)}
 .ops-ms-table{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;background:#fff;font-size:12px}
 .ops-ms-table thead th{position:sticky;top:0;z-index:2;background:var(--g-100);color:var(--g-900);text-align:center;font-size:10.5px;letter-spacing:.4px;font-weight:700;padding:8px 6px;border-bottom:1px solid var(--g-line);border-right:1px solid var(--g-line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -23821,9 +23851,10 @@ onBeforeUnmount(() => {
 .gsd-payment-modal .pay-file-actions{display:inline-flex;align-items:center;justify-content:center;gap:4px}.gsd-payment-modal .pay-view,.gsd-payment-modal .pay-delete-file{display:inline-grid;place-items:center;width:28px;height:26px;padding:0;border:0;border-radius:6px;color:#fff;cursor:pointer}.gsd-payment-modal .pay-view{background:#1f7ae0}.gsd-payment-modal .pay-view:hover{background:#1666c2}.gsd-payment-modal .pay-delete-file{background:#dc4c3f}.gsd-payment-modal .pay-delete-file:hover:not(:disabled){background:#bd352a}.gsd-payment-modal .pay-delete-file:disabled{opacity:.45;cursor:not-allowed}.gsd-payment-modal .pay-view svg,.gsd-payment-modal .pay-delete-file svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 /* Booking attachment state: muted means empty; green + check means attached. */
-.booking-detail-modal .booking-icon{position:relative;width:36px;height:36px;border:1px solid #cbd7d1;background:#eef3f1;color:#687a72}
-.booking-detail-modal .booking-icon:hover:not(:disabled){border-color:#8ca69a;background:#e4ece8}
+.booking-detail-modal .booking-icon{position:relative;width:36px;height:36px;border:1px solid #8eb5a2;background:#dce9e3;color:#176b43;transition:background-color .15s ease,border-color .15s ease,color .15s ease}
+.booking-detail-modal .booking-icon:hover:not(:disabled){border-color:#4fa777;background:#b9ddc9;color:#075d35}
 .booking-detail-modal .booking-icon.attached{border-color:#00a85a;background:#00a85a;color:#fff}
+.booking-detail-modal .booking-icon.attached:hover:not(:disabled){border-color:#087244;background:#087d4b;color:#fff}
 .booking-detail-modal .booking-icon.attached::after{content:'✓';position:absolute;right:-5px;top:-5px;display:grid;place-items:center;width:15px;height:15px;border:2px solid #fff;border-radius:50%;background:#087d4b;color:#fff;font-size:9px;font-weight:900;line-height:1}
 .booking-detail-modal .booking-icon.uploading svg{animation:booking-upload-pulse .8s ease-in-out infinite alternate}
 .booking-detail-modal .booking-eye{display:inline-grid;place-items:center;width:28px;height:28px;border:1px solid transparent;border-radius:7px;background:transparent;padding:4px;color:#a7b2ad}
