@@ -1684,7 +1684,7 @@
                 <label><span>{{ isDeliveryDetailsModal() ? 'Delivery date:' : 'Pickup date:' }}</span><input v-model="gsdModal.form.pickupDate" type="date" lang="en-ZA" :min="todayIso()" :disabled="!pickupCanEdit()" :class="{ pkbad: pickupInvalidFields.has('pickupDate') }" @input="clearPickupInvalid('pickupDate')" /></label>
                 <label><span>{{ isDeliveryDetailsModal() ? 'Delivery time:' : 'Pickup time:' }}</span><input v-model="gsdModal.form.pickupTime" type="time" lang="en-ZA" :disabled="!pickupCanEdit()" :class="{ pkbad: pickupInvalidFields.has('pickupTime') }" @input="clearPickupInvalid('pickupTime')" /></label>
                 <label v-if="isDeliveryDetailsModal() && opsParts?.mode === 'LCL'" class="delivery-from-port"><span>ReturnToWareHouse:</span><input v-model.trim="gsdModal.form.returnPort" list="delivery-return-warehouse-options" type="text" autocomplete="off" placeholder="Type to filter CFS warehouse..." :disabled="!pickupCanEdit()" :class="{ pkbad: pickupInvalidFields.has('returnPort') }" @input="clearPickupInvalid('returnPort')" @change="validateLclDeliveryWarehouse" /><datalist id="delivery-return-warehouse-options"><option v-for="option in availableLclDeliveryWarehouseOptions()" :key="option.value" :value="option.value">{{ option.label }}</option></datalist></label>
-                <label v-else-if="isDeliveryDetailsModal()" class="delivery-from-port"><span>PickUpFromPort:</span><input v-model.trim="gsdModal.form.fromPort" list="delivery-from-port-options" type="text" autocomplete="off" placeholder="-- SELECT OR TYPE PORT --" :disabled="!pickupCanEdit()" :class="{ pkbad: pickupInvalidFields.has('fromPort') }" @input="clearPickupInvalid('fromPort')" @change="validateDeliveryFromPort" /><datalist id="delivery-from-port-options"><option v-for="option in availableDeliveryFromPortOptions()" :key="option.value" :value="option.value">{{ option.label }}</option></datalist></label>
+                <label v-else-if="isDeliveryDetailsModal()" class="delivery-from-port"><span>{{ isAirMode() ? 'PickupFromWareHouse:' : 'PickUpFromPort:' }}</span><input v-model.trim="gsdModal.form.fromPort" list="delivery-from-port-options" type="text" autocomplete="off" :placeholder="isAirMode() ? '-- SELECT OR TYPE WAREHOUSE --' : '-- SELECT OR TYPE PORT --'" :disabled="!pickupCanEdit()" :class="{ pkbad: pickupInvalidFields.has('fromPort') }" @input="clearPickupInvalid('fromPort')" @change="validateDeliveryFromPort" /><datalist id="delivery-from-port-options"><option v-for="option in availableDeliveryFromPortOptions()" :key="option.value" :value="option.value">{{ option.label }}</option></datalist></label>
                 <label v-else-if="isExwFcaPickupModal()" class="pickup-return-port">
                   <span>{{ pickupReturnLabel() }}:</span>
                   <input v-model.trim="gsdModal.form.returnPort" :disabled="!pickupCanEdit()" list="pickup-return-options" autocomplete="off" :placeholder="pickupReturnPlaceholder()" :class="{ pkbad: pickupInvalidFields.has('returnPort') }" @input="clearPickupInvalid('returnPort')" @change="validatePickupReturnOption" />
@@ -2093,6 +2093,7 @@
                   <col style="width:44px" />
                   <col style="width:56px" />
                   <col style="width:150px" />
+                  <template v-if="isAirMode()"><col style="width:120px" /><col style="width:120px" /></template>
                   <col style="width:110px" />
                   <col style="width:200px" />
                 </colgroup>
@@ -2110,6 +2111,7 @@
                     <th><input type="checkbox" :checked="allPickupReturnSelected()" @change="toggleAllPickupReturnRecords" /></th>
                     <th>ORDER</th>
                     <th v-if="isLclPickupStatusModal() && !isDupTruckingStatusModal()">VOLUME</th>
+                    <template v-if="isLclPickupStatusModal() && !isDupTruckingStatusModal() && isAirMode()"><th>G.W</th><th>MEA.(CBM)</th></template>
                     <th v-if="isDupTruckingStatusModal()">PU NO#</th>
                     <th v-else-if="!isLclPickupStatusModal()">Container No#</th>
                     <th v-if="isDupTruckingStatusModal()">Truck Comp</th>
@@ -2127,7 +2129,8 @@
                   <tr v-for="(record, index) in pickupReturnRecords()" :key="record.id || index" @click="togglePickupReturnRow(record, $event)">
                     <td><input v-model="record.selected" type="checkbox" @click.stop @change="syncPickupReturnEditState" /></td>
                     <td class="prs-order">{{ index + 1 }}</td>
-                    <td v-if="isLclPickupStatusModal() && !isDupTruckingStatusModal()" class="prs-readonly">{{ volumeSummaryLines(rowValueByHeader('VOLUME'))[index] || '—' }}</td>
+                    <template v-if="isLclPickupStatusModal() && !isDupTruckingStatusModal() && isAirMode()"><td v-for="(cell, cellIndex) in airVolumeCells(index)" :key="cellIndex" class="prs-readonly">{{ cell }}</td></template>
+                    <td v-else-if="isLclPickupStatusModal() && !isDupTruckingStatusModal()" class="prs-readonly">{{ volumeSummaryLines(rowValueByHeader('VOLUME'))[index] || '—' }}</td>
                     <td v-if="isDupTruckingStatusModal()" class="prs-readonly">{{ truckPuNumber(index) }}</td>
                     <td v-else-if="!isLclPickupStatusModal()" class="prs-readonly">{{ record.containerNo || '' }}</td>
                     <td v-if="isDupTruckingStatusModal()" class="prs-readonly">{{ record.truckCompany || record.truckComp || '' }}</td>
@@ -2172,7 +2175,7 @@
                 <div><div class="si-lh-name">{{ siCompanyName() }}</div><div class="si-lh-addr">3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam</div><div class="si-lh-contact">Tel: 84.028-35470468&nbsp;&nbsp;&nbsp;Fax: 84.028-35470469</div></div>
                 <div class="si-title-block"><div class="si-doc-title">SHIPPING INSTRUCTION</div><div class="si-doc-sub">{{ docSubtitle() }}</div></div>
               </div>
-              <div v-if="isLclSheet()" class="si-g2"><label class="si-f"><span>SI No.</span><input v-model.trim="gsdModal.form.siNo" type="text" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('siNo') }" /></label><label class="si-f"><span>Date</span><input v-model="gsdModal.form.siIssueDate" type="date" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('siIssueDate') }" /></label></div>
+              <div v-if="isLclSheet()" class="si-g2"><label class="si-f"><span>SI No.</span><input v-model.trim="gsdModal.form.siNo" type="text" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('siNo') }" /></label><label class="si-f"><span>Date</span><input type="text" readonly class="si-date-input" placeholder="dd/mm/yyyy" :value="gsdModal.form.siIssueDate ? cutoffDateLabel(gsdModal.form.siIssueDate) : ''" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('siIssueDate') }" @click="openSiDatePopup($event)" /></label></div>
               <div class="si-g2"><div class="si-f"><div class="si-party-head"><span>Shipper</span><label><input v-model="gsdModal.form.copyShipper" type="checkbox" :disabled="!gsdModal.editing" @change="toggleSiPartyCopy('SHIPPER')" /> Copy from Shipper</label></div><textarea v-model="gsdModal.form.shipper" rows="3" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('shipper') }" @input="gsdModal.form.copyShipper = false"></textarea></div><div class="si-f"><div class="si-party-head"><span>Consignee</span><label><input v-model="gsdModal.form.copyConsignee" type="checkbox" :disabled="!gsdModal.editing" @change="toggleSiPartyCopy('CNEE')" /> Copy from Consignee</label></div><textarea v-model="gsdModal.form.consignee" rows="3" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('consignee') }" @input="gsdModal.form.copyConsignee = false"></textarea></div></div>
               <label class="si-f"><span>Notify Party</span><textarea v-model="gsdModal.form.notify" rows="2" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('notify') }"></textarea></label>
               <div v-if="isAirMode()" class="si-g3"><label class="si-f"><span>Booking No.</span><input v-model="gsdModal.form.bookingNo" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" /></label><label class="si-f"><span>Flight No.</span><input v-model="gsdModal.form.vessel" type="text" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" /></label><label class="si-f"><span>Flight Date</span><input v-model="gsdModal.form.depDate" type="date" :disabled="!gsdModal.editing || isMasterSiSubmitModal()" /></label></div>
@@ -2572,7 +2575,8 @@
                   <tr>
                     <th>Order</th>
                     <th>Type</th>
-                    <th v-if="isClearanceLclView()">VOLUME</th>
+                    <template v-if="isClearanceLclView() && isAirMode()"><th>VOLUME</th><th>G.W</th><th>MEA.(CBM)</th></template>
+                    <th v-else-if="isClearanceLclView()">VOLUME</th>
                     <template v-else>
                       <th>Purpose</th>
                       <th>Container No#</th>
@@ -2585,7 +2589,8 @@
                   <tr v-for="(row, index) in clearanceRows()" :key="row.key">
                     <td class="clr-ro">{{ index + 1 }}</td>
                     <td class="clr-ro">{{ row.type }}</td>
-                    <td v-if="isClearanceLclView()" class="clr-ro">{{ volumeSummaryLines(rowValueByHeader('VOLUME'))[index] || '-' }}</td>
+                    <template v-if="isClearanceLclView() && isAirMode()"><td v-for="(cell, cellIndex) in airVolumeCells(index)" :key="cellIndex" class="clr-ro">{{ cell }}</td></template>
+                    <td v-else-if="isClearanceLclView()" class="clr-ro">{{ volumeSummaryLines(rowValueByHeader('VOLUME'))[index] || '-' }}</td>
                     <template v-else>
                       <td class="clr-ro">{{ row.purpose }}</td>
                       <td class="clr-ro">{{ row.containerNo || '-' }}</td>
@@ -2621,7 +2626,8 @@
                     <th class="clr-allcell"><input type="checkbox" :checked="allClearanceRowsSelected()" @change="toggleAllClearanceRows" /></th>
                     <th>Order</th>
                     <th>Type</th>
-                    <th v-if="isClearanceLclView()">VOLUME</th>
+                    <template v-if="isClearanceLclView() && isAirMode()"><th>VOLUME</th><th>G.W</th><th>MEA.(CBM)</th></template>
+                    <th v-else-if="isClearanceLclView()">VOLUME</th>
                     <template v-else>
                       <th>Purpose</th>
                       <th>Container No#</th>
@@ -2637,7 +2643,8 @@
                     <td class="clr-allcell"><input v-model="gsdModal.form.selected[row.key]" type="checkbox" /></td>
                     <td class="clr-ro">{{ index + 1 }}</td>
                     <td class="clr-ro">{{ row.type }}</td>
-                    <td v-if="isClearanceLclView()" class="clr-ro">{{ volumeSummaryLines(rowValueByHeader('VOLUME'))[index] || '-' }}</td>
+                    <template v-if="isClearanceLclView() && isAirMode()"><td v-for="(cell, cellIndex) in airVolumeCells(index)" :key="cellIndex" class="clr-ro">{{ cell }}</td></template>
+                    <td v-else-if="isClearanceLclView()" class="clr-ro">{{ volumeSummaryLines(rowValueByHeader('VOLUME'))[index] || '-' }}</td>
                     <template v-else>
                       <td class="clr-ro">{{ row.purpose }}</td>
                       <td class="clr-ro">{{ row.containerNo || '-' }}</td>
@@ -3102,7 +3109,7 @@
         </div>
       </div>
     </div>
-    <div v-if="deliveryOrderModal.open" class="wb-modal-overlay do-document-overlay" @mousedown.self="closeDeliveryOrderDocument">
+    <div v-if="deliveryOrderModal.open" class="wb-modal-overlay do-document-overlay" :class="{ 'do-document-background': deliveryOrderModal.background }" @mousedown.self="closeDeliveryOrderDocument">
       <div class="do-document-modal" role="dialog" aria-modal="true" aria-label="Delivery Order FCL">
         <div class="do-document-toolbar">
           <label class="do-document-company"><span>Company:</span><select v-model="deliveryOrderModal.form.company" :disabled="!deliveryOrderModal.editing"><option value="tx">TX LOGISTICS VIETNAM CO., LTD</option><option value="shoptrans">SHOPTRANS VIETNAM CO., LTD</option></select></label>
@@ -4231,7 +4238,7 @@ const datePopup = reactive({
   column: 0,
   viewYear: new Date().getFullYear(),
   viewMonth: new Date().getMonth(),
-  cutoffField: '' as '' | 'siDate' | 'cyDate' | 'tsEtd' | 'tsEta' | 'newEtd' | 'newEta',
+  cutoffField: '' as '' | 'siDate' | 'cyDate' | 'tsEtd' | 'tsEta' | 'newEtd' | 'newEta' | 'siIssueDate',
   pickupReturnIndex: -1,
   pickupReturnField: '' as '' | 'pickupDate' | 'returnDate',
 })
@@ -4796,7 +4803,7 @@ const preAlertFileTarget = ref('')
 const billExportMenuOpen = ref(false)
 const billDocModal = reactive<any>({ open: false, readonly: false, isRelease: false, exportingPdf: false, billType: 'ORIGINAL B/L', kind: 'B/L', company: 'TX LOGISTICS VIETNAM CO.,LTD', copySi: false, locked: false, attachments: 0, savedAt: '', signedAt: '', docNo: '', refNo: '', shipper: '', consignee: '', notify: '', notifyBackup: '', sameAsConsignee: false, preCarriage: '', receipt: '', vessel: '', pol: '', pod: '', delivery: '', marks: '', packages: '', goodsDescription: '', grossWeight: '', measurement: '', containers: [], freightCharges: '', freightPayableAt: '', originalCount: '', placeOfIssue: '', dateOfIssue: '', shippedOnBoardDate: '' })
 const billDocBackgroundRendering = ref(false)
-const deliveryOrderModal = reactive<any>({ open: false, editing: false, exporting: false, form: {} })
+const deliveryOrderModal = reactive<any>({ open: false, editing: false, exporting: false, background: false, form: {} })
 const billDocRouteFields = [
   { key: 'preCarriage', label: 'PRE-CARRIAGE BY' }, { key: 'receipt', label: 'PLACE OF RECEIPT' },
   { key: 'vessel', label: 'OCEAN VESSEL / VOYAGE NO.' }, { key: 'pol', label: 'PORT OF LOADING' },
@@ -5737,9 +5744,9 @@ const visibleColumns = computed(() => {
     if (hidden.has(column)) return false
     const label = String(rows.value[0]?.[column] || '').trim().toUpperCase()
     if (['AIR', 'LCL'].includes(String(parsed?.mode || '')) && parsed?.type === 'DO' && parsed?.dept === 'FCD' && label === 'CONT/SEAL INFO') return false
-    // AIR has no container/seal or manifest-submit data in the grid; columns stay in the
-    // sheet (linked data still reads them) but are not shown.
-    if (String(parsed?.mode || '').toUpperCase() === 'AIR' && ['CONT/SEAL INFO', 'MANIFEST SUBMIT'].includes(label)) return false
+    // AIR has no container/seal data in the grid. MANIFEST SUBMIT stays visible: on
+    // ICD it is the trigger that creates the CCD/TCD/FCD rows (AIR mockups keep it).
+    if (String(parsed?.mode || '').toUpperCase() === 'AIR' && label === 'CONT/SEAL INFO') return false
     return true
   })
   return columns.length ? columns : Array.from({ length: columnCount.value }, (_, index) => index)
@@ -8054,6 +8061,17 @@ const onGlobalMouseDown = (event: MouseEvent) => {
     const timeValue = rawValue.match(/(?:T)?(\d{2}:\d{2})/)?.[1] || '-- : --'
     Object.assign(pickerFieldProxy, { open: true, left: rect.left, top: rect.top, width: rect.width, height: rect.height, type: pickerType === 'time' ? 'time' : 'date', label: pickerType === 'time' ? timeValue : dateValue })
     openNativeOperationsPicker(target, pickerType)
+    // A date input wrapped in <label> receives a follow-up click on the label, which
+    // would close our calendar and re-activate the native browser picker. Swallow
+    // exactly that click.
+    const swallowFollowUpClick = (clickEvent: MouseEvent) => {
+      const clicked = clickEvent.target as HTMLElement | null
+      if (clicked === target || clicked?.closest('label')?.contains(target)) {
+        clickEvent.preventDefault()
+        clickEvent.stopPropagation()
+      }
+    }
+    window.addEventListener('click', swallowFollowUpClick, { capture: true, once: true })
     return
   }
   if (!target?.closest('.country-dd')) countryOpen.value = false
@@ -10354,7 +10372,7 @@ const openPaymentNoteModal = (kind: 'DEBIT' | 'CREDIT', lines: Array<{ charge: s
   paymentNoteModal.logoMark = isTx ? 'TX' : 'ST'
   paymentNoteModal.logoText = isTx ? 'TX LOGISTICS' : 'SHOPTRANS'
   paymentNoteModal.documentNo = `${kind === 'DEBIT' ? 'DN' : 'CN'}-${dateKey}-${String(Date.now() % 10000).padStart(4, '0')}`
-  paymentNoteModal.date = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())}`
+  paymentNoteModal.date = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`
   paymentNoteModal.jobNo = String(gsdModal.payment?.jobNo || gsdModal.form?.job || rowValueByHeader('JOB NO#') || '')
   paymentNoteModal.refNo = String(gsdModal.payment?.refNo || gsdModal.form?.ref || rowValueByHeader('REF#') || rowValueByHeader('REF NO#') || '')
   paymentNoteModal.lines = lines
@@ -11446,6 +11464,8 @@ const openGsdModal = async (row: number, column: number) => {
           ['ECD', 'TCD', 'CCD', 'DCD', 'FCD'].includes(opsDeptUpper())
         if (originTruckVolumeView || (opsParts.value?.mode === 'FCL' && opsDeptUpper() === 'TCD')) {
           gsdModal.form = seedTruckContFromVolume(gsdModal.form)
+        } else if (isLclSheet() && opsDeptUpper() === 'TCD' && label === 'TRUCKING INFO') {
+          gsdModal.form = seedTruckRowsFromVolumeLines(gsdModal.form)
         }
         gsdModal.form.initialRecords = truckContSnapshot(gsdModal.form.records)
         gsdModal.editing = false
@@ -13317,7 +13337,41 @@ const arrivalNoticeComparable = (form: any) => {
   delete copy.locked
   return copy
 }
+// Required before an Arrival Notice can be saved (it is the document sent to the Cnee).
+const arrivalNoticeMissingFields = () => {
+  const form = gsdModal.form || {}
+  const filled = (value: any) => !!String(value ?? '').trim()
+  const missing: string[] = []
+  if (isLclSheet()) {
+    if (!filled(form.anNo)) missing.push('AN No.')
+    if (!filled(form.anDate)) missing.push('Date')
+  }
+  if (!filled(form.shipper)) missing.push('From (Shipper)')
+  if (!filled(form.consignee)) missing.push('To (Consignee)')
+  if (isLclSheet()) {
+    if (!isAirMode() && !filled(form.cfsWarehouse)) missing.push('Warehouse CFS')
+    if (!filled(form.cfs)) missing.push(isAirMode() ? 'To (Air Cargo Warehouse)' : 'CFS / Warehouse for Cargo Pick-up')
+    const goods = Array.isArray(form.conts) ? form.conts : []
+    if (!goods.length || goods.some((item: any) => !filled(item?.qty) || !filled(item?.unit))) missing.push('Description of Goods (QTY, Unit)')
+  } else {
+    if (!filled(form.description)) missing.push('Description')
+    if (!filled(form.unit)) missing.push('Unit')
+  }
+  const charges = (Array.isArray(form.charges) ? form.charges : [])
+    .filter((charge: any) => ['chargeName', 'qty', 'unit', 'unitPrice', 'cur', 'taxRate'].some((key) => filled(charge?.[key])))
+  if (!charges.length) missing.push('Charges Due (at least one charge)')
+  else if (charges.some((charge: any) => !filled(charge.chargeName) || !filled(charge.qty) || !filled(charge.unitPrice) || !filled(charge.cur))) {
+    missing.push('Charges Due (Charge Name, Qty, Unit Price, CUR)')
+  }
+  if (!filled(form.paymentBank)) missing.push('Payment Instruction')
+  return missing
+}
 const saveArrivalNotice = () => {
+  const missing = arrivalNoticeMissingFields()
+  if (missing.length) {
+    showToast(`Please complete: ${missing.join(', ')}`)
+    return
+  }
   syncArrivalNoticeEta()
   if (gsdModal.form.sentAt) {
     // Older sent records may not have a snapshot yet. Their next explicit Save
@@ -13644,8 +13698,10 @@ const persistExpenseCollect = async (immediate = false, syncAfterFeedback = fals
   ])
   if (!saved) throw new Error('Could not save Payment Approval feedback')
   if (shouldSync && opsDeptUpper() === 'FCD') {
-    const ecdIndex = peers.indexOf('ECD')
-    if (ecdIndex < 0 || results[ecdIndex] !== true) throw new Error('Could not return Payment Approval feedback to ECD')
+    // The request owner is ECD on export services and ICD on import services (DO/DAP/DDU/DDP).
+    const ownerDept = ['EXW', 'FCA', 'FCF'].includes(upperText(opsParts.value?.type)) ? 'ECD' : 'ICD'
+    const ownerIndex = peers.indexOf(ownerDept as any)
+    if (ownerIndex < 0 || results[ownerIndex] !== true) throw new Error(`Could not return Payment Approval feedback to ${ownerDept}`)
   }
 }
 const unlockExpenseCollectSelected = () => {
@@ -15059,14 +15115,18 @@ const pickupReturnOptions = () => {
   return filterPickupOptionsByCountry(pickupPortOptions.value)
 }
 // DELIVERY DETAILS (FCL import): PickUpFromPort is picked from Reference Data > Ports.
+// AIR delivers from a bonded warehouse (same source as AIR ReturnToWareHouse), not a port.
+const deliveryFromOptions = () => isAirMode()
+  ? pickupWarehouseOptions.value.filter((option) => ['BONDED', 'BOUNDED'].includes(upperText(option.type)))
+  : pickupPortOptions.value
 const availableDeliveryFromPortOptions = () => {
   const selected = upperText(gsdModal.form.fromPort || '').trim()
-  return pickupPortOptions.value.filter((option) => upperText(option.value).trim() !== selected)
+  return deliveryFromOptions().filter((option) => upperText(option.value).trim() !== selected)
 }
 const validateDeliveryFromPort = () => {
   const value = String(gsdModal.form.fromPort || '').trim()
   if (!value) return
-  const matched = pickupPortOptions.value.find((option) => upperText(option.value) === upperText(value))
+  const matched = deliveryFromOptions().find((option) => upperText(option.value) === upperText(value))
   if (matched) {
     gsdModal.form.fromPort = matched.value
     clearPickupInvalid('fromPort')
@@ -15074,7 +15134,7 @@ const validateDeliveryFromPort = () => {
   }
   gsdModal.form.fromPort = ''
   pickupInvalidFields.value = new Set([...pickupInvalidFields.value, 'fromPort'])
-  showToast('Select PickUpFromPort from Reference Data (Ports)')
+  showToast(isAirMode() ? 'Select PickupFromWareHouse from Reference Data (Warehouses - Bonded)' : 'Select PickUpFromPort from Reference Data (Ports)')
 }
 const availablePickupReturnOptions = () => {
   const selected = upperText(gsdModal.form.returnPort || '').trim()
@@ -15398,7 +15458,7 @@ const sendPickupToTarget = async () => {
     gsdModal.form.saved = true
     gsdModal.editing = false
     persistPickupModal(false, false)
-    if (['EXW', 'FCA', 'DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase()) && ['FCL', 'LCL'].includes(String(opsParts.value?.mode || '').toUpperCase()) && opsDeptUpper() === 'TCD') {
+    if (['EXW', 'FCA', 'DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase()) && ['FCL', 'LCL', 'AIR'].includes(String(opsParts.value?.mode || '').toUpperCase()) && opsDeptUpper() === 'TCD') {
       const targetLabel = isDeliveryDetailsModal() ? 'DELIVERY DETAIL' : 'PICKUP DETAIL'
       await Promise.all(fclTcdMirrorDepts().map((dept) => mirrorExwFclWorkflowCell(dept, targetLabel, rows.value[gsdModal.row][gsdModal.column])))
     }
@@ -15508,7 +15568,7 @@ const gsdModalShellStyle = () => {
   if (isPickupReturnStatusModal()) {
     if (isAirDupTcdTruckingStatusModal() || isAirDupFcdTruckingStatusModal()) return shell('1360px')
     if (isAirDupIcdTruckingStatusModal()) return shell('960px')
-    if (isLclPickupStatusModal()) return shell(isDestinationIcdPickupStatusModal() ? '860px' : '620px')
+    if (isLclPickupStatusModal()) return shell(isDestinationIcdPickupStatusModal() ? '860px' : isAirMode() ? '860px' : '620px')
     if (isDestinationIcdPickupStatusModal()) return shell('1360px')
     return shell('920px')
   }
@@ -15847,6 +15907,16 @@ const seedDupTcdClearanceMockupData = () => {
   gsdModal.form.openId = ''
   persistClearanceDetails()
 }
+// AIR: show VOLUME / G.W / MEA.(CBM) exactly as the VOLUME popup lists them.
+const airVolumeCells = (index: number) => {
+  const item: any = volumeFormFromCell(rowValueByHeader('VOLUME')).records[index]
+  if (!item) return ['-', '-', '-']
+  return [
+    `${item.volume || ''} ${item.type || ''}`.trim() || '-',
+    item.gw ? `${item.gw} ${item.gwUnit || ''}`.trim() : '-',
+    item.mea ? `${item.mea} CBM` : '-',
+  ]
+}
 // LCL has no container/seal: clearance rows show the VOLUME line instead.
 const isClearanceLclView = () => ['LCL', 'AIR'].includes(upperText(opsParts.value?.mode))
 const clearanceDeclarationsFor = (rowKey: string) => clearanceDeclarations().filter((decl) => decl.rowKeys.includes(rowKey))
@@ -16117,6 +16187,15 @@ const seedTruckContFromVolume = (form: any) => {
   if (!expected.length) return form
   const current = Array.isArray(form.records) ? form.records : []
   form.records = expected.map((contType, index) => ({ ...emptyTruckContRecord(), ...(current[index] || {}), contType }))
+  return form
+}
+// LCL/AIR TRUCKING INFO: at least one truck line per VOLUME line (like FCL), keeping
+// any extra trucks the user already added. No ContType - these modes have no containers.
+const seedTruckRowsFromVolumeLines = (form: any) => {
+  const lines = (volumeFormFromCell(rowValueByHeader('VOLUME')).records || []).length
+  const current = Array.isArray(form.records) ? form.records.filter(Boolean) : []
+  if (!lines || current.length >= lines) return form
+  form.records = [...current, ...Array.from({ length: lines - current.length }, () => emptyTruckContRecord())]
   return form
 }
 const truckContRecords = () => (Array.isArray(gsdModal.form.records) ? gsdModal.form.records : [emptyTruckContRecord()]) as TruckContRecord[]
@@ -16488,7 +16567,8 @@ const saveTruckContDetails = async () => {
       gsdModal.form.locked = false
       return
     }
-    if (['EXW', 'FCA', 'FCF', 'DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase()) && ['FCL', 'LCL'].includes(String(opsParts.value?.mode || '').toUpperCase()) && opsDeptUpper() === 'TCD') {
+    // AIR uses the same TCD -> ECD/CCD/DCD/FCD (export) and ICD/FCD (import) mirror as FCL/LCL.
+    if (['EXW', 'FCA', 'FCF', 'DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase()) && ['FCL', 'LCL', 'AIR'].includes(String(opsParts.value?.mode || '').toUpperCase()) && opsDeptUpper() === 'TCD') {
       // The source worksheet is already safely persisted. Cross-department
       // mirrors use their own serialized write queues, so do not keep the
       // modal Save button blocked while several target sheets are fetched and
@@ -17361,6 +17441,7 @@ const exportSiSubmitPdf = async (download: boolean | Event = true) => {
     await nextTick()
     const pdfBottomReserve = 180
     let protectedBlockOffsets: Array<{ top: number; bottom: number }> = []
+    let contentBottomOffset = 0
     const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
       import('html2canvas'),
       import('jspdf'),
@@ -17395,9 +17476,13 @@ const exportSiSubmitPdf = async (download: boolean | Event = true) => {
             control.toggleAttribute('checked', source.checked)
             return
           }
-          const value = source instanceof HTMLSelectElement
+          const rawValue = source instanceof HTMLSelectElement
             ? source.selectedOptions[0]?.textContent || source.value
             : source.value
+          // Every exported date reads dd/mm/yyyy (date inputs hold yyyy-mm-dd).
+          const value = source instanceof HTMLInputElement && source.type !== 'number'
+            ? String(formatAdminDateDisplay(rawValue) ?? '')
+            : rawValue
           const display = clonedDocument.createElement('div')
           const displayText = clonedDocument.createElement('span')
           const style = window.getComputedStyle(source)
@@ -17518,6 +17603,10 @@ const exportSiSubmitPdf = async (download: boolean | Event = true) => {
             }
           })
           .filter((block) => block.bottom > block.top)
+        // Real end of the content: the capture adds a blank reserve at the bottom,
+        // which must not become an extra empty PDF page.
+        contentBottomOffset = Array.from(clonedSheet.querySelectorAll<HTMLElement>('*'))
+          .reduce((max, element) => Math.max(max, element.getBoundingClientRect().bottom - clonedSheetRect.top), 0) + 24
       },
     })
     if (!canvas.width || !canvas.height) throw new Error('The SI PDF page could not be rendered')
@@ -17534,10 +17623,13 @@ const exportSiSubmitPdf = async (download: boolean | Event = true) => {
       }))
       .filter((block) => block.bottom > block.top && block.bottom - block.top < pagePixelHeight)
       .sort((a, b) => a.top - b.top)
+    const contentHeight = contentBottomOffset > 0
+      ? Math.min(canvas.height, Math.ceil(contentBottomOffset * canvasScale))
+      : canvas.height
     let sourceY = 0
     let pageIndex = 0
-    while (sourceY < canvas.height) {
-      let sliceHeight = Math.min(pagePixelHeight, canvas.height - sourceY)
+    while (sourceY < contentHeight) {
+      let sliceHeight = Math.min(pagePixelHeight, contentHeight - sourceY)
       const proposedPageEnd = sourceY + sliceHeight
       // The PDF is rendered from one long canvas, so normal CSS page-break rules
       // cannot prevent a cut. Keep every field label together with its value and
@@ -17812,6 +17904,9 @@ const openDoReleaseSend = async () => {
     doReleasePreparing.value = true
     try {
       if (deliveryOrderSavePromise) await deliveryOrderSavePromise
+      // Render the Delivery Order off-screen only to produce its PDF; the user
+      // goes straight to the send dialog without seeing the document pop up.
+      deliveryOrderModal.background = true
       openDeliveryOrderDocument()
       deliveryOrderModal.editing = false
       await nextTick()
@@ -17820,6 +17915,7 @@ const openDoReleaseSend = async () => {
       if (!uploaded?.url) return
     } finally {
       deliveryOrderModal.open = false
+      deliveryOrderModal.background = false
       doReleasePreparing.value = false
     }
   }
@@ -18307,7 +18403,9 @@ const viewBillDetailFile = (file: any) => {
   if (url) void viewAdminAttachment(url, String(file?.name || ''), String(file?.type || file?.mimeType || ''))
   else showToast(String(file?.name || 'Attachment'))
 }
-const billDocValue = (key: string) => String(billDocModal[key] || '')
+const billDocValue = (key: string) => ['dateOfIssue', 'shippedOnBoardDate'].includes(key)
+  ? String(formatAdminDateDisplay(billDocModal[key]) || '')
+  : String(billDocModal[key] || '')
 const setBillDocField = (key: string, event: Event) => {
   const value = String((event.target as HTMLElement)?.innerText || '').trim()
   billDocModal[key] = ['pol', 'pod'].includes(key) ? value.toUpperCase() : value
@@ -20844,7 +20942,7 @@ const ensureOpsShipmentLink = (header: string[], row: any[], rowIndex: number, s
   const jobColumn = header.indexOf('JOB NO#')
   const jobNo = jobColumn >= 0 ? String(row[jobColumn] || '').trim() : ''
   const link = existing || jobNo || newOpsShipmentLink()
-  if (jobColumn >= 0 && !jobNo) row[jobColumn] = link
+  // The shipment link is internal: never write it into the visible JOB NO# cell.
   const nextLinks = { ...links, [String(rowIndex)]: link }
   if (sheetSettings === settings.value) settings.value = { ...settings.value, opsRowLinks: nextLinks }
   else sheetSettings.opsRowLinks = nextLinks
@@ -22497,6 +22595,18 @@ const openVesselDatePopup = (field: 'tsEtd' | 'tsEta' | 'newEtd' | 'newEta', eve
   closeDropdownPopup()
   closeCutoffTimePopup()
 }
+// MASTER SI SUBMIT date uses the shared Operations calendar (not the browser's native one).
+const openSiDatePopup = (event: MouseEvent) => {
+  if (!gsdModal.editing) return
+  nativePickerInput = null
+  nativePickerType = ''
+  const current = parseOpsDate(gsdModal.form.siIssueDate) || new Date()
+  const pos = positionPopupNear(event.currentTarget as HTMLElement, 240)
+  Object.assign(datePopup, { open: true, cutoffField: 'siIssueDate', row: -1, column: -1, left: pos.left, top: pos.top, viewYear: current.getFullYear(), viewMonth: current.getMonth() })
+  closeDropdownPopup()
+  closeCutoffTimePopup()
+  siInvalidFields.value = new Set([...siInvalidFields.value].filter((key) => key !== 'siIssueDate'))
+}
 const sameDate = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 const openDatePopup = (row: number, column: number, target: HTMLElement) => {
   nativePickerInput = null
@@ -22633,6 +22743,7 @@ const isDatePopupDayDisabled = (date: Date) => {
       }
     }
   }
+  if (datePopup.cutoffField === 'siIssueDate') return false
   if (datePopup.cutoffField) {
     const today = new Date()
     return day < new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
@@ -23530,7 +23641,8 @@ onBeforeUnmount(() => {
 .gsd-air-modal.gsd-delivery-details-modal .gsd-pickup-check input{width:16px;height:16px;min-width:16px;margin:0;padding:0;flex:none}
 .gsd-air-modal.gsd-delivery-details-modal .gsd-pickup-check em{font-size:13px;font-style:normal;font-weight:400;line-height:16px;color:#1f2c27}
 .gsd-air-modal.gsd-delivery-edit-modal .gsd-pickup-actions{margin:18px -24px 0;padding:0 24px 20px;border-top:0}
-.gsd-clr-view-table th,.gsd-clr-view-table td{text-align:center}.gsd-clr-view-table .clr-declcell{text-align:left}.gsd-clr-view-table .clr-declwrap.viewonly{display:grid;gap:8px}.gsd-clr-view-table .clr-link{width:100%;min-height:34px;display:flex;align-items:center;justify-content:space-between;border:1px solid #b9dec8;border-radius:6px;background:#e8f7ef;color:#007a3d;padding:6px 10px;font-size:13px;font-weight:800}.gsd-clr-view-table .clr-link-red{background:#fff0ed;border-color:#d63b2f;color:#d63b2f}.gsd-clr-view-table .clr-dots{display:flex;gap:5px}.gsd-clr-view-table .clr-dot{width:7px;height:7px;border-radius:999px;background:#cbd8d1}.gsd-clr-view-table .clr-dot.on{background:#00924f}.gsd-clr-view-table .clr-link-red .clr-dot.on{background:#cfd8dc}
+.gsd-clr-view-table th,.gsd-clr-view-table td{text-align:center}.gsd-clr-view-table .clr-declcell{text-align:left}.gsd-clr-view-table .clr-declwrap.viewonly{display:grid;gap:8px}.gsd-clr-view-table .clr-link{width:100%;min-height:34px;display:flex;align-items:center;justify-content:space-between;border:1px solid #b9dec8;border-radius:6px;background:#e8f7ef;color:#007a3d;padding:6px 10px;font-size:13px;font-weight:800}.gsd-clr-view-table .clr-link-red{background:#fff0ed;border-color:#d63b2f;color:#d63b2f}.gsd-clr-view-table .clr-dots{display:flex;gap:5px}.gsd-clr-view-table .clr-dot{width:7px;height:7px;border-radius:999px;background:#cbd8d1}.gsd-clr-view-table .clr-dot.on{background:#00924f}/* Completed steps stay green even on an Inspected (red) declaration, same as CCD. */
+.gsd-clr-view-table .clr-link-red .clr-dot.on{background:#00924f}
 .gsd-truck-cont-modal{width:min(1360px,98vw);height:275px;padding:28px 24px 18px;border-radius:10px;overflow:hidden;font:12px/1.35 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-truck-cont-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-truck-title{font-size:13px;font-weight:900;color:#0e1512;text-transform:uppercase;margin:0 0 14px}.gsd-truck-toolbar{display:flex;align-items:center;gap:8px;margin:0 0 14px}.gsd-truck-toolbar .wb-modal-btn{height:30px;min-height:30px;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:800}.gsd-truck-toolbar .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-truck-toolbar .edit{background:#f6c998;border-color:#f6c998;color:#fff}.gsd-truck-toolbar .remove{background:#e6a596;border-color:#e6a596;color:#fff}.gsd-truck-toolbar .wb-modal-btn:disabled{opacity:.45;cursor:not-allowed}.gsd-truck-table-wrap{overflow:visible;max-height:none}.gsd-truck-table{width:100%;min-width:0;border-collapse:collapse;table-layout:fixed;font-size:11.5px;color:#33413b}.gsd-truck-table th,.gsd-truck-table td{border:1px solid #c7d1ca;text-align:center;padding:6px 8px;height:32px}.gsd-truck-table th{background:#f0f4f2;color:#68756f;font-family:var(--mono,'Geist Mono',ui-monospace,monospace);font-size:10.5px;font-weight:800;letter-spacing:.02em;white-space:normal}.gsd-truck-table .tk-all{color:#1d4cff}.gsd-truck-table td{background:#f8fbfa}.gsd-truck-table input,.gsd-truck-table select{width:100%;height:26px;border:0;background:transparent;text-align:center;font:inherit;font-size:11.5px;color:#33413b;outline:none}.gsd-truck-table select{appearance:auto;color:#7a847d}.gsd-truck-table input:focus,.gsd-truck-table select:focus{background:#fff;box-shadow:inset 0 0 0 2px #00c566;border-radius:4px}.gsd-truck-table input:disabled,.gsd-truck-table select:disabled{color:#7a847d;opacity:1}.gsd-truck-table input[type=checkbox]{width:15px;height:15px;accent-color:#008f4c}.gsd-truck-table input[type=date]:disabled,.gsd-truck-table input[type=time]:disabled{color:#9aa6a1}.gsd-truck-plus{display:inline-grid;place-items:center;width:18px;height:18px;margin-left:5px;border:0;border-radius:5px;background:#008f4c;color:#fff;font-size:14px;font-weight:900;line-height:1;cursor:pointer}.gsd-pu-link,.gsd-driver-link{border:0;background:transparent;color:#1f4ed8;text-decoration:underline;font:inherit;font-weight:700;cursor:pointer}.gsd-driver-link{color:#33413b;text-decoration:none}.gsd-truck-table .tk-order{font-weight:700;color:#7a847d;background:#fff}.gsd-truck-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}.gsd-truck-foot .wb-modal-btn{height:32px;min-height:32px;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:800}.gsd-truck-foot .primary{background:#8fd8b7;border-color:#8fd8b7;color:#fff}.gsd-truck-foot .slate{background:#64748b;border-color:#64748b;color:#fff}.gsd-truck-foot .primary:not(:disabled){background:#6fcda5;border-color:#6fcda5}.gsd-truck-foot .wb-modal-btn:disabled{opacity:.55;cursor:not-allowed}
 .gsd-truck-table .truck-datetime-cell{text-align:center;vertical-align:middle}.gsd-truck-table .truck-datetime-cell>span{display:flex;align-items:center;justify-content:center;width:100%;min-height:26px;text-align:center;font-variant-numeric:tabular-nums}
 .gsd-truck-table input[type=checkbox]{appearance:auto!important;width:15px!important;height:15px!important;min-width:15px!important;padding:0!important;border:0!important;border-radius:0!important;outline:0!important;box-shadow:none!important;accent-color:#008f4c;background:transparent!important}.gsd-truck-table input[type=checkbox]:focus,.gsd-truck-table input[type=checkbox]:checked{border:0!important;outline:0!important;box-shadow:none!important}.gsd-truck-table .truck-select-cell{padding:6px!important;background:#f8fbfa!important}.gsd-truck-table tr.truck-row-editing td:has(input:not([type=checkbox]):not(:disabled)),.gsd-truck-table tr.truck-row-editing td:has(select:not(:disabled)){padding:0;background:#fff4df}.gsd-truck-table tr.truck-row-editing input:not([type=checkbox]):not(:disabled),.gsd-truck-table tr.truck-row-editing select:not(:disabled){display:block;width:100%;height:100%;min-height:36px;padding:6px 8px;border-radius:0;background:#fff4df;color:#26352e}.gsd-truck-table tr.truck-row-editing input:not([type=checkbox]):focus,.gsd-truck-table tr.truck-row-editing select:not(:disabled):focus{background:#fff;border-radius:0;box-shadow:inset 0 0 0 2px #f39a12}.gsd-truck-table .truck-company-select{min-width:120px;text-align:left}
@@ -24396,6 +24508,10 @@ onBeforeUnmount(() => {
 .ops-ms-table td.staffcell,.ops-ms-table td.staffcell .ops-textcell,.ops-ms-table td.staffcell .ops-efa-select,.sheet-body td.staffcell,.sheet-body td.staffcell .cell-select{ text-transform:none!important }
 .an-payment-contact{align-items:start}.an-payment-contact>label{display:grid;grid-template-rows:auto 32px minmax(66px,auto);align-content:start;row-gap:4px}.an-payment-contact select{display:block;width:100%;height:32px;box-sizing:border-box;border:1px solid #c9d3cf;border-radius:7px;background:#fff;padding:0 30px 0 9px;color:#46524d;font:inherit;font-size:12.5px;outline:none}.an-payment-contact select:disabled{background:#f1f5f4;color:#64746d;opacity:1}.an-payment-contact textarea{height:66px;min-height:66px}.an-contact-spacer{display:block;width:100%;height:32px;box-sizing:border-box}
 .an-print-sheet{position:fixed!important;left:-10000px!important;top:0!important;width:824px!important;max-width:none!important;margin:0!important;padding:0!important;background:#fff!important;overflow:visible!important}.an-print-sheet .an-payment-contact>label{grid-template-rows:auto auto}.an-print-sheet .an-contact-spacer{display:none}.an-print-sheet .an-print-value{display:flex;align-items:center;box-sizing:border-box;width:100%;min-height:34px;border:1px solid #c9d3cf;border-radius:7px;background:#fff;padding:1px 9px 7px;color:#46524d;font:inherit;font-size:13px;line-height:1.1;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}.an-print-sheet .an-print-textarea{display:block;min-height:54px;padding-top:4px;padding-bottom:10px;line-height:1.25}.an-print-sheet .an-cargo-summary .an-print-textarea{display:flex;min-height:34px;align-items:center;padding-top:1px;padding-bottom:7px;line-height:1.1}.an-print-sheet .an-detail-remarks .an-print-textarea{min-height:76px}.an-print-sheet .an-add-row,.an-print-sheet .an-row-remove{display:none!important}.an-print-sheet .an-detail-table th:last-child:empty{display:none}.an-print-sheet .an-detail-table td{height:auto;overflow:visible;background:#fff}.an-print-sheet .an-detail-table .an-print-value{min-height:24px;justify-content:center;border:0;border-radius:0;background:#fff;padding:1px 3px 5px;line-height:1.1;text-align:center;white-space:pre-wrap}.an-print-sheet .an-detail-g2,.an-print-sheet .an-detail-g3{align-items:start}
+/* PDF: html2canvas draws text lower than the browser - give every label its own line
+   box and clear space above the field (same treatment as the Delivery Order PDF). */
+.an-print-sheet label{gap:0!important}
+.an-print-sheet label>span:first-child,.an-print-sheet .an-detail-field>span:first-child{display:block;line-height:14px;min-height:14px;margin-bottom:11px!important;padding:0}
 /* FCD Payment Approval: inherited request data is read-only/darker; FCD feedback fields fill the cell. */
 .gsd-expcol-modal .ec-locked-input,.gsd-expcol-modal .expcol-table tbody td:has(>span.ec-cell){background:#e3e9e5!important;color:#4d5b54!important;opacity:1}.gsd-expcol-modal .ec-issinp{min-width:220px;background:#fff}.gsd-expcol-modal .ec-fcd-input{display:block;width:100%;height:100%;min-height:28px;box-sizing:border-box;border:1px solid #cfd8d2;border-radius:0;background:#fff;padding:4px 6px;text-align:center;font:inherit;color:#24332c;outline:none}.gsd-expcol-modal .ec-fcd-input:focus{box-shadow:inset 0 0 0 2px #00a860}.gsd-expcol-modal .ec-fcd-input:disabled{border-color:#cbd3ce;background:#dfe5e1;color:#66736c;opacity:1;cursor:not-allowed}.gsd-expcol-modal .expcol-table td:has(>.ec-fcd-input){padding:0;background:#fff}
 /* Keep selection checkboxes visible while any modal table scrolls sideways. */
@@ -24459,7 +24575,10 @@ onBeforeUnmount(() => {
 .gsd-cutoff-table thead tr:nth-child(2) th{top:31px!important;height:29px;font-size:10.5px}
 .gsd-cutoff-table th.cutoff-stt,.gsd-cutoff-table td:first-child{width:auto}
 .gsd-cutoff-modal .gsd-cutoff-footer{margin-top:9px}
-.datepop.modal-datepop{z-index:700}
+/* Above every document overlay (Delivery Order is 760) so the calendar is never hidden. */
+.datepop.modal-datepop{z-index:1050}
+.ops-picker-field-proxy{z-index:1040!important}
+.cutoff-timepop{z-index:1050!important}
 .cutoff-timepop{position:fixed;z-index:710;width:224px;box-sizing:border-box;border:1px solid #d3dacf;border-radius:12px;background:#fff;padding:12px;box-shadow:0 18px 45px rgba(14,40,27,.24);color:#33413b;font:13px/1.35 var(--sans,'Geist',sans-serif)}
 .ctp-head,.ctp-labels,.ctp-actions{display:flex;align-items:center}.ctp-head{justify-content:space-between;margin-bottom:10px}.ctp-head strong{font-size:13px;color:#17231d}.ctp-head span{border-radius:999px;background:#edf5f0;padding:3px 7px;color:#6c7b73;font-size:10px;font-weight:700}.ctp-labels{gap:8px;margin:0 0 5px}.ctp-labels span{width:92px;text-align:center;color:#7a847d;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
 .ctp-columns{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ctp-list{height:168px;overflow-y:auto;border:1px solid #e1e8e4;border-radius:8px;background:#f8faf9;padding:4px;scrollbar-width:thin;scrollbar-color:#b9c9c0 transparent}.ctp-list button{display:block;width:100%;height:30px;border:0;border-radius:6px;background:transparent;color:#425049;font:inherit;font-variant-numeric:tabular-nums;cursor:pointer}.ctp-list button:hover{background:#e3f3ea;color:#087d4b}.ctp-list button.selected{background:#008f4c;color:#fff;font-weight:800}
@@ -24565,6 +24684,7 @@ onBeforeUnmount(() => {
    full modal visible for review, but clearly disable every mutating control. */
 .gsd-workflow-locked input:not([type="hidden"]),.gsd-workflow-locked select,.gsd-workflow-locked textarea{pointer-events:none!important;cursor:not-allowed!important;opacity:.68!important}
 .gsd-workflow-locked button:not(.gsd-modal-x):not(.ec-view):not(.gsd-eye-btn):not(.gsd-pre-icon.eye):not([class*="export"]):not([title^="View"]){pointer-events:none!important;cursor:not-allowed!important;opacity:.58!important;filter:saturate(.55)!important}
+.do-document-overlay.do-document-background{opacity:0!important;pointer-events:none!important}
 .do-document-overlay{z-index:760!important;background:rgba(20,30,26,.5)!important}.do-document-modal{width:900px;max-width:96vw;height:94vh;display:flex;flex-direction:column;overflow:hidden;border-radius:10px;background:#eef1f4;box-shadow:0 20px 60px rgba(0,0,0,.32)}.do-document-toolbar{display:flex;justify-content:flex-end;gap:8px;padding:10px 14px;background:#fff;border-bottom:1px solid #dce3df}.do-document-toolbar .wb-modal-btn{height:34px;padding:0 14px}.do-document-close{width:25px;height:25px;margin-left:4px;border:0;border-radius:50%;background:#c0392b;color:#fff;font-size:18px;font-weight:800;line-height:1;cursor:pointer}.do-document-scroll{flex:1;overflow:auto;padding:18px}.do-document-sheet{box-sizing:border-box;width:760px;min-height:1060px;margin:0 auto;padding:44px 50px;background:#fff;color:#26312b;font:12px/1.35 Arial,sans-serif;box-shadow:0 2px 9px rgba(0,0,0,.14)}.do-document-head{display:flex;justify-content:space-between;gap:20px;padding-bottom:12px;border-bottom:2px solid #0f4c81;color:#0f4c81}.do-document-head>div:first-child{display:flex;flex-direction:column;max-width:460px}.do-document-head b{font-size:15px}.do-document-head span{font-size:9px;color:#495852}.do-document-head>div:last-child{text-align:right}.do-document-head strong{display:block;font-size:20px;letter-spacing:.04em}.do-document-head small{font-size:10px;font-weight:800}.do-document-sheet label{display:grid;gap:4px;margin-top:12px}.do-doc-section{color:#0f4c81;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
 .do-document-sheet label>span{color:#6b7686;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}.do-document-sheet input,.do-document-sheet textarea{box-sizing:border-box;width:100%;border:1px solid #c9d3cf;border-radius:5px;background:#fff;padding:7px 9px;color:#26312b;font:12px Arial,sans-serif;outline:none;resize:vertical}.do-document-sheet input{height:34px}.do-document-sheet textarea{min-height:54px}.do-document-sheet input:disabled,.do-document-sheet textarea:disabled,.do-document-sheet input[readonly],.do-document-sheet textarea[readonly]{background:#f1f5f4;color:#46534d;opacity:1}
 .do-doc-addrow{margin-top:8px;border:0;border-radius:6px;background:#009457;padding:7px 12px;color:#fff;font-size:11.5px;font-weight:700;cursor:pointer}
@@ -24572,4 +24692,39 @@ onBeforeUnmount(() => {
 .do-document-actions .wb-modal-btn.primary{border-color:#00c566;background:#00c566;color:#fff}.do-document-actions .wb-modal-btn.edit{border-color:#e67e22;background:#e67e22;color:#fff}.do-document-actions .wb-modal-btn.export{border-color:#237bdd;background:#237bdd;color:#fff}.do-document-actions .wb-modal-btn:disabled{filter:saturate(.42) brightness(.78);cursor:not-allowed}.do-doc-sign>div{display:grid;grid-template-rows:14px 18px 49px 18px;align-items:center}.do-doc-sign b,.do-doc-sign strong{display:block;margin:0}.do-doc-sign i{height:48px;align-self:start}.do-sign-placeholder{visibility:hidden}
 .do-document-modal{width:920px}.do-document-scroll{padding:18px 22px 24px}.do-document-sheet{width:min(824px,100%)}@media(max-width:820px){.do-document-sheet{width:100%}}
 .do-print-sheet{position:fixed!important;left:-10000px!important;top:0!important;width:824px!important;max-width:none!important;min-height:0!important;margin:0!important;padding:44px 50px 34px!important;box-shadow:none!important;overflow:visible!important}.do-print-sheet .do-print-value{display:flex;align-items:center;box-sizing:border-box;width:100%;min-height:34px;border:1px solid #c9d3cf;border-radius:5px;background:#f1f5f4;padding:1px 9px 7px;color:#46534d;font:12px/1.1 Arial,sans-serif;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}.do-print-sheet .do-print-textarea{display:block;min-height:54px;padding-top:4px;padding-bottom:10px;line-height:1.25}.do-print-sheet .do-doc-table .do-print-value{min-height:30px;justify-content:center;border:0;border-radius:0;background:#f1f5f4;padding:1px 3px 5px;text-align:center}.do-print-sheet .do-doc-party-head{justify-content:flex-start}.do-print-sheet .do-doc-sign{margin-bottom:18px;break-inside:avoid}
+.si-date-input:not(:disabled){cursor:pointer;padding-right:32px!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Crect x='3' y='4' width='18' height='17' rx='2'/%3E%3Cpath d='M8 2v4M16 2v4M3 10h18'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:15px}
+/* DELIVERY ORDER - match AdminMockup/Mau_AN_SI_DO_MNF_2_1.html (FCL / LCL / AIR) */
+.do-document-sheet{color:#1f2733;font:13px/1.35 Arial,Helvetica,sans-serif}
+.do-document-head{align-items:flex-start;padding-bottom:10px;margin-bottom:16px;border-bottom:2px solid #1f2733;color:#1f2733}
+.do-document-head b{font-size:15px;font-weight:700;color:#1f2733}
+.do-document-head span{max-width:340px;margin-top:2px;font-size:11.5px;color:#6b7686}
+.do-document-head strong{font-size:19px;font-weight:800;letter-spacing:.5px;color:#0f4c81}
+.do-document-head small{font-size:11.5px;font-weight:700;color:#6b7686;text-transform:uppercase;letter-spacing:.5px}
+.do-document-sheet label{gap:3px;margin-top:0;margin-bottom:12px}
+.do-document-sheet label>span{font-size:11px;font-weight:700;color:#6b7686;text-transform:uppercase;letter-spacing:.3px}
+.do-document-sheet input,.do-document-sheet textarea{border:1px solid #d7dce2;padding:7px 8px;color:#1f2733;font:13px Arial,Helvetica,sans-serif}
+.do-document-sheet input:disabled,.do-document-sheet textarea:disabled,.do-document-sheet input[readonly],.do-document-sheet textarea[readonly]{background:#f4f6f8;color:#6b7686}
+.do-doc-grid{gap:0 18px}.do-doc-grid.three{gap:0 12px}
+.do-doc-section{margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid #d7dce2;color:#0f4c81;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.4px}
+.do-doc-table{margin-top:6px}
+.do-doc-table th,.do-doc-table td{border:1px solid #d7dce2}
+.do-doc-table th{height:auto;padding:6px 7px;background:#f4f6f8;color:#6b7686;font-size:11px;font-weight:700;text-transform:uppercase}
+.do-doc-table td{font-size:12.5px}
+.do-doc-table input{font-size:12.5px;background:transparent}
+.do-doc-table td.cell-readout,.do-doc-table input[readonly]{color:#6b7686;font-weight:700}
+.do-doc-addrow,.do-doc-add{border-radius:6px;background:#008f4c;padding:5px 10px;font-size:12px;font-weight:700}
+.do-doc-sign{margin-top:46px;color:#6b7686;font-size:11px;text-transform:uppercase}
+.do-doc-sign b{color:#1f2733;font-size:12.5px;font-weight:700;text-transform:none}
+.do-doc-sign i{border-bottom-color:#1f2733}
+.do-doc-sign strong{color:#1f2733;font-size:13px;font-weight:700;text-transform:none}
+.do-print-sheet .do-print-value{border-color:#d7dce2;background:#fff!important;color:#1f2733;font-size:13px}
+.do-print-sheet .do-doc-table td,.do-print-sheet .do-doc-table .do-print-value{background:#fff!important}
+.do-print-sheet .do-doc-table .do-print-value{font-size:12.5px}
+/* SHIPPER / CONSIGNEE / NOTIFY PARTY: same weight as every other label (the <b> made them bolder). */
+.do-doc-party-head b{font-size:11px;font-weight:inherit;color:inherit;letter-spacing:inherit}
+/* PDF export: html2canvas draws text a few px lower than the browser, so give labels
+   their own line box and more space so they never touch the field below. */
+.do-print-sheet label{gap:0}
+.do-print-sheet label>span{display:block;line-height:14px;height:14px;margin-bottom:11px;padding:0}
+.do-print-sheet .do-doc-party-head{display:block!important;line-height:14px;height:14px}
 </style>
