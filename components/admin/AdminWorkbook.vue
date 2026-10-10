@@ -910,7 +910,12 @@
           <label class="do-info-choice"><input v-model="doInfoModal.hblEnabled" type="checkbox" :disabled="!doInfoModal.editing || !canManageDoInfo()" @change="toggleDoInfoKind('hbl')" /><span>{{ awbText('HBL DO:') }}</span></label>
           <input v-model="doInfoModal.hblNo" type="text" :placeholder="awbText('HBL DO No#')" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.hblEnabled" />
           <input :value="formatCutoffDate(doInfoModal.hblDate)" type="text" readonly title="Set automatically when HBL DO is ticked" />
-          <button class="gsd-pre-icon eye on do-info-view" type="button" :disabled="!doInfoModal.hblEnabled" :title="awbText('View the Delivery Order exported from DO RELEASE')" @click="viewDoInfoDeliveryOrder"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          <!-- DAP/DDU/DDP have no DO RELEASE step, so HBL DO is uploaded here like MBL DO. -->
+          <template v-if="upperText(opsParts?.type) !== 'DO'">
+            <button class="gsd-pre-icon upload do-info-upload" :class="{ has: !!doInfoModal.hblFile.name }" type="button" :disabled="!doInfoModal.editing || !canManageDoInfo() || !doInfoModal.hblEnabled" :title="doInfoModal.hblFile.name || awbText('Upload HBL DO')" @click="chooseDoInfoFile('hbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg></button>
+            <button v-if="doInfoModal.hblFile.dataUrl" class="gsd-pre-icon eye on do-info-view" type="button" :title="awbText('View HBL DO')" @click="viewDoInfoFile('hbl')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </template>
+          <button v-else class="gsd-pre-icon eye on do-info-view" type="button" :disabled="!doInfoModal.hblEnabled" :title="awbText('View the Delivery Order exported from DO RELEASE')" @click="viewDoInfoDeliveryOrder"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
         <div v-if="canManageDoInfo()" class="do-info-actions">
           <button class="clear" type="button" :disabled="!doInfoHasData()" @click="clearDoInfoModal">Clear</button>
@@ -1679,7 +1684,7 @@
                 <label><span>{{ isDeliveryDetailsModal() ? 'Delivery date:' : 'Pickup date:' }}</span><input v-model="gsdModal.form.pickupDate" type="date" lang="en-ZA" :min="todayIso()" :disabled="!pickupCanEdit()" :class="{ pkbad: pickupInvalidFields.has('pickupDate') }" @input="clearPickupInvalid('pickupDate')" /></label>
                 <label><span>{{ isDeliveryDetailsModal() ? 'Delivery time:' : 'Pickup time:' }}</span><input v-model="gsdModal.form.pickupTime" type="time" lang="en-ZA" :disabled="!pickupCanEdit()" :class="{ pkbad: pickupInvalidFields.has('pickupTime') }" @input="clearPickupInvalid('pickupTime')" /></label>
                 <label v-if="isDeliveryDetailsModal() && opsParts?.mode === 'LCL'" class="delivery-from-port"><span>ReturnToWareHouse:</span><input v-model.trim="gsdModal.form.returnPort" list="delivery-return-warehouse-options" type="text" autocomplete="off" placeholder="Type to filter CFS warehouse..." :disabled="!pickupCanEdit()" :class="{ pkbad: pickupInvalidFields.has('returnPort') }" @input="clearPickupInvalid('returnPort')" @change="validateLclDeliveryWarehouse" /><datalist id="delivery-return-warehouse-options"><option v-for="option in availableLclDeliveryWarehouseOptions()" :key="option.value" :value="option.value">{{ option.label }}</option></datalist></label>
-                <label v-else-if="isDeliveryDetailsModal()" class="delivery-from-port"><span>PickUpFromPort:</span><input v-model.trim="gsdModal.form.fromPort" type="text" :disabled="!pickupCanEdit()" @input="uppercasePickupField('fromPort')" /></label>
+                <label v-else-if="isDeliveryDetailsModal()" class="delivery-from-port"><span>PickUpFromPort:</span><input v-model.trim="gsdModal.form.fromPort" list="delivery-from-port-options" type="text" autocomplete="off" placeholder="-- SELECT OR TYPE PORT --" :disabled="!pickupCanEdit()" :class="{ pkbad: pickupInvalidFields.has('fromPort') }" @input="clearPickupInvalid('fromPort')" @change="validateDeliveryFromPort" /><datalist id="delivery-from-port-options"><option v-for="option in availableDeliveryFromPortOptions()" :key="option.value" :value="option.value">{{ option.label }}</option></datalist></label>
                 <label v-else-if="isExwFcaPickupModal()" class="pickup-return-port">
                   <span>{{ pickupReturnLabel() }}:</span>
                   <input v-model.trim="gsdModal.form.returnPort" :disabled="!pickupCanEdit()" list="pickup-return-options" autocomplete="off" :placeholder="pickupReturnPlaceholder()" :class="{ pkbad: pickupInvalidFields.has('returnPort') }" @input="clearPickupInvalid('returnPort')" @change="validatePickupReturnOption" />
@@ -3036,8 +3041,8 @@
                 <table v-if="isLclSheet()" class="an-detail-table an-container-table"><thead><tr><th>#</th><th>Marks &amp; Numbers</th><th>QTY</th><th>Unit</th><th>GW (KG)</th><th>MEA. (CBM)</th></tr></thead><tbody><tr v-for="(item, index) in gsdModal.form.conts" :key="item.key || index"><td>{{ index + 1 }}</td><td><input v-model="item.marks" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.qty" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.unit" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.gw" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td><td><input v-model="item.mea" :disabled="!gsdModal.editing || arrivalNoticeIsCrossLinked()" /></td></tr><tr v-if="!gsdModal.form.conts.length"><td colspan="6" class="empty">No goods data</td></tr></tbody></table>
                 <button v-if="isLclSheet() && gsdModal.editing && !arrivalNoticeIsCrossLinked()" class="an-add-row" type="button" @click="addArrivalContainer">+ Add Row</button>
                 <div v-if="!isLclSheet()" class="an-detail-section">Description of Goods</div>
-                <label v-if="!isLclSheet()" class="an-detail-description"><span>Description</span><textarea v-model="gsdModal.form.description" readonly rows="2"></textarea></label>
-                <div v-if="!isLclSheet()" class="an-detail-g3 an-cargo-summary"><label><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="an-linked-field" readonly rows="1"></textarea></label><label><span>QTY</span><input :value="arrivalNoticeTotals().qty" readonly /></label><label><span>Unit</span><input v-model="gsdModal.form.unit" readonly /></label></div>
+                <label v-if="!isLclSheet()" class="an-detail-description"><span>Description</span><textarea v-model="gsdModal.form.description" :readonly="!gsdModal.editing" rows="2"></textarea></label>
+                <div v-if="!isLclSheet()" class="an-detail-g3 an-cargo-summary"><label><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="an-linked-field" :readonly="!gsdModal.editing" rows="1"></textarea></label><label><span>QTY</span><input :value="arrivalNoticeTotals().qty" readonly /></label><label><span>Unit</span><input v-model="gsdModal.form.unit" :readonly="!gsdModal.editing" /></label></div>
                 <div v-if="!isLclSheet()" class="an-detail-g2"><label><span>GW (KG)</span><input :value="arrivalNoticeTotals().gw" readonly /></label><label><span>MEA. (CBM)</span><input :value="arrivalNoticeTotals().mea" readonly /></label></div>
                 <div class="an-detail-section an-detail-section-ref"><span>Charges Due</span><span class="an-refbox"><label>RefLastBiz:</label><span class="an-ref-search"><input v-model.trim="gsdModal.form.refLastBiz" :disabled="!gsdModal.editing" placeholder="JOB NO# / REF NO#" autocomplete="off" @input="searchArrivalPaymentHistory" @keydown.escape="paymentSearchOpen = false" /><span class="pr-searchresults" :class="{ show: paymentSearchOpen }"><button v-for="match in paymentSearchResults" :key="`an-${match.id}`" class="pr-sr-item" type="button" @mousedown.prevent="selectArrivalPaymentHistoryMatch(match)"><span class="pr-sr-info"><b>{{ match.jobNo || '—' }}</b><br />REF: {{ match.refNo || '—' }} · {{ match.lineCount }} line(s)</span></button><span v-if="!paymentSearchResults.length" class="pr-sr-empty">No previous Job No matches your search.</span></span></span><button type="button" :disabled="!gsdModal.editing" @click="openArrivalPaymentHistoryFilter">Search</button></span></div>
                 <table class="an-detail-table"><thead><tr><th>#</th><th>Charge Name</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>CUR</th><th>Tax (%)</th><th>Total Price</th></tr></thead><tbody><tr v-for="(charge, index) in gsdModal.form.charges" :key="charge.key || index"><td>{{ index + 1 }}</td><td><input v-model.trim="charge.chargeName" :disabled="!gsdModal.editing" list="an-charge-options" autocomplete="off" placeholder="Type to filter" @focus="setActiveDatalistValue(charge.chargeName)" @input="setActiveDatalistValue(charge.chargeName)" /></td><td><input v-model="charge.qty" :disabled="!gsdModal.editing" /></td><td><input v-model="charge.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="charge.unitPrice" :disabled="!gsdModal.editing" @input="charge.unitPrice = sanitizeMoneyInput(charge.unitPrice)" @blur="charge.unitPrice = formatMoneyValue(charge.unitPrice)" /></td><td><input v-model.trim="charge.cur" :disabled="!gsdModal.editing" list="an-currency-options" autocomplete="off" placeholder="CUR" @focus="setActiveDatalistValue(charge.cur)" @input="charge.cur = upperText(charge.cur); setActiveDatalistValue(charge.cur)" @change="selectArrivalNoticeBankForCurrency(charge.cur)" /></td><td><input v-model="charge.taxRate" :disabled="!gsdModal.editing" /></td><td>{{ arrivalNoticeChargeTotal(charge) }}</td></tr><tr v-if="!gsdModal.form.charges.length"><td colspan="8" class="empty">No charge data</td></tr></tbody><tfoot><tr><td colspan="7" class="an-total-label">Total Tax Amount</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().tax }}</td></tr><tr><td colspan="7" class="an-total-label">Total Charge</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().total }}</td></tr></tfoot></table>
@@ -11292,21 +11297,20 @@ const openGsdModal = async (row: number, column: number) => {
         gsdModal.editing = true
       } else if (label === 'VOLUME') {
         gsdModal.formFields = []
-        let volumeValue: any = rawText
-        if (isLinkedOriginImportRow(row)) {
-          const linkedVolume = await loadLinkedOriginCell(row, ['VOLUME'])
-          if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
-          if (String(linkedVolume || '').trim()) {
-            volumeValue = linkedVolume
-            if (linkedVolume !== rawText) {
-              rows.value[row][column] = linkedVolume
-              mirrorFclLinkedCell(row, column)
-              scheduleSave()
-            }
-          }
-        }
-        gsdModal.form = volumeFormFromCell(volumeValue)
+        // Show the local copy immediately; refresh from the linked origin in the background.
+        gsdModal.form = volumeFormFromCell(rawText)
         gsdModal.editing = !isReadonlyTcdVolumeModal() && !isLinkedOriginImportRow(row)
+        if (isLinkedOriginImportRow(row)) {
+          void loadLinkedOriginCell(row, ['VOLUME']).then((linkedVolume) => {
+            if (!String(linkedVolume || '').trim() || linkedVolume === rawText) return
+            rows.value[row][column] = linkedVolume
+            mirrorFclLinkedCell(row, column)
+            scheduleSave()
+            if (loadId === gsdModalLoadId && gsdModal.open && gsdModal.row === row && gsdModal.column === column) {
+              gsdModal.form = volumeFormFromCell(linkedVolume)
+            }
+          }).catch((error) => console.warn('Could not refresh linked VOLUME', error))
+        }
       } else if (label === 'FREETIME CONFIRMATION') {
         gsdModal.formFields = []
         gsdModal.form = freetimeFormFromCell(rawText)
@@ -11348,24 +11352,39 @@ const openGsdModal = async (row: number, column: number) => {
         }
       } else if ((isDoSheet() || isDapSheet() || isDupSheet()) && label === 'CONT/SEAL INFO') {
         gsdModal.formFields = []
-        let linkedValue: any = isReadonlyCcdDduContSealModal() ? await linkedCcdContSealValue(row, rawText) : rawText
-        if (isLinkedOriginImportRow(row) && !isReadonlyCcdDduContSealModal()) {
-          const originRecords = await loadLinkedOriginContSealRecords(row)
-          if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
-          if (originRecords.length) {
-            linkedValue = JSON.stringify({ form: { linkedOrigin: true, records: originRecords } })
-            if (linkedValue !== rawText) {
-              rows.value[row][column] = linkedValue
-              mirrorFclLinkedCell(row, column)
-              scheduleSave()
+        // Show the local copy immediately, then refresh from the linked source in the background
+        // (only while the user has not started editing).
+        const applyContSeal = (value: any) => {
+          gsdModal.form = doContSealFormFromCell(value)
+          gsdModal.form.originalRecordsSignature = doContSealRecordsSignature()
+          const linkedReadonly = isReadonlyDoContSealModal()
+          // Saved data opens locked behind Edit; an empty form opens ready to type.
+          gsdModal.editing = !linkedReadonly && !doContSealHasContent()
+        }
+        const stillThisModal = () => loadId === gsdModalLoadId && gsdModal.open && gsdModal.row === row && gsdModal.column === column
+        applyContSeal(rawText)
+        const initialSignature = gsdModal.form.originalRecordsSignature
+        const refreshContSeal = async () => {
+          let linkedValue: any = isReadonlyCcdDduContSealModal() ? await linkedCcdContSealValue(row, rawText) : rawText
+          if (isLinkedOriginImportRow(row) && !isReadonlyCcdDduContSealModal()) {
+            const originRecords = await loadLinkedOriginContSealRecords(row)
+            if (originRecords.length) {
+              linkedValue = JSON.stringify({ form: { linkedOrigin: true, records: originRecords } })
+              if (linkedValue !== rawText) {
+                rows.value[row][column] = linkedValue
+                mirrorFclLinkedCell(row, column)
+                scheduleSave()
+              }
             }
           }
+          if (linkedValue === rawText || !stillThisModal()) return
+          // Don't overwrite anything the user already typed.
+          if (doContSealRecordsSignature() !== initialSignature) return
+          applyContSeal(linkedValue)
         }
-        gsdModal.form = doContSealFormFromCell(linkedValue)
-        gsdModal.form.originalRecordsSignature = doContSealRecordsSignature()
-        const linkedReadonly = isReadonlyDoContSealModal()
-        // Saved data opens locked behind Edit; an empty form opens ready to type.
-        gsdModal.editing = !linkedReadonly && !doContSealHasContent()
+        if (isReadonlyCcdDduContSealModal() || isLinkedOriginImportRow(row)) {
+          void refreshContSeal().catch((error) => console.warn('Could not refresh linked CONT/SEAL INFO', error))
+        }
       } else if (label === 'TRUCK & CONT/SEAL INFO' || label === 'CONT/SEAL INFO' || label === 'TRUCKING INFO' || label === 'TRUCKING DETAIL') {
         gsdModal.formFields = []
         const linkedValue = await linkedEcdTruckContValue(row, rawText)
@@ -11563,14 +11582,13 @@ const openGsdModal = async (row: number, column: number) => {
         gsdModal.formFields = []
         const linkedClearanceValue = isDupTcdClearanceDetailsModal() ? await linkedTcdClearanceValue(row, rawText) : rawText
         if (linkedClearanceValue !== rawText && String(linkedClearanceValue || '').trim()) rows.value[row][column] = linkedClearanceValue
-        gsdModal.form = clearanceDetailsFormFromCell(linkedClearanceValue)
+        // Open the popup in its compact overview state. Declaration details
+        // are shown only after the user explicitly clicks a declaration row.
+        // Reset before any await so a previously opened panel never flashes.
+        gsdModal.form = { ...clearanceDetailsFormFromCell(linkedClearanceValue), openId: '', selected: {} }
         if (isDupCcdClearanceDetailsModal()) {
           gsdModal.form.linkedContSealValue = await linkedCcdContSealValue(row, rowValueByHeader('CONT/SEAL INFO'))
         }
-        // Open the popup in its compact overview state. Declaration details
-        // are shown only after the user explicitly clicks a declaration row.
-        gsdModal.form.openId = ''
-        gsdModal.form.selected = {}
         syncClearanceRowsFromSource()
         gsdModal.editing = !isDupTcdClearanceDetailsModal()
       } else {
@@ -14830,6 +14848,24 @@ const pickupReturnOptions = () => {
   if (mode === 'AIR') return filterPickupOptionsByCountry(pickupWarehouseOptions.value.filter((option) => ['BONDED', 'BOUNDED'].includes(upperText(option.type))))
   return filterPickupOptionsByCountry(pickupPortOptions.value)
 }
+// DELIVERY DETAILS (FCL import): PickUpFromPort is picked from Reference Data > Ports.
+const availableDeliveryFromPortOptions = () => {
+  const selected = upperText(gsdModal.form.fromPort || '').trim()
+  return pickupPortOptions.value.filter((option) => upperText(option.value).trim() !== selected)
+}
+const validateDeliveryFromPort = () => {
+  const value = String(gsdModal.form.fromPort || '').trim()
+  if (!value) return
+  const matched = pickupPortOptions.value.find((option) => upperText(option.value) === upperText(value))
+  if (matched) {
+    gsdModal.form.fromPort = matched.value
+    clearPickupInvalid('fromPort')
+    return
+  }
+  gsdModal.form.fromPort = ''
+  pickupInvalidFields.value = new Set([...pickupInvalidFields.value, 'fromPort'])
+  showToast('Select PickUpFromPort from Reference Data (Ports)')
+}
 const availablePickupReturnOptions = () => {
   const selected = upperText(gsdModal.form.returnPort || '').trim()
   return pickupReturnOptions().filter((option) => upperText(option.value).trim() !== selected)
@@ -15537,6 +15573,10 @@ const syncClearanceRowsFromSource = () => {
 
   const source = clearanceRowsFromSource()
   if (isDupTcdClearanceDetailsModal()) {
+    // TCD views CCD's clearance. Keep CCD's own rows when present: declarations are
+    // linked to those row keys, and rebuilt VOLUME rows would orphan them.
+    const linkedRows = Array.isArray(gsdModal.form.rows) ? gsdModal.form.rows : []
+    if (linkedRows.length && clearanceDeclarations().length) return
     if (source.length) gsdModal.form.rows = source
     else if (!Array.isArray(gsdModal.form.rows)) gsdModal.form.rows = []
     return
@@ -16301,23 +16341,50 @@ const exportTruckEpod = async () => {
   }
   const jobNo = rowValueByHeader('JOB NO#') || rowValueByHeader('JOB NO') || ''
   const refNo = rowValueByHeader('REF#') || rowValueByHeader('REF NO#') || ''
+  const basePayload = { jobNo, refNo, shipmentType: `${opsParts.value?.mode || ''} ${opsParts.value?.type || ''}`.trim(), shipper: displayCell(rowValueByHeader('SHIPPER'), gsdModal.row, headerIndexOf(['SHIPPER'])), cnee: displayCell(rowValueByHeader('CNEE'), gsdModal.row, headerIndexOf(['CNEE'])), route: displayCell(rowValueByHeader('ROUTE'), gsdModal.row, headerIndexOf(['ROUTE'])) }
+  // The public ePOD page renders one container per link, so create one ePOD per
+  // selected record. Browsers allow only one popup per click, so open a single tab
+  // now (before any await) and fill it with the link(s) once they are created.
+  const tab = window.open('about:blank', '_blank')
+  const tabs = [tab]
+  const links: string[] = []
+  const linkLabels: string[] = []
   try {
-    const result = await props.request('/workbook/epod', { method: 'POST', body: {
-      sheetKey: sheetStorageKey(activeKey.value, loadedCountryId.value), rowIndex: gsdModal.row, columnIndex: gsdModal.column,
-      recordIndexes: selected.map(({ index }) => index),
-      payload: { jobNo, refNo, shipmentType: `${opsParts.value?.mode || ''} ${opsParts.value?.type || ''}`.trim(), shipper: displayCell(rowValueByHeader('SHIPPER'), gsdModal.row, headerIndexOf(['SHIPPER'])), cnee: displayCell(rowValueByHeader('CNEE'), gsdModal.row, headerIndexOf(['CNEE'])), route: displayCell(rowValueByHeader('ROUTE'), gsdModal.row, headerIndexOf(['ROUTE'])), records: selected.map(({ index, record }) => ({ order: index + 1, puNo: truckPuNumber(index), truck: record.truck, driver: record.driver, driverPhone: record.drvPhone, container: record.container, contType: record.contType, seal: record.seal, pickupDate: record.eta1, pickupTime: record.eta2, returnDate: record.gdate })) },
-    } })
-    const token = String(result?.data?.token || result?.token || '')
-    if (!token) throw new Error('ePOD token was not returned')
-    const publicUrl = publicEpodUrl(token)
-    selected.forEach(({ record }) => { record.epodUrl = publicUrl; record.epodSign = ''; record.epodReceiver = '' })
+    for (const [position, { index, record }] of selected.entries()) {
+      const result = await props.request('/workbook/epod', { method: 'POST', body: {
+        sheetKey: sheetStorageKey(activeKey.value, loadedCountryId.value), rowIndex: gsdModal.row, columnIndex: gsdModal.column,
+        recordIndexes: [index],
+        payload: { ...basePayload, records: [{ order: index + 1, puNo: truckPuNumber(index), truck: record.truck, driver: record.driver, driverPhone: record.drvPhone, container: record.container, contType: record.contType, seal: record.seal, pickupDate: record.eta1, pickupTime: record.eta2, returnDate: record.gdate }] },
+      } })
+      const token = String(result?.data?.token || result?.token || '')
+      if (!token) throw new Error('ePOD token was not returned')
+      const publicUrl = publicEpodUrl(token)
+      record.epodUrl = publicUrl
+      record.epodSign = ''
+      record.epodReceiver = ''
+      links.push(publicUrl)
+      linkLabels.push([truckPuNumber(index), record.container, record.contType, record.seal].filter(Boolean).join(' · ') || `#${position + 1}`)
+    }
+    if (tab && !tab.closed) {
+      if (links.length === 1) tab.location.href = links[0]
+      else {
+        const esc = (value: string) => value.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch] as string))
+        const items = links.map((url, i) => `<li><a href="${esc(url)}" target="_blank" rel="noopener">${esc(linkLabels[i])}</a><div class="u">${esc(url)}</div></li>`).join('')
+        tab.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>ePOD links - ${esc(String(jobNo || refNo || ''))}</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 16px;color:#25352d}h1{font-size:18px;color:#087a43}li{margin:0 0 12px;padding:10px 12px;border:1px solid #d8e2dc;border-radius:8px;list-style:none}a{font-weight:700;color:#087a43;text-decoration:none}a:hover{text-decoration:underline}.u{margin-top:4px;color:#78857e;font-size:12px;word-break:break-all}ul{padding:0}</style></head><body><h1>ePOD links (${links.length}) - ${esc(String(jobNo || refNo || ''))}</h1><ul>${items}</ul></body></html>`)
+        tab.document.close()
+      }
+    } else if (links.length === 1) window.open(links[0], '_blank', 'noopener,noreferrer')
     persistTruckContCell(false)
     await saveSheet()
-    window.open(publicUrl, '_blank', 'noopener,noreferrer')
-    await navigator.clipboard?.writeText(publicUrl).catch(() => undefined)
-    showToast(`Public ePOD link created and copied (${selected.length})`)
+    await navigator.clipboard?.writeText(links.join(String.fromCharCode(10))).catch(() => undefined)
+    showToast(`Public ePOD link${links.length > 1 ? 's' : ''} created and copied (${links.length})`)
   } catch (error: any) {
     console.error('Could not create public ePOD', error)
+    tabs.slice(links.length).forEach((tab) => { if (tab && !tab.closed) tab.close() })
+    if (links.length) {
+      persistTruckContCell(false)
+      void saveSheet()
+    }
     showToast(error?.data?.message || error?.message || 'Could not create ePOD link')
   }
 }
@@ -23700,6 +23767,13 @@ onBeforeUnmount(() => {
 .shipment-notes-modal textarea:focus{border-color:#008f4c;box-shadow:0 0 0 2px rgba(0,143,76,.12)}
 .do-info-actions .clear{background:#64748b;color:#fff}.do-info-actions button:disabled{filter:saturate(.45);opacity:.45;cursor:not-allowed}
 .do-info-modal{width:822px}.do-info-row{grid-template-columns:86px 190px 140px 26px 26px 194px;gap:10px}.do-info-modal.editing .do-info-row input:not(:disabled):not([type=checkbox]){background:#fff;color:#26312b}.do-info-row .do-info-upload{grid-column:4}.do-info-row .do-info-view{grid-column:5}.do-info-validity{grid-column:6;display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}.do-info-validity label{flex:0 0 auto}.do-info-validity input{width:130px}.do-info-validity input:disabled{cursor:not-allowed}@media(max-width:880px){.do-info-modal{width:94vw}.do-info-row{grid-template-columns:80px minmax(0,1fr) 30px 30px}.do-info-row .do-info-upload{grid-column:3;grid-row:1/3}.do-info-row .do-info-view{grid-column:4;grid-row:1/3}.do-info-validity{grid-column:2/5;grid-row:auto;justify-content:flex-start}.do-info-validity input{width:min(180px,100%)}}
+/* DO INFO upload: same look as Bill Detail / Bill Release upload icons */
+.do-info-row .do-info-upload{position:relative;border:1px solid #cbd7d1!important;background:#eef3f1!important;color:#687a72!important}
+.do-info-row .do-info-upload svg{fill:none;stroke:currentColor!important}
+.do-info-row .do-info-upload:disabled:not(.has){opacity:.4}
+.do-info-row .do-info-upload.has{border-color:#00a85a!important;background:#00a85a!important;color:#fff!important}
+.do-info-row .do-info-upload.has:disabled{opacity:.62}
+.do-info-row .do-info-upload.has::after{content:"✓";position:absolute;right:-5px;top:-5px;display:grid;place-items:center;width:15px;height:15px;border:2px solid #fff;border-radius:50%;background:#087d4b;color:#fff;font-size:9px;font-weight:900;line-height:1}
   .do-info-choice{display:flex;align-items:center;gap:9px;cursor:pointer}.do-info-choice input[type=checkbox]{flex:0 0 auto;width:18px;height:18px;margin:0;padding:0;border-radius:3px;accent-color:#008f4c}.do-info-choice span{display:block}.do-info-choice:has(input:disabled){cursor:not-allowed}
 </style>
 <style>
