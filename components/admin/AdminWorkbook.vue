@@ -2431,7 +2431,7 @@
               <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
               <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || preAlertDestinationLocked()" @click="enablePreAlertEdit">Edit</button>
               <button class="wb-modal-btn primary" type="button" :disabled="!preAlertCanSave()" @click="savePreAlert">Save</button>
-              <button class="wb-modal-btn send" type="button" :disabled="gsdModal.editing || preAlertDestinationLocked() || !!gsdModal.form.sent" :title="gsdModal.form.sent ? `Sent ${gsdModal.form.sentAt || ''} - update data to send again` : ''" @click="sendPreAlert">Send to Dest. Agent</button>
+              <button class="wb-modal-btn send" type="button" :disabled="gsdModal.editing || preAlertDestinationLocked() || preAlertSentUpToDate()" :title="gsdModal.form.sent ? `Sent ${gsdModal.form.sentAt || ''} - update data to send again` : ''" @click="sendPreAlert">Send to Dest. Agent</button>
             </div>
             <input ref="preAlertFileInput" type="file" hidden @change="handlePreAlertFile" />
           </template>
@@ -3856,7 +3856,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, onUpdated, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, onUpdated, reactive, ref, toRaw, watch } from 'vue'
 import { OPS_TERMS, opsBaseForType, opsDeptsFor, opsHeaderFor, opsLeafKey, opsStatusKey, parseOpsKey } from '~/composables/useOpsSheet'
 
 type SheetTab = { key: string; label: string }
@@ -6896,8 +6896,35 @@ const makeBlankWorkbookRow = () => {
     const jobColumn = header.findIndex((label) => String(label ?? '').trim().toUpperCase() === 'JOB NO#')
     const refColumn = header.findIndex((label) => String(label ?? '').trim().toUpperCase() === 'REF#')
     if (jobColumn >= 0 && refColumn >= 0 && String(row[jobColumn] || '').trim()) row[refColumn] = row[jobColumn]
+    if (jobColumn >= 0 && String(row[jobColumn] || '').trim()) void claimGlobalJobNo(row, jobColumn, refColumn)
   }
   return row
+}
+// The local number only looks at this sheet, so two sheets (e.g. EXW GSD and DAP GSD)
+// could hand out the same JOB NO#. Ask the backend for the next number across ALL
+// Operations sheets and swap it in, as long as the user has not changed it meanwhile.
+const claimGlobalJobNo = async (row: any[], jobColumn: number, refColumn: number) => {
+  const provisional = String(row[jobColumn] || '').trim().toUpperCase()
+  const prefixMatch = provisional.match(/^([A-Z]{2,3}\d{8})\d+$/)
+  if (!prefixMatch) return
+  try {
+    const result = await props.request('/workbook/next-job-no', { method: 'POST', body: { prefix: prefixMatch[1] } })
+    const jobNo = String(result?.data?.jobNo || result?.jobNo || '').trim().toUpperCase()
+    if (!jobNo || jobNo === provisional) return
+    const rowIndex = rows.value.findIndex((item) => toRaw(item) === toRaw(row))
+    if (rowIndex < 1) return
+    const target = rows.value[rowIndex]
+    if (String(target[jobColumn] || '').trim().toUpperCase() !== provisional) return
+    target[jobColumn] = jobNo
+    if (refColumn >= 0 && String(target[refColumn] || '').trim().toUpperCase() === provisional) target[refColumn] = jobNo
+    if (opsEditingRow.value?.row === rowIndex && Array.isArray(opsEditingRow.value.snapshot)) {
+      opsEditingRow.value.snapshot[jobColumn] = jobNo
+      if (refColumn >= 0 && String(opsEditingRow.value.snapshot[refColumn] || '').trim().toUpperCase() === provisional) opsEditingRow.value.snapshot[refColumn] = jobNo
+    }
+    scheduleSave()
+  } catch (error) {
+    console.warn('Could not allocate a global JOB NO#; keeping the local number', error)
+  }
 }
 
 const isOpsEditingRow = (row: number) => opsEditingRow.value?.row === row
@@ -11315,15 +11342,23 @@ const openGsdModal = async (row: number, column: number) => {
         gsdModal.formFields = []
         // Show the local copy immediately; refresh from the linked origin in the background.
         gsdModal.form = volumeFormFromCell(rawText)
-        gsdModal.editing = !isReadonlyTcdVolumeModal() && !isLinkedOriginImportRow(row)
+        gsdModal.editing = !isReadonlyTcdVolumeModal() && !isLinkedVolumeLocked(row)
         if (isLinkedOriginImportRow(row)) {
+          // Two-way linked with the export row; locked once export has BC SENT.
+          void linkedOriginBcSent(row).then((sent) => {
+            if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
+            gsdModal.form.linkedLocked = sent
+            gsdModal.editing = !isReadonlyTcdVolumeModal() && !sent
+          }).catch((error) => console.warn('Could not check export BC SENT', error))
           void loadLinkedOriginCell(row, ['VOLUME']).then((linkedVolume) => {
             if (!String(linkedVolume || '').trim() || linkedVolume === rawText) return
             rows.value[row][column] = linkedVolume
             mirrorFclLinkedCell(row, column)
             scheduleSave()
             if (loadId === gsdModalLoadId && gsdModal.open && gsdModal.row === row && gsdModal.column === column) {
-              gsdModal.form = volumeFormFromCell(linkedVolume)
+              const linkedLocked = !!gsdModal.form.linkedLocked
+              gsdModal.form = { ...volumeFormFromCell(linkedVolume), linkedLocked }
+              gsdModal.editing = !isReadonlyTcdVolumeModal() && !isLinkedVolumeLocked(row)
             }
           }).catch((error) => console.warn('Could not refresh linked VOLUME', error))
         }
@@ -12681,6 +12716,70 @@ const isLinkedOriginImportRow = (row: number) => {
   const flowColumn = (rows.value[0] || []).findIndex((_, index) => normalizedHeaderLabel(index) === `${upperText(parsed.type)}+`)
   return flowColumn >= 0 && ['EXW', 'FCA', 'FCF'].includes(upperText(rows.value[row]?.[flowColumn]))
 }
+// Locates the export-side (origin) row of a linked import row in one dept sheet.
+const locateLinkedOriginRow = async (row: number, sourceDept: 'ECD' | 'DCD') => {
+  const current = opsParts.value
+  if (!current || !isLinkedOriginImportRow(row)) return null
+  const currentHeader = (rows.value[0] || []).map((item: any) => String(item ?? '').trim())
+  const currentRow = rows.value[row] || []
+  const flowColumn = currentHeader.findIndex((label) => upperText(label) === `${upperText(current.type)}+`)
+  const flowType = upperText(flowColumn >= 0 ? currentRow[flowColumn] : '')
+  const originTypes = ['EXW', 'FCA', 'FCF'].includes(flowType) ? [flowType] : ['EXW', 'FCA', 'FCF']
+  const shipmentLink = opsShipmentLink(currentHeader, currentRow, row, settings.value)
+  for (const originType of originTypes) {
+    const base = opsBaseForType(originType as any)
+    const header = opsHeaderFor(base, current.mode, sourceDept as any, originType as any)
+    const storageKey = sheetStorageKey(opsLeafKey(base, current.mode, originType as any, sourceDept as any))
+    try {
+      const sheet = await props.request(`/workbook/sheets/${encodeURIComponent(storageKey)}`)
+      const extracted = extractWorkbookRows(Array.isArray(sheet?.rows) ? sheet.rows.map((item: any[]) => [...item]) : [], sheet)
+      const sourceRows = alignRowsToHeader(extracted.rows, header).rows
+      const sourceSettings = extracted.settings || sheet?.settings || {}
+      let rowIndex = shipmentLink
+        ? sourceRows.findIndex((item, index) => index > 0 && opsShipmentLink(header, item, index, sourceSettings) === shipmentLink)
+        : -1
+      if (rowIndex < 1 && originTypes.length === 1) {
+        rowIndex = sourceRows.findIndex((item, index) => index > 0 && ['REF#', 'HBL NO#', 'MBL NO#'].some((label) => {
+          const currentColumn = currentHeader.indexOf(label)
+          const matchColumn = header.indexOf(label)
+          const currentValue = currentColumn >= 0 ? String(currentRow[currentColumn] || '').trim() : ''
+          return !!currentValue && matchColumn >= 0 && currentValue === String(item[matchColumn] || '').trim()
+        }))
+      }
+      if (rowIndex > 0) return { storageKey, sheet, extracted, header, rows: sourceRows, rowIndex }
+    } catch (error: any) {
+      if (requestStatus(error) !== 404) console.warn(`Could not locate linked ${originType} ${sourceDept} row`, error)
+    }
+  }
+  return null
+}
+// Once the export side has sent the booking (BC SENT), the import side may no
+// longer change shared shipment data such as VOLUME.
+const linkedOriginBcSent = async (row: number) => {
+  const origin = await locateLinkedOriginRow(row, 'ECD')
+  if (!origin) return false
+  const column = origin.header.findIndex((label) => upperText(label) === 'BC SENT')
+  return column >= 0 && isChecked(origin.rows[origin.rowIndex]?.[column])
+}
+// Two-way link: an import-side change is written back to the export ECD row.
+const writeLinkedOriginCell = async (row: number, label: string, value: any) => {
+  const origin = await locateLinkedOriginRow(row, 'ECD')
+  if (!origin) return false
+  const column = origin.header.findIndex((item) => upperText(item) === label)
+  if (column < 0) return false
+  if (String(origin.rows[origin.rowIndex][column] ?? '') === String(value ?? '')) return true
+  origin.rows[origin.rowIndex][column] = value
+  const { extracted, sheet, header } = origin
+  await patchLoadedWorkbookSheet(origin.storageKey, sheet, { rows: [...origin.rows, [workbookMetaMarker, JSON.stringify({
+    version: 1,
+    columnWidths: extracted.columnWidths || sheet.columnWidths || header.map(() => 100),
+    rowHeights: extracted.rowHeights || sheet.rowHeights || {},
+    formatting: extracted.formatting || sheet.formatting || {},
+    merges: extracted.merges || sheet.merges || [],
+    settings: extracted.settings || sheet.settings || {},
+  })]] })
+  return true
+}
 // Reads one cell of the export-side row this import row was created from.
 const loadLinkedOriginCell = async (row: number, labels: string[], depts: string[] = ['ECD', 'DCD']) => {
   const current = opsParts.value
@@ -13012,10 +13111,13 @@ const loadLinkedExportMasterSiContainers = async (row: number) => {
       }
       const siColumn = sourceHeader.findIndex((label) => upperText(label) === 'MASTER SI SUBMIT')
       if (sourceRowIndex < 1 || siColumn < 0) continue
+      // LCL/AIR cargo rows have no container/seal; keep rows that carry marks or quantities.
       const containers = siSubmitFormFromCell(sourceRows[sourceRowIndex]?.[siColumn]).containers
-        .filter((item: any) => String(item?.contNo || item?.container || item?.sealNo || item?.seal || '').trim())
+        .filter((item: any) => String(item?.contNo || item?.container || item?.sealNo || item?.seal || '').trim() ||
+          (isLclSheet() && String(item?.marks || item?.qty || item?.gw || item?.mea || '').trim()))
         .map((item: any, index: number) => ({
           key: String(item?.id || item?.key || `AN-LINKED-CONT-${index}`),
+          marks: String(item?.marks || ''),
           contNo: String(item?.contNo || item?.container || ''),
           contType: String(item?.contType || item?.type || ''),
           sealNo: String(item?.sealNo || item?.seal || ''),
@@ -13370,7 +13472,11 @@ const isExpenseCollectModal = () => isGsdFormModalLabel('EXPENSE/COLLECT LIST', 
 const isCcdCutoffModal = () => !isStandaloneManualOpsRow(gsdModal.row) && isCutoffModal() && (isExwCcdSheet() || isExwTcdSheet() || isExwDcdSheet() || isExwFcdSheet() || isFcaTcdSheet() || isFcaDcdSheet() || isFcaFcdSheet() || isFcfDcdSheet())
 const isDapTcdVolumeDetailModal = () => isVolumeModal() && isDapTcdSheet()
 const isReadonlyTcdVolumeModal = () => isVolumeModal() && opsDeptUpper() === 'TCD'
-const isCcdVolumeModal = () => isReadonlyTcdVolumeModal() || (isVolumeModal() && isLinkedOriginImportRow(gsdModal.row)) || (!isStandaloneManualOpsRow(gsdModal.row) && isVolumeModal() && (isExwCcdSheet() || isExwTcdSheet() || isExwDcdSheet() || isExwFcdSheet() || isFcaTcdSheet() || isFcaDcdSheet() || isFcaFcdSheet() || isFcfDcdSheet() || isFcfFcdSheet() || isDapTcdSheet() || isDapFcdSheet() || (isLclSheet() && (isDoFcdSheet() || isDupFcdSheet()))))
+// A linked import row only locks VOLUME once the origin actually supplied volume
+// data; if the origin has none yet, the import ICD can enter it.
+const isLinkedVolumeLocked = (row: number) =>
+  isLinkedOriginImportRow(row) && !!gsdModal.form?.linkedLocked
+const isCcdVolumeModal = () => isReadonlyTcdVolumeModal() || (isVolumeModal() && isLinkedVolumeLocked(gsdModal.row)) || (!isStandaloneManualOpsRow(gsdModal.row) && isVolumeModal() && (isExwCcdSheet() || isExwTcdSheet() || isExwDcdSheet() || isExwFcdSheet() || isFcaTcdSheet() || isFcaDcdSheet() || isFcaFcdSheet() || isFcfDcdSheet() || isFcfFcdSheet() || isDapTcdSheet() || isDapFcdSheet() || (isLclSheet() && (isDoFcdSheet() || isDupFcdSheet()))))
 const expenseCurrencies = ['ALL', 'USD', 'VND', 'EUR', 'CNY', 'JPY']
 const expenseFeedbackInvalidReasonIds = ref<Set<string>>(new Set())
 // Expense/collection approval is fed by PAYMENT REQUEST. Never seed this
@@ -13892,22 +13998,53 @@ const vesselOriginalFromCell = (value: any): VesselRecord | null => {
 // active delay, that delayed window applies instead of its first-selected dates.
 const vesselOriginalEffectiveWindow = () => {
   const cellValue = rows.value[gsdModal.row]?.[gsdModal.column]
-  const original = vesselOriginalFromCell(cellValue)
+  const history = vesselCellHistory(cellValue)
+  const selects = history
+    .filter((item: any) => upperText(item.type || 'SELECT') === 'SELECT')
+    .sort((a: any, b: any) => Number(b.order || 0) - Number(a.order || 0))
+  const original = selects.find((item: any) => upperText(item.status || 'APPLIED') !== 'EXPIRED') || selects[0] || vesselOriginalFromCell(cellValue)
   if (!original?.name) return null
   const originalKey = vesselVoyageKey(original.name, original.voyage)
-  const history = vesselCellHistory(cellValue)
   const activeDelay = history
     .filter((item: any) => upperText(item.type || '') === 'DELAY' && vesselVoyageKey(item.name, item.voyage) === originalKey && upperText(item.status || 'APPLIED') !== 'EXPIRED')
     .sort((a: any, b: any) => Number(b.order || 0) - Number(a.order || 0))[0]
   const selectEntry = history
     .filter((item: any) => upperText(item.type || 'SELECT') === 'SELECT' && vesselVoyageKey(item.name, item.voyage) === originalKey)
     .sort((a: any, b: any) => Number(a.order || 0) - Number(b.order || 0))[0]
-  const etd = String(activeDelay?.etd || selectEntry?.etd || '').trim()
-  const eta = String(activeDelay?.eta || selectEntry?.eta || '').trim()
+  // When the first vessel has no dates of its own, use the worksheet ATD/ETD and ETA.
+  const sheetIso = (...labels: string[]) => {
+    for (const label of labels) {
+      const date = parseOpsDate(rowValueByHeader(label))
+      if (date) return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    }
+    return ''
+  }
+  const etd = String(activeDelay?.etd || selectEntry?.etd || '').trim().slice(0, 10) || sheetIso('ATD', 'ETD')
+  const eta = String(activeDelay?.eta || selectEntry?.eta || '').trim().slice(0, 10) || sheetIso('ETA')
+  // Each further T/S leg only gets the time that is left: it cannot start before the
+  // latest ETA of the other declared T/S legs (the leg being edited is excluded).
+  const editingOrder = Number(gsdModal.form.selectedHistoryOrder) || 0
+  const declaredTsEta = history
+    .filter((item: any) => upperText(item.type || '') === 'T/S' && upperText(item.status || 'APPLIED') !== 'EXPIRED' && Number(item.order || 0) !== editingOrder)
+    .map((item: any) => String(item.eta || '').trim().slice(0, 10))
+    .filter(Boolean)
+    .sort()
+    .at(-1) || ''
+  const effectiveEtd = declaredTsEta && (!etd || declaredTsEta > etd) ? declaredTsEta : etd
   // Without a known window there is nothing to validate against yet - let the
   // date picker fall back to its ordinary "not in the past" rule.
-  if (!etd && !eta) return null
-  return { etd, eta }
+  if (!effectiveEtd && !eta) return null
+  return { etd: effectiveEtd, eta }
+}
+// Is the Vessel Delay being entered for a T/S leg (not the main SELECT vessel)?
+const vesselDelayTargetsTsLeg = () => {
+  const order = Number(gsdModal.form.selectedHistoryOrder) || 0
+  if (order) {
+    const entry = vesselCellHistory(rows.value[gsdModal.row]?.[gsdModal.column]).find((item: any) => Number(item.order) === order)
+    return !!entry && !isOriginalVesselKey(gsdModal.row, gsdModal.column, vesselVoyageKey(entry.name, entry.voyage))
+  }
+  // New vessel being added together with a delay: it is a T/S leg when Transhipment is on.
+  return !!gsdModal.form.transhipmentToggle
 }
 const vesselTsWindowValid = () => {
   if (!gsdModal.form.transhipmentToggle) return true
@@ -14273,12 +14410,16 @@ const applyVesselTranshipment = (row: number, column: number, vessel: any, voyag
   const order = editing ? Number(editing.order) : history.length ? Math.max(...history.map((item: any) => Number(item.order) || 0)) + 1 : 1
   if (editing) Object.assign(editing, { time: billTimestamp(), name: vessel.name, imo: vessel.imo, voyage, etd, eta, status: 'Applied', reason: place })
   else history.push({ order, time: billTimestamp(), type: 'T/S', name: vessel.name, imo: vessel.imo, voyage, etd, eta, status: 'Applied', reason: place })
+  // T/S legs are internal: they never change the worksheet ETD/ETA (nor cutoff).
+  // Keep the first SELECT vessel showing the shipment's ETD/ETA in the history.
   const current = vesselRowEtdEta(row)
-  const etdIndex = headerIndexOf(['ETD'])
-  const etaIndex = headerIndexOf(['ETA'])
-  if (etd && etd !== current.etd) rescheduleCutoffForVesselDelay(row, current.etd, etd)
-  if (etd && etdIndex >= 0) rows.value[row][etdIndex] = etd
-  if (eta && etaIndex >= 0) rows.value[row][etaIndex] = eta
+  const firstSelect = history
+    .filter((item: any) => upperText(item.type || 'SELECT') === 'SELECT')
+    .sort((a: any, b: any) => Number(a.order || 0) - Number(b.order || 0))[0]
+  if (firstSelect) {
+    if (!firstSelect.etd && current.etd) firstSelect.etd = current.etd
+    if (!firstSelect.eta && current.eta) firstSelect.eta = current.eta
+  }
   const latest = { ...vessel, voyage }
   const original = form.originalVesselData?.name || form.vesselData?.name
     ? (form.originalVesselData?.name ? form.originalVesselData : form.vesselData)
@@ -14323,6 +14464,20 @@ const rescheduleCutoffForVesselDelay = (row: number, oldEtd: string, newEtd: str
   rows.value[row][cutoffColumn] = JSON.stringify({ form: { cutoffs } })
   mirrorFclLinkedCell(row, cutoffColumn)
 }
+// Only the first SELECT vessel (the shipment's main vessel) drives the worksheet
+// ETD/ETA and cutoff. Delays on a T/S leg stay inside the vessel history.
+const isOriginalVesselKey = (row: number, column: number, key: string) => {
+  const value = rows.value[row]?.[column]
+  // The currently applied SELECT row is the main vessel; a stale originalVesselData
+  // from an earlier, re-selected vessel must not count.
+  const selects = vesselCellHistory(value)
+    .filter((item: any) => upperText(item.type || 'SELECT') === 'SELECT')
+    .sort((a: any, b: any) => Number(b.order || 0) - Number(a.order || 0))
+  const mainSelect = selects.find((item: any) => upperText(item.status || 'APPLIED') !== 'EXPIRED') || selects[0]
+  if (mainSelect) return vesselVoyageKey(mainSelect.name, mainSelect.voyage) === key
+  const original = vesselOriginalFromCell(value)
+  return !original?.name || vesselVoyageKey(original.name, original.voyage) === key
+}
 const applyVesselDelay = (row: number, column: number, newEtd: string, newEta: string, reason: string, targetVessel?: VesselRecord | null) => {
   const form = vesselCellForm(rows.value[row]?.[column])
   const vessel = vesselFromCellValue(rows.value[row]?.[column])
@@ -14340,16 +14495,33 @@ const applyVesselDelay = (row: number, column: number, newEtd: string, newEta: s
   const allOrders = [...visibleHistory, ...delayHistory].map((item: any) => Number(item.order) || 0)
   const order = allOrders.length ? Math.max(...allOrders) + 1 : 1
   const current = vesselRowEtdEta(row)
-  const etd = newEtd || current.etd
-  const eta = newEta || current.eta
+  const delaysOriginal = isOriginalVesselKey(row, column, delayedKey)
+  // Freeze the first SELECT row's dates before the worksheet dates move.
+  const firstSelect = visibleHistory
+    .filter((item: any) => upperText(item.type || 'SELECT') === 'SELECT')
+    .sort((a: any, b: any) => Number(a.order || 0) - Number(b.order || 0))[0]
+  if (firstSelect) {
+    if (!firstSelect.etd && current.etd) firstSelect.etd = current.etd
+    if (!firstSelect.eta && current.eta) firstSelect.eta = current.eta
+  }
+  // Unchanged dates default to that vessel's own current dates (T/S leg or worksheet).
+  const legBase = delaysOriginal ? current : (() => {
+    const lastDelay = delayHistory.filter((item: any) => vesselVoyageKey(item.name, item.voyage) === delayedKey).sort((a: any, b: any) => Number(b.order || 0) - Number(a.order || 0))[0]
+    const leg = visibleHistory.filter((item: any) => upperText(item.type || '') === 'T/S' && vesselVoyageKey(item.name, item.voyage) === delayedKey).sort((a: any, b: any) => Number(b.order || 0) - Number(a.order || 0))[0]
+    return { etd: String(lastDelay?.etd || leg?.etd || ''), eta: String(lastDelay?.eta || leg?.eta || '') }
+  })()
+  const etd = newEtd || legBase.etd
+  const eta = newEta || legBase.eta
   const activeDelay = { order, time: billTimestamp(), type: 'DELAY', name: delayedVessel.name, imo: delayedVessel.imo, voyage: delayedVessel.voyage, etd, eta, status: 'Applied', reason }
   delayHistory.push({ ...activeDelay })
   const combinedHistory = [...visibleHistory, ...delayHistory]
   const etdIndex = headerIndexOf(['ETD'])
   const etaIndex = headerIndexOf(['ETA'])
-  if (newEtd) rescheduleCutoffForVesselDelay(row, current.etd, newEtd)
-  if (newEtd && etdIndex >= 0) rows.value[row][etdIndex] = newEtd
-  if (newEta && etaIndex >= 0) rows.value[row][etaIndex] = newEta
+  if (delaysOriginal) {
+    if (newEtd) rescheduleCutoffForVesselDelay(row, current.etd, newEtd)
+    if (newEtd && etdIndex >= 0) rows.value[row][etdIndex] = newEtd
+    if (newEta && etaIndex >= 0) rows.value[row][etaIndex] = newEta
+  }
   rows.value[row][column] = JSON.stringify({ form: { ...form, vesselData: { ...vessel }, history: combinedHistory, delayHistory, delayed: true, delayReason: reason } })
 }
 const rollbackVesselDelay = (row: number, column: number, targetDelay?: any) => {
@@ -14378,15 +14550,17 @@ const rollbackVesselDelay = (row: number, column: number, targetDelay?: any) => 
     .filter((item: any) => vesselVoyageKey(item.name, item.voyage) === targetKey)
     .sort((a: any, b: any) => Number(b.order || 0) - Number(a.order || 0))[0]
   const restored = previousDelay || baseSelection
-  if (!restored) return false
   const visibleHistory = [...selectHistory, ...remainingDelays]
   const etdIndex = headerIndexOf(['ETD'])
   const etaIndex = headerIndexOf(['ETA'])
-  if (restored.etd && etdIndex >= 0) {
-    rescheduleCutoffForVesselDelay(row, current.etd, restored.etd)
-    rows.value[row][etdIndex] = restored.etd
+  // Removing a T/S leg's delay must not touch the worksheet dates.
+  if (restored && isOriginalVesselKey(row, column, targetKey)) {
+    if (restored.etd && etdIndex >= 0) {
+      rescheduleCutoffForVesselDelay(row, current.etd, restored.etd)
+      rows.value[row][etdIndex] = restored.etd
+    }
+    if (restored.eta && etaIndex >= 0) rows.value[row][etaIndex] = restored.eta
   }
-  if (restored.eta && etaIndex >= 0) rows.value[row][etaIndex] = restored.eta
   rows.value[row][column] = JSON.stringify({ form: {
     ...form,
     vesselData: { ...vessel },
@@ -14447,8 +14621,16 @@ const deleteVesselHistory = async (item: any) => {
     if (!rollbackVesselDelay(gsdModal.row, gsdModal.column, item)) return
   } else {
     const form = vesselCellForm(rows.value[gsdModal.row]?.[gsdModal.column])
-    const history = vesselCellHistory(rows.value[gsdModal.row]?.[gsdModal.column])
+    const removedKey = vesselVoyageKey(item.name, item.voyage)
+    let history = vesselCellHistory(rows.value[gsdModal.row]?.[gsdModal.column])
       .filter((entry: any) => Number(entry.order) !== Number(item.order))
+    const keyStillUsed = history.some((entry: any) => ['SELECT', 'T/S'].includes(upperText(entry.type || 'SELECT')) && vesselVoyageKey(entry.name, entry.voyage) === removedKey)
+    const dropOrphanDelay = (entry: any) => keyStillUsed || upperText(entry.type || '') !== 'DELAY' || vesselVoyageKey(entry.name, entry.voyage) !== removedKey
+    history = history.filter(dropOrphanDelay)
+    if (Array.isArray(form.delayHistory)) {
+      form.delayHistory = form.delayHistory.filter(dropOrphanDelay)
+      form.delayed = form.delayHistory.some((entry: any) => upperText(entry.status || 'APPLIED') !== 'EXPIRED')
+    }
     const vesselEntries = history
       .filter((entry: any) => ['SELECT', 'T/S'].includes(upperText(entry.type || 'SELECT')))
       .sort((a: any, b: any) => Number(a.order || 0) - Number(b.order || 0))
@@ -14744,6 +14926,13 @@ const vesselEcdHistory = () => {
         ? (Number(item.order) === latestDelayOrderByVessel.get(vesselVoyageKey(item.name, item.voyage)) ? 'Applied' : 'Expired')
         : String(item.status || '') === 'Expired' ? 'Expired' : 'Applied',
     }))
+  // Only one vessel line: fall back to the worksheet's ATD (or ETD) and ETA for its
+  // empty dates. Leave them blank when the worksheet has none either.
+  const firstSelect = mapped.filter((item: any) => item.type === 'SELECT').sort((a: any, b: any) => a.order - b.order)[0]
+  if (firstSelect) {
+    if (!firstSelect.etd) firstSelect.etd = String(rowValueByHeader('ATD') || rowValueByHeader('ETD') || '').trim()
+    if (!firstSelect.eta) firstSelect.eta = String(rowValueByHeader('ETA') || '').trim()
+  }
   return mapped
     .sort((a: any, b: any) => b.order - a.order)
 }
@@ -19190,6 +19379,15 @@ const preAlertTargetService = () => {
   // service column can create an unrelated destination row from stale data.
   return upperText(preAlertSourceCell(`${type}+`, ...(type === 'EXW' ? ['EFA+'] : [])))
 }
+// Sent and still pointing at the same destination service → nothing new to send.
+// If EXW+/FCA+/FCF+ changed after sending (e.g. to DAP), allow sending again so the
+// linked import GSD/ICD rows get created (the email itself is not re-sent).
+const preAlertSentUpToDate = () => {
+  if (!gsdModal.form.sent) return false
+  const target = preAlertTargetService()
+  const hasDestinationService = ['DO', 'DAP', 'DDU', 'DDP'].includes(target)
+  return !hasDestinationService || upperText(gsdModal.form.targetService || '') === target
+}
 const crossServiceSourceSnapshot = async (row: number) => {
   const parsed = opsParts.value
   const currentHeader = (rows.value[0] || []).map((value) => String(value ?? '').trim())
@@ -19545,8 +19743,15 @@ const freetimeSummaryText = (value: any) => {
   if (!record || (record.dem === 0 && record.det === 0)) return ''
   return `${record.dem || 0}/${record.det || 0}`
 }
-const persistVolumeForm = (immediate = false) =>
-  persistGsdWorkflowCell(JSON.stringify({ form: { records: volumeRecords(), typeOptions: gsdModal.form.typeOptions, purposeOptions: gsdModal.form.purposeOptions } }), immediate)
+const persistVolumeForm = (immediate = false) => {
+  const value = JSON.stringify({ form: { records: volumeRecords(), typeOptions: gsdModal.form.typeOptions, purposeOptions: gsdModal.form.purposeOptions } })
+  const result = persistGsdWorkflowCell(value, immediate)
+  // Linked import row: push the change back to the export ECD row (two-way link).
+  if (isVolumeModal() && isLinkedOriginImportRow(gsdModal.row) && !gsdModal.form.linkedLocked) {
+    void writeLinkedOriginCell(gsdModal.row, 'VOLUME', value).catch((error) => console.warn('Could not sync VOLUME back to export', error))
+  }
+  return result
+}
 const persistFreetimeForm = (immediate = false) => {
   const records = freetimeRecords().map((item, index) => ({ ...item, status: index === 0 ? 'Applied' : 'Expired' }))
   gsdModal.form.records = records
@@ -20762,7 +20967,8 @@ const syncCrossServiceGsdRow = async (row: number, column: number, createdAt = f
       const time = createdAt
       const targetRow = targetHeader.map((label) => {
         if (label === 'TIME') return time
-        if (label === 'JOB NO#') return nextGeneratedJobNo(time, targetRows)
+        // Linked from the origin shipment: keep the SAME JOB NO# so both sides stay tied.
+        if (label === 'JOB NO#') return String(sourceValue('JOB NO#') || '').trim() || nextGeneratedJobNo(time, targetRows)
         if (label === `${counterpartType}+`) return String(parsed.type || '').toUpperCase()
         if (markSent && label === 'SENT E/ICD') return `TRUE|${createdAt}`
         if (label === 'ACTION') return 'ACTIVE'
@@ -20773,7 +20979,8 @@ const syncCrossServiceGsdRow = async (row: number, column: number, createdAt = f
       targetRowIndex = targetRows.length - 1
     } else {
       const targetRow = targetRows[targetRowIndex]
-      for (const label of ['CLIENT', 'DEALT INFO']) {
+      // JOB NO# also re-syncs, repairing linked rows that were given their own number earlier.
+      for (const label of ['CLIENT', 'DEALT INFO', 'JOB NO#']) {
         const targetColumn = targetHeader.indexOf(label)
         if (targetColumn >= 0 && sourceValue(label) !== '') targetRow[targetColumn] = sourceValue(label)
       }
@@ -22391,6 +22598,11 @@ const isDatePopupDayDisabled = (date: Date) => {
   if (datePopup.cutoffField === 'tsEtd' || datePopup.cutoffField === 'tsEta') {
     // Transhipment (Tàu Shipment) dates must stay inside the original vessel's
     // current ETD-ETA window - its delayed window when it has an active delay.
+    // T/S ETD can't be after T/S ETA (and vice versa).
+    const pickedEtd = parseOpsDate(gsdModal.form.tsEtd)
+    const pickedEta = parseOpsDate(gsdModal.form.tsEta)
+    if (datePopup.cutoffField === 'tsEta' && pickedEtd && day < new Date(pickedEtd.getFullYear(), pickedEtd.getMonth(), pickedEtd.getDate()).getTime()) return true
+    if (datePopup.cutoffField === 'tsEtd' && pickedEta && day > new Date(pickedEta.getFullYear(), pickedEta.getMonth(), pickedEta.getDate()).getTime()) return true
     const window = vesselOriginalEffectiveWindow()
     if (window) {
       if (window.etd) {
@@ -22404,11 +22616,42 @@ const isDatePopupDayDisabled = (date: Date) => {
       return false
     }
   }
+  if (datePopup.cutoffField === 'newEtd' || datePopup.cutoffField === 'newEta') {
+    const pickedEtd = parseOpsDate(gsdModal.form.newEtd)
+    const pickedEta = parseOpsDate(gsdModal.form.newEta)
+    if (datePopup.cutoffField === 'newEta' && pickedEtd && day < new Date(pickedEtd.getFullYear(), pickedEtd.getMonth(), pickedEtd.getDate()).getTime()) return true
+    if (datePopup.cutoffField === 'newEtd' && pickedEta && day > new Date(pickedEta.getFullYear(), pickedEta.getMonth(), pickedEta.getDate()).getTime()) return true
+    if (vesselDelayTargetsTsLeg()) {
+      const window = vesselOriginalEffectiveWindow()
+      if (window?.etd) {
+        const minDay = new Date(`${window.etd}T00:00:00`).getTime()
+        if (!Number.isNaN(minDay) && day < minDay) return true
+      }
+      if (window?.eta) {
+        const maxDay = new Date(`${window.eta}T00:00:00`).getTime()
+        if (!Number.isNaN(maxDay) && day > maxDay) return true
+      }
+    }
+  }
   if (datePopup.cutoffField) {
     const today = new Date()
     return day < new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
   }
-  if (normalizedHeaderLabel(datePopup.column) !== 'DO VALIDITY') return false
+  // Grid ETD/ATD (departure) can never be after ETA/ATA (arrival) of the same row,
+  // and arrival can never be before departure.
+  const scheduleLabel = normalizedHeaderLabel(datePopup.column)
+  if (datePopup.row > 0 && ['ETD', 'ATD', 'ETA', 'ATA'].includes(scheduleLabel)) {
+    const cellDay = (label: string) => {
+      const column = headerIndexOf([label])
+      const date = column >= 0 ? parseOpsDate(rows.value[datePopup.row]?.[column]) : null
+      return date ? new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime() : null
+    }
+    const isDeparture = scheduleLabel === 'ETD' || scheduleLabel === 'ATD'
+    const bounds = (isDeparture ? ['ETA', 'ATA'] : ['ETD', 'ATD']).map(cellDay).filter((value): value is number => value !== null)
+    if (bounds.length) return isDeparture ? day > Math.min(...bounds) : day < Math.max(...bounds)
+    return false
+  }
+  if (scheduleLabel !== 'DO VALIDITY') return false
   const today = new Date()
   return day < new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
 }
@@ -24291,6 +24534,14 @@ onBeforeUnmount(() => {
 .gsd-prs-table-wrap.gsd-five-row-scroll .gsd-prs-table{border-collapse:separate;border-spacing:0}
 .gsd-prs-table-wrap.gsd-five-row-scroll .gsd-prs-table thead th{position:sticky!important;top:0!important;z-index:8!important;background:#eef3ee!important;background-clip:padding-box}
 .gsd-five-row-scroll:has(.truck-company-picker){max-height:none!important;overflow:visible!important}
+/* Vessel history: the 12px top padding and collapsed borders let rows peek above the
+   sticky header while scrolling. Move the gap outside the scroller and keep header borders. */
+.gsd-vhist-wrap.ecd.gsd-five-row-scroll{padding-top:0;border-top:0;margin-top:16px;position:relative}
+.gsd-vhist-wrap.ecd.gsd-five-row-scroll::before{content:none}
+.gsd-vhist-wrap.gsd-five-row-scroll .gsd-vhist-table{border-collapse:separate;border-spacing:0}
+.gsd-vhist-wrap.gsd-five-row-scroll .gsd-vhist-table th,.gsd-vhist-wrap.gsd-five-row-scroll .gsd-vhist-table td{border-width:0 1px 1px 0}
+.gsd-vhist-wrap.gsd-five-row-scroll .gsd-vhist-table tr > :first-child{border-left-width:1px}
+.gsd-vhist-wrap.gsd-five-row-scroll .gsd-vhist-table thead th{position:sticky;top:0;z-index:6;background:#eef3ee;background-clip:padding-box;border-top-width:1px;box-shadow:0 1px 0 #cfd8d2}
 /* Keep Clearance Docs Approval compact when many OTHER rows are added. */
 .gsd-cda-modal{width:min(720px,96vw);max-height:calc(100vh - 32px);box-sizing:border-box}
 .gsd-cda-scroll{max-height:min(390px,calc(100vh - 210px));overflow-x:hidden;overflow-y:auto;padding-right:12px;box-sizing:border-box;scrollbar-gutter:stable}
