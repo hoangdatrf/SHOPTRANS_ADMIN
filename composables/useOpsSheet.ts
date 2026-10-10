@@ -452,6 +452,8 @@ function rawOpsHeaderFor(base: OpsBase, mode: OpsMode, dept: OpsDept, type?: Ops
 
 export function opsHeaderFor(base: OpsBase, mode: OpsMode, dept: OpsDept, type?: OpsType | null): string[] {
   let rawHeader = rawOpsHeaderFor(base, mode, dept, type)
+  // LCL/AIR shipments have no containers/seals: drop the CONT/SEAL INFO column.
+  if (['LCL', 'AIR'].includes(String(mode || '').toUpperCase())) rawHeader = rawHeader.filter((label) => label !== 'CONT/SEAL INFO')
   const normalizedType = String(type || '').toUpperCase()
   const normalizedDept = String(dept || '').toUpperCase()
   // DCD is consolidated into ECD for origin-forwarding shipments. Keep the

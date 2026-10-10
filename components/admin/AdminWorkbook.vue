@@ -1825,9 +1825,9 @@
                   <col style="width:52px" />
                   <col style="width:78px" />
                   <col style="width:134px" />
-                  <col v-if="!isLclTruckingDetailModal()" style="width:108px" />
-                  <col v-if="!isLclTruckingDetailModal()" style="width:90px" />
-                  <col v-if="!isLclTruckingDetailModal()" style="width:94px" />
+                  <col v-if="!isLclTruckingDetailModal() && !isImportLclTruckingModal()" style="width:108px" />
+                  <col v-if="!isLclTruckingDetailModal() && !isImportLclTruckingModal()" style="width:90px" />
+                  <col v-if="!isLclTruckingDetailModal() && !isImportLclTruckingModal()" style="width:94px" />
                   <col style="width:140px" />
                   <col style="width:108px" />
                   <col style="width:120px" />
@@ -1877,9 +1877,9 @@
                     <th>ORDER</th>
                     <th>PU NO#</th>
                     <th><span class="gsd-truck-heading"><span>Truck Comp</span><button v-if="!isReadonlyTruckContModal()" class="gsd-truck-plus" type="button" @click.stop="addTruckCompanyFromModal">+</button></span></th>
-                    <th v-if="!isLclTruckingDetailModal()">Container No#</th>
-                    <th v-if="!isLclTruckingDetailModal()">ContType</th>
-                    <th v-if="!isLclTruckingDetailModal()">Seal No#</th>
+                    <th v-if="!isLclTruckingDetailModal() && !isImportLclTruckingModal()">Container No#</th>
+                    <th v-if="!isLclTruckingDetailModal() && !isImportLclTruckingModal()">ContType</th>
+                    <th v-if="!isLclTruckingDetailModal() && !isImportLclTruckingModal()">Seal No#</th>
                     <th>Driver info</th>
                     <th>Days after ATA</th>
                     <th>Pickup Date</th>
@@ -2532,7 +2532,7 @@
                 </tbody>
               </table>
             </div>
-            <div v-else-if="isDupTcdClearanceDetailsModal()" class="gsd-clr-scroll gsd-clr-readonly-scroll">
+            <div v-else-if="isDupTcdClearanceDetailsModal() && !isLclImportTcdClearanceModal()" class="gsd-clr-scroll gsd-clr-readonly-scroll">
               <table class="gsd-clr-table gsd-clr-readonly-table">
                 <thead>
                   <tr>
@@ -3060,7 +3060,8 @@
                 <div v-if="!isLclSheet()" class="an-detail-g3 an-cargo-summary"><label><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="an-linked-field" :readonly="!gsdModal.editing" rows="1"></textarea></label><label><span>QTY</span><input :value="arrivalNoticeTotals().qty" readonly /></label><label><span>Unit</span><input v-model="gsdModal.form.unit" :readonly="!gsdModal.editing" /></label></div>
                 <div v-if="!isLclSheet()" class="an-detail-g2"><label><span>GW (KG)</span><input :value="arrivalNoticeTotals().gw" readonly /></label><label><span>MEA. (CBM)</span><input :value="arrivalNoticeTotals().mea" readonly /></label></div>
                 <div class="an-detail-section an-detail-section-ref"><span>Charges Due</span><span class="an-refbox"><label>RefLastBiz:</label><span class="an-ref-search"><input v-model.trim="gsdModal.form.refLastBiz" :disabled="!gsdModal.editing" placeholder="JOB NO# / REF NO#" autocomplete="off" @input="searchArrivalPaymentHistory" @keydown.escape="paymentSearchOpen = false" /><span class="pr-searchresults" :class="{ show: paymentSearchOpen }"><button v-for="match in paymentSearchResults" :key="`an-${match.id}`" class="pr-sr-item" type="button" @mousedown.prevent="selectArrivalPaymentHistoryMatch(match)"><span class="pr-sr-info"><b>{{ match.jobNo || '—' }}</b><br />REF: {{ match.refNo || '—' }} · {{ match.lineCount }} line(s)</span></button><span v-if="!paymentSearchResults.length" class="pr-sr-empty">No previous Job No matches your search.</span></span></span><button type="button" :disabled="!gsdModal.editing" @click="openArrivalPaymentHistoryFilter">Search</button></span></div>
-                <table class="an-detail-table"><thead><tr><th>#</th><th>Charge Name</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>CUR</th><th>Tax (%)</th><th>Total Price</th></tr></thead><tbody><tr v-for="(charge, index) in gsdModal.form.charges" :key="charge.key || index"><td>{{ index + 1 }}</td><td><input v-model.trim="charge.chargeName" :disabled="!gsdModal.editing" list="an-charge-options" autocomplete="off" placeholder="Type to filter" @focus="setActiveDatalistValue(charge.chargeName)" @input="setActiveDatalistValue(charge.chargeName)" /></td><td><input v-model="charge.qty" :disabled="!gsdModal.editing" /></td><td><input v-model="charge.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="charge.unitPrice" :disabled="!gsdModal.editing" @input="charge.unitPrice = sanitizeMoneyInput(charge.unitPrice)" @blur="charge.unitPrice = formatMoneyValue(charge.unitPrice)" /></td><td><input v-model.trim="charge.cur" :disabled="!gsdModal.editing" list="an-currency-options" autocomplete="off" placeholder="CUR" @focus="setActiveDatalistValue(charge.cur)" @input="charge.cur = upperText(charge.cur); setActiveDatalistValue(charge.cur)" @change="selectArrivalNoticeBankForCurrency(charge.cur)" /></td><td><input v-model="charge.taxRate" :disabled="!gsdModal.editing" /></td><td>{{ arrivalNoticeChargeTotal(charge) }}</td></tr><tr v-if="!gsdModal.form.charges.length"><td colspan="8" class="empty">No charge data</td></tr></tbody><tfoot><tr><td colspan="7" class="an-total-label">Total Tax Amount</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().tax }}</td></tr><tr><td colspan="7" class="an-total-label">Total Charge</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().total }}</td></tr></tfoot></table>
+                <table class="an-detail-table"><thead><tr><th>#</th><th>Charge Name</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>CUR</th><th>Tax (%)</th><th>Total Price</th></tr></thead><tbody><tr v-for="(charge, index) in gsdModal.form.charges" :key="charge.key || index"><td>{{ index + 1 }}</td><td><input v-model.trim="charge.chargeName" :disabled="!gsdModal.editing" list="an-charge-options" autocomplete="off" placeholder="Type to filter" @focus="setActiveDatalistValue(charge.chargeName)" @input="setActiveDatalistValue(charge.chargeName)" /></td><td><input v-model="charge.qty" :disabled="!gsdModal.editing" /></td><td><input v-model.trim="charge.unit" :disabled="!gsdModal.editing" list="an-unit-options" autocomplete="off" placeholder="Type to filter" @focus="loadReferenceUnits" @input="charge.unit = upperText(charge.unit)" /></td><td><input v-model="charge.unitPrice" :disabled="!gsdModal.editing" @input="charge.unitPrice = sanitizeMoneyInput(charge.unitPrice)" @blur="charge.unitPrice = formatMoneyValue(charge.unitPrice)" /></td><td><input v-model.trim="charge.cur" :disabled="!gsdModal.editing" list="an-currency-options" autocomplete="off" placeholder="CUR" @focus="setActiveDatalistValue(charge.cur)" @input="charge.cur = upperText(charge.cur); setActiveDatalistValue(charge.cur)" @change="selectArrivalNoticeBankForCurrency(charge.cur)" /></td><td><input v-model="charge.taxRate" :disabled="!gsdModal.editing" /></td><td>{{ arrivalNoticeChargeTotal(charge) }}</td></tr><tr v-if="!gsdModal.form.charges.length"><td colspan="8" class="empty">No charge data</td></tr></tbody><tfoot><tr><td colspan="7" class="an-total-label">Total Tax Amount</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().tax }}</td></tr><tr><td colspan="7" class="an-total-label">Total Charge</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().total }}</td></tr></tfoot></table>
+                <datalist id="an-unit-options"><option v-for="option in referenceUnitOptions" :key="option.value" :value="option.value">{{ option.label }}</option></datalist>
                 <datalist id="an-charge-options"><option v-for="option in paymentDatalistOptions(paymentChargeOptions)" :key="option" :value="option" /></datalist>
                 <datalist id="an-currency-options"><option v-for="option in paymentDatalistOptions(paymentCurrencies)" :key="option" :value="option" /></datalist>
                 <button class="an-add-row" type="button" :disabled="!gsdModal.editing" @click="addArrivalCharge">+ Add Charge</button>
@@ -3439,12 +3440,12 @@
                 </tr>
               </tbody>
             </table>
-            <div class="bill-container-title">Container &amp; Seal Information</div>
-            <table class="ctab bill-container-table">
-              <thead><tr><th style="width:5%">#</th><th style="width:19%">ContNo#</th><th style="width:14%">ContType</th><th style="width:18%">SealNo#</th><th style="width:10%">QTY</th><th style="width:13%">UNIT</th><th style="width:11%">GW (KG)</th><th style="width:10%">MEA. (CBM)</th></tr></thead>
+            <div v-if="!isLclSheet()" class="bill-container-title">Container &amp; Seal Information</div>
+            <table v-if="!isLclSheet()" class="ctab bill-container-table">
+              <thead><tr><th style="width:5%">#</th><template v-if="!isLclSheet()"><th style="width:19%">ContNo#</th><th style="width:14%">ContType</th><th style="width:18%">SealNo#</th></template><th style="width:10%">QTY</th><th style="width:13%">UNIT</th><th style="width:11%">GW (KG)</th><th style="width:10%">MEA. (CBM)</th></tr></thead>
               <tbody>
-                <tr v-for="(container, index) in billDocModal.containers" :key="container.id || index"><td class="ctr"><span>{{ index + 1 }}</span></td><td><span>{{ container.contNo || '—' }}</span></td><td class="ctr"><span>{{ container.contType || '—' }}</span></td><td><span>{{ container.sealNo || '—' }}</span></td><td class="num"><span>{{ container.qty || '—' }}</span></td><td class="ctr"><span>{{ container.unit || '—' }}</span></td><td class="num"><span>{{ container.gw || '—' }}</span></td><td class="num"><span>{{ container.mea || '—' }}</span></td></tr>
-                <tr v-if="!billDocModal.containers.length" class="bill-container-empty"><td colspan="8">No container data from MASTER SI SUBMIT</td></tr>
+                <tr v-for="(container, index) in billDocModal.containers" :key="container.id || index"><td class="ctr"><span>{{ index + 1 }}</span></td><template v-if="!isLclSheet()"><td><span>{{ container.contNo || '—' }}</span></td><td class="ctr"><span>{{ container.contType || '—' }}</span></td><td><span>{{ container.sealNo || '—' }}</span></td></template><td class="num"><span>{{ container.qty || '—' }}</span></td><td class="ctr"><span>{{ container.unit || '—' }}</span></td><td class="num"><span>{{ container.gw || '—' }}</span></td><td class="num"><span>{{ container.mea || '—' }}</span></td></tr>
+                <tr v-if="!billDocModal.containers.length" class="bill-container-empty"><td :colspan="isLclSheet() ? 5 : 8">No container data from MASTER SI SUBMIT</td></tr>
               </tbody>
             </table>
             <table class="bgrid bill-summary-grid" style="margin-top:6px">
@@ -11595,7 +11596,7 @@ const openGsdModal = async (row: number, column: number) => {
         gsdModal.editing = !gsdModal.form.locked
       } else if (label === 'CLEARANCE DETAIL' || label === 'CLEARANCE DETAILS' || label === 'CUSTOMS CLEARANCE DETAILS') {
         gsdModal.formFields = []
-        const linkedClearanceValue = isDupTcdClearanceDetailsModal() ? await linkedTcdClearanceValue(row, rawText) : rawText
+        const linkedClearanceValue = isDupTcdClearanceDetailsModal() || isLclImportTcdClearanceModal() ? await linkedTcdClearanceValue(row, rawText) : rawText
         if (linkedClearanceValue !== rawText && String(linkedClearanceValue || '').trim()) rows.value[row][column] = linkedClearanceValue
         // Open the popup in its compact overview state. Declaration details
         // are shown only after the user explicitly clicks a declaration row.
@@ -11605,7 +11606,7 @@ const openGsdModal = async (row: number, column: number) => {
           gsdModal.form.linkedContSealValue = await linkedCcdContSealValue(row, rowValueByHeader('CONT/SEAL INFO'))
         }
         syncClearanceRowsFromSource()
-        gsdModal.editing = !isDupTcdClearanceDetailsModal()
+        gsdModal.editing = !isDupTcdClearanceDetailsModal() && !isLclImportTcdClearanceModal()
       } else {
         const fields = gsdFormFieldsFor(label)
         gsdModal.formFields = fields
@@ -12757,7 +12758,12 @@ const isReadonlyDoContSealModal = () => isReadonlyCcdDduContSealModal() || (
 )
 const isTruckContModal = () => !isDoContSealModal() && isGsdFormModalLabel('TRUCK & CONT/SEAL INFO', 'TRUCKS & CONT/SEAL DETAILS', 'CONT/SEAL INFO', 'TRUCKING INFO', 'TRUCKING DETAIL')
 const isTcdTruckContModal = () => isTruckContModal() && opsParts.value?.mode === 'FCL' && opsDeptUpper() === 'TCD'
-const showsTruckEpodExport = () => isTcdTruckContModal() &&
+// LCL/AIR import TRUCKING INFO (DO/DAP/DDU/DDP) mirrors the FCL import truck table,
+// minus the Container/ContType/Seal columns.
+const isImportLclTruckingModal = () => isTruckContModal() && isLclSheet() &&
+  normalizedHeaderLabel(gsdModal.column) === 'TRUCKING INFO' &&
+  ['DO', 'DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type))
+const showsTruckEpodExport = () => (isTcdTruckContModal() || (isImportLclTruckingModal() && opsDeptUpper() === 'TCD')) &&
   ['DO', 'DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase())
 const isDestinationFcdTruckMirrorModal = () => isTruckContModal() && opsDeptUpper() === 'FCD' &&
   ['DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase())
@@ -12765,7 +12771,7 @@ const isDestinationFcdTruckMirrorModal = () => isTruckContModal() && opsDeptUppe
 // every receiving department. TCD still owns Edit/Send actions, but it must
 // not switch these flows to the pickup-status/ePOD table used by DAP/DDU/DDP.
 const usesTcdTruckStatusTemplate = () =>
-  (isTcdTruckContModal() || (isDestinationFcdTruckMirrorModal() && opsParts.value?.mode === 'FCL')) &&
+  (isTcdTruckContModal() || (isDestinationFcdTruckMirrorModal() && opsParts.value?.mode === 'FCL') || isImportLclTruckingModal()) &&
   !['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase())
 // AIR/LCL mockups: TRUCKING INFO has no Container/Seal columns and uses "Warehouse GateIn Time";
 // it is editable on TCD and a read-only view on every other dept
@@ -15218,13 +15224,15 @@ const sendPickupToTarget = async () => {
 const isClearanceDocsModal = () => isGsdFormModalLabel('CLEARANCE DOCS APPROVAL')
 const isClearanceDetailsModal = () => isGsdFormModalLabel('CLEARANCE DETAIL', 'CLEARANCE DETAILS', 'CUSTOMS CLEARANCE DETAILS')
 const isDapTcdClearanceDetailsModal = () => isClearanceDetailsModal() && isDapTcdSheet()
-const isReadonlyFullClearanceDetailModal = () => !isStandaloneManualOpsRow(gsdModal.row) && (isDapTcdClearanceDetailsModal() || (isClearanceDetailsModal() && isFclDduTcdSheet()))
+const isLclImportTcdClearanceModal = () => isClearanceDetailsModal() && isLclSheet() && opsDeptUpper() === 'TCD' &&
+  ['DO', 'DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type))
+const isReadonlyFullClearanceDetailModal = () => !isStandaloneManualOpsRow(gsdModal.row) && (isDapTcdClearanceDetailsModal() || (isClearanceDetailsModal() && isFclDduTcdSheet()) || isLclImportTcdClearanceModal())
 const isDupCcdClearanceDetailsModal = () => isClearanceDetailsModal() && isDupCcdSheet()
 const isDupTcdClearanceDetailsModal = () => isClearanceDetailsModal() && isDupTcdSheet()
 const isClearanceViewOnly = () => isDupTcdClearanceDetailsModal() || isReadonlyFullClearanceDetailModal()
 const linkedTcdClearanceValue = async (row: number, fallback: any) => {
   const parsed = opsParts.value
-  if (!parsed || parsed.dept !== 'TCD' || !['DDU', 'DDP'].includes(upperText(parsed.type))) return fallback
+  if (!parsed || parsed.dept !== 'TCD' || !['DO', 'DAP', 'DDU', 'DDP'].includes(upperText(parsed.type))) return fallback
   const currentHeader = (rows.value[0] || []).map((item) => String(item || '').trim())
   const currentRow = rows.value[row] || []
   const sourceLink = opsShipmentLink(currentHeader, currentRow, row, settings.value)
@@ -15473,6 +15481,16 @@ const clearanceRowsFromSource = (): ClearanceRow[] => {
   if (isDupCcdSheet()) {
     const contSealValue = gsdModal.form.linkedContSealValue || rowValueByHeader('CONT/SEAL INFO')
     const contSealRecords = doContSealFormFromCell(contSealValue).records
+    // LCL/AIR have no CONT/SEAL INFO column: build clearance rows from VOLUME.
+    if (!contSealRecords.length && isLclSheet()) {
+      return volumeFormFromCell(rowValueByHeader('VOLUME')).records.map((volume: any, index: number) => ({
+        key: String(volume.id || `dup-ccd-vol-${index}`),
+        type: String(volume.type || volume.unit || ''),
+        purpose: String(volume.purpose || ''),
+        containerNo: '',
+        sealNo: '',
+      }))
+    }
     return contSealRecords.map((record, index) => ({
       key: String(record.key || `dup-ccd-${index}`),
       type: String(record.type || ''),
@@ -15587,6 +15605,11 @@ const syncClearanceRowsFromSource = () => {
   }
 
   const source = clearanceRowsFromSource()
+  if (isLclImportTcdClearanceModal()) {
+    if (Array.isArray(gsdModal.form.rows) && gsdModal.form.rows.length) return
+    gsdModal.form.rows = source
+    return
+  }
   if (isDupTcdClearanceDetailsModal()) {
     // TCD views CCD's clearance. Keep CCD's own rows when present: declarations are
     // linked to those row keys, and rebuilt VOLUME rows would orphan them.
@@ -15636,7 +15659,7 @@ const seedDupTcdClearanceMockupData = () => {
   persistClearanceDetails()
 }
 // LCL has no container/seal: clearance rows show the VOLUME line instead.
-const isClearanceLclView = () => upperText(opsParts.value?.mode) === 'LCL'
+const isClearanceLclView = () => ['LCL', 'AIR'].includes(upperText(opsParts.value?.mode))
 const clearanceDeclarationsFor = (rowKey: string) => clearanceDeclarations().filter((decl) => decl.rowKeys.includes(rowKey))
 const clearanceDetailsSaved = (value: any) => clearanceDetailsFormFromCell(value).declarations.some((decl: ClearanceDeclaration) => decl.no || decl.date || decl.result)
 const clearanceDetailsNeedsAttention = (value: any) => {
@@ -16848,6 +16871,29 @@ const toggleSiNotSubmitted = () => {
   }
 }
 const siSubmitContainers = () => Array.isArray(gsdModal.form.containers) ? gsdModal.form.containers : []
+// Reference Data > Units (GLOBAL ref_units), loaded once on demand.
+const referenceUnitOptions = ref<{ value: string; label: string }[]>([])
+let referenceUnitsLoading: Promise<void> | null = null
+const loadReferenceUnits = () => {
+  if (referenceUnitOptions.value.length) return Promise.resolve()
+  if (!referenceUnitsLoading) {
+    referenceUnitsLoading = props.request('/records?country=GLOBAL&page=ref_units&limit=1000').then((response: any) => {
+      const items = Array.isArray(response?.items) ? response.items : Array.isArray(response?.data?.items) ? response.data.items : []
+      const seen = new Set<string>()
+      referenceUnitOptions.value = items
+        .filter((item: any) => upperText(item?.data?.status || 'ACTIVE') !== 'INACTIVE')
+        .map((item: any) => {
+          const value = upperText(item?.data?.ucode || item?.data?.code || '').trim()
+          const desc = String(item?.data?.udesc || item?.data?.description || '').trim()
+          return { value, label: desc ? `${value} - ${desc}` : value }
+        })
+        .filter((option: { value: string }) => option.value && !seen.has(option.value) && !!seen.add(option.value))
+    }).catch((error: any) => {
+      console.warn('Could not load Reference Data units', error)
+    }).finally(() => { referenceUnitsLoading = null })
+  }
+  return referenceUnitsLoading
+}
 const siUnitOptions = () => {
   const volume = volumeFormFromCell(rawSiSourceValue('VOLUME'))
   const values = ['PALLET', 'PALLETS', 'CARTON', 'CARTONS', 'PACKAGE', 'PACKAGES', 'BAG', 'BAGS', 'BOX', 'BOXES', 'CTNS', 'PLTS', 'PCES']
