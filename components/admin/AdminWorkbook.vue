@@ -1525,7 +1525,7 @@
             </div>
           </template>
           <template v-else-if="isVesselModal()">
-            <div class="gsd-vessel-main">
+            <div v-if="!isVesselViewOnlyModal()" class="gsd-vessel-main">
               <label>
                 <span>Search Vessel:</span>
                 <input
@@ -1576,11 +1576,11 @@
               <label class="gsd-vapall" :class="{ disabled: isExwEcdVesselControlsDisabled() }"><input v-model="gsdModal.form.applyAll" type="checkbox" :disabled="isExwEcdVesselControlsDisabled()" /> Apply to all shipments on the same vessel &amp; voyage</label>
             </div>
             <div class="gsd-vessel-actions">
-              <button v-if="isExwEcdVesselDelayModal() && Number(gsdModal.form.selectedHistoryOrder) > 0" class="wb-modal-btn primary vessel-update" type="button" :disabled="!vesselDelayCanUpdate()" @click="updateVesselDelay">Update</button>
-              <button v-if="Number(gsdModal.form.selectedHistoryOrder) <= 0 && !gsdModal.form.addLocked" class="wb-modal-btn vessel-add-new" type="button" :disabled="!gsdModal.editing || vesselAddInProgress()" @click="showVesselAdd">Add New</button>
-              <button v-if="Number(gsdModal.form.selectedHistoryOrder) <= 0" class="wb-modal-btn primary orange vessel-select" type="button" :disabled="!gsdModal.editing || !vesselCanSelect()" @click="selectVessel">Select</button>
+              <button v-if="!isVesselViewOnlyModal() && isExwEcdVesselDelayModal() && Number(gsdModal.form.selectedHistoryOrder) > 0" class="wb-modal-btn primary vessel-update" type="button" :disabled="!vesselDelayCanUpdate()" @click="updateVesselDelay">Update</button>
+              <button v-if="!isVesselViewOnlyModal() && Number(gsdModal.form.selectedHistoryOrder) <= 0 && !gsdModal.form.addLocked" class="wb-modal-btn vessel-add-new" type="button" :disabled="!gsdModal.editing || vesselAddInProgress()" @click="showVesselAdd">Add New</button>
+              <button v-if="!isVesselViewOnlyModal() && Number(gsdModal.form.selectedHistoryOrder) <= 0" class="wb-modal-btn primary orange vessel-select" type="button" :disabled="!gsdModal.editing || !vesselCanSelect()" @click="selectVessel">Select</button>
             </div>
-            <div v-if="gsdModal.form.addView" class="gsd-vessel-add">
+            <div v-if="gsdModal.form.addView && !isVesselViewOnlyModal()" class="gsd-vessel-add">
               <div class="gsd-vessel-add-grid">
                 <label>
                   <span>Vessel Name:</span>
@@ -1597,17 +1597,17 @@
                 <button class="wb-modal-btn primary" type="button" :disabled="!!gsdModal.form.vesselSaving || !!gsdModal.form.addLocked" @click="saveVesselNew">{{ gsdModal.form.vesselSaving ? 'Saving...' : 'Save' }}</button>
               </div>
             </div>
-            <div v-if="isExwEcdVesselDelayModal() && vesselEcdHistory().length" class="gsd-vhist-wrap ecd gsd-five-row-scroll">
+            <div v-if="(isExwEcdVesselDelayModal() || isVesselViewOnlyModal()) && vesselEcdHistory().length" class="gsd-vhist-wrap ecd gsd-five-row-scroll">
               <table class="gsd-vhist-table">
                 <thead>
-                  <tr><th>Order</th><th>Time</th><th>VesselName</th><th>VoyageNo</th><th>ETD</th><th>ETA</th><th>Remarks</th><th>Type</th><th>Status</th><th>Action</th></tr>
+                  <tr><th>Order</th><th>Time</th><th>VesselName</th><th>VoyageNo</th><th>ETD</th><th>ETA</th><th>Remarks</th><th>Type</th><th>Status</th><th v-if="!isVesselViewOnlyModal()">Action</th></tr>
                 </thead>
                 <tbody>
                   <tr
                     v-for="(item, index) in vesselEcdHistory()"
                     :key="`${item.order}-${index}`"
                     :class="{ selected: Number(gsdModal.form.selectedHistoryOrder) === item.order, delay: item.type === 'DELAY', transhipment: item.type === 'T/S' }"
-                    @click="selectVesselHistory(item)"
+                    @click="!isVesselViewOnlyModal() && selectVesselHistory(item)"
                   >
                     <td>{{ index + 1 }}.</td>
                     <td>{{ item.time || '—' }}</td>
@@ -1618,7 +1618,7 @@
                     <td>{{ item.reason || '—' }}</td>
                     <td><span class="gsd-vty-group"><span v-for="type in item.displayTypes || [item.type]" :key="type" class="gsd-vty" :class="type === 'DELAY' ? 'dly' : type === 'T/S' ? 'ts' : 'sel'">{{ type }}</span></span></td>
                     <td :class="item.status === 'Applied' ? 'applied' : 'expired'">{{ item.status }}</td>
-                    <td class="vessel-history-actions">
+                    <td v-if="!isVesselViewOnlyModal()" class="vessel-history-actions">
                       <button type="button" class="edit" title="Edit" aria-label="Edit vessel history" @click.stop="selectVesselHistory(item)">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
                       </button>
@@ -2465,7 +2465,6 @@
                           {{ doc.custom ? 'upload docs' : clearanceDocUploadLabel(doc.key) }}
                           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg>
                         </button>
-                        <input v-if="doc.file" v-model.trim="doc.displayName" class="cdafn" title="Rename document" :disabled="!gsdModal.editing" />
                       </span>
                       <button type="button" class="gsd-pre-icon eye cda-eye" :class="{ on: !!doc.url }" :disabled="!doc.url" title="View" @click="viewClearanceDocFile(doc.key)">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -4581,7 +4580,7 @@ const gsdModal = reactive({
   title: '',
   label: '',
   text: '',
-  clientMode: 'id' as 'id' | 'namecode',
+  clientMode: 'namecode' as 'id' | 'namecode',
   clientRole: 'CLIENT',
   clientView: 'search' as ClientView,
   selectedClient: null as GsdClientRecord | null,
@@ -4782,6 +4781,13 @@ const billDocRouteFields = [
   { key: 'vessel', label: 'OCEAN VESSEL / VOYAGE NO.' }, { key: 'pol', label: 'PORT OF LOADING' },
   { key: 'pod', label: 'PORT OF DISCHARGE' }, { key: 'delivery', label: 'PLACE OF DELIVERY / FINAL DESTINATION' },
 ]
+// Case- and Vietnamese-accent-insensitive text for client lookup.
+const normalizeClientSearchText = (value: unknown) => String(value ?? '')
+  .normalize('NFD')
+  .replace(/[̀-ͯ]/g, '')
+  .replace(/[đĐ]/g, 'd')
+  .toLowerCase()
+  .trim()
 const searchGsdClients = async () => {
   if (gsdModal.kind !== 'client' || gsdModal.clientView !== 'search') {
     gsdClientResults.value = []
@@ -4809,7 +4815,9 @@ const searchGsdClients = async () => {
       AGENT: { page: 'traders_dest_agent', roles: ['DEST. AGENT', 'AGENT'] },
     }
     const source = traderSource[role] || traderSource.CLIENT
-    const res = await props.request(`/records?country=${encodeURIComponent(countryViewId())}&page=${encodeURIComponent(source.page)}&search=${encodeURIComponent(term)}&limit=1000&skip=0`)
+    const byNamecode = gsdModal.clientMode === 'namecode'
+    const searchFields = byNamecode ? 'namecode' : 'id'
+    const res = await props.request(`/records?country=${encodeURIComponent(countryViewId())}&page=${encodeURIComponent(source.page)}&search=${encodeURIComponent(term)}&searchFields=${searchFields}&limit=1000&skip=0`)
     if (run !== clientSearchRun) return
     const records = Array.isArray(res?.items) ? res.items : []
     gsdClientResults.value = records.map((record: any) => {
@@ -4824,6 +4832,9 @@ const searchGsdClients = async () => {
         sourceData: data,
       })
     }).filter((client: GsdClientRecord) => {
+      const needle = normalizeClientSearchText(term)
+      const haystack = normalizeClientSearchText(byNamecode ? client.sourceData?.namecode ?? client.sourceData?.NAMECODE : client.id)
+      if (!haystack.includes(needle)) return false
       const roles = (client.roles || []).map(upperText)
       return source.roles.some((allowed) => roles.includes(allowed)) && upperText(client.status || 'ACTIVE') !== 'INACTIVE'
     }).slice(0, 20)
@@ -8864,8 +8875,13 @@ const isLinkedHblPlainTextColumn = (column: number) => {
   const ownerDept = ['EXW', 'FCA', 'FCF'].includes(type) ? 'ECD' : 'ICD'
   return opsDeptUpper() !== ownerDept
 }
+// FCL TCD/CCD/FCD: VESSEL/VOYAGE opens the Vessel popup in view-only mode.
+const isFclVesselViewOnlyDept = () =>
+  upperText(opsParts.value?.mode) === 'FCL' && ['TCD', 'CCD', 'FCD'].includes(opsDeptUpper())
+const isVesselViewOnlyModal = () => isVesselModal() && isFclVesselViewOnlyDept()
 const isExwCcdPlainTextColumn = (column: number) => {
   const label = normalizedHeaderLabel(column)
+  if (isFclVesselViewOnlyDept() && ['VESSEL/VOYAGE', 'VESSEL NAME'].includes(label)) return false
   // HBL/HAWB is entered once by ECD on export jobs or ICD on import jobs.
   // Every receiving department only displays the linked document number.
   if (isLinkedHblPlainTextColumn(column)) return true
@@ -10040,8 +10056,10 @@ const recoverLinkedPaymentRequestForFcd = async (row: number, currentValue: any)
         ? alignedRows.findIndex((item, index) => index > 0 && opsShipmentLink(header, item, index, sourceSettings) === shipmentLink)
         : -1
       if (sourceRowIndex < 1 && identity) sourceRowIndex = alignedRows.findIndex((item, index) => index > 0 && rowIdentity(header, item) === identity)
-      // Compatibility with old generated rows that predate opsRowLinks.
-      if (sourceRowIndex < 1 && row < alignedRows.length) sourceRowIndex = row
+      // Compatibility with old generated rows that predate opsRowLinks. Only fall back to
+      // the row position when the row has no link/identity at all; otherwise a peer dept
+      // that never had this shipment would leak another shipment's payment lines.
+      if (sourceRowIndex < 1 && !shipmentLink && !identity && row < alignedRows.length) sourceRowIndex = row
       const paymentColumn = header.findIndex((label) => ['PAYMENT REQUEST', 'PAYMENT REQUEST APPLICATION'].includes(upperText(label)))
       if (sourceRowIndex < 1 || paymentColumn < 0) return null
       const payment = paymentRequestFromCell(alignedRows[sourceRowIndex]?.[paymentColumn])
@@ -10055,8 +10073,13 @@ const recoverLinkedPaymentRequestForFcd = async (row: number, currentValue: any)
       return null
     }
   }))
-  const sources = [...recovered.filter((payment): payment is PaymentRequestState => payment !== null), local]
-  if (sources.length === 1) return currentValue
+  const recoveredSources = recovered.filter((payment): payment is PaymentRequestState => payment !== null)
+  if (!recoveredSources.length) return currentValue
+  // FCD never creates request lines itself; drop local lines that no source dept has
+  // (e.g. lines previously leaked in from another shipment).
+  const recoveredIds = new Set(recoveredSources.flatMap((payment) => payment.lines.map((line) => String(line.id || ''))).filter(Boolean))
+  const cleanedLocal = { ...local, lines: local.lines.filter((line) => recoveredIds.has(String(line.id || ''))) }
+  const sources = [...recoveredSources, cleanedLocal]
   const mergedLines = new Map<string, PaymentLine>()
   sources.forEach((payment, sourceIndex) => payment.lines.forEach((line, index) => {
     const key = String(line.id || `${line.chargeName}:${line.payTo}:${line.collectFrom}:${index}`)
@@ -11153,7 +11176,7 @@ const openGsdModal = async (row: number, column: number) => {
       gsdModal.editing = true
       gsdModal.clientRole = clientRoleForLabel(label)
       gsdModal.clientView = 'search'
-      gsdModal.clientMode = 'id'
+      gsdModal.clientMode = 'namecode'
       gsdModal.selectedClient = null
       gsdModal.clientForm = emptyClientForm()
       gsdModal.text = ''
@@ -11166,7 +11189,7 @@ const openGsdModal = async (row: number, column: number) => {
         gsdModal.clientView = 'detail'
         gsdModal.editing = false
       } else if (parsed && typeof parsed === 'object' && 'value' in parsed) {
-        gsdModal.clientMode = String((parsed as any).mode || 'id') === 'namecode' ? 'namecode' : 'id'
+        gsdModal.clientMode = String((parsed as any).mode || 'namecode') === 'id' ? 'id' : 'namecode'
       } else if (rawText && upperText(rawText) !== 'N/A') {
         gsdModal.clientMode = 'namecode'
         gsdModal.text = upperText(rawText)
@@ -11298,7 +11321,7 @@ const openGsdModal = async (row: number, column: number) => {
         await Promise.all([loadVesselReferenceData(), loadTranshipmentPlaces()])
         gsdModal.formFields = []
         gsdModal.form = vesselFormFromCell(rawText)
-        gsdModal.editing = !isExwFclTcdInboundView()
+        gsdModal.editing = !isExwFclTcdInboundView() && !isVesselViewOnlyModal()
         if (gsdModal.editing) nextTick(() => (document.querySelector('.gsd-vessel-input') as HTMLInputElement | null)?.focus())
       } else if (label === 'PICKUP DETAIL' || label === 'DELIVERY DETAIL' || label === 'DELIVERY DETAILS') {
         await loadPickupReferenceData()
@@ -11622,18 +11645,21 @@ const backToClientSearch = async () => {
   if (canChangeLink && clientBackUnlinksCurrentRole() && rows.value[gsdModal.row]) {
     const currentValue = rows.value[gsdModal.row][gsdModal.column]
     if (String(currentValue ?? '').trim()) {
-      dispatchLoading.value = `Removing linked ${gsdModal.clientRole || 'record'}...`
-      try {
-        rows.value[gsdModal.row][gsdModal.column] = ''
+      // Unlink optimistically: switch to search right away and save in the background,
+      // restoring the old value if the save fails.
+      const row = gsdModal.row
+      const column = gsdModal.column
+      const roleLabel = gsdModal.clientRole || 'record'
+      rows.value[row][column] = ''
+      ;(async () => {
         const saved = await saveSheet()
         if (!saved) {
-          showToast(`Could not remove linked ${gsdModal.clientRole || 'record'}`)
+          if (rows.value[row] && !String(rows.value[row][column] ?? '').trim()) rows.value[row][column] = currentValue
+          showToast(`Could not remove linked ${roleLabel}`)
           return
         }
-        await mirrorFclLinkedCell(gsdModal.row, gsdModal.column)
-      } finally {
-        dispatchLoading.value = ''
-      }
+        await mirrorFclLinkedCell(row, column)
+      })().catch((error) => console.error('Could not remove linked record', error))
     }
   }
   gsdModal.clientView = 'search'
@@ -12060,16 +12086,23 @@ const saveReminderDraft = async () => {
     details,
     authorDept: opsDeptUpper(),
   }
-  dispatchLoading.value = `Sending notice to ${note.dept}...`
-  try {
-    if (!await syncReminderNoteToDept(note, 'upsert')) return
-    gsdModal.reminderNotes.push(note)
-    gsdModal.reminderDept = ''
-    gsdModal.reminderDraft = { title: '', details: '' }
-    if (!await persistReminderNotes(true)) showToast('Notice sent, but the source worksheet could not be saved')
-  } finally {
-    dispatchLoading.value = ''
+  // Optimistic: show the note immediately, then deliver to the target dept and save
+  // the source sheet in parallel. Roll back the note if delivery fails.
+  const sourceRow = gsdModal.row
+  gsdModal.reminderNotes.push(note)
+  gsdModal.reminderDept = ''
+  gsdModal.reminderDraft = { title: '', details: '' }
+  const [delivered, saved] = await Promise.all([
+    syncReminderNoteToDept(note, 'upsert', false, sourceRow).catch(() => false),
+    persistReminderNotes(true).catch(() => false),
+  ])
+  if (!delivered) {
+    gsdModal.reminderNotes = gsdModal.reminderNotes.filter((item) => item.id !== note.id)
+    if (gsdModal.open && gsdModal.row === sourceRow) void persistReminderNotes(true)
+    showToast(`Could not send notice to ${note.dept}`)
+    return
   }
+  if (!saved) showToast('Notice sent, but the source worksheet could not be saved')
 }
 const cancelReminderDraft = async () => {
   if (gsdModal.reminderDraft.title.trim() || gsdModal.reminderDraft.details.trim()) {
@@ -14771,7 +14804,15 @@ const pickupRouteOriginCountry = () => {
 const filterPickupOptionsByCountry = (options: PickupReferenceOption[]) => {
   const country = pickupRouteOriginCountry()
   if (!country) return options
-  return options.filter((option) => !option.country || upperText(option.country) === country)
+  // Route may store the country as ISO ("VN") or name ("VIETNAM"/"VIET NAM"); compare loosely.
+  const countryKey = (value: string) => {
+    const name = upperText(value).trim()
+    return entityCountryCodes[name] || name.replace(/[^A-Z]/g, '')
+  }
+  const target = countryKey(country)
+  const matched = options.filter((option) => !option.country || countryKey(option.country) === target)
+  // Never leave the dropdown empty because of a country mismatch.
+  return matched.length ? matched : options
 }
 const pickupReturnOptions = () => {
   const mode = String(opsParts.value?.mode || '').toUpperCase()
@@ -15201,6 +15242,7 @@ const gsdModalShellStyle = () => {
   if (isVolumeModal()) return shell('780px')
   if (isFreetimeModal()) return shell('600px')
   if (isRouteModal()) return shell('660px')
+  if (isVesselViewOnlyModal()) return shell('980px')
   if (isVesselModal()) return shell(isExwEcdVesselDelayModal() || isAirDcdVesselHistoryModal() ? '980px' : '700px')
   if (isPickupModal()) return shell(isDeliveryDetailsModal() ? '890px' : '880px')
   if (isDoContSealModal()) return shell('680px')
@@ -15386,9 +15428,11 @@ const clearanceRowsFromSource = (): ClearanceRow[] => {
   const savedRows = Array.isArray(gsdModal.form.rows) ? gsdModal.form.rows as ClearanceRow[] : []
   const usedSaved = new Set<number>()
   const usedTrucks = new Set<number>()
-  const sameVolumeKind = (left: any, right: any) =>
-    upperText(left?.type || left?.contType) === upperText(right?.type || right?.contType) &&
-    upperText(left?.purpose) === upperText(right?.purpose)
+  // VOLUME stores type "20" + purpose "HQ" while trucks may store "20HQ" in one field;
+  // compare the combined size+kind so both shapes match the same container line.
+  const volumeKindKey = (item: any) =>
+    `${upperText(item?.type || item?.contType)}${upperText(item?.purpose)}`.replace(/[^A-Z0-9]/g, '')
+  const sameVolumeKind = (left: any, right: any) => volumeKindKey(left) === volumeKindKey(right)
   const volumeRows = volumes.map((volume, volumeIndex) => {
     const savedIndex = savedRows.findIndex((item, index) => !usedSaved.has(index) && sameVolumeKind(item, volume))
     if (savedIndex >= 0) usedSaved.add(savedIndex)
@@ -15529,7 +15573,11 @@ const seedDupTcdClearanceMockupData = () => {
 const clearanceDeclarationsFor = (rowKey: string) => clearanceDeclarations().filter((decl) => decl.rowKeys.includes(rowKey))
 const clearanceDetailsSaved = (value: any) => clearanceDetailsFormFromCell(value).declarations.some((decl: ClearanceDeclaration) => decl.no || decl.date || decl.result)
 const clearanceDetailsNeedsAttention = (value: any) => {
-  const declarations = clearanceDetailsFormFromCell(value).declarations as ClearanceDeclaration[]
+  const form = clearanceDetailsFormFromCell(value)
+  const rowKeys = new Set((form.rows as ClearanceRow[]).map((row) => row.key))
+  // Ignore orphan declarations whose container rows no longer exist.
+  const declarations = (form.declarations as ClearanceDeclaration[]).filter((decl) =>
+    !rowKeys.size || decl.rowKeys.some((key) => rowKeys.has(key)))
   const started = declarations.filter((decl) =>
     !!(decl.no || decl.date || decl.result || decl.tax || decl.fee || decl.cleared || decl.docs),
   )
@@ -22909,7 +22957,7 @@ onBeforeUnmount(() => {
 .question-confirm-btn.no:hover{background:#a23227}
 .question-confirm-btn.yes{background:#008f4c}
 .question-confirm-btn.yes:hover{background:#00773f}
-.dispatch-loading-overlay{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;background:rgba(19,35,27,.24);backdrop-filter:blur(1px);cursor:wait;user-select:none}.dispatch-loading-overlay :deep(.admin-loading-screen.compact){width:auto;height:auto;min-height:0;padding:0;background:transparent}.dispatch-loading-overlay :deep(.admin-loading-card){min-width:132px;padding:15px 20px 13px;border-radius:13px;box-shadow:0 12px 30px rgba(15,45,29,.2)}.dispatch-loading-overlay :deep(.admin-loading-mark){width:42px;height:42px;margin-bottom:7px}.dispatch-loading-overlay :deep(.admin-loading-mark img){width:31px;height:31px}.dispatch-loading-overlay :deep(.admin-loading-card strong){font-size:11.5px}.dispatch-loading-overlay :deep(.admin-loading-card small){margin-top:2px;font-size:10.5px}.dispatch-loading-overlay :deep(.admin-loading-dots){margin-top:8px}
+.dispatch-loading-overlay{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;background:rgba(19,35,27,.24);backdrop-filter:blur(1px);cursor:wait;user-select:none}.dispatch-loading-overlay :deep(.admin-loading-screen.compact){width:auto;height:auto;min-height:0;padding:0;background:transparent}.dispatch-loading-overlay :deep(.admin-loading-screen.compact .admin-loading-card){min-width:132px;border:1px solid rgba(24,150,80,.14);background:#fff;padding:15px 20px 13px;border-radius:13px;box-shadow:0 12px 30px rgba(15,45,29,.2)}.dispatch-loading-overlay :deep(.admin-loading-mark){width:42px;height:42px;margin-bottom:7px}.dispatch-loading-overlay :deep(.admin-loading-mark img){width:31px;height:31px}.dispatch-loading-overlay :deep(.admin-loading-card strong){font-size:11.5px}.dispatch-loading-overlay :deep(.admin-loading-card small){margin-top:2px;font-size:10.5px}.dispatch-loading-overlay :deep(.admin-loading-dots){margin-top:8px}
 .dispatch-loading-modal{width:min(300px,calc(100vw - 32px));display:grid;justify-items:center;gap:12px;padding:26px 24px;border-radius:12px;background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.35);color:#17231c;font-size:14px;font-weight:800;text-align:center}
 .dispatch-loading-modal small{color:#718078;font-size:11.5px;font-weight:600}
 .dispatch-loading-spinner{width:34px;height:34px;border:4px solid #d9eee2;border-top-color:#008f4c;border-radius:50%;animation:dispatch-loading-spin .75s linear infinite}
@@ -23132,6 +23180,10 @@ onBeforeUnmount(() => {
 .wb-modal-overlay .bd-up:disabled,.wb-modal-overlay .bd-up:disabled:hover{opacity:.4!important;filter:none!important;box-shadow:none!important;transform:none!important;border-color:#cdd6d0!important;background:#f2f4f2!important;color:#7a837c!important}
 .wb-modal-overlay .bd-up.has:disabled,.wb-modal-overlay .bd-up.has:disabled:hover{opacity:.62!important;border-color:#00a85a!important;background:#00a85a!important;color:#fff!important}
 .bd-up.has::after{content:'✓';position:absolute;right:-5px;top:-5px;display:grid;place-items:center;width:15px;height:15px;border:2px solid #fff;border-radius:50%;background:#087d4b;color:#fff;font-size:9px;font-weight:900;line-height:1}
+/* Bill Release: uploaded state matches Bill Detail (.bd-up.has) */
+.gsd-release-icon.has{position:relative;border-color:#00a85a!important;background:#00a85a!important;color:#fff!important}
+.gsd-release-icon.has:disabled{opacity:.62!important}
+.gsd-release-icon.has::after{content:"✓";position:absolute;right:-5px;top:-5px;display:grid;place-items:center;width:15px;height:15px;border:2px solid #fff;border-radius:50%;background:#087d4b;color:#fff;font-size:9px;font-weight:900;line-height:1}
 .bd-eye{opacity:.42;pointer-events:none}
 .bd-eye.on{opacity:1;pointer-events:auto;border-color:#86d5ad;color:#087d4b;background:#e9f8f0}
 .bd-exportbtn{flex:0 0 auto;border:none;color:#fff;font-size:12px;font-weight:700;border-radius:6px;padding:8px 14px;cursor:pointer;letter-spacing:.02em}
