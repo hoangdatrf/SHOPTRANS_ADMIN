@@ -2423,7 +2423,7 @@
               <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
               <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || preAlertDestinationLocked()" @click="enablePreAlertEdit">Edit</button>
               <button class="wb-modal-btn primary" type="button" :disabled="!preAlertCanSave()" @click="savePreAlert">Save</button>
-              <button class="wb-modal-btn send" type="button" :disabled="gsdModal.editing || preAlertDestinationLocked()" @click="sendPreAlert">Send to Dest. Agent</button>
+              <button class="wb-modal-btn send" type="button" :disabled="gsdModal.editing || preAlertDestinationLocked() || !!gsdModal.form.sent" :title="gsdModal.form.sent ? `Sent ${gsdModal.form.sentAt || ''} - update data to send again` : ''" @click="sendPreAlert">Send to Dest. Agent</button>
             </div>
             <input ref="preAlertFileInput" type="file" hidden @change="handlePreAlertFile" />
           </template>
@@ -12365,7 +12365,7 @@ const clearCutoffForm = () => {
 const setCutoffHint = (message: string) => {
   gsdModal.form.hint = message
 }
-const sendCutoffEmail = async (record: CutoffRecord, isUpdate: boolean) => {
+const sendCutoffEmail = async (record: CutoffRecord, isUpdate: boolean, previous?: Pick<CutoffRecord, 'siDate' | 'siTime' | 'cyDate' | 'cyTime'> | null) => {
   const header = rows.value[0] || []
   const sourceCell = (label: string) => {
     const column = header.findIndex((_: any, index: number) => normalizedHeaderLabel(index) === label)
@@ -12391,6 +12391,10 @@ const sendCutoffEmail = async (record: CutoffRecord, isUpdate: boolean) => {
         siDate: formatCutoffDate(record.siDate), siTime: record.siTime,
         cyDate: formatCutoffDate(record.cyDate), cyTime: record.cyTime,
       },
+      previousCutoff: previous ? {
+        siDate: formatCutoffDate(previous.siDate), siTime: previous.siTime,
+        cyDate: formatCutoffDate(previous.cyDate), cyTime: previous.cyTime,
+      } : null,
       shipment: {
         bookingNo: emailCellDisplayValue('BC NO#', rowValueByHeader('BC NO#')),
         hblNo: rowValueByHeader('HBL NO#') || rowValueByHeader('HAWB NO#'),
@@ -12416,6 +12420,12 @@ const saveCutoffRecord = async () => {
   const editId = String(gsdModal.form.editId || '')
   const list = cutoffRecords()
   let savedRecord: CutoffRecord
+  // Old values for the update email: the row being edited, or the currently applied
+  // (latest) cutoff when a new one is added on top of it.
+  const previousSource = editId ? list.find((item) => item.id === editId) : list[0]
+  const previousCutoff = previousSource
+    ? { siDate: previousSource.siDate, siTime: previousSource.siTime, cyDate: previousSource.cyDate, cyTime: previousSource.cyTime }
+    : null
   if (editId) {
     const target = list.find((item) => item.id === editId)
     if (target) {
@@ -12446,7 +12456,7 @@ const saveCutoffRecord = async () => {
     const saved = await persistCutoffForm(true)
     if (!saved) throw new Error('Could not save Cutoff Detail')
     try {
-      await sendCutoffEmail(savedRecord, !!editId)
+      await sendCutoffEmail(savedRecord, !!previousCutoff, previousCutoff)
       showToast(editId ? 'Cutoff updated and Shipper notified' : 'Cutoff saved and Shipper notified')
     } catch (error: any) {
       showToast(`Cutoff saved, but email was not sent: ${error?.data?.message || error?.message || 'Unknown email error'}`)
@@ -15668,6 +15678,11 @@ const persistClearanceDetails = () => {
 }
 const saveClearanceDeclaration = (decl: ClearanceDeclaration) => {
   if (!clearanceDeclarationCanSave(decl)) return
+  // Number, Date and Result are mandatory to save. The 4 checkboxes stay optional;
+  // missing ones keep the grid cell flagged (⚠ DETAIL) via clearanceDetailsNeedsAttention.
+  if (!String(decl.no || '').trim()) return showToast('Please enter Declaration number')
+  if (!String(decl.date || '').trim()) return showToast('Please select Date')
+  if (!String(decl.result || '').trim()) return showToast('Please select Result')
   decl.locked = true
   decl.editing = false
   persistClearanceDetails()
@@ -19158,6 +19173,45 @@ const sendPreAlert = async () => {
       if (['GSD', 'ECD'].includes(upperText(source.dept))) {
         const markedSent = await syncCrossServiceGsdRow(gsdModal.row, serviceColumn, sentAt, true)
         if (!markedSent) throw new Error(`Could not mark the linked ${targetService} GSD record as sent`)
+        // ICD OPS is assigned on the new ICD row; copy it back to the import GSD row.
+        try {
+          const icdKey = opsLeafKey(targetBase, source.mode, targetService as any, 'ICD')
+          const icdSheet = await props.request(`/workbook/sheets/${encodeURIComponent(sheetStorageKey(icdKey))}`)
+          const icdHeader = opsHeaderFor(targetBase, source.mode, 'ICD', targetService as any)
+          const icdExtracted = extractWorkbookRows(Array.isArray(icdSheet?.rows) ? icdSheet.rows.map((item: any[]) => [...item]) : [], icdSheet)
+          const icdRows = alignRowsToHeader(icdExtracted.rows, icdHeader).rows
+          const icdSettings = icdExtracted.settings || icdSheet?.settings || {}
+          const sourceHeader = (rows.value[0] || []).map((item: any) => String(item ?? '').trim())
+          const shipmentLink = opsShipmentLink(sourceHeader, rows.value[gsdModal.row] || [], gsdModal.row, settings.value)
+          const icdRowIndex = shipmentLink
+            ? icdRows.findIndex((item, index) => index > 0 && opsShipmentLink(icdHeader, item, index, icdSettings) === shipmentLink)
+            : -1
+          const icdOpsColumn = icdHeader.findIndex((label) => upperText(label) === 'ICD OPS')
+          const icdOps = icdRowIndex > 0 && icdOpsColumn >= 0 ? String(icdRows[icdRowIndex][icdOpsColumn] ?? '').trim() : ''
+          if (icdOps && shipmentLink) {
+            const gsdKey = sheetStorageKey(opsLeafKey(targetBase, source.mode, targetService as any, 'GSD'))
+            const gsdSheet = await props.request(`/workbook/sheets/${encodeURIComponent(gsdKey)}`)
+            const gsdHeader = opsHeaderFor(targetBase, source.mode, 'GSD', targetService as any)
+            const gsdExtracted = extractWorkbookRows(Array.isArray(gsdSheet?.rows) ? gsdSheet.rows.map((item: any[]) => [...item]) : [], gsdSheet)
+            const gsdRows = alignRowsToHeader(gsdExtracted.rows, gsdHeader).rows
+            const gsdSettings = gsdExtracted.settings || gsdSheet?.settings || {}
+            const gsdRowIndex = gsdRows.findIndex((item, index) => index > 0 && opsShipmentLink(gsdHeader, item, index, gsdSettings) === shipmentLink)
+            const gsdOpsColumn = gsdHeader.findIndex((label) => upperText(label) === 'ICD OPS')
+            if (gsdRowIndex > 0 && gsdOpsColumn >= 0 && String(gsdRows[gsdRowIndex][gsdOpsColumn] ?? '').trim() !== icdOps) {
+              gsdRows[gsdRowIndex][gsdOpsColumn] = icdOps
+              await patchLoadedWorkbookSheet(gsdKey, gsdSheet, { rows: [...gsdRows, [workbookMetaMarker, JSON.stringify({
+                version: 1,
+                columnWidths: gsdExtracted.columnWidths || gsdSheet.columnWidths || gsdHeader.map(() => 100),
+                rowHeights: gsdExtracted.rowHeights || gsdSheet.rowHeights || {},
+                formatting: gsdExtracted.formatting || gsdSheet.formatting || {},
+                merges: gsdExtracted.merges || gsdSheet.merges || [],
+                settings: gsdSettings,
+              })]] })
+            }
+          }
+        } catch (error) {
+          console.warn('Could not mirror ICD OPS to the linked GSD record', error)
+        }
       }
     }
     let emailSentAt = ''
