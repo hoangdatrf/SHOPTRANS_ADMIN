@@ -1937,7 +1937,7 @@
                     <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()"><input v-model.trim="record.contType" :disabled="!truckContRowCanEdit(record)" /></td>
                     <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()"><input v-model.trim="record.seal" :disabled="!truckContRowCanEdit(record)" /></td>
                     <td>
-                      <span v-if="isAirDcdTruckingModal() && isReadonlyTruckContModal()"></span>
+                      <span v-if="isAirDcdTruckingModal() && isReadonlyTruckContModal() && !record.driver">—</span>
                       <button
                         v-else
                         class="gsd-pu-link truck-driver-picker-link"
@@ -2092,6 +2092,7 @@
                 <colgroup v-if="isLclPickupStatusModal()">
                   <col style="width:44px" />
                   <col style="width:56px" />
+                  <col style="width:150px" />
                   <col style="width:110px" />
                   <col style="width:200px" />
                 </colgroup>
@@ -2108,6 +2109,7 @@
                   <tr>
                     <th><input type="checkbox" :checked="allPickupReturnSelected()" @change="toggleAllPickupReturnRecords" /></th>
                     <th>ORDER</th>
+                    <th v-if="isLclPickupStatusModal() && !isDupTruckingStatusModal()">VOLUME</th>
                     <th v-if="isDupTruckingStatusModal()">PU NO#</th>
                     <th v-else-if="!isLclPickupStatusModal()">Container No#</th>
                     <th v-if="isDupTruckingStatusModal()">Truck Comp</th>
@@ -2125,6 +2127,7 @@
                   <tr v-for="(record, index) in pickupReturnRecords()" :key="record.id || index" @click="togglePickupReturnRow(record, $event)">
                     <td><input v-model="record.selected" type="checkbox" @click.stop @change="syncPickupReturnEditState" /></td>
                     <td class="prs-order">{{ index + 1 }}</td>
+                    <td v-if="isLclPickupStatusModal() && !isDupTruckingStatusModal()" class="prs-readonly">{{ volumeSummaryLines(rowValueByHeader('VOLUME'))[index] || '—' }}</td>
                     <td v-if="isDupTruckingStatusModal()" class="prs-readonly">{{ truckPuNumber(index) }}</td>
                     <td v-else-if="!isLclPickupStatusModal()" class="prs-readonly">{{ record.containerNo || '' }}</td>
                     <td v-if="isDupTruckingStatusModal()" class="prs-readonly">{{ record.truckCompany || record.truckComp || '' }}</td>
@@ -2569,9 +2572,12 @@
                   <tr>
                     <th>Order</th>
                     <th>Type</th>
-                    <th>Purpose</th>
-                    <th>Container No#</th>
-                    <th>Seal No#</th>
+                    <th v-if="isClearanceLclView()">VOLUME</th>
+                    <template v-else>
+                      <th>Purpose</th>
+                      <th>Container No#</th>
+                      <th>Seal No#</th>
+                    </template>
                     <th class="clr-declhead">Declaration</th>
                   </tr>
                 </thead>
@@ -2579,9 +2585,12 @@
                   <tr v-for="(row, index) in clearanceRows()" :key="row.key">
                     <td class="clr-ro">{{ index + 1 }}</td>
                     <td class="clr-ro">{{ row.type }}</td>
-                    <td class="clr-ro">{{ row.purpose }}</td>
-                    <td class="clr-ro">{{ row.containerNo || '-' }}</td>
-                    <td class="clr-ro">{{ row.sealNo || '-' }}</td>
+                    <td v-if="isClearanceLclView()" class="clr-ro">{{ volumeSummaryLines(rowValueByHeader('VOLUME'))[index] || '-' }}</td>
+                    <template v-else>
+                      <td class="clr-ro">{{ row.purpose }}</td>
+                      <td class="clr-ro">{{ row.containerNo || '-' }}</td>
+                      <td class="clr-ro">{{ row.sealNo || '-' }}</td>
+                    </template>
                     <td class="clr-declcell">
                       <div class="clr-declwrap viewonly">
                         <button
@@ -2612,9 +2621,12 @@
                     <th class="clr-allcell"><input type="checkbox" :checked="allClearanceRowsSelected()" @change="toggleAllClearanceRows" /></th>
                     <th>Order</th>
                     <th>Type</th>
-                    <th>Purpose</th>
-                    <th>Container No#</th>
-                    <th>Seal No#</th>
+                    <th v-if="isClearanceLclView()">VOLUME</th>
+                    <template v-else>
+                      <th>Purpose</th>
+                      <th>Container No#</th>
+                      <th>Seal No#</th>
+                    </template>
                     <th class="clr-declhead">
                       <span class="clr-dcap"><span>Declaration</span><button class="clr-plus" :class="{ dim: !allClearanceRowsSelected() }" type="button" title="Link All Containers to One CDS No" @click="addClearanceDeclarationToAll">+</button></span>
                     </th>
@@ -2625,9 +2637,12 @@
                     <td class="clr-allcell"><input v-model="gsdModal.form.selected[row.key]" type="checkbox" /></td>
                     <td class="clr-ro">{{ index + 1 }}</td>
                     <td class="clr-ro">{{ row.type }}</td>
-                    <td class="clr-ro">{{ row.purpose }}</td>
-                    <td class="clr-ro">{{ row.containerNo || '-' }}</td>
-                    <td class="clr-ro">{{ row.sealNo || '-' }}</td>
+                    <td v-if="isClearanceLclView()" class="clr-ro">{{ volumeSummaryLines(rowValueByHeader('VOLUME'))[index] || '-' }}</td>
+                    <template v-else>
+                      <td class="clr-ro">{{ row.purpose }}</td>
+                      <td class="clr-ro">{{ row.containerNo || '-' }}</td>
+                      <td class="clr-ro">{{ row.sealNo || '-' }}</td>
+                    </template>
                     <td class="clr-declcell">
                       <div class="clr-declwrap">
                         <div v-for="decl in clearanceDeclarationsFor(row.key)" :key="decl.id" class="clr-declrow">
@@ -15296,7 +15311,7 @@ const gsdModalShellStyle = () => {
   if (isPickupReturnStatusModal()) {
     if (isAirDupTcdTruckingStatusModal() || isAirDupFcdTruckingStatusModal()) return shell('1360px')
     if (isAirDupIcdTruckingStatusModal()) return shell('960px')
-    if (isLclPickupStatusModal()) return shell(isDestinationIcdPickupStatusModal() ? '860px' : '460px')
+    if (isLclPickupStatusModal()) return shell(isDestinationIcdPickupStatusModal() ? '860px' : '620px')
     if (isDestinationIcdPickupStatusModal()) return shell('1360px')
     return shell('920px')
   }
@@ -15620,6 +15635,8 @@ const seedDupTcdClearanceMockupData = () => {
   gsdModal.form.openId = ''
   persistClearanceDetails()
 }
+// LCL has no container/seal: clearance rows show the VOLUME line instead.
+const isClearanceLclView = () => upperText(opsParts.value?.mode) === 'LCL'
 const clearanceDeclarationsFor = (rowKey: string) => clearanceDeclarations().filter((decl) => decl.rowKeys.includes(rowKey))
 const clearanceDetailsSaved = (value: any) => clearanceDetailsFormFromCell(value).declarations.some((decl: ClearanceDeclaration) => decl.no || decl.date || decl.result)
 const clearanceDetailsNeedsAttention = (value: any) => {
@@ -16232,7 +16249,12 @@ const saveTruckContDetails = async () => {
   }
   const originServiceTruck = isTcdTruckContModal() &&
     ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase())
-  const required = originServiceTruck
+  // LCL/AIR TRUCKING INFO has no Container/ContType/Seal columns; it records the
+  // pickup arrival and warehouse gate-in date/time instead.
+  const truckingInfoOnly = isLclSheet() && normalizedHeaderLabel(gsdModal.column) === 'TRUCKING INFO'
+  const required = truckingInfoOnly
+    ? ['truck', 'driver', 'eta1', 'eta2']
+    : originServiceTruck
     ? ['truck', 'container', 'contType', 'seal', 'driver', 'eta1', 'eta2']
     : isTcdTruckContModal()
       ? ['truck', 'container', 'contType', 'seal', 'driver', 'eta1', 'eta2']
