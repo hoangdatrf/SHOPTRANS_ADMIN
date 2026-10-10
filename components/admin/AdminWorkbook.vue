@@ -8882,7 +8882,7 @@ const isLinkedHblPlainTextColumn = (column: number) => {
 }
 // FCL TCD/CCD/FCD: VESSEL/VOYAGE opens the Vessel popup in view-only mode.
 const isFclVesselViewOnlyDept = () =>
-  upperText(opsParts.value?.mode) === 'FCL' && ['TCD', 'CCD', 'FCD'].includes(opsDeptUpper())
+  ['FCL', 'LCL'].includes(upperText(opsParts.value?.mode)) && ['TCD', 'CCD', 'FCD'].includes(opsDeptUpper())
 const isVesselViewOnlyModal = () => isVesselModal() && isFclVesselViewOnlyDept()
 const isExwCcdPlainTextColumn = (column: number) => {
   const label = normalizedHeaderLabel(column)
@@ -9665,7 +9665,7 @@ const gsdActionButtonText = (row: number, column: number) => {
   if (opsParts.value?.type === 'DAP' && opsParts.value?.mode === 'FCL' && opsParts.value?.dept === 'ICD' && ['DELIVERY DETAIL', 'TRUCK & CONT/SEAL INFO'].includes(label)) return 'DETAIL'
   if (opsParts.value?.type === 'DAP' && opsParts.value?.mode === 'FCL' && opsParts.value?.dept === 'FCD' && ['DELIVERY DETAIL', 'TRUCK & CONT/SEAL INFO'].includes(label)) return 'DETAIL'
   if (['DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && opsParts.value?.dept === 'ICD' && ['DELIVERY DETAIL', 'TRUCK & CONT/SEAL INFO'].includes(label)) return 'DETAIL'
-  if (isLclSheet() && isExwDcdSheet() && label === 'VESSEL/VOYAGE') return vesselDelayedOf(rows.value[row]?.[column]) ? 'DETAIL ⚠' : 'DETAIL'
+  if (isAirMode() && isExwDcdSheet() && label === 'VESSEL/VOYAGE') return vesselDelayedOf(rows.value[row]?.[column]) ? 'DETAIL ⚠' : 'DETAIL'
   if (['EXW', 'FCA', 'FCF', 'DO'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && ['ECD', 'ICD', 'TCD', 'CCD', 'DCD', 'FCD'].includes(String(opsParts.value?.dept || '')) && label === 'DEALT INFO') return 'DETAIL'
   if (isLclNonGsdSheet() && label === 'DEALT INFO') return 'DETAIL'
   if (isLclSheet() && isFcfDcdSheet() && label === 'CUT OFF DETAILS') return 'DETAIL'
@@ -12784,7 +12784,7 @@ const isReadonlyDealtModal = () => !isStandaloneManualOpsRow(gsdModal.row) && gs
 const isExwFclTcdInboundView = () =>
   !isStandaloneManualOpsRow(gsdModal.row) && ['EXW', 'FCA', 'FCF', 'DO', 'DAP', 'DDU', 'DDP'].includes(String(opsParts.value?.type || '').toUpperCase()) && opsParts.value?.mode === 'FCL' && ['TCD', 'CCD', 'DCD', 'FCD'].includes(String(opsParts.value?.dept || ''))
 const isReadonlyTcdBookingDetail = () => !isStandaloneManualOpsRow(bookingDetailModal.row) && (opsDeptUpper() === 'CCD' || isExwFclTcdInboundView())
-const isAirDcdVesselHistoryModal = () => isVesselModal() && isLclExwDcdSheet()
+const isAirDcdVesselHistoryModal = () => isVesselModal() && isAirMode() && isLclExwDcdSheet()
 // AIR/LCL EXW ECD mockup: vessel editor with delay panel, apply-to-all and history table
 const isExwEcdVesselDelayModal = () => {
   if (!isVesselModal() || !['FCL', 'LCL', 'AIR'].includes(upperText(opsParts.value?.mode || ''))) return false
@@ -12793,7 +12793,7 @@ const isExwEcdVesselDelayModal = () => {
   return (['EXW', 'FCA', 'FCF'].includes(type) && dept === 'ECD')
     || (['DO', 'DAP', 'DDU', 'DDP'].includes(type) && dept === 'ICD')
 }
-const isExwEcdVesselControlsDisabled = () => isVesselModal() && isAirSheet() && isExwEcdSheet()
+const isExwEcdVesselControlsDisabled = () => isVesselModal() && isAirMode() && isExwEcdSheet()
 const vesselDelayedOf = (value: any) => {
   const parsed = parseJsonCell(value, null as any)
   const form = parsed && typeof parsed === 'object' && 'form' in parsed ? (parsed as any).form || {} : {}
