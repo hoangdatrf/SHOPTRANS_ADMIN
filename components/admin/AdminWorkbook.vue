@@ -1745,10 +1745,10 @@
               <div class="gsd-do-cont-wrap">
                 <table class="gsd-do-cont-table">
                   <colgroup><col style="width:74px" /><col style="width:88px" /><col style="width:182px" /><col style="width:200px" /><col style="width:150px" /></colgroup>
-                  <thead><tr><th>Order</th><th>Type</th><th>Purpose</th><th>Container No#</th><th>Seal No#</th></tr></thead>
+                  <thead><tr><th>Order</th><th>Type</th><th v-if="!isFclContSeal()">Purpose</th><th>Container No#</th><th>Seal No#</th></tr></thead>
                   <tbody>
                     <tr v-for="(record, index) in doContSealRecords()" :key="record.key || index">
-                      <td class="prs-order">{{ index + 1 }}</td><td class="prs-readonly">{{ record.type }}</td><td class="prs-readonly">{{ record.purpose }}</td><td class="prs-readonly">{{ record.container }}</td><td class="prs-readonly">{{ record.seal }}</td>
+                      <td class="prs-order">{{ index + 1 }}</td><td class="prs-readonly">{{ isFclContSeal() ? contSealTypeLabel(record) : record.type }}</td><td v-if="!isFclContSeal()" class="prs-readonly">{{ record.purpose }}</td><td class="prs-readonly">{{ record.container }}</td><td class="prs-readonly">{{ record.seal }}</td>
                     </tr>
                     <tr v-if="!doContSealRecords().length"><td colspan="5" class="empty">No volume defined yet</td></tr>
                   </tbody>
@@ -1773,7 +1773,7 @@
                   <tr>
                     <th>Order</th>
                     <th v-if="!isAirDoIcdContSealModal() && !isAirDupIcdContSealModal()">Type</th>
-                    <th v-if="!isAirDoIcdContSealModal() && !isAirDupIcdContSealModal()">Purpose</th>
+                    <th v-if="!isAirDoIcdContSealModal() && !isAirDupIcdContSealModal() && !isFclContSeal()">Purpose</th>
                     <th>Container No#</th>
                     <th>Seal No#</th>
                   </tr>
@@ -1781,13 +1781,13 @@
                 <tbody>
                   <tr v-for="(record, index) in doContSealRecords()" :key="record.key || index">
                     <td>{{ index + 1 }}</td>
-                    <td v-if="!isAirDoIcdContSealModal() && !isAirDupIcdContSealModal()">{{ record.type }}</td>
-                    <td v-if="!isAirDoIcdContSealModal() && !isAirDupIcdContSealModal()">{{ record.purpose }}</td>
+                    <td v-if="!isAirDoIcdContSealModal() && !isAirDupIcdContSealModal()">{{ isFclContSeal() ? contSealTypeLabel(record) : record.type }}</td>
+                    <td v-if="!isAirDoIcdContSealModal() && !isAirDupIcdContSealModal() && !isFclContSeal()">{{ record.purpose }}</td>
                     <td><input v-model.trim="record.container" :disabled="isReadonlyDoContSealModal() || !gsdModal.editing" @input="uppercaseDoContSealField(record, 'container')" /></td>
                     <td><input v-model.trim="record.seal" :disabled="isReadonlyDoContSealModal() || !gsdModal.editing" @input="uppercaseDoContSealField(record, 'seal')" /></td>
                   </tr>
                   <tr v-if="!doContSealRecords().length">
-                    <td :colspan="isAirDoIcdContSealModal() || isAirDupIcdContSealModal() ? 3 : 5" class="empty">No volume defined yet</td>
+                    <td :colspan="isAirDoIcdContSealModal() || isAirDupIcdContSealModal() ? 3 : isFclContSeal() ? 4 : 5" class="empty">No volume defined yet</td>
                   </tr>
                 </tbody>
               </table>
@@ -1804,7 +1804,8 @@
             <div v-if="!isReadonlyTruckContModal()" class="gsd-truck-toolbar">
               <button v-if="!isTcdTruckContModal()" class="wb-modal-btn primary" type="button" @click="addTruckContRecord">Add+</button>
               <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || !selectedTruckContIndexes().length" @click="enableTruckContEdit">Edit</button>
-              <button class="wb-modal-btn remove" type="button" :disabled="!selectedTruckContIndexes().length" @click="removeSelectedTruckContRecords">Remove -</button>
+              <button v-if="isTcdTruckContModal()" class="wb-modal-btn clear" type="button" :disabled="!truckContRecords().some(truckContRecordHasData)" @click="removeSelectedTruckContRecords">Clear</button>
+              <button v-else class="wb-modal-btn remove" type="button" :disabled="!selectedTruckContIndexes().length" @click="removeSelectedTruckContRecords">Remove -</button>
               <button v-if="showsTruckEpodExport()" class="wb-modal-btn primary epod" type="button" :disabled="!truckContRecords().length" @click="exportTruckEpod">Export ePOD</button>
             </div>
             <div class="gsd-truck-table-wrap gsd-five-row-scroll">
@@ -1934,7 +1935,7 @@
                       <span v-else>—</span>
                     </td>
                     <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()"><input v-model.trim="record.container" :disabled="!truckContRowCanEdit(record)" /></td>
-                    <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()"><input v-model.trim="record.contType" :disabled="!truckContRowCanEdit(record)" /></td>
+                    <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()"><input v-if="truckContRowCanEdit(record)" v-model.trim="record.contType" /><span v-else class="truck-conttype-view">{{ truckContTypeDisplay(record, index) }}</span></td>
                     <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()"><input v-model.trim="record.seal" :disabled="!truckContRowCanEdit(record)" /></td>
                     <td>
                       <span v-if="isAirDcdTruckingModal() && isReadonlyTruckContModal() && !record.driver">—</span>
@@ -2272,7 +2273,7 @@
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-div"></div>
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-sec-title">{{ isAwbDetailModal() ? 'HAWB DETAILS' : awbText('HBL DETAILS') }}</div>
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-rows">
-                  <div class="bd-row"><span class="bd-lab">SI RECEIVED:</span><input v-model="gsdModal.form.siReceived" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing" @change="syncBillDetailTimestamp('siReceived')" /><input v-model.trim="gsdModal.form.siReceivedAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><div class="bd-source-menu"><button class="bd-exportbtn" type="button" :disabled="!gsdModal.form.siReceived" @click="billExportMenuOpen = !billExportMenuOpen">{{ billSourceButtonLabel() }}<span class="bd-export-caret">&#9662;</span></button><div v-if="billExportMenuOpen" class="bd-export-dropdown bd-export-groups"><div class="bd-export-group"><label><input type="checkbox" :checked="billSourceMode() === 'export'" @change="setBillSourceMode('export')" /> Export (B/L, FCR)</label><div v-if="billSourceMode() === 'export'" class="bd-export-options"><button type="button" @click="selectBillDocumentExport('B/L')">Export B/L</button><button type="button" @click="selectBillDocumentExport('FCR')">Export FCR</button></div></div><div class="bd-export-group"><label><input type="checkbox" :checked="billSourceMode() === 'client'" @change="setBillSourceMode('client')" /> Use Client's B/L</label></div></div></div><template v-if="billSourceMode() === 'client'"><button class="booking-icon bd-client-upload" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.editing" title="Upload Customer B/L" @click="openBillDetailUpload('clientBlFile')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5" /></svg></button><button class="booking-eye" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.form.clientBlFile?.url" :title="gsdModal.form.clientBlFile?.url ? 'View Customer B/L' : 'No file attached'" @click="viewBillDetailFile(gsdModal.form.clientBlFile)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></template></div>
+                  <div class="bd-row"><span class="bd-lab">SI RECEIVED:</span><input v-model="gsdModal.form.siReceived" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing" @change="syncBillDetailTimestamp('siReceived')" /><input v-model.trim="gsdModal.form.siReceivedAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><div class="bd-source-menu"><button class="bd-exportbtn" type="button" :disabled="!gsdModal.form.siReceived" @click="billExportMenuOpen = !billExportMenuOpen">{{ billSourceButtonLabel() }}<span class="bd-export-caret">&#9662;</span></button><div v-if="billExportMenuOpen" class="bd-export-dropdown bd-export-groups"><div class="bd-export-group"><label class="bd-export-heading-check"><input type="checkbox" :checked="billSourceMode() === 'export'" disabled /> Export (B/L, FCR)</label><div class="bd-export-options"><div class="bd-export-pick" :class="{ picked: billSourceMode() === 'export' && billExportPicks().bl }"><button type="button" @click="selectBillDocumentExport('B/L')">Export B/L</button><span class="bd-export-tick" aria-hidden="true">✓</span></div><div class="bd-export-pick" :class="{ picked: billSourceMode() === 'export' && billExportPicks().fcr }"><button type="button" @click="selectBillDocumentExport('FCR')">Export FCR</button><span class="bd-export-tick" aria-hidden="true">✓</span></div></div></div><div class="bd-export-group"><label><input type="checkbox" :checked="billSourceMode() === 'client'" @change="setBillSourceMode('client')" /> Use Client's B/L</label></div></div></div><template v-if="billSourceMode() === 'client'"><button class="booking-icon bd-client-upload" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.editing" title="Upload Customer B/L" @click="openBillDetailUpload('clientBlFile')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5" /></svg></button><button class="booking-eye" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.form.clientBlFile?.url" :title="gsdModal.form.clientBlFile?.url ? 'View Customer B/L' : 'No file attached'" @click="viewBillDetailFile(gsdModal.form.clientBlFile)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></template></div>
                   <div class="bd-row"><span class="bd-lab">{{ isAwbDetailModal() ? 'HAWB APPROVED:' : awbText('HBL APPROVED:') }}</span><input v-model="gsdModal.form.hbl" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing || !gsdModal.form.siReceived" @change="syncBillTimestamp('hbl')" /><input v-model.trim="gsdModal.form.hblAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><button class="bd-eye" :class="{ on: !!gsdModal.form.hbl && (isAwbDetailModal() ? !!gsdModal.form.hblFile?.url : billBlReady()) }" type="button" :disabled="!gsdModal.form.hbl || (isAwbDetailModal() ? !gsdModal.form.hblFile?.url : !billBlReady())" :title="isAwbDetailModal() ? 'View HAWB file' : billSourceMode() === 'client' ? 'View Client B/L' : 'View Export B/L PDF'" @click="isAwbDetailModal() ? viewBillDetailFile(gsdModal.form.hblFile) : viewSelectedBillFile()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                 </div>
                 <input ref="billDetailFileInput" type="file" hidden @change="handleBillDetailFile" />
@@ -2391,10 +2392,8 @@
                 <span class="gsd-pre-label">{{ item.label }}</span>
                 <input v-model="gsdModal.form.chk[item.key]" class="gsd-pre-check" type="checkbox" :disabled="!gsdModal.editing || preAlertConfirmedLocked(item.key)" @change="syncPreAlertTimestamp(item.key)" />
                 <input v-model="gsdModal.form.at[item.key]" class="gsd-pre-date" type="text" readonly placeholder="Date & Time" />
-                <button class="gsd-pre-icon upload" :class="{ has: !!gsdModal.form.files[item.key] }" type="button" :disabled="!preAlertRowChecked(item.key)" title="Upload" @click="attachPreAlertFile(item.key)">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V5M8 9l4-4 4 4"/><path d="M5 14v4h14v-4"/></svg>
-                </button>
-                <button class="gsd-pre-icon eye" :class="{ on: !!gsdModal.form.files[item.key] }" type="button" :disabled="!gsdModal.form.files[item.key]" title="View" @click="viewPreAlertFile(item.key)">
+                <!-- MBL / HBL CONFIRMED files are linked from BILL DETAIL: view only, no upload here. -->
+                <button class="gsd-pre-icon eye" :class="{ on: !!gsdModal.form.files[item.key] }" type="button" :disabled="!gsdModal.form.files[item.key]" :title="gsdModal.form.files[item.key] ? 'View file from Bill Detail' : 'No file in Bill Detail'" @click="viewPreAlertFile(item.key)">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
               </div>
@@ -3376,7 +3375,8 @@
               <button class="wb-modal-btn" id="blExport" type="button" :disabled="!billDocModal.locked || billDocModal.exportingPdf" @click="printBillDocument">{{ billDocModal.exportingPdf ? 'Exporting...' : 'Export PDF' }}</button>
             </template>
             <template v-else>
-              <button class="wb-modal-btn primary" id="blSave" type="button" @click="saveBillDocument">Save</button>
+              <!-- Release: Save is enabled only after the Bill type changes. -->
+              <button class="wb-modal-btn primary" id="blSave" type="button" :disabled="billDocModal.billType === billDocModal.savedBillType" @click="saveBillDocument">Save</button>
               <button class="wb-modal-btn" id="blExport" type="button" :disabled="billDocModal.exportingPdf" @click="printBillDocument">{{ billDocModal.exportingPdf ? 'Exporting...' : 'Export PDF' }}</button>
             </template>
           </div>
@@ -9716,6 +9716,8 @@ const gsdActionButtonText = (row: number, column: number) => {
   if (label === 'NOTES') return String(rows.value[row]?.[column] || '').trim() ? 'DETAIL' : 'ADD+'
   if (label === 'REMINDER' || label === 'NOTICE') return 'VIEW'
   if (label === 'PRE-ALERT SENDING') return 'DETAIL'
+  // PRE-ALERT CONFIRMATION is never "ADD+": it opens as DETAIL (⚠ until confirmed).
+  if (label === 'PRE-ALERT CONFIRMATION') return 'DETAIL'
   // These columns always print their linked value, in every department.
   const linkedValueLabels = ['VOLUME', 'VESSEL/VOYAGE', 'VESSEL NAME', 'ROUTE', 'BC NO#', 'HBL NO#', 'HAWB NO#', 'MBL NO#', 'MAWB NO#', 'FREETIME CONFIRMATION']
   if (!linkedValueLabels.includes(label) && isReceivedOnlyActionCell(row, column)) return 'DETAIL'
@@ -9850,10 +9852,19 @@ const detailActionNeedsAttention = (row: number, column: number) => {
   if (['CLEARANCE DETAIL', 'CLEARANCE DETAILS', 'CUSTOMS CLEARANCE DETAILS'].includes(label)) {
     return clearanceDetailsNeedsAttention(rows.value[row]?.[column])
   }
-  // DO keeps the alert on PRE-ALERT CONFIRMATION until every confirmation is ticked.
-  if (label === 'PRE-ALERT CONFIRMATION' && isDoSheet() && row > 0) {
+  // BILL / AWB DETAIL keeps the alert until every required step is ticked.
+  if (['BILL DETAIL', 'BILL APPROVAL', 'AWB DETAIL'].includes(label) && row > 0) {
+    const value = rows.value[row]?.[column]
+    if (!billDetailHasData(value)) return false
+    const form: any = billApprovalFormFromCell(value)
+    const hblRequired = label === 'AWB DETAIL' || hblRequiredForRow(row)
+    return !(form.siSubmitted && form.mbl && (!hblRequired || (form.siReceived && form.hbl)))
+  }
+  // PRE-ALERT CONFIRMATION keeps the alert until every confirmation is ticked.
+  if (label === 'PRE-ALERT CONFIRMATION' && row > 0) {
     const form = preAlertConfirmationFormFromCell(rows.value[row]?.[column])
-    return !(form.mblConfirmed && form.hblConfirmed && form.mblReleased && form.hblReleased)
+    if (isDoSheet()) return !(form.mblConfirmed && form.hblConfirmed && form.mblReleased && form.hblReleased)
+    return !String(rows.value[row]?.[column] ?? '').trim() || !(form.mblConfirmed && form.hblConfirmed)
   }
   return isDetailActionButton(row, column) && !String(rows.value[row]?.[column] ?? '').trim() && !truckContHasLinkedVolume(row, column)
 }
@@ -10432,7 +10443,7 @@ const openPaymentNoteModal = (kind: 'DEBIT' | 'CREDIT', lines: Array<{ charge: s
   paymentNoteModal.open = true
 }
 const closePaymentNoteModal = () => { paymentNoteModal.open = false }
-const paymentNotePrintCss = `*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:'Segoe UI',Arial,sans-serif;color:#0e1512;font-size:12px}.payment-note-document{--acc:#008f4c;--wash:#e8f8ef;padding:0 0 10px}.payment-note-document.dn-credit{--acc:#d97706;--wash:#fdf0e0}.payment-note-topbar{height:6px;background:var(--acc)}.payment-note-head{display:flex;align-items:flex-start;gap:16px;padding:14px 6mm 0}.payment-note-logo{display:flex;align-items:center;flex:none;width:196px;height:46px}.payment-note-logo>b{display:grid;place-items:center;width:40px;height:40px;border-radius:9px;background:#008f4c;color:#fff;font-size:16px}.payment-note-logo>span{display:grid;margin-left:10px}.payment-note-logo strong{font-size:15px}.payment-note-logo small{margin-top:4px;color:#7a847d;font-size:9.5px;font-weight:700;letter-spacing:3px}.payment-note-company-wrap{flex:1;min-width:0}.payment-note-company{font-weight:800;font-size:14px}.payment-note-address{max-width:270px;margin-top:4px;color:#7a847d;font-size:10.5px;line-height:1.5}.payment-note-badge{flex:none;min-width:158px;padding:9px 15px;border:1px solid var(--acc);border-radius:10px;background:var(--wash);text-align:right}.payment-note-badge strong{display:block;color:var(--acc);font-size:16px}.payment-note-badge span{display:block;margin-top:4px;font-size:10px;line-height:1.6}.payment-note-meta{display:flex;gap:26px;padding:14px 6mm 0;font-size:11px}.payment-note-box{min-height:250px;margin:12px 6mm 0;border:1px solid #e4e9e2;border-radius:10px;overflow:hidden}.payment-note-table{width:100%;border-collapse:collapse;font-size:11.5px}.payment-note-table th{padding:9px 12px;background:var(--acc);color:#fff;text-align:left}.payment-note-table td{padding:8px 12px;border-top:1px solid #eef1ef}.payment-note-table th:nth-child(3){text-align:center}.payment-note-table th:last-child,.payment-note-table .amount,.payment-note-table .total-label{text-align:right}.payment-note-table tbody tr:nth-child(even) td{background:#fafbf9}.payment-note-table .total td{border-top:2px solid var(--acc);background:var(--wash);font-weight:800}.payment-note-table th:nth-child(-n+3),.payment-note-table td:nth-child(-n+3){text-align:center}.payment-note-table th:last-child,.payment-note-table td.amount{text-align:right}.payment-note-table .total-label{text-align:right!important}.payment-note-logo>b{display:flex;align-items:center;justify-content:center;line-height:1;padding:0;font-weight:800;letter-spacing:.5px;text-align:center}.payment-note-foot{display:flex;justify-content:space-between;gap:30px;padding:20px 6mm 0;font-size:11px;line-height:1.6}.payment-note-bank{max-width:54%}.payment-note-foot b{display:inline-block;margin-bottom:5px;color:var(--acc);font-size:10px}.payment-note-foot .issuer{text-align:center;min-width:200px}.payment-note-sign-space{height:44px}.payment-note-sign-line{width:172px;margin:0 auto 5px;border-top:1px solid #3a463f}.payment-note-foot .issuer strong{font-size:11px;color:#0e1512}@page{size:A4;margin:12mm}`
+const paymentNotePrintCss = `*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:'Segoe UI',Arial,sans-serif;color:#0e1512;font-size:12px}.payment-note-document{--acc:#008f4c;--wash:#e8f8ef;padding:0 0 10px}.payment-note-document.dn-credit{--acc:#d97706;--wash:#fdf0e0}.payment-note-topbar{height:6px;background:var(--acc)}.payment-note-head{display:flex;align-items:flex-start;gap:16px;padding:14px 6mm 0}.payment-note-logo{display:flex;align-items:center;flex:none;width:196px;height:46px}.payment-note-logo>b{display:grid;place-items:center;width:40px;height:40px;border-radius:9px;background:#008f4c;color:#fff;font-size:16px}.payment-note-logo>span{display:grid;margin-left:10px}.payment-note-logo strong{font-size:15px}.payment-note-logo small{margin-top:4px;color:#7a847d;font-size:9.5px;font-weight:700;letter-spacing:3px}.payment-note-company-wrap{flex:1;min-width:0}.payment-note-company{font-weight:800;font-size:14px}.payment-note-address{max-width:270px;margin-top:4px;color:#7a847d;font-size:10.5px;line-height:1.5}.payment-note-badge{flex:none;min-width:158px;padding:9px 15px;border:1px solid var(--acc);border-radius:10px;background:var(--wash);text-align:right}.payment-note-badge strong{display:block;color:var(--acc);font-size:16px}.payment-note-badge span{display:block;margin-top:4px;font-size:10px;line-height:1.6}.payment-note-meta{display:flex;gap:26px;padding:14px 6mm 0;font-size:11px}.payment-note-box{min-height:250px;margin:12px 6mm 0;border:1px solid #e4e9e2;border-radius:10px;overflow:hidden}.payment-note-table{width:100%;border-collapse:collapse;font-size:11.5px}.payment-note-table th{padding:9px 12px;background:var(--acc);color:#fff;text-align:left}.payment-note-table td{padding:8px 12px;border-top:1px solid #eef1ef}.payment-note-table th:nth-child(3){text-align:center}.payment-note-table th:last-child,.payment-note-table .amount,.payment-note-table .total-label{text-align:right}.payment-note-table tbody tr:nth-child(even) td{background:#fafbf9}.payment-note-table .total td{border-top:2px solid var(--acc);background:var(--wash);font-weight:800}.payment-note-table th:nth-child(-n+3),.payment-note-table td:nth-child(-n+3){text-align:center}.payment-note-table th:last-child,.payment-note-table td.amount{text-align:right}.payment-note-table .total-label{text-align:right!important}.payment-note-logo>b{display:block;line-height:40px;height:40px;padding:0;font-weight:800;letter-spacing:.5px;text-align:center}.payment-note-foot{display:flex;justify-content:space-between;gap:30px;padding:20px 6mm 0;font-size:11px;line-height:1.6}.payment-note-bank{max-width:54%}.payment-note-foot b{display:inline-block;margin-bottom:5px;color:var(--acc);font-size:10px}.payment-note-foot .issuer{text-align:center;min-width:200px}.payment-note-sign-space{height:44px}.payment-note-sign-line{width:172px;margin:0 auto 5px;border-top:1px solid #3a463f}.payment-note-foot .issuer strong{font-size:11px;color:#0e1512}@page{size:A4;margin:12mm}`
 const printPaymentNote = async () => {
   const documentEl = document.getElementById('payment-note-document')
   if (!documentEl || paymentNoteModal.exporting) return
@@ -15505,8 +15516,8 @@ const sendPickupToTarget = async () => {
         shipmentLink: settings.value?.opsRowLinks?.[String(gsdModal.row)] || '',
         to: gsdModal.form.picEmail,
         shipper: rowValueByHeader('SHIPPER'),
-        shipperName: emailCellDisplayValue('SHIPPER', rowValueByHeader('SHIPPER')),
-        consigneeName: emailCellDisplayValue('CNEE', rowValueByHeader('CNEE')),
+        shipperName: clientCellTitle(rowValueByHeader('SHIPPER')) || emailCellDisplayValue('SHIPPER', rowValueByHeader('SHIPPER')),
+        consigneeName: clientCellTitle(rowValueByHeader('CNEE')) || emailCellDisplayValue('CNEE', rowValueByHeader('CNEE')),
         target,
         jobNo: rowValueByHeader('JOB NO#') || rowValueByHeader('REF#'),
         refNo: rowValueByHeader('REF#'),
@@ -16278,6 +16289,13 @@ const seedTruckRowsFromVolumeLines = (form: any) => {
   form.records = [...current, ...Array.from({ length: lines - current.length }, () => emptyTruckContRecord())]
   return form
 }
+// FCL CONT/SEAL INFO: no Purpose column; Type shows size + purpose together (20HQ).
+const isFclContSeal = () => upperText(opsParts.value?.mode) === 'FCL'
+const contSealTypeLabel = (record: any) => {
+  const type = upperText(record?.type || '').replace(/\s+/g, '')
+  const purpose = upperText(record?.purpose || '').replace(/\s+/g, '')
+  return purpose && !type.endsWith(purpose) ? `${type}${purpose}` : type
+}
 const truckContRecords = () => (Array.isArray(gsdModal.form.records) ? gsdModal.form.records : [emptyTruckContRecord()]) as TruckContRecord[]
 const truckPuNumber = (index: number) => {
   const reference = upperText(rowValueByHeader('REF#') || rowValueByHeader('REF NO#') || 'REF').trim()
@@ -16537,10 +16555,25 @@ const cancelTruckContEdit = () => {
   truckCompanyPicker.open = false
   truckCompanyPicker.index = -1
 }
+// ContType shown like the VOLUME column: quantity x type, e.g. 1X20GP.
+const truckContTypeDisplay = (record: TruckContRecord, index: number) => {
+  const type = upperText(record.contType || '').replace(/\s+/g, '')
+  if (!type) return '—'
+  const volume: any = volumeFormFromCell(rowValueByHeader('VOLUME')).records[index]
+  const quantity = String(volume?.volume ?? '').trim()
+  return quantity ? `${quantity}X${type}` : type
+}
+const truckContRecordHasData = (record: TruckContRecord) =>
+  ['truck', 'container', 'seal', 'driver', 'eta1', 'eta2', 'gdate', 'gtime'].some((key) => String((record as any)[key] || '').trim())
 const removeSelectedTruckContRecords = async () => {
-  const indexes = new Set(selectedTruckContIndexes())
+  // TCD "Clear": clears the entered data of the selected rows (all rows when none is
+  // selected); the rows themselves come from VOLUME and stay.
+  const selected = selectedTruckContIndexes()
+  const indexes = new Set(isTcdTruckContModal() && !selected.length ? truckContRecords().map((_, index) => index) : selected)
   if (!indexes.size) return
-  const ok = await askConfirm('Are you sure to remove?', '', { okText: 'OK', cancelText: 'Cancel', tone: 'remove' })
+  const ok = isTcdTruckContModal()
+    ? await askConfirm(selected.length ? 'Clear the entered data of the selected row(s)?' : 'Clear all entered truck & cont/seal data?', '', { okText: 'YES', cancelText: 'NO', tone: 'remove' })
+    : await askConfirm('Are you sure to remove?', '', { okText: 'OK', cancelText: 'Cancel', tone: 'remove' })
   if (!ok) return
   if (!gsdModal.editing) {
     gsdModal.form.editRecordsSnapshot = JSON.stringify(truckContRecords())
@@ -17869,7 +17902,7 @@ const persistBillSourceMode = async () => {
   const savedForm = container && typeof container.form === 'object' ? container.form : {}
   rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({
     ...container,
-    form: { ...savedForm, billSourceMode: billSourceMode() },
+    form: { ...savedForm, billSourceMode: billSourceMode(), billExportDocs: billExportPicks() },
   })
   const saved = await saveSheet()
   if (!saved) return
@@ -17889,7 +17922,11 @@ const closeBillReleaseMenuOnOutside = (event: MouseEvent) => {
   const target = event.target as HTMLElement | null
   if (!target?.closest('.release-send-menu')) billReleaseTargetMenuOpen.value = false
 }
-const billBlReady = () => billSourceMode() === 'client' ? !!gsdModal.form.clientBlFile?.url : !!gsdModal.form.exportBl
+const billBlReady = () => {
+  if (billSourceMode() === 'client') return !!gsdModal.form.clientBlFile?.url
+  const picks = billExportPicks()
+  return (picks.bl || picks.fcr) && (!picks.bl || !!gsdModal.form.exportBl) && (!picks.fcr || !!gsdModal.form.exportFcr)
+}
 const billDetailCanSend = () => !gsdModal.form.sentAt && !!gsdModal.form.mbl && !!gsdModal.form.siReceived && billBlReady()
 const handleBillDetailFile = async (event: Event) => {
   const input = event.target as HTMLInputElement
@@ -18050,9 +18087,9 @@ const billReleaseTargetMenuOpen = ref(false)
 const billReleaseSendModal = reactive<{ open: boolean; target: 'shipper' | 'destination'; to: string; cc: string; hint: string; sending: boolean }>({ open: false, target: 'shipper', to: '', cc: '', hint: '', sending: false })
 const billDocumentExportsForRow = (row: number) => {
   const index = (rows.value[0] || []).findIndex((_: any, column: number) => ['BILL DETAIL', 'BILL APPROVAL', 'AWB DETAIL'].includes(normalizedHeaderLabel(column)))
-  if (index < 0) return { exportBl: '', exportFcr: '', billSourceMode: 'export', clientBlFile: null as any, sentAt: '' }
+  if (index < 0) return { exportBl: '', exportFcr: '', billSourceMode: 'export', billExportDocs: undefined as any, clientBlFile: null as any, sentAt: '' }
   const form = billApprovalFormFromCell(rows.value[row]?.[index])
-  return { exportBl: String(form.exportBl || ''), exportFcr: String(form.exportFcr || ''), billSourceMode: form.billSourceMode, clientBlFile: form.clientBlFile, sentAt: String(form.sentAt || '') }
+  return { exportBl: String(form.exportBl || ''), exportFcr: String(form.exportFcr || ''), billSourceMode: form.billSourceMode, billExportDocs: form.billExportDocs, clientBlFile: form.clientBlFile, sentAt: String(form.sentAt || '') }
 }
 const savedExportBillReady = (value: any) => {
   if (!String(value || '').trim()) return false
@@ -18078,7 +18115,7 @@ const releaseSelectedBillReady = () => {
   if (!billReleasePreAlertHasHbl()) return !!gsdModal.form.mblFile?.url
   return documents.billSourceMode === 'client'
     ? !!documents.clientBlFile?.url
-    : savedExportBillReady(documents.exportBl)
+    : pickedExportBillsReady(documents)
 }
 const releaseBillTo = (target: 'shipper' | 'destination') => {
   billReleaseTargetMenuOpen.value = false
@@ -18105,7 +18142,7 @@ const releaseBillTo = (target: 'shipper' | 'destination') => {
     showToast(`${target === 'destination' ? 'Destination Agent' : 'Shipper'} does not have a valid email`)
     return
   }
-  const selectedHblMissing = documents.billSourceMode === 'client' ? !documents.clientBlFile?.url : !savedExportBillReady(documents.exportBl)
+  const selectedHblMissing = documents.billSourceMode === 'client' ? !documents.clientBlFile?.url : !pickedExportBillsReady(documents)
   if ((hasHbl && selectedHblMissing) || (!hasHbl && !gsdModal.form.mblFile?.url)) {
     showToast(hasHbl
       ? documents.billSourceMode === 'client' ? 'Upload Customer B/L before releasing it' : 'Save Export B/L before releasing it'
@@ -18141,7 +18178,7 @@ const confirmBillReleaseToShipper = async () => {
     billReleaseSendModal.hint = 'Attach both MBL Release and HBL Release files before releasing to Destination Agent'
     return
   }
-  const selectedHblMissing = documents.billSourceMode === 'client' ? !documents.clientBlFile?.url : !savedExportBillReady(documents.exportBl)
+  const selectedHblMissing = documents.billSourceMode === 'client' ? !documents.clientBlFile?.url : !pickedExportBillsReady(documents)
   if ((hasHbl && selectedHblMissing) || (!hasHbl && !gsdModal.form.mblFile?.url)) {
     billReleaseSendModal.hint = hasHbl
       ? documents.billSourceMode === 'client' ? 'Upload Customer B/L before releasing it' : 'Save Export B/L before releasing it'
@@ -18156,7 +18193,13 @@ const confirmBillReleaseToShipper = async () => {
     const hblAttachments = hasHbl
       ? documents.billSourceMode === 'client'
         ? [clientBillEmailAttachment(documents.clientBlFile)]
-        : [await uploadBillEmailPdf(await renderSavedBillAttachment('B/L', documents.exportBl, true), `B-L_${safeJobNo}.pdf`)]
+        : await (async () => {
+          const picks = billExportPicks(documents)
+          const files = [] as any[]
+          if (picks.bl && documents.exportBl) files.push(await uploadBillEmailPdf(await renderSavedBillAttachment('B/L', documents.exportBl, true), `B-L_${safeJobNo}.pdf`))
+          if (picks.fcr && documents.exportFcr) files.push(await uploadBillEmailPdf(await renderSavedBillAttachment('FCR', documents.exportFcr, true), `FCR_${safeJobNo}.pdf`))
+          return files
+        })()
       : []
     const attachments = billReleaseSendModal.target === 'destination'
       ? [clientBillEmailAttachment(gsdModal.form.mblFile), ...hblAttachments]
@@ -18305,7 +18348,7 @@ const confirmBillSend = async () => {
     return
   }
   if (!billBlReady()) {
-    billSendModal.hint = billSourceMode() === 'client' ? "Upload Client's B/L before sending" : 'Save Export B/L before sending'
+    billSendModal.hint = billSourceMode() === 'client' ? "Upload Client's B/L before sending" : 'Tick and save the Export B/L / FCR to send'
     return
   }
   billSendModal.sending = true
@@ -18313,12 +18356,13 @@ const confirmBillSend = async () => {
   try {
     const jobNo = String(rowValueByHeader('JOB NO#') || rowValueByHeader('REF#') || 'DOCUMENT').trim()
     const safeJobNo = jobNo.replace(/[^a-zA-Z0-9_-]+/g, '_')
-    const attachments = billSourceMode() === 'client'
-      ? [clientBillEmailAttachment(gsdModal.form.clientBlFile)]
-      : [await uploadBillEmailPdf(await renderSavedBillAttachment('B/L', gsdModal.form.exportBl), `B-L_${safeJobNo}.pdf`)]
-    if (billSourceMode() === 'export' && gsdModal.form.exportFcr) {
-      const fcrBlob = await renderSavedBillAttachment('FCR', gsdModal.form.exportFcr)
-      attachments.push(await uploadBillEmailPdf(fcrBlob, `FCR_${safeJobNo}.pdf`))
+    const picks = billExportPicks()
+    const attachments = billSourceMode() === 'client' ? [clientBillEmailAttachment(gsdModal.form.clientBlFile)] : []
+    if (billSourceMode() === 'export' && picks.bl && gsdModal.form.exportBl) {
+      attachments.push(await uploadBillEmailPdf(await renderSavedBillAttachment('B/L', gsdModal.form.exportBl), `B-L_${safeJobNo}.pdf`))
+    }
+    if (billSourceMode() === 'export' && picks.fcr && gsdModal.form.exportFcr) {
+      attachments.push(await uploadBillEmailPdf(await renderSavedBillAttachment('FCR', gsdModal.form.exportFcr), `FCR_${safeJobNo}.pdf`))
     }
     await props.request('/workbook/send-bill-email', {
       method: 'POST',
@@ -18338,7 +18382,7 @@ const confirmBillSend = async () => {
     gsdModal.form.sentCc = cc.join(', ')
     billSendModal.open = false
     await saveBillApproval()
-    showToast(billSourceMode() === 'export' && gsdModal.form.exportFcr ? 'B/L and FCR sent to Shipper' : 'B/L sent to Shipper')
+    showToast(billSourceMode() === 'client' ? 'B/L sent to Shipper' : [billExportPicks().bl && gsdModal.form.exportBl ? 'B/L' : '', billExportPicks().fcr && gsdModal.form.exportFcr ? 'FCR' : ''].filter(Boolean).join(' and ') + ' sent to Shipper')
   } catch (error: any) {
     billSendModal.hint = error?.data?.message || error?.message || 'Could not send B/L email'
   } finally {
@@ -18346,29 +18390,78 @@ const confirmBillSend = async () => {
   }
 }
 const sendBillDetailToShipper = openBillSendModal
+// Bill Release -> Analysis "Approval List": every charge line APPROVED in Payment
+// Approval becomes one row - the pay side in PaymentList, the collect side in
+// CollectionList. "Collect later" sets the CollectionDeadline of the collect rows.
 const syncCollectionDeadlineToApprovalList = async () => {
   if (!isEcdPaymentOnlyBillRelease()) return
   const ref = String(rowValueByHeader('REF#') || rowValueByHeader('JOB NO#')).trim()
   if (!ref) return
   const deadline = gsdModal.form.collectLater ? String(gsdModal.form.deadline || '') : ''
-  const response = await props.request('/records?country=GLOBAL&page=analysis_collectionlist&limit=1000&skip=0')
-  const records = Array.isArray(response?.items) ? response.items : []
-  const matches = records.filter((record: any) => upperText(record?.data?.ref || '') === upperText(ref))
-  const data = {
+  const payment = paymentRequestFromCell(rowValueByHeader('PAYMENT REQUEST') || rowValueByHeader('PAYMENT REQUEST APPLICATION'))
+  const approved = payment.lines.filter((line: any) => upperText(line.status || '') === 'APPROVED')
+  const route = routeFromCellValue(rowValueByHeader('ROUTE')) as any
+  const vessel = vesselFromCellValue(rowValueByHeader('VESSEL/VOYAGE')) as any
+  const isoDate = (value: any) => {
+    const date = parseOpsDate(String(value || '').trim().slice(0, 10))
+    return date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : ''
+  }
+  const shipment = {
     ref, type: String(opsParts.value?.type || ''), typeplus: preAlertForwardingOption(),
     bu: rowValueByHeader('BU'), sales: rowValueByHeader('SALES'),
     ops: rowValueByHeader('ECD OPS') || rowValueByHeader('OPS'),
-    clientcode: rowValueByHeader('CLIENT'), shippercode: rowValueByHeader('SHIPPER'), cneecode: rowValueByHeader('CNEE'),
-    hbl: rowValueByHeader('HBL NO#'), mbl: rowValueByHeader('MBL NO#'),
-    collectiondeadline: deadline, deadlinedate: deadline,
+    clientcode: clientCellText(rowValueByHeader('CLIENT')), shippercode: clientCellText(rowValueByHeader('SHIPPER')), cneecode: clientCellText(rowValueByHeader('CNEE')),
+    hbl: linkedDocumentNumber(rowValueByHeader('HBL NO#')), mbl: linkedDocumentNumber(rowValueByHeader('MBL NO#')),
+    pol: String(route?.polCode || route?.pol || ''), pod: String(route?.podCode || route?.pod || ''),
+    vesselvoyage: vessel ? [vessel.name, vessel.voyage].filter(Boolean).join(' / ') : '',
   }
-  if (matches.length) {
-    await Promise.all(matches.map((record: any) => props.request(`/records/${record.id}`, {
-      method: 'PATCH',
-      body: { country: record.country, page: record.page, kind: record.kind, data: { ...(record.data || {}), ...data }, sortOrder: record.sortOrder || 0 },
-    })))
-  } else if (deadline) {
-    await props.request('/records', { method: 'POST', body: { country: 'GLOBAL', page: 'analysis_collectionlist', kind: 'analysis-statistics', data, sortOrder: 0 } })
+  const plan = [
+    {
+      page: 'analysis_paymentlist',
+      rows: approved.filter((line: any) => String(line.payTo || '').trim() && String(line.totalPay || '').trim()).map((line: any) => ({
+        ...shipment,
+        lineid: `${ref}:${line.id}:pay`,
+        approveddate: isoDate(line.approvedAt),
+        chargename: String(line.chargeName || ''), amount: String(line.totalPay || '').replace(/,/g, ''), currency: String(line.curPay || ''),
+        payto: String(line.payTo || ''), namecode: String(line.payTo || ''), payat: String(line.payAt || ''),
+        debitno: String(line.idnNo || ''), debitdate: isoDate(line.idnDate),
+        invoiceno: String(line.iinvNo || ''), invoicedate: isoDate(line.iinvDate),
+      })),
+    },
+    {
+      page: 'analysis_collectionlist',
+      rows: approved.filter((line: any) => String(line.collectFrom || '').trim() && String(line.totalCollect || '').trim()).map((line: any) => ({
+        ...shipment,
+        lineid: `${ref}:${line.id}:collect`,
+        approveddate: isoDate(line.approvedAt),
+        chargename: String(line.chargeName || ''), amount: String(line.totalCollect || '').replace(/,/g, ''), currency: String(line.curCollect || ''),
+        collectfrom: String(line.collectFrom || ''), namecode: String(line.collectFrom || ''), collectat: String(line.collectAt || ''),
+        debitno: String(line.ednNo || ''), debitdate: isoDate(line.ednDate),
+        invoiceno: String(line.einvNo || ''), invoicedate: isoDate(line.einvDate),
+        collectiondeadline: deadline, deadlinedate: deadline,
+      })),
+    },
+  ]
+  for (const { page, rows: wanted } of plan) {
+    const response = await props.request(`/records?country=GLOBAL&page=${page}&limit=1000&skip=0`)
+    const records = (Array.isArray(response?.items) ? response.items : []) as any[]
+    const sameRef = records.filter((record) => upperText(record?.data?.ref || '') === upperText(ref))
+    const byLine = new Map(sameRef.filter((record) => record?.data?.lineid).map((record) => [String(record.data.lineid), record]))
+    const writes: Promise<any>[] = []
+    for (const data of wanted) {
+      const existing = byLine.get(data.lineid)
+      // Keep what the Approval List itself filled in (paid/received dates, etc.).
+      writes.push(existing
+        ? props.request(`/records/${existing.id}`, { method: 'PATCH', body: { country: existing.country, page: existing.page, kind: existing.kind, data: { ...(existing.data || {}), ...data }, sortOrder: existing.sortOrder || 0 } })
+        : props.request('/records', { method: 'POST', body: { country: 'GLOBAL', page, kind: 'analysis-statistics', data, sortOrder: 0 } }))
+    }
+    // Older single summary row for this ref (no charge line): keep its deadline in sync.
+    if (page === 'analysis_collectionlist') {
+      for (const legacy of sameRef.filter((record) => !record?.data?.lineid)) {
+        writes.push(props.request(`/records/${legacy.id}`, { method: 'PATCH', body: { country: legacy.country, page: legacy.page, kind: legacy.kind, data: { ...(legacy.data || {}), collectiondeadline: deadline, deadlinedate: deadline }, sortOrder: legacy.sortOrder || 0 } }))
+      }
+    }
+    await Promise.all(writes)
   }
 }
 const saveBillApproval = async (waitForPersistence: boolean | Event = true) => {
@@ -18510,7 +18603,21 @@ const linkedVesselText = (value: any) => {
   const vessel = vesselFromCellValue(value)
   return vessel ? [vessel.name, vessel.voyage].filter(Boolean).join(' / ') : ''
 }
+// Which exported documents go out with B/L mails. Older records without a choice
+// keep the previous behaviour: whatever was exported is sent.
+// Every ticked export document is saved, and at least one is ticked.
+const pickedExportBillsReady = (documents: any) => {
+  const picks = billExportPicks(documents)
+  return (picks.bl || picks.fcr) && (!picks.bl || savedExportBillReady(documents.exportBl)) && (!picks.fcr || savedExportBillReady(documents.exportFcr))
+}
+const billExportPicks = (form: any = gsdModal.form) => {
+  // Exactly one exported document is chosen: B/L or FCR.
+  const picks = form?.billExportDocs
+  if (picks && typeof picks === 'object' && (picks.bl || picks.fcr)) return picks.fcr && !picks.bl ? { bl: false, fcr: true } : { bl: true, fcr: false }
+  return !form?.exportBl && !!form?.exportFcr ? { bl: false, fcr: true } : { bl: true, fcr: false }
+}
 const selectBillDocumentExport = (kind: 'B/L' | 'FCR') => {
+  gsdModal.form.billExportDocs = { bl: kind === 'B/L', fcr: kind === 'FCR' }
   gsdModal.form.billSourceMode = 'export'
   billExportMenuOpen.value = false
   void persistBillSourceMode()
@@ -18522,14 +18629,15 @@ const openBillDocument = async (kind: 'B/L' | 'FCR', isRelease = false) => {
     showToast('Tick SI RECEIVED before exporting a document')
     return
   }
-  let stored = kind === 'B/L' ? gsdModal.form.exportBl : gsdModal.form.exportFcr
+  // B/L and FCR share one set of data; only the document title differs.
+  let stored = (kind === 'B/L' ? gsdModal.form.exportBl : gsdModal.form.exportFcr) || gsdModal.form.exportBl || gsdModal.form.exportFcr
   let sentAt = gsdModal.form.sentAt
   if (isRelease) {
     const headers = rows.value[0] || []
     const index = headers.findIndex((_: any, i: number) => ['BILL DETAIL', 'BILL APPROVAL', 'AWB DETAIL'].includes(normalizedHeaderLabel(i)))
     if (index >= 0) {
       const detailForm = billApprovalFormFromCell(rows.value[gsdModal.row]?.[index])
-      stored = kind === 'B/L' ? detailForm.exportBl : detailForm.exportFcr
+      stored = (kind === 'B/L' ? detailForm.exportBl : detailForm.exportFcr) || detailForm.exportBl || detailForm.exportFcr
       sentAt = detailForm.sentAt
     }
   }
@@ -18551,7 +18659,7 @@ const openBillDocument = async (kind: 'B/L' | 'FCR', isRelease = false) => {
   const masterSiContainers = billContainersFromMasterSi()
   const sameAsConsignee = !!saved?.sameAsConsignee || /^\(?SAME AS CONSIGNEE\)?$/i.test(String(saved?.notify || '').trim())
   Object.assign(billDocModal, {
-    open: true, readonly: !isRelease && isReadonlyExwFclEcdBillDetail(), isRelease, billType: saved?.billType || 'ORIGINAL B/L',
+    open: true, readonly: !isRelease && isReadonlyExwFclEcdBillDetail(), isRelease, billType: saved?.billType || 'ORIGINAL B/L', savedBillType: saved?.billType || 'ORIGINAL B/L',
     kind, company: saved?.company || 'TX LOGISTICS VIETNAM CO.,LTD', copySi: false,
     locked: isRelease || isReadonlyExwFclEcdBillDetail() ? true : !!saved?.locked, attachments: Number(saved?.attachments || 0), savedAt: saved?.savedAt || '',
     docNo: saved?.docNo || rowValueByHeader('HBL NO#'), refNo: saved?.refNo || rowValueByHeader('REF#'),
@@ -18619,11 +18727,12 @@ const saveBillDocument = async () => {
     const index = headers.findIndex((_: any, i: number) => ['BILL DETAIL', 'BILL APPROVAL', 'AWB DETAIL'].includes(normalizedHeaderLabel(i)))
     if (index >= 0) {
       const detailForm = billApprovalFormFromCell(rows.value[gsdModal.row]?.[index])
-      if (billDocModal.kind === 'B/L') detailForm.exportBl = data
-      else detailForm.exportFcr = data
+      // Same content for both documents.
+      detailForm.exportBl = data
+      detailForm.exportFcr = data
       rows.value[gsdModal.row][index] = JSON.stringify({ form: { ...detailForm } })
-      if (billDocModal.kind === 'B/L') gsdModal.form.exportBl = data
-      else gsdModal.form.exportFcr = data
+      gsdModal.form.exportBl = data
+      gsdModal.form.exportFcr = data
       // Reflect the saved document immediately and persist it once in the
       // background. Waiting for a full worksheet refresh made this small
       // modal action feel unnecessarily slow.
@@ -18635,10 +18744,12 @@ const saveBillDocument = async () => {
       return
     }
   } else {
-    if (billDocModal.kind === 'B/L') gsdModal.form.exportBl = data
-    else gsdModal.form.exportFcr = data
+    // Same content for both documents: saving one also fills the other.
+    gsdModal.form.exportBl = data
+    gsdModal.form.exportFcr = data
     await saveBillApproval(false)
   }
+  billDocModal.savedBillType = billDocModal.billType
   showToast(`${billDocModal.kind} saved`)
 }
 const printBillDocument = async (download: boolean | Event = true): Promise<Blob | null> => {
@@ -18677,6 +18788,16 @@ const printBillDocument = async (download: boolean | Event = true): Promise<Blob
       renderSheet.querySelectorAll<HTMLElement>('.co-mark > span').forEach((value) => {
         value.style.position = 'relative'
         value.style.top = '-2px'
+      })
+      // Header labels of the goods (Marks & Nos.) and Container & Seal tables are drawn
+      // low by html2canvas and touch the bottom border: lift only the text, not the cell.
+      renderSheet.querySelectorAll<HTMLElement>('.ctab thead th').forEach((cell) => {
+        const label = document.createElement('span')
+        label.style.position = 'relative'
+        label.style.top = '-4px'
+        label.style.display = 'inline-block'
+        while (cell.firstChild) label.appendChild(cell.firstChild)
+        cell.appendChild(label)
       })
       const sourceSelects = Array.from(sheet.querySelectorAll<HTMLSelectElement>('select'))
       renderSheet.querySelectorAll<HTMLSelectElement>('select').forEach((select, selectIndex) => {
@@ -18913,11 +19034,19 @@ const exportDeliveryOrderPdf = async (download = true) => {
     const margin = 5
     const printableWidth = pageWidth - margin * 2
     const printableHeight = pageHeight - margin * 2
+    // Keep the Delivery Order on ONE page: shrink the whole document when it is
+    // taller than A4 instead of cutting it into a second page.
+    const fullHeightMm = canvas.height * (printableWidth / canvas.width)
+    const fitOnePage = fullHeightMm > printableHeight && fullHeightMm <= printableHeight * 1.6
+    if (fitOnePage) {
+      const fitWidth = printableWidth * (printableHeight / fullHeightMm)
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin + (printableWidth - fitWidth) / 2, margin, fitWidth, printableHeight, undefined, 'FAST')
+    }
     const ratio = printableWidth / canvas.width
     const pageSliceHeight = Math.max(1, Math.floor(printableHeight / ratio))
     const canvasScale = canvas.width / Math.max(1, sheetRect.width)
     const protectedRanges = atomicRanges.map((range) => ({ top: Math.floor(range.top * canvasScale), bottom: Math.ceil(range.bottom * canvasScale) }))
-    let sourceY = 0
+    let sourceY = fitOnePage ? canvas.height : 0
     let pageIndex = 0
     while (sourceY < canvas.height) {
       const nominalEnd = Math.min(sourceY + pageSliceHeight, canvas.height)
@@ -19147,11 +19276,14 @@ const hydratePreAlertFromBillDetail = () => {
   const bill = billApprovalFormFromCell(preAlertSourceCell('BILL DETAIL', 'AWB DETAIL'))
   gsdModal.form.chk.mc = !!bill.mbl
   gsdModal.form.at.mc = String(bill.mblAt || '')
+  // Files always mirror BILL DETAIL (no local upload for these two rows any more).
   if (bill.mblFile?.name) gsdModal.form.files.mc = { name: String(bill.mblFile.name), url: String(bill.mblFile.url || bill.mblFile.dataUrl || '') }
+  else delete gsdModal.form.files.mc
   if (preAlertHasHbl()) {
     gsdModal.form.chk.hc = !!bill.hbl
     gsdModal.form.at.hc = String(bill.hblAt || '')
     if (bill.hblFile?.name) gsdModal.form.files.hc = { name: String(bill.hblFile.name), url: String(bill.hblFile.url || bill.hblFile.dataUrl || '') }
+    else delete gsdModal.form.files.hc
   } else {
     gsdModal.form.chk.hc = false
     gsdModal.form.chk.hr = false
@@ -20815,6 +20947,12 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
             if (!exportLinked) throw new Error(`Could not create the linked ${exportService} ECD record`)
           }
         }
+        // Linked import/export shipment: the new ICD row only gets the GSD columns up to
+        // CLIENT, so fill the following columns ICD shares with the export ECD row.
+        if (useAtomicIcdDispatch && sourceParts) {
+          void fillIcdFromLinkedExport(sourceParts, sourceHeader, sourceRow, row, sourceState.settings, shipmentLink, sourceCountry)
+            .catch((error) => console.warn('Could not copy linked export data to ICD', error))
+        }
         // The atomic backend request assigns the receiving department owner.
         // Mirror that owner back to GSD after both SENT ECD and SENT ICD so the
         // source worksheet immediately shows who received the shipment.
@@ -21012,6 +21150,56 @@ const nextOpsLeafKey = () => {
   const index = depts.indexOf(parsed.dept)
   const nextDept = index >= 0 ? depts[index + 1] : null
   return nextDept ? opsLeafKey(parsed.base, parsed.mode, parsed.type, nextDept) : ''
+}
+// Columns that belong to each department itself and are never copied across.
+const OWN_DEPT_COLUMNS = new Set(['TIME', 'MODE', 'BU', 'DEALT INFO', 'EXTRA SERVICE', 'PAYMENT REQUEST', 'EXPENSE/COLLECT LIST', 'NOTICE', 'REMINDER', 'SALES', 'JOB NO#', 'NOTES', 'ACTION', 'SENT ECD', 'SENT ICD', 'SENT E/ICD', 'CLIENT'])
+const fillIcdFromLinkedExport = async (
+  sourceParts: NonNullable<ReturnType<typeof parseOpsKey>>,
+  gsdHeader: string[], gsdRow: any[], gsdRowIndex: number, gsdSettings: Record<string, any>,
+  shipmentLink: string, country: string,
+) => {
+  const flowColumn = gsdHeader.findIndex((label) => upperText(label) === `${upperText(sourceParts.type)}+`)
+  const linkInfo = (gsdSettings?.crossServiceLinks || {})[String(gsdRowIndex)] || {}
+  const exportType = upperText(linkInfo.counterpartType || (flowColumn >= 0 ? gsdRow[flowColumn] : ''))
+  if (!['EXW', 'FCA', 'FCF'].includes(exportType)) return
+  const load = async (key: string, header: string[]) => {
+    const storageKey = sheetStorageKey(key, country)
+    const sheet = await props.request(`/workbook/sheets/${encodeURIComponent(storageKey)}`)
+    const extracted = extractWorkbookRows(Array.isArray(sheet?.rows) ? sheet.rows.map((item: any[]) => [...item]) : [], sheet)
+    return { storageKey, sheet, extracted, header, rows: alignRowsToHeader(extracted.rows, header).rows, settings: extracted.settings || sheet?.settings || {} }
+  }
+  const exportBase = opsBaseForType(exportType as any)
+  const ecd = await load(opsLeafKey(exportBase, sourceParts.mode, exportType as any, 'ECD'), opsHeaderFor(exportBase, sourceParts.mode, 'ECD', exportType as any))
+  const jobColumn = gsdHeader.indexOf('JOB NO#')
+  const jobNo = jobColumn >= 0 ? String(gsdRow[jobColumn] || '').trim() : ''
+  let ecdRow = ecd.rows.findIndex((item, index) => index > 0 && opsShipmentLink(ecd.header, item, index, ecd.settings) === shipmentLink)
+  if (ecdRow < 1 && jobNo) ecdRow = ecd.rows.findIndex((item, index) => index > 0 && String(item[ecd.header.indexOf('JOB NO#')] || '').trim() === jobNo)
+  if (ecdRow < 1) return
+  const icd = await load(opsLeafKey(sourceParts.base, sourceParts.mode, sourceParts.type, 'ICD'), opsHeaderFor(sourceParts.base, sourceParts.mode, 'ICD', sourceParts.type))
+  const icdRow = icd.rows.findIndex((item, index) => index > 0 && opsShipmentLink(icd.header, item, index, icd.settings) === shipmentLink)
+  if (icdRow < 1) return
+  const clientColumn = icd.header.indexOf('CLIENT')
+  let changed = false
+  icd.header.forEach((label, column) => {
+    const name = upperText(label)
+    if (column <= clientColumn || OWN_DEPT_COLUMNS.has(name) || / OPS$/.test(name) || name.endsWith('+')) return
+    const sourceColumn = ecd.header.findIndex((item) => upperText(item) === name)
+    if (sourceColumn < 0) return
+    const value = ecd.rows[ecdRow][sourceColumn]
+    // Only fill what ICD has not entered itself.
+    if (!String(value ?? '').trim() || String(icd.rows[icdRow][column] ?? '').trim()) return
+    icd.rows[icdRow][column] = value
+    changed = true
+  })
+  if (!changed) return
+  await patchLoadedWorkbookSheet(icd.storageKey, icd.sheet, { rows: [...icd.rows, [workbookMetaMarker, JSON.stringify({
+    version: 1,
+    columnWidths: icd.extracted.columnWidths || icd.sheet.columnWidths || icd.header.map(() => 100),
+    rowHeights: icd.extracted.rowHeights || icd.sheet.rowHeights || {},
+    formatting: icd.extracted.formatting || icd.sheet.formatting || {},
+    merges: icd.extracted.merges || icd.sheet.merges || [],
+    settings: icd.settings,
+  })]] })
 }
 const rowIdentity = (header: string[], row: any[]) => {
   for (const label of ['JOB NO#', 'REF#', 'HBL NO#', 'MBL NO#', 'CLIENT']) {
@@ -24242,7 +24430,7 @@ onBeforeUnmount(() => {
 .payment-note-document{--acc:#008f4c;--wash:#e8f8ef;padding:0 0 26px;background:#fff}.payment-note-document.dn-credit{--acc:#d97706;--wash:#fdf0e0}.payment-note-topbar{height:6px;background:var(--acc)}
 .payment-note-head{display:flex;align-items:flex-start;gap:16px;padding:22px 30px 0}.payment-note-logo{display:flex;align-items:center;flex:none;width:196px;height:46px}.payment-note-logo>b{display:grid;width:40px;height:40px;border-radius:9px;background:#008f4c;color:#fff;font-size:16px;place-items:center}.payment-note-logo>span{display:grid;margin-left:10px}.payment-note-logo strong{font-size:15px}.payment-note-logo small{margin-top:4px;color:#7a847d;font-size:9.5px;font-weight:700;letter-spacing:3px}.payment-note-company-wrap{flex:1;min-width:0}.payment-note-company{text-align:left;font-size:14px;font-weight:800}.payment-note-address{max-width:270px;margin-top:4px;color:#7a847d;text-align:left;font-size:10.5px;font-weight:400;line-height:1.5}
 .payment-note-badge{flex:none;min-width:158px;padding:9px 15px;border:1px solid var(--acc);border-radius:10px;background:var(--wash);text-align:right}.payment-note-badge strong{display:block;color:var(--acc);font-size:16px}.payment-note-badge span{display:block;margin-top:4px;font-size:10px;line-height:1.6}.payment-note-meta{display:flex;gap:26px;padding:16px 30px 0;font-size:11px}
-.payment-note-box{min-height:270px;margin:14px 30px 0;padding:0;border:1px solid #e4e9e2;border-radius:10px;overflow:hidden}.payment-note-table{width:100%;border-collapse:collapse;font-size:11.5px}.payment-note-table th{padding:9px 12px;border:0;background:var(--acc);color:#fff;text-align:left}.payment-note-table td{padding:8px 12px;border:0;border-top:1px solid #eef1ef}.payment-note-table th:nth-child(3){text-align:center}.payment-note-table th:last-child,.payment-note-table .amount,.payment-note-table .total-label{text-align:right}.payment-note-table tbody tr:nth-child(even) td{background:#fafbf9}.payment-note-table .total td{border-top:2px solid var(--acc);background:var(--wash);font-weight:800}.payment-note-table th:nth-child(-n+3),.payment-note-table td:nth-child(-n+3){text-align:center}.payment-note-table th:last-child,.payment-note-table td.amount{text-align:right}.payment-note-table .total-label{text-align:right!important}.payment-note-logo>b{display:flex;align-items:center;justify-content:center;line-height:1;padding:0;font-weight:800;letter-spacing:.5px;text-align:center}
+.payment-note-box{min-height:270px;margin:14px 30px 0;padding:0;border:1px solid #e4e9e2;border-radius:10px;overflow:hidden}.payment-note-table{width:100%;border-collapse:collapse;font-size:11.5px}.payment-note-table th{padding:9px 12px;border:0;background:var(--acc);color:#fff;text-align:left}.payment-note-table td{padding:8px 12px;border:0;border-top:1px solid #eef1ef}.payment-note-table th:nth-child(3){text-align:center}.payment-note-table th:last-child,.payment-note-table .amount,.payment-note-table .total-label{text-align:right}.payment-note-table tbody tr:nth-child(even) td{background:#fafbf9}.payment-note-table .total td{border-top:2px solid var(--acc);background:var(--wash);font-weight:800}.payment-note-table th:nth-child(-n+3),.payment-note-table td:nth-child(-n+3){text-align:center}.payment-note-table th:last-child,.payment-note-table td.amount{text-align:right}.payment-note-table .total-label{text-align:right!important}.payment-note-logo>b{display:block;line-height:40px;height:40px;padding:0;font-weight:800;letter-spacing:.5px;text-align:center}
 .payment-note-foot{display:flex;justify-content:space-between;gap:30px;margin:0;padding:22px 30px 0;font-size:11px;line-height:1.6}.payment-note-bank{max-width:54%}.payment-note-foot b{display:inline-block;margin-bottom:5px;color:var(--acc);font-size:10px}.payment-note-foot .issuer{flex:none;min-width:200px;text-align:center}.payment-note-sign-space{height:44px}.payment-note-sign-line{width:172px;margin:0 auto 5px;border-top:1px solid #3a463f}.payment-note-foot .issuer strong{color:#0e1512;font-size:11px}
 .payment-note-modal{border:1px solid #008f4c!important;font-family:var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)!important}
 .payment-note-bar{min-height:51px;border-bottom:1px solid #dfe7e1;font-family:var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif);font-size:12px}/* Same red round close button as every other modal. */
@@ -24594,7 +24782,16 @@ onBeforeUnmount(() => {
 .ops-efa-select option,.ops-action-select option,.actsel option{text-align:center}
 .ops-ms-table td.staffcell,.ops-ms-table td.staffcell .ops-textcell,.ops-ms-table td.staffcell .ops-efa-select,.sheet-body td.staffcell,.sheet-body td.staffcell .cell-select{ text-transform:none!important }
 .an-payment-contact{align-items:start}.an-payment-contact>label{display:grid;grid-template-rows:auto 32px minmax(66px,auto);align-content:start;row-gap:4px}.an-payment-contact select{display:block;width:100%;height:32px;box-sizing:border-box;border:1px solid #c9d3cf;border-radius:7px;background:#fff;padding:0 30px 0 9px;color:#46524d;font:inherit;font-size:12.5px;outline:none}.an-payment-contact select:disabled{background:#f1f5f4;color:#64746d;opacity:1}.an-payment-contact textarea{height:66px;min-height:66px}.an-contact-spacer{display:block;width:100%;height:32px;box-sizing:border-box}
-.an-print-sheet{position:fixed!important;left:-10000px!important;top:0!important;width:824px!important;max-width:none!important;margin:0!important;padding:0!important;background:#fff!important;overflow:visible!important}.an-print-sheet .an-payment-contact>label{grid-template-rows:auto auto}.an-print-sheet .an-contact-spacer{display:none}.an-print-sheet .an-print-value{display:flex;align-items:center;box-sizing:border-box;width:100%;min-height:34px;border:1px solid #c9d3cf;border-radius:7px;background:#fff;padding:1px 9px 7px;color:#46524d;font:inherit;font-size:13px;line-height:1.1;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}.an-print-sheet .an-print-textarea{display:block;min-height:54px;padding-top:4px;padding-bottom:10px;line-height:1.25}.an-print-sheet .an-cargo-summary .an-print-textarea{display:flex;min-height:34px;align-items:center;padding-top:1px;padding-bottom:7px;line-height:1.1}.an-print-sheet .an-detail-remarks .an-print-textarea{min-height:76px}.an-print-sheet .an-add-row,.an-print-sheet .an-row-remove{display:none!important}.an-print-sheet .an-detail-table th:last-child:empty{display:none}.an-print-sheet .an-detail-table td{height:auto;overflow:visible;background:#fff}.an-print-sheet .an-detail-table .an-print-value{min-height:24px;justify-content:center;border:0;border-radius:0;background:#fff;padding:1px 3px 5px;line-height:1.1;text-align:center;white-space:pre-wrap}.an-print-sheet .an-detail-g2,.an-print-sheet .an-detail-g3{align-items:start}
+.an-print-sheet{position:fixed!important;left:-10000px!important;top:0!important;width:824px!important;max-width:none!important;margin:0!important;padding:0!important;background:#fff!important;overflow:visible!important}.an-print-sheet .an-payment-contact>label{grid-template-rows:auto auto}.an-print-sheet .an-contact-spacer{display:none}.an-print-sheet .an-print-value{display:flex;align-items:center;box-sizing:border-box;width:100%;min-height:34px;border:1px solid #c9d3cf;border-radius:7px;background:#fff;padding:1px 9px 7px;color:#46524d;font:inherit;font-size:13px;line-height:1.1;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}.an-print-sheet .an-print-textarea{display:block;min-height:54px;padding-top:4px;padding-bottom:10px;line-height:1.25}.an-print-sheet .an-cargo-summary .an-print-textarea{display:flex;min-height:34px;align-items:center;padding-top:1px;padding-bottom:7px;line-height:1.1}.an-print-sheet .an-detail-remarks .an-print-textarea{min-height:76px}.an-print-sheet .an-add-row,.an-print-sheet .an-row-remove{display:none!important}.an-print-sheet .an-detail-table th:last-child:empty{display:none}.an-print-sheet .an-detail-table td{height:auto;overflow:visible;background:#fff}.an-print-sheet .an-detail-table .an-print-value{min-height:24px;justify-content:center;border:0;border-radius:0;background:#fff;padding:1px 3px 5px;line-height:1.1;text-align:center;white-space:pre-wrap}.an-print-sheet .an-detail-g2,.an-print-sheet .an-detail-g3{align-items:stretch}
+/* PDF: side-by-side boxes (Shipper / Consignee ...) share the taller box's height;
+   text starts at the top of every box. */
+.an-print-sheet :is(.an-detail-g2,.an-detail-g3)>label:not(#_x){display:flex!important;flex-direction:column}
+.an-print-sheet :is(.an-detail-g2,.an-detail-g3)>label>.an-print-value:not(#_x){flex:1 1 auto}
+.an-print-sheet :is(.an-detail-g2,.an-detail-g3)>label>.an-print-textarea:not(#_x){align-items:flex-start!important;justify-content:flex-start}
+.do-print-sheet .do-doc-grid:not(#_x){align-items:stretch}
+.do-print-sheet .do-doc-grid>label:not(#_x){display:flex!important;flex-direction:column}
+.do-print-sheet .do-doc-grid>label>.do-print-value:not(#_x){flex:1 1 auto}
+.do-print-sheet .do-doc-grid>label>.do-print-textarea:not(#_x){align-items:flex-start!important}
 /* PDF: html2canvas draws text lower than the browser - give every label its own line
    box and clear space above the field (same treatment as the Delivery Order PDF). */
 .an-print-sheet label{gap:0!important}
@@ -24840,6 +25037,32 @@ td:not(#_x) :is(input:not([type=checkbox]):not([type=radio]),textarea,.ops-textc
    share one equal width, so both groups line up. */
 .gsd-truck-cont-modal .gsd-truck-table:not(#_x) thead tr:nth-child(2) th,
 .gsd-truck-cont-modal .gsd-truck-table:not(#_x) td.truck-datetime-cell{width:120px!important;min-width:120px!important;max-width:120px!important}
+/* Bill Detail export menu: same width as its button; a green tick after each document. */
+.bd-source-menu{position:relative}
+.bd-source-menu .bd-export-dropdown:not(#_x){left:0!important;right:0!important;width:auto!important;min-width:100%!important;box-sizing:border-box}
+.bd-export-pick{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.bd-export-pick>button{flex:1;min-width:0;text-align:left;white-space:nowrap}
+.bd-source-menu .bd-export-options:not(#_x){margin-left:8px;padding-left:6px}
+.bd-source-menu .bd-export-pick>button:not(#_x){padding:6px 8px!important;white-space:nowrap!important}
+.bd-source-menu .bd-export-tick{margin-right:4px}
+.bd-export-heading-check{cursor:default!important}
+.bd-export-heading-check input:disabled{cursor:default}
+.bd-export-heading{padding:8px 12px 4px;color:#6b7686;font-size:11.5px;font-weight:700;cursor:default}
+.bd-export-tick{flex:none;width:16px;margin-right:8px;color:#00a85a;font-weight:900;font-size:14px;text-align:center;visibility:hidden}
+.bd-export-pick.picked .bd-export-tick{visibility:visible}
+.bd-export-pick.picked>button{color:#0e5a32;font-weight:800}
+.gsd-modal.gsd-bill-modal:has(.bd-row):not(:has(.gsd-release-body)):not(#_x){width:fit-content!important;max-width:96vw!important}
+/* B/L & FCR documents. */
+.fsel:not(#_x){font-weight:400!important}
+/* Goods table (Marks & Nos.) and Container & Seal table: header and content centered. */
+.ctab:not(#_x) :is(th,td),.ctab:not(#_x) td :is(span,div,input,textarea,[contenteditable]){text-align:center!important}
+.bill-container-table:not(#_x) td>span{justify-content:center!important}
+/* TX / ST company mark: an explicit line box keeps the letters centered on screen and
+   in the PDF capture (html2canvas otherwise draws the text a few px low). */
+.co-mark:not(#_x)>span{display:block;width:100%;height:100%;line-height:47px;text-align:center;padding:0}
+.wb-modal-btn.clear:not(#_x){border-color:#64748b!important;background:#64748b!important;color:#fff!important}
+.wb-modal-btn.clear:not(#_x):hover:not(:disabled){border-color:#51606e!important;background:#51606e!important;color:#fff!important;filter:none!important}
+.wb-modal-btn.clear:not(#_x):disabled,.wb-modal-btn.clear:not(#_x):disabled:hover{opacity:.45!important;cursor:not-allowed;border-color:#64748b!important;background:#64748b!important;color:#fff!important}
 /* DELIVERY ORDER - match AdminMockup/Mau_AN_SI_DO_MNF_2_1.html (FCL / LCL / AIR) */
 .do-document-sheet{color:#1f2733;font:13px/1.35 Arial,Helvetica,sans-serif}
 .do-document-head{align-items:flex-start;padding-bottom:10px;margin-bottom:16px;border-bottom:2px solid #1f2733;color:#1f2733}
@@ -24872,6 +25095,18 @@ td:not(#_x) :is(input:not([type=checkbox]):not([type=radio]),textarea,.ops-textc
 /* PDF export: html2canvas draws text a few px lower than the browser, so give labels
    their own line box and more space so they never touch the field below. */
 .do-print-sheet label{gap:0}
-.do-print-sheet label>span{display:block;line-height:14px;height:14px;margin-bottom:11px;padding:0}
+.do-print-sheet label>span{display:block;line-height:14px;height:14px;margin-bottom:7px;padding:0}
+/* Compact PDF: tighter rows so the Delivery Order stays on one page. */
+.do-print-sheet label:not(#_x){margin-bottom:6px!important}
+.do-print-sheet .do-doc-section:not(#_x){margin:14px 0 10px!important;padding-bottom:6px!important;line-height:14px}
+/* Multi-line boxes: room above/below the text (html2canvas draws text low). */
+.do-print-sheet .do-print-textarea:not(#_x){min-height:34px!important;padding-top:5px!important;padding-bottom:11px!important}
+/* Container table: header text and values clear of the borders. */
+.do-print-sheet .do-doc-table:not(#_x){margin-top:4px}
+.do-print-sheet .do-doc-table:not(#_x) th{height:auto!important;padding:4px 6px 10px!important;line-height:14px!important;vertical-align:middle}
+.do-print-sheet .do-doc-table:not(#_x) td{height:auto!important;padding:0!important;vertical-align:middle}
+.do-print-sheet .do-doc-table:not(#_x) .do-print-value{min-height:28px!important;height:auto!important;padding:2px 4px 9px!important;line-height:14px!important;align-items:center}
+.do-print-sheet .do-doc-sign:not(#_x){margin-top:24px!important}
+.do-print-sheet .do-doc-bottom:not(#_x){margin-top:8px!important}
 .do-print-sheet .do-doc-party-head{display:block!important;line-height:14px;height:14px}
 </style>
