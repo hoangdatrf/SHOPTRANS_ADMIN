@@ -862,7 +862,7 @@
       </div>
       <div class="ctp-actions"><button type="button" @click="clearCutoffTime">Clear</button><button type="button" @click="setCutoffTimeNow">Now</button><button class="primary" type="button" @click="applyNativeOrCutoffTime">Done</button></div>
     </div>
-    <div v-if="pickerFieldProxy.open" class="ops-picker-field-proxy" :class="pickerFieldProxy.type" :style="{ left: `${pickerFieldProxy.left}px`, top: `${pickerFieldProxy.top}px`, width: `${pickerFieldProxy.width}px`, height: `${pickerFieldProxy.height}px` }">
+    <div v-if="pickerFieldProxy.open" class="ops-picker-field-proxy" :class="[pickerFieldProxy.type, { 'in-table': pickerFieldProxy.inTable }]" :style="{ left: `${pickerFieldProxy.left}px`, top: `${pickerFieldProxy.top}px`, width: `${pickerFieldProxy.width}px`, height: `${pickerFieldProxy.height}px` }">
       <span>{{ pickerFieldProxy.label }}</span>
       <svg v-if="pickerFieldProxy.type === 'date'" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
       <svg v-else viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
@@ -2265,7 +2265,7 @@
               <div class="bd-body">
                 <div class="bd-sec-title">{{ isAwbDetailModal() ? 'MAWB DETAILS' : awbText('MBL DETAILS') }}</div>
                 <div class="bd-rows">
-                  <div class="bd-row"><span class="bd-lab">SI SUBMITTED:</span><input v-model="gsdModal.form.siSubmitted" type="checkbox" class="bd-cb" disabled /><input v-model.trim="gsdModal.form.siSubmittedAt" type="text" class="bd-date bd-mirror" readonly placeholder="dd/mm/yyyy hh:mm" /><button v-if="!isReadonlyExwFclEcdBillDetail() && gsdModal.form.siSubmittedSource !== 'master-si'" class="bd-up" :class="{ has: !!gsdModal.form.siSubmittedFile?.url }" type="button" :disabled="!gsdModal.editing || !gsdModal.form.siSubmitted" title="Upload SI Submitted file" @click="openBillDetailUpload('siSubmittedFile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M8 9l4-4 4 4"/><path d="M5 18.5h14"/></svg></button><button class="bd-eye" :class="{ on: !!gsdModal.form.siSubmittedFile?.url }" type="button" :disabled="!gsdModal.form.siSubmittedFile?.url" title="View SI Submitted file" @click="viewBillDetailFile(gsdModal.form.siSubmittedFile)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+                  <div class="bd-row"><span class="bd-lab">SI SUBMITTED:</span><input v-model="gsdModal.form.siSubmitted" type="checkbox" class="bd-cb" disabled /><input v-model.trim="gsdModal.form.siSubmittedAt" type="text" class="bd-date bd-mirror" readonly placeholder="dd/mm/yyyy hh:mm" /><button v-if="!isReadonlyExwFclEcdBillDetail() && gsdModal.form.siSubmittedSource !== 'master-si'" class="bd-up" :class="{ has: !!gsdModal.form.siSubmittedFile?.url }" type="button" :disabled="!gsdModal.editing || !gsdModal.form.siSubmitted" title="Upload SI Submitted file" @click="openBillDetailUpload('siSubmittedFile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M8 9l4-4 4 4"/><path d="M5 18.5h14"/></svg></button><button class="bd-eye" :class="{ on: !!gsdModal.form.siSubmittedFile?.url }" type="button" :disabled="!gsdModal.form.siSubmittedFile?.url" title="View SI Submitted file" @click="viewBillDetailFile(gsdModal.form.siSubmittedFile)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button><button v-if="billSiAttachment()?.url" class="bd-eye bd-attach on" type="button" :title="`View SI attachment: ${billSiAttachment()?.name || ''}`" @click="viewBillDetailFile(billSiAttachment())"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.5l-8.5 8.5a5 5 0 0 1-7-7l9-9a3.3 3.3 0 0 1 4.7 4.7l-9 9a1.7 1.7 0 0 1-2.4-2.4l8.1-8.1"/></svg></button></div>
                   <div v-if="billDetailShowsMnf()" class="bd-row"><span class="bd-lab">MNF SUBMIT:</span><input v-model="gsdModal.form.mnfSubmitted" type="checkbox" class="bd-cb" :disabled="!gsdModal.editing" @change="syncBillDetailTimestamp('mnfSubmitted')" /><input v-model.trim="gsdModal.form.mnfSubmittedAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /></div>
                   <div class="bd-row"><span class="bd-lab" :class="{ 'bd-required-label': isBillMblOnlyDetailModal() }">{{ isAwbDetailModal() ? 'MAWB APPROVED:' : awbText('MBL APPROVED:') }}</span><input v-model="gsdModal.form.mbl" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing" @change="syncBillTimestamp('mbl')" /><input v-model.trim="gsdModal.form.mblAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><button v-if="!isReadonlyExwFclEcdBillDetail()" class="bd-up" :class="{ has: !!gsdModal.form.mblFile?.url, required: isBillMblOnlyDetailModal() && !gsdModal.form.mblFile?.url }" type="button" :disabled="!gsdModal.editing || !gsdModal.form.mbl" :title="gsdModal.form.mblFile?.name ? `Uploaded: ${gsdModal.form.mblFile.name}` : isBillMblOnlyDetailModal() ? 'Supporting document is required' : 'Upload MBL Approved file'" @click="openBillDetailUpload('mblFile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M8 9l4-4 4 4"/><path d="M5 18.5h14"/></svg></button><button class="bd-eye" :class="{ on: !!gsdModal.form.mblFile?.url }" type="button" :disabled="!gsdModal.form.mblFile?.url" title="View" @click="viewBillDetailFile(gsdModal.form.mblFile)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                 </div>
@@ -2722,12 +2722,14 @@
                 <template v-if="usesFullPaymentRequestLayout() && opsDeptUpper() !== 'FCD'">
                   <span class="pr-searchwrap">
                     <span class="pr-searchlbl">RefLastBiz:</span>
+                    <span class="pr-input-anchor">
                     <input v-model.trim="paymentSearchRef" class="pr-searchinp" type="search" autocomplete="off" placeholder="JOB NO# / REF NO#" @focus="openPaymentHistoryFilter" @input="openPaymentHistoryFilter" @keydown.escape="paymentSearchOpen = false" />
                     <span class="pr-searchresults" :class="{ show: paymentSearchOpen }">
                       <button v-for="match in paymentSearchResults" :key="match.id" class="pr-sr-item" type="button" @mousedown.prevent="selectPaymentHistoryMatch(match)">
-                        <span class="pr-sr-info"><b>{{ match.jobNo || '—' }}</b><br />REF: {{ match.refNo || '—' }} · {{ match.lineCount }} line(s)</span>
+                        <span class="pr-sr-info"><b class="pr-sr-line" :title="match.jobNo">{{ match.jobNo || '—' }}</b><span class="pr-sr-line pr-sr-sub" :title="`REF: ${match.refNo || '—'}`">{{ paymentMatchService(match) ? `${paymentMatchService(match)} · ` : '' }}{{ match.lineCount }} line(s)</span></span>
                       </button>
                       <span v-if="!paymentSearchResults.length" class="pr-sr-empty">No previous Job No matches your search.</span>
+                    </span>
                     </span>
                   </span>
                   <span class="ec-issuegrp">
@@ -3000,10 +3002,10 @@
                       <td class="grp-fb"><span class="ec-cell ec-last-feedback" :title="line.lastFeedback">{{ line.lastFeedback || '-' }}</span></td>
                       <td class="ec-status grp-fb">
                         <select v-model="line.status" class="ec-statussel" :class="expenseStatusClass(line.status)" :disabled="!!line.statusDetails && !line.editing" @change="persistExpenseCollect()">
-                          <option value="">-</option>
-                          <option>Approved</option>
-                          <option>Rejected</option>
-                          <option>Request Edit</option>
+                          <option value="" class="ec-opt-none">-</option>
+                          <option class="ec-opt-ok">Approved</option>
+                          <option class="ec-opt-reject">Rejected</option>
+                          <option class="ec-opt-edit">Request Edit</option>
                         </select>
                       </td>
                       <td class="grp-fb"><input v-model.trim="line.reason" class="ec-reason" :class="{ invalid: expenseFeedbackReasonInvalid(line) }" placeholder="Enter reason" :disabled="!!line.statusDetails && !line.editing" @input="clearExpenseFeedbackReasonError(line); persistExpenseCollect()" /></td>
@@ -3066,7 +3068,7 @@
                 <label v-if="!isLclSheet()" class="an-detail-description"><span>Description</span><textarea v-model="gsdModal.form.description" :readonly="!gsdModal.editing" rows="2"></textarea></label>
                 <div v-if="!isLclSheet()" class="an-detail-g3 an-cargo-summary"><label><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="an-linked-field" :readonly="!gsdModal.editing" rows="1"></textarea></label><label><span>QTY</span><input :value="arrivalNoticeTotals().qty" readonly /></label><label><span>Unit</span><input v-model="gsdModal.form.unit" :readonly="!gsdModal.editing" /></label></div>
                 <div v-if="!isLclSheet()" class="an-detail-g2"><label><span>GW (KG)</span><input :value="arrivalNoticeTotals().gw" readonly /></label><label><span>MEA. (CBM)</span><input :value="arrivalNoticeTotals().mea" readonly /></label></div>
-                <div class="an-detail-section an-detail-section-ref"><span>Charges Due</span><span class="an-refbox"><label>RefLastBiz:</label><span class="an-ref-search"><input v-model.trim="gsdModal.form.refLastBiz" :disabled="!gsdModal.editing" placeholder="JOB NO# / REF NO#" autocomplete="off" @input="searchArrivalPaymentHistory" @keydown.escape="paymentSearchOpen = false" /><span class="pr-searchresults" :class="{ show: paymentSearchOpen }"><button v-for="match in paymentSearchResults" :key="`an-${match.id}`" class="pr-sr-item" type="button" @mousedown.prevent="selectArrivalPaymentHistoryMatch(match)"><span class="pr-sr-info"><b>{{ match.jobNo || '—' }}</b><br />REF: {{ match.refNo || '—' }} · {{ match.lineCount }} line(s)</span></button><span v-if="!paymentSearchResults.length" class="pr-sr-empty">No previous Job No matches your search.</span></span></span><button type="button" :disabled="!gsdModal.editing" @click="openArrivalPaymentHistoryFilter">Search</button></span></div>
+                <div class="an-detail-section an-detail-section-ref"><span>Charges Due</span><span class="an-refbox"><label>RefLastBiz:</label><span class="an-ref-search"><input v-model.trim="gsdModal.form.refLastBiz" :disabled="!gsdModal.editing" placeholder="JOB NO# / REF NO#" autocomplete="off" @input="searchArrivalPaymentHistory" @keydown.escape="paymentSearchOpen = false" /><span class="pr-searchresults" :class="{ show: paymentSearchOpen }"><button v-for="match in paymentSearchResults" :key="`an-${match.id}`" class="pr-sr-item" type="button" @mousedown.prevent="selectArrivalPaymentHistoryMatch(match)"><span class="pr-sr-info"><b class="pr-sr-line" :title="match.jobNo">{{ match.jobNo || '—' }}</b><span class="pr-sr-line pr-sr-sub" :title="`REF: ${match.refNo || '—'}`">{{ paymentMatchService(match) ? `${paymentMatchService(match)} · ` : '' }}{{ match.lineCount }} line(s)</span></span></button><span v-if="!paymentSearchResults.length" class="pr-sr-empty">No previous Job No matches your search.</span></span></span><button type="button" :disabled="!gsdModal.editing" @click="openArrivalPaymentHistoryFilter">Search</button></span></div>
                 <table class="an-detail-table"><thead><tr><th>#</th><th>Charge Name</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>CUR</th><th>Tax (%)</th><th>Total Price</th></tr></thead><tbody><tr v-for="(charge, index) in gsdModal.form.charges" :key="charge.key || index"><td>{{ index + 1 }}</td><td><input v-model.trim="charge.chargeName" :disabled="!gsdModal.editing" list="an-charge-options" autocomplete="off" placeholder="Type to filter" @focus="setActiveDatalistValue(charge.chargeName)" @input="setActiveDatalistValue(charge.chargeName)" /></td><td><input v-model="charge.qty" :disabled="!gsdModal.editing" /></td><td><input v-model.trim="charge.unit" :disabled="!gsdModal.editing" list="an-unit-options" autocomplete="off" placeholder="Type to filter" @focus="loadReferenceUnits" @input="charge.unit = upperText(charge.unit)" /></td><td><input v-model="charge.unitPrice" :disabled="!gsdModal.editing" @input="charge.unitPrice = sanitizeMoneyInput(charge.unitPrice)" @blur="charge.unitPrice = formatMoneyValue(charge.unitPrice)" /></td><td><input v-model.trim="charge.cur" :disabled="!gsdModal.editing" list="an-currency-options" autocomplete="off" placeholder="CUR" @focus="setActiveDatalistValue(charge.cur)" @input="charge.cur = upperText(charge.cur); setActiveDatalistValue(charge.cur)" @change="selectArrivalNoticeBankForCurrency(charge.cur)" /></td><td><input v-model="charge.taxRate" :disabled="!gsdModal.editing" /></td><td>{{ arrivalNoticeChargeTotal(charge) }}</td></tr><tr v-if="!gsdModal.form.charges.length"><td colspan="8" class="empty">No charge data</td></tr></tbody><tfoot><tr><td colspan="7" class="an-total-label">Total Tax Amount</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().tax }}</td></tr><tr><td colspan="7" class="an-total-label">Total Charge</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().total }}</td></tr></tfoot></table>
                 <datalist id="an-unit-options"><option v-for="option in referenceUnitOptions" :key="option.value" :value="option.value">{{ option.label }}</option></datalist>
                 <datalist id="an-charge-options"><option v-for="option in paymentDatalistOptions(paymentChargeOptions)" :key="option" :value="option" /></datalist>
@@ -3256,7 +3258,7 @@
     </div>
     <div v-if="paymentNoteModal.open" class="wb-modal-overlay payment-note-overlay" @mousedown.self="closePaymentNoteModal">
       <div class="payment-note-modal" role="dialog" aria-modal="true">
-        <div class="payment-note-bar"><span>Document preview</span><div><button class="payment-note-pdf" type="button" :disabled="paymentNoteModal.exporting" @click="printPaymentNote">{{ paymentNoteModal.exporting ? 'Downloading…' : '⬇ Download PDF' }}</button><button class="gsd-modal-x" type="button" title="Close" @click="closePaymentNoteModal">&times;</button></div></div>
+        <div class="payment-note-bar"><span>Document preview</span><div><button class="payment-note-pdf" type="button" :disabled="paymentNoteModal.exporting" @click="printPaymentNote">{{ paymentNoteModal.exporting ? 'Downloading…' : '⬇ Download PDF' }}</button><button class="gsd-modal-x" type="button" title="Close" aria-label="Close" @click="closePaymentNoteModal"></button></div></div>
         <div id="payment-note-document" class="payment-note-document" :class="paymentNoteModal.kind === 'CREDIT' ? 'dn-credit' : 'dn-debit'">
           <div class="payment-note-topbar"></div>
           <div class="payment-note-head">
@@ -4243,7 +4245,7 @@ const datePopup = reactive({
   pickupReturnField: '' as '' | 'pickupDate' | 'returnDate',
 })
 const cutoffTimePopup = reactive({ open: false, left: 0, top: 0, field: '' as '' | 'siTime' | 'cyTime', hour: '00', minute: '00' })
-const pickerFieldProxy = reactive({ open: false, left: 0, top: 0, width: 0, height: 0, type: 'date' as 'date' | 'time', label: '' })
+const pickerFieldProxy = reactive({ open: false, left: 0, top: 0, width: 0, height: 0, type: 'date' as 'date' | 'time', label: '', inTable: false })
 let nativePickerInput: HTMLInputElement | null = null
 let nativePickerType: 'date' | 'time' | 'datetime-local' | '' = ''
 const nativePickerOriginalStyle = new WeakMap<HTMLInputElement, string>()
@@ -4816,7 +4818,42 @@ const normalizeClientSearchText = (value: unknown) => String(value ?? '')
   .replace(/[đĐ]/g, 'd')
   .toLowerCase()
   .trim()
-const searchGsdClients = async () => {
+// Fetch the current Traders & Suppliers record a linked cell points to (by entityId).
+const loadLiveClientRecord = async (snapshot: GsdClientRecord): Promise<GsdClientRecord | null> => {
+  const entityId = String(snapshot.entityId || '').trim()
+  const lookupId = String(snapshot.id || snapshot.namecode || '').trim()
+  if (!entityId || !lookupId) return null
+  const pages = snapshot.sourcePage
+    ? [snapshot.sourcePage]
+    : ['traders_traders', 'traders_ocean_carriers', 'traders_ocean_agent', 'traders_airlines', 'traders_dest_agent']
+  const country = snapshot.sourceCountry || countryViewId()
+  for (const page of pages) {
+    const field = snapshot.id ? 'id' : 'namecode'
+    const res = await props.request(`/records?country=${encodeURIComponent(country)}&page=${encodeURIComponent(page)}&search=${encodeURIComponent(lookupId)}&searchFields=${field}&limit=50&skip=0`)
+    const records = Array.isArray(res?.items) ? res.items : Array.isArray(res?.data?.items) ? res.data.items : []
+    const record = records.find((item: any) => String(item?.id || '') === entityId)
+    if (!record) continue
+    const data = record?.data && typeof record.data === 'object' ? record.data : {}
+    return normalizeClientRecord({
+      ...data,
+      entityId: record.id,
+      sourcePage: record.page || page,
+      sourceKind: record.kind || snapshot.sourceKind || 'traders-suppliers',
+      sourceCountry: record.country || country,
+      sourceSortOrder: record.sortOrder || 0,
+      sourceData: data,
+    })
+  }
+  return null
+}
+// The latest client search; callers that need its result await this one, because a
+// newer search (e.g. the text watcher) discards the results of an older one.
+let latestClientSearch: Promise<void> = Promise.resolve()
+const searchGsdClients = () => {
+  latestClientSearch = runGsdClientSearch()
+  return latestClientSearch
+}
+const runGsdClientSearch = async () => {
   if (gsdModal.kind !== 'client' || gsdModal.clientView !== 'search') {
     gsdClientResults.value = []
     return
@@ -8059,7 +8096,7 @@ const onGlobalMouseDown = (event: MouseEvent) => {
     const rawValue = target.value
     const dateValue = rawValue ? cutoffDateLabel(rawValue.slice(0, 10)) : 'dd/mm/yyyy'
     const timeValue = rawValue.match(/(?:T)?(\d{2}:\d{2})/)?.[1] || '-- : --'
-    Object.assign(pickerFieldProxy, { open: true, left: rect.left, top: rect.top, width: rect.width, height: rect.height, type: pickerType === 'time' ? 'time' : 'date', label: pickerType === 'time' ? timeValue : dateValue })
+    Object.assign(pickerFieldProxy, { open: true, left: rect.left, top: rect.top, width: rect.width, height: rect.height, type: pickerType === 'time' ? 'time' : 'date', label: pickerType === 'time' ? timeValue : dateValue, inTable: !!target.closest('td') })
     openNativeOperationsPicker(target, pickerType)
     // A date input wrapped in <label> receives a follow-up click on the label, which
     // would close our calendar and re-activate the native browser picker. Swallow
@@ -10266,7 +10303,9 @@ const persistPaymentRequest = async (immediate = false, syncAfterSend = false) =
     return
   }
   const peers = syncAfterSend ? fclStructureSyncPeers('PAYMENT REQUEST') : []
-  const requiredReceiver = syncAfterSend ? (opsDeptUpper() === 'FCD' ? 'ECD' : peers.includes('FCD') ? 'FCD' : '') : ''
+  // FCD answers the request owner: ECD on export services, ICD on import services.
+  const ownerDept = ['EXW', 'FCA', 'FCF'].includes(upperText(opsParts.value?.type)) ? 'ECD' : 'ICD'
+  const requiredReceiver = syncAfterSend ? (opsDeptUpper() === 'FCD' ? ownerDept : peers.includes('FCD') ? 'FCD' : '') : ''
   const sentPayload = JSON.stringify({ payment: {
     ...payload,
     lines: payload.lines.filter((line) => !!String(line.sentAt || line.reqDate || '').trim()),
@@ -10276,15 +10315,28 @@ const persistPaymentRequest = async (immediate = false, syncAfterSend = false) =
   const sourcePayload = sheetPayload(sourceKey, false, sourceCountry)
   // Persist the source and mirror one immutable snapshot at the same time.
   // Do not leave a scheduled autosave that can overwrite the sent state.
-  const [saved, results] = await Promise.all([
-    queuePaymentSheetSave(sourceKey, sourceCountry, sourcePayload),
-    Promise.all(peers.map((dept) => mirrorExwFclWorkflowCell(dept, 'PAYMENT REQUEST', sentPayload))),
-  ])
-  if (!saved) throw new Error('Could not save Payment Request')
-  if (requiredReceiver) {
-    const receiverIndex = peers.indexOf(requiredReceiver as FclStructureDept)
-    if (receiverIndex < 0 || results[receiverIndex] !== true) throw new Error(`Could not deliver Payment Request to ${requiredReceiver}`)
+  // A save/mirror can fail transiently (version conflict with an autosave or another
+  // user's write); retry a few times before reporting, instead of making the user
+  // press Send again.
+  let lastError: Error | null = null
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const [saved, results] = await Promise.all([
+        queuePaymentSheetSave(sourceKey, sourceCountry, attempt === 1 ? sourcePayload : sheetPayload(sourceKey, false, sourceCountry)),
+        Promise.all(peers.map((dept) => mirrorExwFclWorkflowCell(dept, 'PAYMENT REQUEST', sentPayload))),
+      ])
+      if (!saved) throw new Error('Could not save Payment Request')
+      if (requiredReceiver) {
+        const receiverIndex = peers.indexOf(requiredReceiver as FclStructureDept)
+        if (receiverIndex < 0 || results[receiverIndex] !== true) throw new Error(`Could not deliver Payment Request to ${requiredReceiver}`)
+      }
+      return
+    } catch (error: any) {
+      lastError = error instanceof Error ? error : new Error(String(error?.data?.message || error?.message || error))
+      if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 400 * attempt))
+    }
   }
+  throw lastError || new Error('Could not send Payment Request')
 }
 const paymentInvalidKey = (line: PaymentLine, field: keyof PaymentLine) => `${line.id}:${String(field)}`
 const paymentFieldInvalid = (line: PaymentLine, field: keyof PaymentLine) => paymentInvalidFields.value.has(paymentInvalidKey(line, field))
@@ -10380,7 +10432,7 @@ const openPaymentNoteModal = (kind: 'DEBIT' | 'CREDIT', lines: Array<{ charge: s
   paymentNoteModal.open = true
 }
 const closePaymentNoteModal = () => { paymentNoteModal.open = false }
-const paymentNotePrintCss = `*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:'Segoe UI',Arial,sans-serif;color:#0e1512;font-size:12px}.payment-note-document{--acc:#008f4c;--wash:#e8f8ef;padding:0 0 10px}.payment-note-document.dn-credit{--acc:#d97706;--wash:#fdf0e0}.payment-note-topbar{height:6px;background:var(--acc)}.payment-note-head{display:flex;align-items:flex-start;gap:16px;padding:14px 6mm 0}.payment-note-logo{display:flex;align-items:center;flex:none;width:196px;height:46px}.payment-note-logo>b{display:grid;place-items:center;width:40px;height:40px;border-radius:9px;background:#008f4c;color:#fff;font-size:16px}.payment-note-logo>span{display:grid;margin-left:10px}.payment-note-logo strong{font-size:15px}.payment-note-logo small{margin-top:4px;color:#7a847d;font-size:9.5px;font-weight:700;letter-spacing:3px}.payment-note-company-wrap{flex:1;min-width:0}.payment-note-company{font-weight:800;font-size:14px}.payment-note-address{max-width:270px;margin-top:4px;color:#7a847d;font-size:10.5px;line-height:1.5}.payment-note-badge{flex:none;min-width:158px;padding:9px 15px;border:1px solid var(--acc);border-radius:10px;background:var(--wash);text-align:right}.payment-note-badge strong{display:block;color:var(--acc);font-size:16px}.payment-note-badge span{display:block;margin-top:4px;font-size:10px;line-height:1.6}.payment-note-meta{display:flex;gap:26px;padding:14px 6mm 0;font-size:11px}.payment-note-box{min-height:250px;margin:12px 6mm 0;border:1px solid #e4e9e2;border-radius:10px;overflow:hidden}.payment-note-table{width:100%;border-collapse:collapse;font-size:11.5px}.payment-note-table th{padding:9px 12px;background:var(--acc);color:#fff;text-align:left}.payment-note-table td{padding:8px 12px;border-top:1px solid #eef1ef}.payment-note-table th:nth-child(3){text-align:center}.payment-note-table th:last-child,.payment-note-table .amount,.payment-note-table .total-label{text-align:right}.payment-note-table tbody tr:nth-child(even) td{background:#fafbf9}.payment-note-table .total td{border-top:2px solid var(--acc);background:var(--wash);font-weight:800}.payment-note-foot{display:flex;justify-content:space-between;gap:30px;padding:20px 6mm 0;font-size:11px;line-height:1.6}.payment-note-bank{max-width:54%}.payment-note-foot b{display:inline-block;margin-bottom:5px;color:var(--acc);font-size:10px}.payment-note-foot .issuer{text-align:center;min-width:200px}.payment-note-sign-space{height:44px}.payment-note-sign-line{width:172px;margin:0 auto 5px;border-top:1px solid #3a463f}.payment-note-foot .issuer strong{font-size:11px;color:#0e1512}@page{size:A4;margin:12mm}`
+const paymentNotePrintCss = `*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:'Segoe UI',Arial,sans-serif;color:#0e1512;font-size:12px}.payment-note-document{--acc:#008f4c;--wash:#e8f8ef;padding:0 0 10px}.payment-note-document.dn-credit{--acc:#d97706;--wash:#fdf0e0}.payment-note-topbar{height:6px;background:var(--acc)}.payment-note-head{display:flex;align-items:flex-start;gap:16px;padding:14px 6mm 0}.payment-note-logo{display:flex;align-items:center;flex:none;width:196px;height:46px}.payment-note-logo>b{display:grid;place-items:center;width:40px;height:40px;border-radius:9px;background:#008f4c;color:#fff;font-size:16px}.payment-note-logo>span{display:grid;margin-left:10px}.payment-note-logo strong{font-size:15px}.payment-note-logo small{margin-top:4px;color:#7a847d;font-size:9.5px;font-weight:700;letter-spacing:3px}.payment-note-company-wrap{flex:1;min-width:0}.payment-note-company{font-weight:800;font-size:14px}.payment-note-address{max-width:270px;margin-top:4px;color:#7a847d;font-size:10.5px;line-height:1.5}.payment-note-badge{flex:none;min-width:158px;padding:9px 15px;border:1px solid var(--acc);border-radius:10px;background:var(--wash);text-align:right}.payment-note-badge strong{display:block;color:var(--acc);font-size:16px}.payment-note-badge span{display:block;margin-top:4px;font-size:10px;line-height:1.6}.payment-note-meta{display:flex;gap:26px;padding:14px 6mm 0;font-size:11px}.payment-note-box{min-height:250px;margin:12px 6mm 0;border:1px solid #e4e9e2;border-radius:10px;overflow:hidden}.payment-note-table{width:100%;border-collapse:collapse;font-size:11.5px}.payment-note-table th{padding:9px 12px;background:var(--acc);color:#fff;text-align:left}.payment-note-table td{padding:8px 12px;border-top:1px solid #eef1ef}.payment-note-table th:nth-child(3){text-align:center}.payment-note-table th:last-child,.payment-note-table .amount,.payment-note-table .total-label{text-align:right}.payment-note-table tbody tr:nth-child(even) td{background:#fafbf9}.payment-note-table .total td{border-top:2px solid var(--acc);background:var(--wash);font-weight:800}.payment-note-table th:nth-child(-n+3),.payment-note-table td:nth-child(-n+3){text-align:center}.payment-note-table th:last-child,.payment-note-table td.amount{text-align:right}.payment-note-table .total-label{text-align:right!important}.payment-note-logo>b{display:flex;align-items:center;justify-content:center;line-height:1;padding:0;font-weight:800;letter-spacing:.5px;text-align:center}.payment-note-foot{display:flex;justify-content:space-between;gap:30px;padding:20px 6mm 0;font-size:11px;line-height:1.6}.payment-note-bank{max-width:54%}.payment-note-foot b{display:inline-block;margin-bottom:5px;color:var(--acc);font-size:10px}.payment-note-foot .issuer{text-align:center;min-width:200px}.payment-note-sign-space{height:44px}.payment-note-sign-line{width:172px;margin:0 auto 5px;border-top:1px solid #3a463f}.payment-note-foot .issuer strong{font-size:11px;color:#0e1512}@page{size:A4;margin:12mm}`
 const printPaymentNote = async () => {
   const documentEl = document.getElementById('payment-note-document')
   if (!documentEl || paymentNoteModal.exporting) return
@@ -10502,6 +10554,12 @@ const openPaymentHistoryFilter = () => {
 const selectPaymentHistoryMatch = (match: PaymentHistoryMatch) => {
   paymentSearchOpen.value = false
   openPaymentHistoryPicker(match, 'payment')
+}
+// Which service (EXW/FCA/DO…) a RefLastBiz match comes from; the id is "<sheetKey>:<row>".
+const paymentMatchService = (match: PaymentHistoryMatch) => {
+  const sourceKey = String(match.id || '').replace(/:\d+$/, '')
+  const parsed = parseOpsKey(sourceKey)
+  return upperText(parsed?.type || (sourceKey === activeKey.value ? opsParts.value?.type : '') || '')
 }
 const openArrivalPaymentHistoryFilter = () => {
   paymentSearchRef.value = String(gsdModal.form.refLastBiz || '')
@@ -11254,12 +11312,30 @@ const openGsdModal = async (row: number, column: number) => {
         gsdModal.clientForm = clientFormFromRecord(clean)
         gsdModal.clientView = 'detail'
         gsdModal.editing = false
+        // The cell only stores a snapshot taken when the trader was picked. Show the
+        // current Traders & Suppliers record instead, and refresh the cell with it.
+        const openedRow = gsdModal.row
+        const openedColumn = gsdModal.column
+        void loadLiveClientRecord(clean).then((live) => {
+          if (!live || !gsdModal.open || gsdModal.row !== openedRow || gsdModal.column !== openedColumn || gsdModal.clientView !== 'detail') return
+          gsdModal.selectedClient = live
+          gsdModal.clientForm = clientFormFromRecord(live)
+          const nextClient = { ...client, ...(live.sourceData || {}), entityId: live.entityId, sourcePage: live.sourcePage, sourceKind: live.sourceKind, sourceCountry: live.sourceCountry }
+          const nextValue = JSON.stringify({ ...(parsed as any), client: nextClient })
+          if (rows.value[openedRow] && nextValue !== rows.value[openedRow][openedColumn]) {
+            rows.value[openedRow][openedColumn] = nextValue
+            scheduleSave()
+          }
+        }).catch((error) => console.warn('Could not refresh trader from Traders & Suppliers', error))
       } else if (parsed && typeof parsed === 'object' && 'value' in parsed) {
         gsdModal.clientMode = String((parsed as any).mode || 'namecode') === 'id' ? 'id' : 'namecode'
       } else if (rawText && upperText(rawText) !== 'N/A') {
         gsdModal.clientMode = 'namecode'
         gsdModal.text = upperText(rawText)
         await searchGsdClients()
+        // The text watcher may have started a newer search; wait for that one too.
+        await nextTick()
+        await latestClientSearch
         const exact = gsdClientResults.value.find((item) => upperText(item.namecode) === upperText(rawText) || upperText(item.id) === upperText(rawText))
         if (exact) {
           gsdModal.selectedClient = exact
@@ -12509,12 +12585,6 @@ const saveCutoffRecord = async () => {
   const editId = String(gsdModal.form.editId || '')
   const list = cutoffRecords()
   let savedRecord: CutoffRecord
-  // Old values for the update email: the row being edited, or the currently applied
-  // (latest) cutoff when a new one is added on top of it.
-  const previousSource = editId ? list.find((item) => item.id === editId) : list[0]
-  const previousCutoff = previousSource
-    ? { siDate: previousSource.siDate, siTime: previousSource.siTime, cyDate: previousSource.cyDate, cyTime: previousSource.cyTime }
-    : null
   if (editId) {
     const target = list.find((item) => item.id === editId)
     if (target) {
@@ -12540,22 +12610,9 @@ const saveCutoffRecord = async () => {
     }
     gsdModal.form.cutoffs = [savedRecord, ...list]
   }
-  dispatchLoading.value = editId ? 'Saving cutoff update and notifying Shipper...' : 'Saving cutoff and notifying Shipper...'
-  try {
-    const saved = await persistCutoffForm(true)
-    if (!saved) throw new Error('Could not save Cutoff Detail')
-    try {
-      await sendCutoffEmail(savedRecord, !!previousCutoff, previousCutoff)
-      showToast(editId ? 'Cutoff updated and Shipper notified' : 'Cutoff saved and Shipper notified')
-    } catch (error: any) {
-      showToast(`Cutoff saved, but email was not sent: ${error?.data?.message || error?.message || 'Unknown email error'}`)
-    }
-    clearCutoffForm()
-  } catch (error: any) {
-    setCutoffHint(error?.data?.message || error?.message || 'Could not save Cutoff Detail')
-  } finally {
-    dispatchLoading.value = ''
-  }
+  // Cutoff is saved silently in the background: no email, no notification.
+  clearCutoffForm()
+  void persistCutoffForm(true).catch((error) => console.warn('Could not save Cutoff Detail', error))
 }
 const selectCutoffRecord = (id: string) => {
   gsdModal.form.selectedId = gsdModal.form.selectedId === id ? '' : id
@@ -13710,7 +13767,8 @@ const unlockExpenseCollectSelected = () => {
 const sendExpenseCollectFeedback = async () => {
   const selected = expenseCollectSelectedLines().filter((line: any) => expenseCollectValidStatus(line) && (!line.statusDetails || line.editing))
   if (!selected.length) return
-  const missingReason = selected.filter((line: any) => !String(line.reason || '').trim())
+  // Approved needs no reason; Rejected / Request Edit must explain why.
+  const missingReason = selected.filter((line: any) => upperText(line.status) !== 'APPROVED' && !String(line.reason || '').trim())
   expenseFeedbackInvalidReasonIds.value = new Set(missingReason.map((line: any) => String(line.id || '')))
   if (missingReason.length) {
     const details = missingReason.map((line: any) => {
@@ -14075,14 +14133,20 @@ const vesselOriginalEffectiveWindow = () => {
     }
     return ''
   }
-  const etd = String(activeDelay?.etd || selectEntry?.etd || '').trim().slice(0, 10) || sheetIso('ATD', 'ETD')
-  const eta = String(activeDelay?.eta || selectEntry?.eta || '').trim().slice(0, 10) || sheetIso('ETA')
+  // History dates can be ISO (yyyy-mm-dd) or copied from the grid (dd/mm/yyyy):
+  // normalize to ISO so the window compares correctly with the T/S dates.
+  const toIso = (value: any) => {
+    const date = parseOpsDate(String(value || '').trim().slice(0, 10))
+    return date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : ''
+  }
+  const etd = toIso(activeDelay?.etd || selectEntry?.etd) || sheetIso('ATD', 'ETD')
+  const eta = toIso(activeDelay?.eta || selectEntry?.eta) || sheetIso('ETA')
   // Each further T/S leg only gets the time that is left: it cannot start before the
   // latest ETA of the other declared T/S legs (the leg being edited is excluded).
   const editingOrder = Number(gsdModal.form.selectedHistoryOrder) || 0
   const declaredTsEta = history
     .filter((item: any) => upperText(item.type || '') === 'T/S' && upperText(item.status || 'APPLIED') !== 'EXPIRED' && Number(item.order || 0) !== editingOrder)
-    .map((item: any) => String(item.eta || '').trim().slice(0, 10))
+    .map((item: any) => toIso(item.eta))
     .filter(Boolean)
     .sort()
     .at(-1) || ''
@@ -14106,8 +14170,12 @@ const vesselTsWindowValid = () => {
   if (!gsdModal.form.transhipmentToggle) return true
   const window = vesselOriginalEffectiveWindow()
   if (!window) return true
-  const etd = String(gsdModal.form.tsEtd || '')
-  const eta = String(gsdModal.form.tsEta || '')
+  const iso = (value: any) => {
+    const date = parseOpsDate(String(value || '').trim().slice(0, 10))
+    return date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : ''
+  }
+  const etd = iso(gsdModal.form.tsEtd)
+  const eta = iso(gsdModal.form.tsEta)
   if (window.etd && etd && etd < window.etd) return false
   if (window.eta && eta && eta > window.eta) return false
   return true
@@ -14809,7 +14877,7 @@ const updateVesselDelay = () => {
       const activeDelay = delayHistory.find((item: any) => Number(item.order) === selectedOrder)
       if (activeDelay) Object.assign(activeDelay, { ...selected, status: 'Applied' })
       form.delayHistory = delayHistory
-      if (selected.etd && selected.etd !== currentSchedule.etd) rescheduleCutoffForVesselDelay(gsdModal.row, currentSchedule.etd, selected.etd)
+      if (selected.etd && selected.etd !== currentSchedule.etd && isOriginalVesselKey(gsdModal.row, gsdModal.column, selectedDelayKey)) rescheduleCutoffForVesselDelay(gsdModal.row, currentSchedule.etd, selected.etd)
     }
     if (selected.type !== 'DELAY' && gsdModal.form.delayToggle) {
       const currentSchedule = vesselRowEtdEta(gsdModal.row)
@@ -14842,7 +14910,7 @@ const updateVesselDelay = () => {
       form.delayHistory = delayHistory
       form.delayed = true
       form.delayReason = activeDelay.reason
-      if (activeDelay.etd && activeDelay.etd !== currentSchedule.etd) rescheduleCutoffForVesselDelay(gsdModal.row, currentSchedule.etd, activeDelay.etd)
+      if (activeDelay.etd && activeDelay.etd !== currentSchedule.etd && isOriginalVesselKey(gsdModal.row, gsdModal.column, delayKey)) rescheduleCutoffForVesselDelay(gsdModal.row, currentSchedule.etd, activeDelay.etd)
     }
     if (selected.type !== 'T/S' && gsdModal.form.transhipmentToggle) {
       let activeTranshipment = history.find((item: any) =>
@@ -14884,8 +14952,20 @@ const updateVesselDelay = () => {
         && upperText(item.status || 'APPLIED') !== 'EXPIRED'
         && vesselVoyageKey(item.name, item.voyage) === selectedScheduleKey) || selected
       : selected
-    if (scheduleItem.etd && etdIndex >= 0) rows.value[gsdModal.row][etdIndex] = scheduleItem.etd
-    if (scheduleItem.eta && etaIndex >= 0) rows.value[gsdModal.row][etaIndex] = scheduleItem.eta
+    // Only the main SELECT vessel (or its own delay) moves the worksheet ETD/ETA.
+    // Editing a T/S leg, or a T/S leg's delay, stays inside the vessel history.
+    if (isOriginalVesselKey(gsdModal.row, gsdModal.column, vesselVoyageKey(scheduleItem.name, scheduleItem.voyage))) {
+      const firstSelect = history
+        .filter((item: any) => upperText(item.type || 'SELECT') === 'SELECT')
+        .sort((a: any, b: any) => Number(a.order || 0) - Number(b.order || 0))[0]
+      const before = vesselRowEtdEta(gsdModal.row)
+      if (firstSelect && firstSelect !== scheduleItem) {
+        if (!firstSelect.etd && before.etd) firstSelect.etd = before.etd
+        if (!firstSelect.eta && before.eta) firstSelect.eta = before.eta
+      }
+      if (scheduleItem.etd && etdIndex >= 0) rows.value[gsdModal.row][etdIndex] = scheduleItem.etd
+      if (scheduleItem.eta && etaIndex >= 0) rows.value[gsdModal.row][etaIndex] = scheduleItem.eta
+    }
     if (upperText(selected.type || 'SELECT') === 'SELECT') {
       form.originalVesselData = { ...selectedVessel, voyage }
     }
@@ -18397,6 +18477,11 @@ const saveBillApproval = async (waitForPersistence: boolean | Event = true) => {
   }
   if (waitForPersistence !== false) await persistBillApproval()
   else void persistBillApproval()
+}
+// AttFile uploaded in MASTER SI SUBMIT (Marks & Numbers) for the same shipment row.
+const billSiAttachment = () => {
+  const file: any = siSubmitFormFromCell(rowValueByHeader('MASTER SI SUBMIT') || rowValueByHeader('SI SUBMIT')).marksFile
+  return file && String(file.url || '').trim() ? file : null
 }
 const viewBillDetailFile = (file: any) => {
   const url = String(file?.url || '').trim()
@@ -24153,14 +24238,16 @@ onBeforeUnmount(() => {
 .blform .att-del:hover{background:#a5301f}
 .payment-note-overlay{z-index:410;background:rgba(10,30,18,.42)}
 .payment-note-modal{width:740px;max-width:95vw;max-height:92vh;overflow:auto;padding:0;border-radius:8px;background:#fff;font:12px/1.4 'Segoe UI',Arial,sans-serif;color:#0e1512}
-.payment-note-bar{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid #e4e9e2;background:#fafbf9;color:#7a847d;font-weight:700}.payment-note-bar>div{display:flex;align-items:center;gap:10px}.payment-note-modal .payment-note-pdf{position:static;padding:7px 15px;border:0;border-radius:8px;background:#008f4c;color:#fff;font-size:12px;font-weight:700}.payment-note-modal .gsd-modal-x{position:static;display:grid;width:26px;height:26px;border:0;border-radius:50%;background:#eef1ef;color:#3a463f;place-items:center;box-shadow:none}
+.payment-note-bar{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid #e4e9e2;background:#fafbf9;color:#7a847d;font-weight:700}.payment-note-bar>div{display:flex;align-items:center;gap:10px}.payment-note-modal .payment-note-pdf{position:static;padding:7px 15px;border:0;border-radius:8px;background:#008f4c;color:#fff;font-size:12px;font-weight:700}.payment-note-modal .gsd-modal-x{position:static;display:grid;place-items:center}
 .payment-note-document{--acc:#008f4c;--wash:#e8f8ef;padding:0 0 26px;background:#fff}.payment-note-document.dn-credit{--acc:#d97706;--wash:#fdf0e0}.payment-note-topbar{height:6px;background:var(--acc)}
 .payment-note-head{display:flex;align-items:flex-start;gap:16px;padding:22px 30px 0}.payment-note-logo{display:flex;align-items:center;flex:none;width:196px;height:46px}.payment-note-logo>b{display:grid;width:40px;height:40px;border-radius:9px;background:#008f4c;color:#fff;font-size:16px;place-items:center}.payment-note-logo>span{display:grid;margin-left:10px}.payment-note-logo strong{font-size:15px}.payment-note-logo small{margin-top:4px;color:#7a847d;font-size:9.5px;font-weight:700;letter-spacing:3px}.payment-note-company-wrap{flex:1;min-width:0}.payment-note-company{text-align:left;font-size:14px;font-weight:800}.payment-note-address{max-width:270px;margin-top:4px;color:#7a847d;text-align:left;font-size:10.5px;font-weight:400;line-height:1.5}
 .payment-note-badge{flex:none;min-width:158px;padding:9px 15px;border:1px solid var(--acc);border-radius:10px;background:var(--wash);text-align:right}.payment-note-badge strong{display:block;color:var(--acc);font-size:16px}.payment-note-badge span{display:block;margin-top:4px;font-size:10px;line-height:1.6}.payment-note-meta{display:flex;gap:26px;padding:16px 30px 0;font-size:11px}
-.payment-note-box{min-height:270px;margin:14px 30px 0;padding:0;border:1px solid #e4e9e2;border-radius:10px;overflow:hidden}.payment-note-table{width:100%;border-collapse:collapse;font-size:11.5px}.payment-note-table th{padding:9px 12px;border:0;background:var(--acc);color:#fff;text-align:left}.payment-note-table td{padding:8px 12px;border:0;border-top:1px solid #eef1ef}.payment-note-table th:nth-child(3){text-align:center}.payment-note-table th:last-child,.payment-note-table .amount,.payment-note-table .total-label{text-align:right}.payment-note-table tbody tr:nth-child(even) td{background:#fafbf9}.payment-note-table .total td{border-top:2px solid var(--acc);background:var(--wash);font-weight:800}
+.payment-note-box{min-height:270px;margin:14px 30px 0;padding:0;border:1px solid #e4e9e2;border-radius:10px;overflow:hidden}.payment-note-table{width:100%;border-collapse:collapse;font-size:11.5px}.payment-note-table th{padding:9px 12px;border:0;background:var(--acc);color:#fff;text-align:left}.payment-note-table td{padding:8px 12px;border:0;border-top:1px solid #eef1ef}.payment-note-table th:nth-child(3){text-align:center}.payment-note-table th:last-child,.payment-note-table .amount,.payment-note-table .total-label{text-align:right}.payment-note-table tbody tr:nth-child(even) td{background:#fafbf9}.payment-note-table .total td{border-top:2px solid var(--acc);background:var(--wash);font-weight:800}.payment-note-table th:nth-child(-n+3),.payment-note-table td:nth-child(-n+3){text-align:center}.payment-note-table th:last-child,.payment-note-table td.amount{text-align:right}.payment-note-table .total-label{text-align:right!important}.payment-note-logo>b{display:flex;align-items:center;justify-content:center;line-height:1;padding:0;font-weight:800;letter-spacing:.5px;text-align:center}
 .payment-note-foot{display:flex;justify-content:space-between;gap:30px;margin:0;padding:22px 30px 0;font-size:11px;line-height:1.6}.payment-note-bank{max-width:54%}.payment-note-foot b{display:inline-block;margin-bottom:5px;color:var(--acc);font-size:10px}.payment-note-foot .issuer{flex:none;min-width:200px;text-align:center}.payment-note-sign-space{height:44px}.payment-note-sign-line{width:172px;margin:0 auto 5px;border-top:1px solid #3a463f}.payment-note-foot .issuer strong{color:#0e1512;font-size:11px}
 .payment-note-modal{border:1px solid #008f4c!important;font-family:var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)!important}
-.payment-note-bar{min-height:51px;border-bottom:1px solid #dfe7e1;font-family:var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif);font-size:12px}.payment-note-modal .gsd-modal-x{background:#eef1ef!important;color:#3a463f!important;font-family:Arial,sans-serif!important;font-size:18px!important;font-weight:400!important}
+.payment-note-bar{min-height:51px;border-bottom:1px solid #dfe7e1;font-family:var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif);font-size:12px}/* Same red round close button as every other modal. */
+.payment-note-modal .gsd-modal-x{position:static!important;flex:none;width:24px!important;height:24px!important;padding:0!important;font-size:0!important;line-height:0!important}
+.payment-note-modal .gsd-modal-x::before{transform:none!important;margin:0!important}
 .payment-note-document{font-family:var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif);font-size:12px}.payment-note-topbar{height:5px}.payment-note-company,.payment-note-logo strong,.payment-note-badge strong,.payment-note-table .total td,.payment-note-foot .issuer strong{font-family:var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}
 .payment-note-table{table-layout:fixed}.payment-note-table th{height:35px;border-right:1px solid rgba(255,255,255,.8)!important;border-bottom:1px solid var(--acc)!important;font-family:var(--mono,'Geist Mono',ui-monospace,Menlo,monospace);font-size:10.5px;font-weight:700;letter-spacing:.02em}.payment-note-table th:last-child{border-right:0!important}.payment-note-table th:nth-child(1){width:27%}.payment-note-table th:nth-child(2){width:33%}.payment-note-table th:nth-child(3){width:21%}.payment-note-table th:nth-child(4){width:19%}.payment-note-table td{font-size:11px}.payment-note-meta,.payment-note-foot{font-size:10.5px}
 .payment-note-bar>span,.payment-note-modal .payment-note-pdf{font-weight:800!important}
@@ -24693,6 +24780,66 @@ onBeforeUnmount(() => {
 .do-document-modal{width:920px}.do-document-scroll{padding:18px 22px 24px}.do-document-sheet{width:min(824px,100%)}@media(max-width:820px){.do-document-sheet{width:100%}}
 .do-print-sheet{position:fixed!important;left:-10000px!important;top:0!important;width:824px!important;max-width:none!important;min-height:0!important;margin:0!important;padding:44px 50px 34px!important;box-shadow:none!important;overflow:visible!important}.do-print-sheet .do-print-value{display:flex;align-items:center;box-sizing:border-box;width:100%;min-height:34px;border:1px solid #c9d3cf;border-radius:5px;background:#f1f5f4;padding:1px 9px 7px;color:#46534d;font:12px/1.1 Arial,sans-serif;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}.do-print-sheet .do-print-textarea{display:block;min-height:54px;padding-top:4px;padding-bottom:10px;line-height:1.25}.do-print-sheet .do-doc-table .do-print-value{min-height:30px;justify-content:center;border:0;border-radius:0;background:#f1f5f4;padding:1px 3px 5px;text-align:center}.do-print-sheet .do-doc-party-head{justify-content:flex-start}.do-print-sheet .do-doc-sign{margin-bottom:18px;break-inside:avoid}
 .si-date-input:not(:disabled){cursor:pointer;padding-right:32px!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Crect x='3' y='4' width='18' height='17' rx='2'/%3E%3Cpath d='M8 2v4M16 2v4M3 10h18'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:15px}
+/* RefLastBiz: the dropdown (and its "no match" message) is exactly as wide as the input. */
+.pr-input-anchor{position:relative;display:inline-flex}
+.pr-input-anchor .pr-searchresults,.an-ref-search .pr-searchresults{left:0!important;right:0!important;width:auto!important;min-width:0!important;max-width:none!important}
+.pr-input-anchor .pr-sr-item,.an-ref-search .pr-sr-item{display:block!important;min-height:0!important;height:auto!important;padding:9px 12px!important;border-bottom:1px solid #e6ebe8!important}
+.pr-sr-sub{margin-top:3px;color:#6b7686;font-size:11px}
+/* Exactly two lines per result: Job No, then REF + line count (cut with … if too long). */
+.pr-input-anchor .pr-sr-info,.an-ref-search .pr-sr-info{display:block;min-width:0;width:100%}
+.pr-sr-line{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;line-height:1.5}
+.pr-input-anchor .pr-sr-empty,.an-ref-search .pr-sr-empty{display:block;padding:12px 14px!important;line-height:1.45;white-space:normal;text-align:center}
+/* Payment Approval status: Approved green, Rejected orange, Request Edit yellow -
+   in the cell (editable or locked) and in the dropdown list. */
+.gsd-expcol-modal .expcol-table .ec-statussel.ok,.ec-statussel.ok:not(:disabled),.ec-statussel.ok:disabled{background:#cdeecd!important;color:#0e5a32!important}
+.gsd-expcol-modal .expcol-table .ec-statussel.reject,.ec-statussel.reject:not(:disabled),.ec-statussel.reject:disabled{background:#ffd8b5!important;color:#8a4310!important}
+.gsd-expcol-modal .expcol-table .ec-statussel.edit,.ec-statussel.edit:not(:disabled),.ec-statussel.edit:disabled{background:#fff3a8!important;color:#6b5a00!important}
+.ec-statussel option{background:#fff;color:#24332c}
+.ec-statussel option.ec-opt-ok{background:#cdeecd;color:#0e5a32}
+.ec-statussel option.ec-opt-reject{background:#ffd8b5;color:#8a4310}
+.ec-statussel option.ec-opt-edit{background:#fff3a8;color:#6b5a00}
+/* Editable cells inside popup tables: the blinking caret is enough - no focus border,
+   outline or glow on free-text, dropdown or date fields. */
+.wb-modal-overlay td :is(input,select,textarea):focus,
+.wb-modal-overlay td :is(input,select,textarea):focus-visible,
+.gsd-modal td :is(input,select,textarea):focus,
+.gsd-modal td :is(input,select,textarea):focus-visible{outline:none!important;box-shadow:none!important;border-color:transparent!important}
+.ops-picker-field-proxy.in-table{border-color:transparent!important;box-shadow:none!important;border-radius:0!important}
+/* :not(#_x) raises specificity to id level so this beats every per-table focus style. */
+:is(.wb-modal-overlay,.gsd-modal) td:not(#_x) :is(input:not([type=checkbox]):not([type=radio]),select,textarea):is(:focus,:focus-visible,:focus-within,:active){outline:none!important;box-shadow:none!important;border-color:transparent!important}
+:is(.wb-modal-overlay,.gsd-modal) td:not(#_x):focus-within{outline:none!important;box-shadow:none!important}
+/* Worksheet grid: same - only the caret shows while editing a cell. */
+.ops-textcell.inline-editing:not(#_x){box-shadow:none!important;outline:none!important}
+td.editing:not(#_x){outline:none!important;box-shadow:none!important}
+td:not(#_x) :is(input:not([type=checkbox]):not([type=radio]),textarea,.ops-textcell,.ops-edit-input,.ops-time-input):is(:focus,:focus-visible,:active){outline:none!important;box-shadow:none!important;border-color:transparent!important}
+.gsd-payment-modal .gsd-pay-table td .pcell:focus,
+.gsd-payment-modal .gsd-pay-table td>.pcell:focus,
+.gsd-modal .gsd-pay-table td .pcell:focus,
+.gsd-pay-table td .pcell:focus{outline:none!important;box-shadow:none!important;border-color:transparent!important}
+/* Payment Request / Payment Approval tables: each column only as wide as its content
+   (header or value), instead of stretching a fixed 2050px/1840px table. */
+.gsd-payment-modal .gsd-pay-table:not(#_x),.gsd-expcol-modal .expcol-table:not(#_x){width:max-content!important;min-width:100%!important;table-layout:auto!important}
+.gsd-payment-modal .gsd-pay-table:not(#_x) :is(th,td):not(.pay-check),.gsd-expcol-modal .expcol-table:not(#_x) :is(th,td){width:auto!important;white-space:nowrap;padding-left:10px;padding-right:10px}
+.gsd-payment-modal .gsd-pay-table:not(#_x) td :is(input:not([type=checkbox]),select){min-width:90px}
+.gsd-payment-modal .gsd-pay-table:not(#_x) col:not(:first-child),.gsd-expcol-modal .expcol-table:not(#_x) col:not(:first-child){width:auto!important}
+.gsd-payment-modal .gsd-pay-table:not(#_x) th.pay-gap,.gsd-payment-modal .gsd-pay-table:not(#_x) td.pay-gap{width:8px!important;min-width:8px!important;padding:0!important}
+.gsd-payment-modal .gsd-pay-table:not(#_x) td input[type=date],.gsd-expcol-modal .expcol-table:not(#_x) td input[type=date]{min-width:120px}
+/* Confirm popups (YES/NO and OK/Cancel): only as wide as their message and buttons. */
+.wb-confirm-overlay .wb-confirm-modal:not(#_x),.wb-confirm-overlay .wsmodal:not(#_x){width:fit-content!important;min-width:260px!important;max-width:min(460px,92vw)!important}
+.wb-confirm-overlay :is(.question-confirm-title,.wsmodal-body,.wsmodal-head){white-space:normal;overflow-wrap:anywhere}
+/* TRUCK & CONT/SEAL / TRUCKING INFO: columns sized to their content, popup sized to the table. */
+.gsd-modal.gsd-truck-cont-modal:not(#_x){width:fit-content!important;min-width:min(560px,96vw)!important;max-width:96vw!important}
+.gsd-truck-cont-modal .gsd-truck-table:not(#_x){width:max-content!important;min-width:0!important;max-width:none!important;table-layout:auto!important}
+.gsd-truck-cont-modal .gsd-truck-table:not(#_x) col{width:auto!important}
+.gsd-truck-cont-modal .gsd-truck-table:not(#_x) :is(th,td){width:auto!important;white-space:nowrap;padding-left:12px;padding-right:12px}
+.gsd-truck-cont-modal .gsd-truck-table:not(#_x) :is(th,td).truck-select-cell,.gsd-truck-cont-modal .gsd-truck-table:not(#_x) th.tk-all{width:40px!important;padding:0 8px}
+/* Inputs default to ~150px whatever they hold: size them to their text instead. */
+.gsd-truck-cont-modal .gsd-truck-table:not(#_x) td :is(input:not([type=checkbox]):not([type=date]):not([type=time]),select){field-sizing:content;width:auto!important;min-width:70px!important;max-width:220px}
+.gsd-truck-cont-modal .gsd-truck-table:not(#_x) td input[type=date]{min-width:120px}
+/* The Date/Time pairs under "Pickup Location Arrival Time" and "Port/Warehouse Gatein Time"
+   share one equal width, so both groups line up. */
+.gsd-truck-cont-modal .gsd-truck-table:not(#_x) thead tr:nth-child(2) th,
+.gsd-truck-cont-modal .gsd-truck-table:not(#_x) td.truck-datetime-cell{width:120px!important;min-width:120px!important;max-width:120px!important}
 /* DELIVERY ORDER - match AdminMockup/Mau_AN_SI_DO_MNF_2_1.html (FCL / LCL / AIR) */
 .do-document-sheet{color:#1f2733;font:13px/1.35 Arial,Helvetica,sans-serif}
 .do-document-head{align-items:flex-start;padding-bottom:10px;margin-bottom:16px;border-bottom:2px solid #1f2733;color:#1f2733}
