@@ -208,6 +208,7 @@
                     :disabled="isSentEcdRowLocked(rowIndex)"
                     @change="toggleCheckbox(rowIndex, columnIndex, $event)"
                   />
+                  <span v-else-if="isEmptyViewOnlyVesselCell(rowIndex, columnIndex)" class="ops-empty-dash">—</span>
                   <button
                     v-else-if="isActionInfoCell(rowIndex, columnIndex)"
                     v-show="!hideLockedGsdAddAction(rowIndex, !infoActionIsDetail(rowIndex, columnIndex))"
@@ -642,6 +643,7 @@
                       @click.stop
                       @change="toggleCheckbox(rowIndex, columnIndex, $event)"
                     />
+                    <span v-else-if="isEmptyViewOnlyVesselCell(rowIndex, columnIndex)" class="ops-empty-dash">—</span>
                     <button
                       v-else-if="isActionInfoCell(rowIndex, columnIndex)"
                       class="ad-btn"
@@ -833,6 +835,18 @@
         <div class="wsmodal-foot">
           <button type="button" class="wsmodal-btn" @click="closeDropdownModal">Cancel</button>
           <button type="button" class="wsmodal-btn primary" @click="applyDropdownModal">Add</button>
+        </div>
+      </div>
+    </div>
+    <div v-if="leaveGuard.open" class="wb-modal-overlay leave-guard-overlay" @mousedown.self="!leaveGuard.waiting && (leaveGuard.open = false)">
+      <div class="leave-guard-modal" role="alertdialog" aria-modal="true" aria-labelledby="leave-guard-title">
+        <div class="leave-guard-icon" aria-hidden="true"><span></span></div>
+        <div id="leave-guard-title" class="leave-guard-title">{{ leaveGuard.waiting ? 'Saving your changes…' : 'Changes are still being saved' }}</div>
+        <p class="leave-guard-text">{{ leaveGuard.waiting ? 'The page will reload as soon as everything is saved.' : 'Reloading now may lose the data you just entered. Wait for the save to finish, then reload.' }}</p>
+        <div class="leave-guard-actions">
+          <button type="button" class="leave-guard-btn ghost" :disabled="leaveGuard.waiting" @click="leaveGuard.open = false">Stay on page</button>
+          <button type="button" class="leave-guard-btn danger" :disabled="leaveGuard.waiting" @click="leaveGuardReloadNow">Reload anyway</button>
+          <button type="button" class="leave-guard-btn primary" :disabled="leaveGuard.waiting" @click="leaveGuardWaitAndReload">{{ leaveGuard.waiting ? 'Saving…' : 'Save & reload' }}</button>
         </div>
       </div>
     </div>
@@ -2191,8 +2205,8 @@
               <div v-if="!isLclSheet()" class="si-table-wrap gsd-five-row-scroll"><table class="si-table"><thead><tr><th>#</th><th>ContNo#</th><th>ContType</th><th>SealNo#</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th></tr></thead><tbody><tr v-for="(container, index) in siSubmitContainers()" :key="container.id"><td class="si-order">{{ index + 1 }}</td><td><input v-model="container.contNo" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.contType" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.sealNo" :disabled="!gsdModal.editing || isFclExwDcdSiModal()" /></td><td><input v-model="container.qty" type="number" min="0" step="1" :disabled="!gsdModal.editing" /></td><td><input v-model="container.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="container.gw" type="number" min="0" step="0.01" :disabled="!gsdModal.editing" /></td><td><input v-model="container.mea" type="number" min="0" step="0.001" :disabled="!gsdModal.editing" /></td></tr></tbody></table></div>
               <button v-if="!isFclExwDcdSiModal() && !isLclSheet()" class="wb-modal-btn si-add-container" type="button" :disabled="!gsdModal.editing" @click="addSiSubmitContainer">+ Add Container</button>
               <div v-if="isLclSheet()" class="si-section-title">Cargo Description</div>
-              <div v-if="isLclSheet()" class="si-table-wrap gsd-five-row-scroll"><table class="si-table"><thead><tr><th>#</th><th>Marks &amp; Numbers</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th><th v-if="isAirMode()">C.W (KG)</th></tr></thead><tbody><tr v-for="(container, index) in siSubmitContainers()" :key="container.id"><td class="si-order">{{ index + 1 }}</td><td><input v-model="container.marks" :disabled="!gsdModal.editing" /></td><td><input v-model="container.qty" type="number" min="0" step="1" :disabled="!gsdModal.editing" /></td><td><input v-model="container.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="container.gw" type="number" min="0" step="0.01" :disabled="!gsdModal.editing" /></td><td><input v-model="container.mea" type="number" min="0" step="0.001" :disabled="!gsdModal.editing" /></td><td v-if="isAirMode()"><input :value="siGoodsChargeable(container)" readonly /></td></tr></tbody></table></div>
-              <button v-if="isLclSheet()" class="wb-modal-btn si-add-container" type="button" :disabled="!gsdModal.editing" @click="addSiSubmitContainer">+ Add Row</button>
+              <label v-if="isLclSheet()" class="si-f si-description si-lcl-description"><span>Description</span><textarea v-model="gsdModal.form.description" rows="2" :disabled="!gsdModal.editing"></textarea></label>
+              <div v-if="isLclSheet()" class="si-table-wrap gsd-five-row-scroll si-lcl-cargo-table"><table class="si-table"><thead><tr><th>#</th><th>Shipping Marks</th><th>Cargo Description</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th><th v-if="isAirMode()">C.W (KG)</th></tr></thead><tbody><tr v-for="(container, index) in siSubmitContainers()" :key="container.id"><td class="si-order">{{ index + 1 }}</td><td><input v-model="container.marks" :disabled="!gsdModal.editing" /></td><td><input v-model="container.cargoDescription" :disabled="!gsdModal.editing" /></td><td><input v-model="container.qty" type="number" min="0" step="1" :disabled="!gsdModal.editing" /></td><td><input v-model="container.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="container.gw" type="number" min="0" step="0.01" :disabled="!gsdModal.editing" /></td><td><input v-model="container.mea" type="number" min="0" step="0.001" :disabled="!gsdModal.editing" /></td><td v-if="isAirMode()"><input :value="siGoodsChargeable(container)" readonly /></td></tr></tbody></table></div>
               <div v-if="!isLclSheet()" class="si-section-title">Cargo Description</div>
               <label v-if="!isLclSheet()" class="si-f si-description"><span>Description</span><textarea v-model="gsdModal.form.description" rows="2" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('description') }"></textarea></label>
               <div v-if="!isLclSheet()" class="si-g3"><label class="si-f"><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="si-marks" rows="1" :disabled="!gsdModal.editing"></textarea><span class="si-attachment"><button class="si-attach-button" type="button" :disabled="!gsdModal.editing" @click="siMarksFileInput?.click()"><svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5 5 0 0 1-7-7l9-9a3.3 3.3 0 0 1 4.7 4.7l-9 9a1.7 1.7 0 0 1-2.4-2.4l8.1-8.1"/></svg>AttFile</button><span v-if="gsdModal.form.marksFile" class="si-file-name">{{ gsdModal.form.marksFile.name }}</span><button v-if="gsdModal.form.marksFile" class="si-file-icon" type="button" title="View" @click="viewSiMarksFile"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button><button v-if="gsdModal.form.marksFile" class="si-file-remove" type="button" title="Remove" :disabled="!gsdModal.editing" @click="removeSiMarksFile">&times;</button><em v-if="!gsdModal.editing && !gsdModal.form.marksFile">No file attached</em></span></label><label class="si-f"><span>QTY</span><input :value="siSubmitTotal('qty')" type="text" readonly /></label><label class="si-f"><span>Unit</span><input v-model="gsdModal.form.unit" type="text" :disabled="!gsdModal.editing" /></label></div>
@@ -2577,7 +2591,7 @@
                     <template v-if="isClearanceLclView() && isAirMode()"><th>VOLUME</th><th>G.W</th><th>MEA.(CBM)</th></template>
                     <th v-else-if="isClearanceLclView()">VOLUME</th>
                     <template v-else>
-                      <th>Purpose</th>
+
                       <th>Container No#</th>
                       <th>Seal No#</th>
                     </template>
@@ -2587,11 +2601,11 @@
                 <tbody>
                   <tr v-for="(row, index) in clearanceRows()" :key="row.key">
                     <td class="clr-ro">{{ index + 1 }}</td>
-                    <td class="clr-ro">{{ row.type }}</td>
+                    <td class="clr-ro">{{ isClearanceLclView() ? row.type : contSealTypeLabel(row) }}</td>
                     <template v-if="isClearanceLclView() && isAirMode()"><td v-for="(cell, cellIndex) in airVolumeCells(index)" :key="cellIndex" class="clr-ro">{{ cell }}</td></template>
                     <td v-else-if="isClearanceLclView()" class="clr-ro">{{ volumeSummaryLines(rowValueByHeader('VOLUME'))[index] || '-' }}</td>
                     <template v-else>
-                      <td class="clr-ro">{{ row.purpose }}</td>
+
                       <td class="clr-ro">{{ row.containerNo || '-' }}</td>
                       <td class="clr-ro">{{ row.sealNo || '-' }}</td>
                     </template>
@@ -2628,12 +2642,12 @@
                     <template v-if="isClearanceLclView() && isAirMode()"><th>VOLUME</th><th>G.W</th><th>MEA.(CBM)</th></template>
                     <th v-else-if="isClearanceLclView()">VOLUME</th>
                     <template v-else>
-                      <th>Purpose</th>
+
                       <th>Container No#</th>
                       <th>Seal No#</th>
                     </template>
                     <th class="clr-declhead">
-                      <span class="clr-dcap"><span>Declaration</span><button class="clr-plus" :class="{ dim: !allClearanceRowsSelected() }" type="button" title="Link All Containers to One CDS No" @click="addClearanceDeclarationToAll">+</button></span>
+                      <span class="clr-dcap"><span>Declaration</span><button class="clr-plus" :class="{ dim: selectedClearanceRowKeys().length < 2 }" type="button" title="Link the ticked containers to one CDS No" @click="addClearanceDeclarationToAll">+</button></span>
                     </th>
                   </tr>
                 </thead>
@@ -2641,11 +2655,11 @@
                   <tr v-for="(row, index) in clearanceRows()" :key="row.key">
                     <td class="clr-allcell"><input v-model="gsdModal.form.selected[row.key]" type="checkbox" /></td>
                     <td class="clr-ro">{{ index + 1 }}</td>
-                    <td class="clr-ro">{{ row.type }}</td>
+                    <td class="clr-ro">{{ isClearanceLclView() ? row.type : contSealTypeLabel(row) }}</td>
                     <template v-if="isClearanceLclView() && isAirMode()"><td v-for="(cell, cellIndex) in airVolumeCells(index)" :key="cellIndex" class="clr-ro">{{ cell }}</td></template>
                     <td v-else-if="isClearanceLclView()" class="clr-ro">{{ volumeSummaryLines(rowValueByHeader('VOLUME'))[index] || '-' }}</td>
                     <template v-else>
-                      <td class="clr-ro">{{ row.purpose }}</td>
+
                       <td class="clr-ro">{{ row.containerNo || '-' }}</td>
                       <td class="clr-ro">{{ row.sealNo || '-' }}</td>
                     </template>
@@ -3048,11 +3062,10 @@
                 <div v-if="isLclSheet()" class="an-detail-g2"><label><span>AN No.</span><input v-model.trim="gsdModal.form.anNo" :disabled="!gsdModal.editing" /></label><label><span>Date</span><input v-model="gsdModal.form.anDate" type="date" :disabled="!gsdModal.editing" /></label></div>
                 <div class="an-detail-g2"><label><span>From (Shipper)</span><textarea v-model="gsdModal.form.shipper" class="an-party-textarea" :disabled="!gsdModal.editing" rows="3"></textarea></label><label><span>To (Consignee)</span><textarea v-model="gsdModal.form.consignee" class="an-party-textarea" :disabled="!gsdModal.editing" rows="3"></textarea></label></div>
                 <div class="an-detail-g2 single"><label><span>Notify Party</span><textarea v-model="gsdModal.form.notify" :disabled="!gsdModal.editing" rows="2"></textarea></label></div>
-                <div v-if="!isLclSheet()" class="an-detail-g2"><div class="an-detail-field"><span>Received Freetime <em>(from Pre-Alert Confirmation)</em></span><div class="an-detail-freetime"><b>DEM</b><input v-model="gsdModal.form.dem" readonly placeholder="-" /><b>DET</b><input v-model="gsdModal.form.det" readonly placeholder="-" /></div></div></div>
                 <div v-if="isAirMode()" class="an-detail-g3"><label><span>Flight No.</span><input v-model="gsdModal.form.vessel" readonly /></label><label><span>Flight Date</span><input v-model="gsdModal.form.flightDate" type="date" disabled /></label><label><span>AWB No.</span><input v-model="gsdModal.form.blNo" readonly /></label></div>
                 <div v-if="isAirMode()" class="an-detail-g3"><label><span>Airport of Loading</span><input v-model="gsdModal.form.pol" readonly /></label><label><span>Airport of Discharge</span><input v-model="gsdModal.form.pod" readonly /></label><label><span>ETA</span><input v-model="gsdModal.form.eta" type="date" :disabled="!gsdModal.editing" @change="syncArrivalNoticeEta" /></label></div>
                 <div v-if="!isAirMode()" class="an-detail-g3"><label><span>Vessel/Voyage</span><input v-model="gsdModal.form.vessel" readonly /></label><label><span>ETA</span><input v-model="gsdModal.form.eta" type="date" :disabled="!gsdModal.editing" @change="syncArrivalNoticeEta" /></label><label><span>B/L No.</span><input v-model="gsdModal.form.blNo" readonly /></label></div>
-                <div v-if="!isAirMode()" class="an-detail-g2"><label><span>Port of Loading</span><input v-model="gsdModal.form.pol" readonly /></label><label><span>Port of Discharge</span><input v-model="gsdModal.form.pod" readonly /></label></div>
+                <div v-if="!isAirMode()" :class="isLclSheet() ? 'an-detail-g2' : 'an-detail-g3'"><label><span>Port of Loading</span><input v-model="gsdModal.form.pol" readonly /></label><label><span>Port of Discharge</span><input v-model="gsdModal.form.pod" readonly /></label><div v-if="!isLclSheet()" class="an-detail-field an-freetime-field"><span>Received Freetime <em>(from Pre-Alert Confirmation)</em></span><div class="an-detail-freetime"><b>DEM</b><input v-model="gsdModal.form.dem" readonly placeholder="-" /><b>DET</b><input v-model="gsdModal.form.det" readonly placeholder="-" /></div></div></div>
                 <div v-if="opsParts?.mode === 'LCL'" class="an-cfs-picker">
                   <label><span>Warehouse CFS</span><input v-model.trim="gsdModal.form.cfsWarehouse" list="arrival-cfs-warehouse-options" type="text" autocomplete="off" placeholder="Type to filter CFS warehouse..." :disabled="!gsdModal.editing" @change="selectArrivalCfsWarehouse" /></label>
                   <datalist id="arrival-cfs-warehouse-options"><option v-for="warehouse in arrivalCfsWarehouseOptions()" :key="warehouse.value" :value="warehouse.value">{{ warehouse.fullAddress || warehouse.label }}</option></datalist>
@@ -3069,7 +3082,7 @@
                 <div v-if="!isLclSheet()" class="an-detail-g2"><label><span>GW (KG)</span><input :value="arrivalNoticeTotals().gw" readonly /></label><label><span>MEA. (CBM)</span><input :value="arrivalNoticeTotals().mea" readonly /></label></div>
                 <div class="an-detail-section an-detail-section-ref"><span>Charges Due</span><span class="an-refbox"><label>RefLastBiz:</label><span class="an-ref-search"><input v-model.trim="gsdModal.form.refLastBiz" :disabled="!gsdModal.editing" placeholder="JOB NO# / REF NO#" autocomplete="off" @input="searchArrivalPaymentHistory" @keydown.escape="paymentSearchOpen = false" /><span class="pr-searchresults" :class="{ show: paymentSearchOpen }"><button v-for="match in paymentSearchResults" :key="`an-${match.id}`" class="pr-sr-item" type="button" @mousedown.prevent="selectArrivalPaymentHistoryMatch(match)"><span class="pr-sr-info"><b class="pr-sr-line" :title="match.jobNo">{{ match.jobNo || '—' }}</b><span class="pr-sr-line pr-sr-sub" :title="`REF: ${match.refNo || '—'}`">{{ paymentMatchService(match) ? `${paymentMatchService(match)} · ` : '' }}{{ match.lineCount }} line(s)</span></span></button><span v-if="!paymentSearchResults.length" class="pr-sr-empty">No previous Job No matches your search.</span></span></span><button type="button" :disabled="!gsdModal.editing" @click="openArrivalPaymentHistoryFilter">Search</button></span></div>
                 <table class="an-detail-table"><thead><tr><th>#</th><th>Charge Name</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>CUR</th><th>Tax (%)</th><th>Total Price</th></tr></thead><tbody><tr v-for="(charge, index) in gsdModal.form.charges" :key="charge.key || index"><td>{{ index + 1 }}</td><td><input v-model.trim="charge.chargeName" :disabled="!gsdModal.editing" list="an-charge-options" autocomplete="off" placeholder="Type to filter" @focus="setActiveDatalistValue(charge.chargeName)" @input="setActiveDatalistValue(charge.chargeName)" /></td><td><input v-model="charge.qty" :disabled="!gsdModal.editing" /></td><td><input v-model.trim="charge.unit" :disabled="!gsdModal.editing" list="an-unit-options" autocomplete="off" placeholder="Type to filter" @focus="loadReferenceUnits" @input="charge.unit = upperText(charge.unit)" /></td><td><input v-model="charge.unitPrice" :disabled="!gsdModal.editing" @input="charge.unitPrice = sanitizeMoneyInput(charge.unitPrice)" @blur="charge.unitPrice = formatMoneyValue(charge.unitPrice)" /></td><td><input v-model.trim="charge.cur" :disabled="!gsdModal.editing" list="an-currency-options" autocomplete="off" placeholder="CUR" @focus="setActiveDatalistValue(charge.cur)" @input="charge.cur = upperText(charge.cur); setActiveDatalistValue(charge.cur)" @change="selectArrivalNoticeBankForCurrency(charge.cur)" /></td><td><input v-model="charge.taxRate" :disabled="!gsdModal.editing" /></td><td>{{ arrivalNoticeChargeTotal(charge) }}</td></tr><tr v-if="!gsdModal.form.charges.length"><td colspan="8" class="empty">No charge data</td></tr></tbody><tfoot><tr><td colspan="7" class="an-total-label">Total Tax Amount</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().tax }}</td></tr><tr><td colspan="7" class="an-total-label">Total Charge</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().total }}</td></tr></tfoot></table>
-                <datalist id="an-unit-options"><option v-for="option in referenceUnitOptions" :key="option.value" :value="option.value">{{ option.label }}</option></datalist>
+                <datalist id="an-unit-options"><option v-for="option in referenceUnitOptions" :key="option.value" :value="option.value" /></datalist>
                 <datalist id="an-charge-options"><option v-for="option in paymentDatalistOptions(paymentChargeOptions)" :key="option" :value="option" /></datalist>
                 <datalist id="an-currency-options"><option v-for="option in paymentDatalistOptions(paymentCurrencies)" :key="option" :value="option" /></datalist>
                 <button class="an-add-row" type="button" :disabled="!gsdModal.editing" @click="addArrivalCharge">+ Add Charge</button>
@@ -4150,13 +4163,59 @@ let saveTimerKey = ''
 let saveTimerCountry = ''
 const sheetUpdatedAtByStorageKey = new Map<string, string>()
 const pendingLinkedWrites = new Set<Promise<unknown>>()
+// ---- Leave-page guard: warn before F5 / close while data is still being saved ----
+const inFlightSaves = ref(0)
+const pendingLinkedWriteCount = ref(0)
+const hasPendingSaves = () => !!saveTimer || inFlightSaves.value > 0 || pendingLinkedWriteCount.value > 0 || pendingLinkedWrites.size > 0
+const leaveGuard = reactive({ open: false, waiting: false })
+const onBeforeUnloadGuard = (event: BeforeUnloadEvent) => {
+  if (!hasPendingSaves()) return
+  // Browsers only allow their own built-in dialog here.
+  event.preventDefault()
+  event.returnValue = ''
+}
+const waitForPendingSaves = async (timeoutMs = 15000) => {
+  const started = Date.now()
+  while (hasPendingSaves() && Date.now() - started < timeoutMs) {
+    if (saveTimer && saveTimerKey) {
+      const key = saveTimerKey
+      const country = saveTimerCountry
+      resetSaveTimer()
+      if (activeKey.value === key && loadedCountryId.value === country) await saveSheet(key, undefined, country)
+    }
+    await Promise.allSettled([...pendingLinkedWrites])
+    await new Promise((resolve) => setTimeout(resolve, 150))
+  }
+  return !hasPendingSaves()
+}
+const leaveGuardWaitAndReload = async () => {
+  leaveGuard.waiting = true
+  await waitForPendingSaves()
+  leaveGuard.waiting = false
+  leaveGuard.open = false
+  window.location.reload()
+}
+const leaveGuardReloadNow = () => {
+  leaveGuard.open = false
+  window.removeEventListener('beforeunload', onBeforeUnloadGuard)
+  window.location.reload()
+}
+const onReloadShortcut = (event: KeyboardEvent) => {
+  const isReload = event.key === 'F5' || ((event.ctrlKey || event.metaKey) && (event.key === 'r' || event.key === 'R'))
+  if (!isReload || !hasPendingSaves()) return
+  event.preventDefault()
+  event.stopPropagation()
+  leaveGuard.open = true
+}
 const linkedWriteChains = new Map<string, Promise<void>>()
 const trackLinkedWrite = <T,>(write: Promise<T>) => {
   pendingLinkedWrites.add(write)
-  void write.then(
-    () => pendingLinkedWrites.delete(write),
-    () => pendingLinkedWrites.delete(write),
-  )
+  pendingLinkedWriteCount.value = pendingLinkedWrites.size
+  const done = () => {
+    pendingLinkedWrites.delete(write)
+    pendingLinkedWriteCount.value = pendingLinkedWrites.size
+  }
+  void write.then(done, done)
   return write
 }
 const resetSaveTimer = () => {
@@ -6648,7 +6707,18 @@ const loadRouteCountryOptions = async () => {
   }
 }
 
-const saveSheet = async (
+// Every sheet save is counted so leaving the page can warn while one is in flight.
+const saveSheet = (
+  requestedKey = activeKey.value,
+  payloadOverride?: ReturnType<typeof sheetPayload>,
+  requestedCountry = loadedCountryId.value,
+  forceLatest = false,
+): Promise<boolean> => {
+  inFlightSaves.value += 1
+  return saveSheetImpl(requestedKey, payloadOverride, requestedCountry, forceLatest)
+    .finally(() => { inFlightSaves.value = Math.max(0, inFlightSaves.value - 1) })
+}
+const saveSheetImpl = async (
   requestedKey = activeKey.value,
   payloadOverride?: ReturnType<typeof sheetPayload>,
   requestedCountry = loadedCountryId.value,
@@ -8982,6 +9052,17 @@ const isLinkedHblPlainTextColumn = (column: number) => {
 const isFclVesselViewOnlyDept = () =>
   ['FCL', 'LCL'].includes(upperText(opsParts.value?.mode)) && ['TCD', 'CCD', 'FCD'].includes(opsDeptUpper())
 const isVesselViewOnlyModal = () => isVesselModal() && isFclVesselViewOnlyDept()
+// A view-only VESSEL/VOYAGE cell with nothing linked yet shows "—", not a DETAIL
+// button that opens an empty popup. Departments that enter the vessel keep ADD+.
+const isEmptyViewOnlyVesselCell = (row: number, column: number) => {
+  if (row < 1 || !['VESSEL/VOYAGE', 'VESSEL NAME'].includes(normalizedHeaderLabel(column))) return false
+  const value = rows.value[row]?.[column]
+  // Only a real vessel name counts as data (an empty saved form or "{}" does not).
+  const vessel: any = vesselForGridDisplay(value) || vesselFromCellValue(value)
+  const raw = String(value ?? '').trim()
+  if (String(vessel?.name || '').trim() || (raw && !raw.startsWith('{'))) return false
+  return isLockedOpsCell(row, column) || isFclVesselViewOnlyDept()
+}
 const isExwCcdPlainTextColumn = (column: number) => {
   const label = normalizedHeaderLabel(column)
   if (isFclVesselViewOnlyDept() && ['VESSEL/VOYAGE', 'VESSEL NAME'].includes(label)) return false
@@ -11642,6 +11723,18 @@ const openGsdModal = async (row: number, column: number) => {
       } else if (label === 'ARRIVAL NOTICE SENDING' || label === 'ARRIVAL NOTICE DETAIL') {
         gsdModal.formFields = []
         gsdModal.form = arrivalNoticeFormFromCell(rawText)
+        {
+          // Unit not entered yet: show the Reference Data description of the source unit.
+          const savedAn = parseJsonCell(rawText, {} as any)
+          const savedUnit = String((savedAn?.form || savedAn || {})?.unit || '').trim()
+          if (!savedUnit) {
+            void loadReferenceUnits().then(() => {
+              if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
+              const sourceUnit = Array.isArray(gsdModal.form.conts) ? gsdModal.form.conts[0]?.unit : ''
+              gsdModal.form.unit = referenceUnitDescription(sourceUnit) || gsdModal.form.unit || 'PACKAGES'
+            })
+          }
+        }
         if (opsParts.value?.mode === 'LCL') void loadPickupReferenceData()
         if (arrivalNoticeIsCrossLinked()) {
           const linkedContainers = await loadLinkedExportMasterSiContainers(row)
@@ -11702,6 +11795,37 @@ const openGsdModal = async (row: number, column: number) => {
           }]
         }
         gsdModal.editing = (isAirDoIcdPreAlertConfirmationModal() || isAirDupCompactPreAlertConfirmationModal() || isFclDduCcdPreAlertConfirmationModal()) ? true : !gsdModal.form.locked
+        // Linked import row: MBL/HBL CONFIRMED come from the export PRE-ALERT SENDING and
+        // MBL/HBL RELEASED from the export BILL RELEASE - always the latest values.
+        if (isLinkedOriginImportRow(row)) {
+          const [sendingCell, releaseCell] = await Promise.all([
+            loadLinkedOriginCell(row, ['PRE-ALERT SENDING']).catch(() => ''),
+            loadLinkedOriginCell(row, ['BILL RELEASE', 'AWB RELEASE']).catch(() => ''),
+          ])
+          if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
+          let changed = false
+          const assign = (key: string, value: any) => {
+            if (gsdModal.form[key] !== value) { gsdModal.form[key] = value; changed = true }
+          }
+          if (String(sendingCell || '').trim()) {
+            const sending = preAlertFormFromCell(sendingCell)
+            assign('mblConfirmed', !!sending.chk?.mc)
+            assign('mblConfirmedAt', String(sending.at?.mc || ''))
+            assign('hblConfirmed', !!sending.chk?.hc)
+            assign('hblConfirmedAt', String(sending.at?.hc || ''))
+          }
+          if (String(releaseCell || '').trim()) {
+            const release: any = billReleaseFormFromCell(releaseCell)
+            assign('mblReleased', !!release.mbl)
+            assign('mblReleasedAt', String(release.mblAt || ''))
+            assign('hblReleased', !!release.hbl)
+            assign('hblReleasedAt', String(release.hblAt || ''))
+          }
+          if (changed && rows.value[row]) {
+            rows.value[row][column] = JSON.stringify({ form: { ...gsdModal.form } })
+            scheduleSave()
+          }
+        }
       } else if (label === 'EXPENSE/COLLECT LIST' || label === 'EXPENSE/COLLECTION LIST' || (label === 'PAYMENT REQUEST' && opsDeptUpper() === 'FCD')) {
         gsdModal.formFields = []
         try {
@@ -11827,7 +11951,7 @@ const backToClientSearch = async () => {
       const column = gsdModal.column
       const roleLabel = gsdModal.clientRole || 'record'
       rows.value[row][column] = ''
-      ;(async () => {
+      void trackLinkedWrite((async () => {
         const saved = await saveSheet()
         if (!saved) {
           if (rows.value[row] && !String(rows.value[row][column] ?? '').trim()) rows.value[row][column] = currentValue
@@ -11835,7 +11959,7 @@ const backToClientSearch = async () => {
           return
         }
         await mirrorFclLinkedCell(row, column)
-      })().catch((error) => console.error('Could not remove linked record', error))
+      })()).catch((error) => console.error('Could not remove linked record', error))
     }
   }
   gsdModal.clientView = 'search'
@@ -12268,10 +12392,10 @@ const saveReminderDraft = async () => {
   gsdModal.reminderNotes.push(note)
   gsdModal.reminderDept = ''
   gsdModal.reminderDraft = { title: '', details: '' }
-  const [delivered, saved] = await Promise.all([
+  const [delivered, saved] = await trackLinkedWrite(Promise.all([
     syncReminderNoteToDept(note, 'upsert', false, sourceRow).catch(() => false),
     persistReminderNotes(true).catch(() => false),
-  ])
+  ]))
   if (!delivered) {
     gsdModal.reminderNotes = gsdModal.reminderNotes.filter((item) => item.id !== note.id)
     if (gsdModal.open && gsdModal.row === sourceRow) void persistReminderNotes(true)
@@ -12623,7 +12747,7 @@ const saveCutoffRecord = async () => {
   }
   // Cutoff is saved silently in the background: no email, no notification.
   clearCutoffForm()
-  void persistCutoffForm(true).catch((error) => console.warn('Could not save Cutoff Detail', error))
+  void trackLinkedWrite(persistCutoffForm(true)).catch((error) => console.warn('Could not save Cutoff Detail', error))
 }
 const selectCutoffRecord = (id: string) => {
   gsdModal.form.selectedId = gsdModal.form.selectedId === id ? '' : id
@@ -13113,6 +13237,9 @@ const isAirDupCompactPreAlertConfirmationModal = () =>
 const isDduIcdPreAlertReleaseOnly = () => isPreAlertConfirmationModal() && isDduSheet() && opsDeptUpper() === 'ICD'
 const preAlertConfirmationItemLocked = (key: string) => {
   if (!gsdModal.editing) return true
+  // Import shipment linked to an export shipment (DO / DAP / DDU / DDP): MBL/HBL
+  // Confirmed and Released are received from the export side only.
+  if (['mblConfirmed', 'hblConfirmed', 'mblReleased', 'hblReleased'].includes(String(key)) && isLinkedOriginImportRow(gsdModal.row)) return true
   // Confirmation is owned by the receiving side, even when its initial value
   // came from PRE-ALERT SENDING. Release fields keep their downstream rules.
   // DDU/DDP ICD only releases; confirmation and clearance docs come from CCD.
@@ -13290,9 +13417,9 @@ const arrivalNoticeDetail = () => {
     pol: String(siRouteDisplay(rowValueByHeader('ROUTE'), 'pol') || routeData.polCode || routeData.pol || form?.pol || ''),
     pod: String(siRouteDisplay(rowValueByHeader('ROUTE'), 'pod') || routeData.podCode || routeData.pod || form?.pod || ''),
     conts,
-    description: String(form?.description || siSubmit.description || ''),
-    marks: String(form?.marks || ''),
-    unit: String(form?.unit || conts[0]?.unit || ''),
+    description: String(form?.description || siSubmit.description || 'AS PER B/L'),
+    marks: String(form?.marks || siSubmit.marks || 'AS PER B/L'),
+    unit: String(form?.unit || referenceUnitDescription(conts[0]?.unit) || 'PACKAGES'),
     anNo: String(form?.anNo || ''),
     anDate: isoDateValue(form?.anDate || todayIso()),
     flightDate: isoDateValue(rowValueByHeader('ATD') || form?.flightDate || ''),
@@ -16022,6 +16149,8 @@ const clearanceDetailsNeedsAttention = (value: any) => {
   // Ignore orphan declarations whose container rows no longer exist.
   const declarations = (form.declarations as ClearanceDeclaration[]).filter((decl) =>
     !rowKeys.size || decl.rowKeys.some((key) => rowKeys.has(key)))
+  // Once declaring has started, every container needs at least one declaration.
+  if (declarations.length && rowKeys.size && [...rowKeys].some((key) => !declarations.some((decl) => decl.rowKeys.includes(key)))) return true
   const started = declarations.filter((decl) =>
     !!(decl.no || decl.date || decl.result || decl.tax || decl.fee || decl.cleared || decl.docs),
   )
@@ -16045,9 +16174,12 @@ const toggleAllClearanceRows = (event: Event) => {
 const addClearanceDeclaration = (rowKey: string) => {
   clearanceDeclarations().push(emptyClearanceDeclaration([rowKey]))
 }
+// One declaration shared by the ticked containers (2 or more; not necessarily all).
+const selectedClearanceRowKeys = () => clearanceRows().filter((row) => !!gsdModal.form.selected?.[row.key]).map((row) => row.key)
 const addClearanceDeclarationToAll = () => {
-  if (!allClearanceRowsSelected()) return
-  clearanceDeclarations().push(emptyClearanceDeclaration(clearanceRows().map((row) => row.key)))
+  const keys = selectedClearanceRowKeys()
+  if (keys.length < 2) return
+  clearanceDeclarations().push(emptyClearanceDeclaration(keys))
 }
 const addSimpleCcdClearanceDeclaration = () => {
   if (!Array.isArray(gsdModal.form.rows)) gsdModal.form.rows = []
@@ -16691,10 +16823,10 @@ const saveTruckContDetails = async () => {
       // modal Save button blocked while several target sheets are fetched and
       // patched. A later save targeting the same sheet still waits for its
       // queued linked write through saveSheet().
-      void Promise.all(fclTcdMirrorDepts().map((dept) => {
+      void trackLinkedWrite(Promise.all(fclTcdMirrorDepts().map((dept) => {
         const targetLabel = dept === 'ICD' ? 'CONT/SEAL INFO' : dept === 'ECD' ? 'TRUCKING INFO' : 'TRUCK & CONT/SEAL INFO'
         return mirrorExwFclWorkflowCell(dept, targetLabel, rows.value[gsdModal.row][gsdModal.column])
-      })).catch((error) => console.warn('Could not finish background Truck & Cont/Seal mirror', error))
+      }))).catch((error) => console.warn('Could not finish background Truck & Cont/Seal mirror', error))
     }
     gsdModal.form.initialRecords = truckContSnapshot(truckContRecords())
     gsdModal.form.editRecordsSnapshot = ''
@@ -17197,6 +17329,7 @@ const newSiSubmitContainer = () => ({
   gw: '',
   mea: '',
   marks: '',
+  cargoDescription: '',
 })
 const siSubmitFormFromCell = (value: any) => {
   const parsed = parseJsonCell(value, null as any)
@@ -17260,6 +17393,12 @@ const toggleSiNotSubmitted = () => {
 const siSubmitContainers = () => Array.isArray(gsdModal.form.containers) ? gsdModal.form.containers : []
 // Reference Data > Units (GLOBAL ref_units), loaded once on demand.
 const referenceUnitOptions = ref<{ value: string; label: string }[]>([])
+const referenceUnitDescriptions = ref<Record<string, string>>({})
+// Unit code -> its Reference Data description (e.g. PK -> PACKAGES); unknown codes stay as they are.
+const referenceUnitDescription = (code: any) => {
+  const key = upperText(code || '').trim()
+  return key ? upperText(referenceUnitDescriptions.value[key] || key) : ''
+}
 let referenceUnitsLoading: Promise<void> | null = null
 const loadReferenceUnits = () => {
   if (referenceUnitOptions.value.length) return Promise.resolve()
@@ -17272,6 +17411,7 @@ const loadReferenceUnits = () => {
         .map((item: any) => {
           const value = upperText(item?.data?.ucode || item?.data?.code || '').trim()
           const desc = String(item?.data?.udesc || item?.data?.description || '').trim()
+          if (value && desc) referenceUnitDescriptions.value = { ...referenceUnitDescriptions.value, [value]: desc }
           return { value, label: desc ? `${value} - ${desc}` : value }
         })
         .filter((option: { value: string }) => option.value && !seen.has(option.value) && !!seen.add(option.value))
@@ -17387,7 +17527,7 @@ const syncSiLclAirFromSources = () => {
   const routeValue = rawSiSourceValue('ROUTE')
   fillLinked('pol', siRouteDisplay(routeValue, 'pol').toUpperCase())
   fillLinked('pod', siRouteDisplay(routeValue, 'pod').toUpperCase())
-  const hasGoods = siSubmitContainers().some((item: any) => item.marks || item.qty || item.gw || item.mea)
+  const hasGoods = siSubmitContainers().some((item: any) => item.marks || item.cargoDescription || item.qty || item.gw || item.mea)
   const volumes = volumeFormFromCell(rawSiSourceValue('VOLUME')).records
   if (!hasGoods && volumes.length) {
     gsdModal.form.containers = volumes.map((volume: any) => ({ ...newSiSubmitContainer(), qty: String(volume.volume || ''), unit: String(volume.type || ''), gw: String(volume.gw || ''), mea: String(volume.mea || '') }))
@@ -20088,7 +20228,7 @@ const persistVolumeForm = (immediate = false) => {
   const result = persistGsdWorkflowCell(value, immediate)
   // Linked import row: push the change back to the export ECD row (two-way link).
   if (isVolumeModal() && isLinkedOriginImportRow(gsdModal.row) && !gsdModal.form.linkedLocked) {
-    void writeLinkedOriginCell(gsdModal.row, 'VOLUME', value).catch((error) => console.warn('Could not sync VOLUME back to export', error))
+    void trackLinkedWrite(writeLinkedOriginCell(gsdModal.row, 'VOLUME', value)).catch((error) => console.warn('Could not sync VOLUME back to export', error))
   }
   return result
 }
@@ -20975,7 +21115,7 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
         // Linked import/export shipment: the new ICD row only gets the GSD columns up to
         // CLIENT, so fill the following columns ICD shares with the export ECD row.
         if (useAtomicIcdDispatch && sourceParts) {
-          void fillIcdFromLinkedExport(sourceParts, sourceHeader, sourceRow, row, sourceState.settings, shipmentLink, sourceCountry)
+          void trackLinkedWrite(fillIcdFromLinkedExport(sourceParts, sourceHeader, sourceRow, row, sourceState.settings, shipmentLink, sourceCountry))
             .catch((error) => console.warn('Could not copy linked export data to ICD', error))
         }
         // The atomic backend request assigns the receiving department owner.
@@ -21008,6 +21148,7 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
         if (sourceStillVisible()) {
           input.checked = true
           saveState.value = `Saved ${new Date().toLocaleTimeString('en-GB')}`
+          showToast(`${upperText(sentColumnLabel || 'SENT')} saved - shipment sent to ${targetDept}`)
         }
       } else {
         const results = await Promise.all(dispatchDepts.map((dept) => transferRowToNextDept(row, dept, sentAt, false, transferSource)))
@@ -21094,6 +21235,7 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
         if (jobColumn >= 0) rows.value[row][jobColumn] = sourceRow[jobColumn]
         input.checked = true
         saveState.value = `Saved ${new Date().toLocaleTimeString('en-GB')}`
+        if (!emailResult || !['failed', 'no-recipients', 'not-configured'].includes(String(emailResult.status || ''))) showToast('BC SENT saved - booking sent')
       }
     } catch (error: any) {
       if (sourceStillVisible()) input.checked = isChecked(rows.value[row]?.[column])
@@ -21142,6 +21284,7 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
         settings.value = normalizeWorkbookCell(sourceState.settings)
         input.checked = true
         saveState.value = `Saved ${new Date().toLocaleTimeString('en-GB')}`
+        showToast('MANIFEST SUBMIT saved - shipment sent to the next departments')
       }
     } catch (error: any) {
       if (requestStatus(error) === 409 && sourceStillVisible()) {
@@ -23591,6 +23734,8 @@ onMounted(() => {
   window.addEventListener('mousedown', onGlobalMouseDown, true)
   window.addEventListener('click', preventNativeOperationsPicker, true)
   window.addEventListener('keydown', onGlobalKeyDown)
+  window.addEventListener('keydown', onReloadShortcut, true)
+  window.addEventListener('beforeunload', onBeforeUnloadGuard)
   window.addEventListener('paste', onGlobalPaste)
   window.addEventListener('scroll', onGlobalScrollClose, true)
   epodStatusTimer = window.setInterval(() => { void refreshTruckEpodStatuses() }, 8000)
@@ -23602,6 +23747,8 @@ onBeforeUnmount(() => {
   window.removeEventListener('mousedown', onGlobalMouseDown, true)
   window.removeEventListener('click', preventNativeOperationsPicker, true)
   window.removeEventListener('keydown', onGlobalKeyDown)
+  window.removeEventListener('keydown', onReloadShortcut, true)
+  window.removeEventListener('beforeunload', onBeforeUnloadGuard)
   window.removeEventListener('paste', onGlobalPaste)
   window.removeEventListener('scroll', onGlobalScrollClose, true)
   sheetResizeObserver?.disconnect()
@@ -24839,7 +24986,33 @@ onBeforeUnmount(() => {
 /* PDF: html2canvas draws text lower than the browser - give every label its own line
    box and clear space above the field (same treatment as the Delivery Order PDF). */
 .an-print-sheet label{gap:0!important}
-.an-print-sheet label>span:first-child,.an-print-sheet .an-detail-field>span:first-child{display:block;line-height:14px;min-height:14px;margin-bottom:11px!important;padding:0}
+.an-print-sheet label>span:first-child,.an-print-sheet .an-detail-field>span:first-child{display:block;line-height:14px;min-height:14px;margin-bottom:7px!important;padding:0}
+/* Compact PDF: smaller gaps between rows / sections and tighter tables. */
+.an-print-sheet :is(.an-detail-g2,.an-detail-g3,.an-detail-description):not(#_x){margin:0 0 6px!important;row-gap:6px!important}
+/* html2canvas draws text a few px low: keep every value clear of its bottom border. */
+.an-print-sheet .an-print-value:not(#_x):not(.an-print-textarea){min-height:32px!important;padding:0 9px 9px!important;line-height:22px!important;align-items:flex-start!important}
+.an-print-sheet .an-print-textarea:not(#_x){padding:3px 9px 12px!important;line-height:1.3!important}
+.an-print-sheet .an-detail-freetime .an-print-value:not(#_x){justify-content:center}
+.an-print-sheet .an-detail-section:not(#_x){margin:12px 0 8px!important;padding-bottom:5px!important;line-height:14px}
+.an-print-sheet .an-detail-table:not(#_x){margin-bottom:6px!important}
+.an-print-sheet .an-detail-table:not(#_x) th{height:auto!important;padding:2px 6px 11px!important;line-height:14px!important;vertical-align:top!important}
+.an-print-sheet .an-detail-table:not(#_x) td{height:auto!important;padding:0!important}
+.an-print-sheet .an-detail-table:not(#_x) .an-print-value{min-height:26px!important;padding:1px 4px 11px!important;line-height:14px!important;align-items:flex-start!important}
+.an-print-sheet .an-detail-table:not(#_x) td{vertical-align:top!important;padding-top:1px!important;padding-bottom:9px!important}
+/* Table borders: same weight everywhere. The value box inside a cell must not paint
+   over half of the collapsed cell border (that made some borders look faded). */
+.an-print-sheet .an-detail-table:not(#_x){border-collapse:separate!important;border-spacing:0!important;border-top:1px solid #c9d3cf;border-left:1px solid #c9d3cf}
+.an-print-sheet .an-detail-table:not(#_x) :is(th,td){border:0!important;border-right:1px solid #c9d3cf!important;border-bottom:1px solid #c9d3cf!important}
+.an-print-sheet .an-detail-table:not(#_x) .an-print-value{background:transparent!important;border:0!important}
+.do-print-sheet .do-doc-table:not(#_x){border-collapse:separate!important;border-spacing:0!important;border-top:1px solid #d7dce2;border-left:1px solid #d7dce2}
+.do-print-sheet .do-doc-table:not(#_x) :is(th,td){border:0!important;border-right:1px solid #d7dce2!important;border-bottom:1px solid #d7dce2!important}
+.do-print-sheet .do-doc-table:not(#_x) .do-print-value{background:transparent!important}
+/* Text cells (Total Tax Amount / Total Charge, amounts) keep space from the side borders. */
+.an-print-sheet .an-detail-table:not(#_x) td{padding-left:10px!important;padding-right:10px!important}
+.an-print-sheet .an-detail-table:not(#_x) td:has(> .an-print-value){padding-left:0!important;padding-right:0!important}
+.an-print-sheet .an-print-textarea:not(#_x){min-height:30px!important}
+.an-print-sheet .an-detail-remarks .an-print-textarea:not(#_x){min-height:40px!important}
+.an-freetime-field .an-detail-freetime{grid-template-columns:28px minmax(0,1fr) 28px minmax(0,1fr)!important;gap:6px!important}
 /* FCD Payment Approval: inherited request data is read-only/darker; FCD feedback fields fill the cell. */
 .gsd-expcol-modal .ec-locked-input,.gsd-expcol-modal .expcol-table tbody td:has(>span.ec-cell){background:#e3e9e5!important;color:#4d5b54!important;opacity:1}.gsd-expcol-modal .ec-issinp{min-width:220px;background:#fff}.gsd-expcol-modal .ec-fcd-input{display:block;width:100%;height:100%;min-height:28px;box-sizing:border-box;border:1px solid #cfd8d2;border-radius:0;background:#fff;padding:4px 6px;text-align:center;font:inherit;color:#24332c;outline:none}.gsd-expcol-modal .ec-fcd-input:focus{box-shadow:inset 0 0 0 2px #00a860}.gsd-expcol-modal .ec-fcd-input:disabled{border-color:#cbd3ce;background:#dfe5e1;color:#66736c;opacity:1;cursor:not-allowed}.gsd-expcol-modal .expcol-table td:has(>.ec-fcd-input){padding:0;background:#fff}
 /* Keep selection checkboxes visible while any modal table scrolls sideways. */
@@ -25107,6 +25280,30 @@ td:not(#_x) :is(input:not([type=checkbox]):not([type=radio]),textarea,.ops-textc
 .wb-modal-btn.clear:not(#_x){border-color:#64748b!important;background:#64748b!important;color:#fff!important}
 .wb-modal-btn.clear:not(#_x):hover:not(:disabled){border-color:#51606e!important;background:#51606e!important;color:#fff!important;filter:none!important}
 .wb-modal-btn.clear:not(#_x):disabled,.wb-modal-btn.clear:not(#_x):disabled:hover{opacity:.45!important;cursor:not-allowed;border-color:#64748b!important;background:#64748b!important;color:#fff!important}
+.ops-empty-dash{display:block;text-align:center;color:#9aa5a0}
+/* Leave-page guard */
+.leave-guard-overlay{z-index:2000!important;display:grid;place-items:center;background:rgba(15,28,21,.45)!important;backdrop-filter:blur(2px)}
+.leave-guard-modal{width:min(420px,92vw);box-sizing:border-box;padding:26px 26px 20px;border-radius:14px;background:#fff;box-shadow:0 24px 60px rgba(0,0,0,.28);text-align:center;font-family:inherit;animation:leave-guard-in .18s ease-out}
+.leave-guard-icon{display:grid;place-items:center;width:54px;height:54px;margin:0 auto 12px;border-radius:50%;background:#fff4e5;box-shadow:0 0 0 6px #fffaf2}
+.leave-guard-icon span{width:22px;height:22px;border:3px solid #f0a020;border-top-color:transparent;border-radius:50%;animation:leave-guard-spin .9s linear infinite}
+.leave-guard-title{color:#1f2a26;font-size:16px;font-weight:800}
+.leave-guard-text{margin:8px 0 18px;color:#5d6b64;font-size:13px;line-height:1.5}
+.leave-guard-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.leave-guard-btn{min-width:110px;height:36px;padding:0 14px;border:1px solid transparent;border-radius:8px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;transition:background-color .15s,border-color .15s}
+.leave-guard-btn.ghost{border-color:#cfd8d3;background:#fff;color:#33413b}
+.leave-guard-btn.ghost:hover:not(:disabled){background:#f2f5f3}
+.leave-guard-btn.danger{background:#fdecea;border-color:#f3c3bd;color:#b4231a}
+.leave-guard-btn.danger:hover:not(:disabled){background:#fbd9d4}
+.leave-guard-btn.primary{background:#008f4c;color:#fff}
+.leave-guard-btn.primary:hover:not(:disabled){background:#00753e}
+.leave-guard-btn:disabled{opacity:.55;cursor:wait}
+@keyframes leave-guard-spin{to{transform:rotate(360deg)}}
+@keyframes leave-guard-in{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}
+/* Pre-alert Confirmation: read-only fields keep the normal cursor. */
+.gsd-pc-row :is(input,label):disabled,.gsd-pc-row input[readonly],.gsd-pc-row:has(input:disabled){cursor:default!important}
+/* LCL Master SI: Description field, then the cargo table with only a small gap. */
+.gsd-si-modal .si-lcl-description{margin-bottom:8px!important}
+.gsd-si-modal .si-lcl-cargo-table{margin-top:0!important;margin-bottom:12px}
 /* DELIVERY ORDER - match AdminMockup/Mau_AN_SI_DO_MNF_2_1.html (FCL / LCL / AIR) */
 .do-document-sheet{color:#1f2733;font:13px/1.35 Arial,Helvetica,sans-serif}
 .do-document-head{align-items:flex-start;padding-bottom:10px;margin-bottom:16px;border-bottom:2px solid #1f2733;color:#1f2733}
