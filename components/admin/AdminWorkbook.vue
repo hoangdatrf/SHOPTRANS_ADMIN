@@ -1996,7 +1996,7 @@
                       <td><input v-model.trim="record.truckCompany" class="prs-date" type="text" :disabled="isAirDupFcdTruckingStatusModal() || !gsdModal.editing" /></td>
                       <td><input v-model.trim="record.driverInfo" class="prs-date" type="text" placeholder="Select driver" :disabled="isAirDupFcdTruckingStatusModal() || !gsdModal.editing" /></td>
                       <td class="prs-days">{{ pickupReturnDaysAfterAta(record) }}</td>
-                      <td><input v-model="record.pickupDate" class="prs-date" type="date" :disabled="isAirDupFcdTruckingStatusModal() || !gsdModal.editing" /></td>
+                      <td><input v-model="record.pickupDate" class="prs-date" type="date" :min="pickupReturnMinIso(record, 'pickupDate') || undefined" :disabled="isAirDupFcdTruckingStatusModal() || !gsdModal.editing" /></td>
                       <td><input v-model="record.arrivingTime" class="prs-date" type="time" :disabled="isAirDupFcdTruckingStatusModal() || !gsdModal.editing" /></td>
                       <td class="epodcell">
                         <button v-if="isAirDupFcdTruckingStatusModal()" class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View ePOD signed detail' : 'Not signed yet'" @click="openEpodSignDetail({ container: record.containerNo, seal: record.sealNo, epodSign: record.epodSign, epodUrl: record.epodUrl })"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
@@ -2137,7 +2137,7 @@
                     <td v-if="isDupTruckingStatusModal()" class="prs-readonly">{{ record.truckCompany || record.truckComp || '' }}</td>
                     <td v-else-if="!isLclPickupStatusModal()" class="prs-readonly">{{ record.sealNo || '' }}</td>
                     <td v-if="isDupTruckingStatusModal()" class="prs-readonly">{{ record.driverInfo || record.driverName || '' }}</td>
-                    <td v-if="isDupTruckingStatusModal()"><input v-model="record.returnDate" class="prs-date" type="date" :disabled="!pickupReturnRowCanEdit(record)" /></td>
+                    <td v-if="isDupTruckingStatusModal()"><input v-model="record.returnDate" class="prs-date" type="date" :min="pickupReturnMinIso(record, 'returnDate') || undefined" :disabled="!pickupReturnRowCanEdit(record)" /></td>
                     <td class="prs-days">{{ pickupReturnDaysAfterAta(record) }}</td>
                     <td class="prs-date-cell"><button class="prs-date-field" type="button" :disabled="!pickupReturnRowCanEdit(record)" @click.stop="openPickupReturnDatePopup(index, 'pickupDate', $event)"><span>{{ cutoffDateLabel(record.pickupDate) }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button></td>
                     <td v-if="isDupTruckingStatusModal()" class="prs-readonly">{{ record.arrivingTime || record.estimatedArrivingTime || '' }}</td>
@@ -3037,12 +3037,12 @@
           <template v-else-if="isArrivalNoticeModal()">
             <div v-if="isArrivalNoticeSendingModal()" class="an-detail-toolbar">
               <label>Company:<select v-model="gsdModal.form.company" :disabled="!gsdModal.editing"><option value="tx">TX LOGISTICS VIETNAM CO., LTD</option><option value="shoptrans">SHOPTRANS VIETNAM CO., LTD</option></select></label>
-              <div class="an-detail-toolbar-actions"><button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing" @click="saveArrivalNotice">Save</button><button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="gsdModal.editing = true">Edit</button><button class="wb-modal-btn export" type="button" :disabled="gsdModal.editing || arrivalNoticeExporting" @click="exportArrivalNotice">{{ arrivalNoticeExporting ? 'Exporting...' : 'Export PDF' }}</button><button class="wb-modal-btn send" type="button" :disabled="arrivalNoticeExporting || gsdModal.editing || !gsdModal.form.locked || (!!gsdModal.form.sentAt && !gsdModal.form.updatePending)" @click="sendArrivalNotice">{{ gsdModal.form.sentAt ? 'Send Update AN' : 'Send AN to Cnee' }}</button></div>
+              <div class="an-detail-toolbar-actions"><button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing" @click="saveArrivalNotice">Save</button><button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="gsdModal.editing = true">Edit</button><button class="wb-modal-btn export" type="button" :disabled="gsdModal.editing || arrivalNoticeExporting" @click="exportArrivalNotice">{{ arrivalNoticeExporting ? 'Exporting...' : 'Export PDF' }}</button><button class="wb-modal-btn send" type="button" :disabled="arrivalNoticeExporting || gsdModal.editing || !gsdModal.form.locked || (!!gsdModal.form.sentAt && !gsdModal.form.updatePending)" @click="sendArrivalNotice">{{ gsdModal.form.sentAt ? 'Send Update to Cnee' : 'Send to Cnee' }}</button></div>
             </div>
             <div class="an-detail-scroll">
               <div class="an-detail-sheet" :class="{ 'is-editing': gsdModal.editing }">
                 <div class="an-detail-letterhead">
-                  <div><div class="an-detail-company">TX LOGISTICS VIET NAM COMPANY LIMITED</div><div class="an-detail-address">3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam</div><div class="an-detail-contact">Tel: 84.028-35470468 &nbsp; Fax: 84.028-35470469</div></div>
+                  <div><div class="an-detail-company">{{ arrivalNoticeCompanyName() }}</div><div class="an-detail-address">3rd Floor, Kicotrans Building, 46 Bach Dang 2 Street, Tan Son Hoa Ward, Ho Chi Minh City, Vietnam</div><div class="an-detail-contact">Tel: 84.028-35470468 &nbsp; Fax: 84.028-35470469</div></div>
                   <div class="an-detail-heading"><strong>ARRIVAL NOTICE</strong><span>{{ docSubtitle() }}</span></div>
                 </div>
                 <div v-if="isLclSheet()" class="an-detail-g2"><label><span>AN No.</span><input v-model.trim="gsdModal.form.anNo" :disabled="!gsdModal.editing" /></label><label><span>Date</span><input v-model="gsdModal.form.anDate" type="date" :disabled="!gsdModal.editing" /></label></div>
@@ -3075,7 +3075,7 @@
                 <button class="an-add-row" type="button" :disabled="!gsdModal.editing" @click="addArrivalCharge">+ Add Charge</button>
                 <div class="an-detail-g2 an-payment-contact"><label><span>Payment Instruction</span><select v-model="gsdModal.form.paymentBank" :disabled="!gsdModal.editing" @change="applyArrivalNoticeBank"><option value="">— Select bank —</option><option v-for="bank in paymentBankOptions" :key="bank" :value="bank">{{ bank }}</option></select><textarea v-model="gsdModal.form.payInst" readonly rows="3"></textarea></label><label><span>Contact for Cargo Release</span><i class="an-contact-spacer" aria-hidden="true"></i><textarea v-model="gsdModal.form.contact" readonly rows="3"></textarea></label></div>
                 <div class="an-detail-g2 single an-detail-remarks"><label><span>Remarks</span><textarea v-model="gsdModal.form.remarks" :disabled="!gsdModal.editing" rows="3"></textarea></label></div>
-                <div class="an-detail-sign"><span>Issued by</span><b>TX LOGISTICS VIET NAM COMPANY LIMITED</b><strong>NGUYEN HUU PHUOC</strong><em v-if="gsdModal.form.signedAt" class="si-signed-stamp">✓ Signed - {{ formatAdminDateDisplay(gsdModal.form.signedAt) }}</em><i class="an-sign-line"></i></div>
+                <div class="an-detail-sign"><span>Issued by</span><b>{{ arrivalNoticeCompanyName() }}</b><strong>NGUYEN HUU PHUOC</strong><em v-if="gsdModal.form.signedAt" class="si-signed-stamp">✓ Signed - {{ formatAdminDateDisplay(gsdModal.form.signedAt) }}</em><i class="an-sign-line"></i></div>
               </div>
             </div>
           </template>
@@ -13434,6 +13434,10 @@ const arrivalNoticeMissingFields = () => {
   if (!filled(form.paymentBank)) missing.push('Payment Instruction')
   return missing
 }
+// Letterhead / signature follow the Company chosen in the toolbar.
+const arrivalNoticeCompanyName = () => gsdModal.form.company === 'shoptrans'
+  ? 'SHOPTRANS VIET NAM COMPANY LIMITED'
+  : 'TX LOGISTICS VIET NAM COMPANY LIMITED'
 const saveArrivalNotice = () => {
   const missing = arrivalNoticeMissingFields()
   if (missing.length) {
@@ -17175,6 +17179,7 @@ const billApprovalFormFromCell = (value: any) => {
     exportFcr: String(form.exportFcr || form.exportFCR || ''),
     billSourceMode: form.billSourceMode === 'client' ? 'client' : 'export',
     clientBlFile: form.clientBlFile && typeof form.clientBlFile === 'object' ? form.clientBlFile : null,
+    billExportDocs: form.billExportDocs && typeof form.billExportDocs === 'object' ? form.billExportDocs : undefined,
     sent: !!form.sent,
     sentAt: String(form.sentAt || ''),
     sentEmails: String(form.sentEmails || ''),
@@ -19282,7 +19287,15 @@ const hydratePreAlertFromBillDetail = () => {
   if (preAlertHasHbl()) {
     gsdModal.form.chk.hc = !!bill.hbl
     gsdModal.form.at.hc = String(bill.hblAt || '')
-    if (bill.hblFile?.name) gsdModal.form.files.hc = { name: String(bill.hblFile.name), url: String(bill.hblFile.url || bill.hblFile.dataUrl || '') }
+    // HBL = what Bill Detail's HBL APPROVED shows: the Client's B/L file, or the saved
+    // Export B/L / FCR (rendered to PDF when viewed).
+    const billMode = bill.billSourceMode === 'client' ? 'client' : 'export'
+    const picks = billExportPicks(bill)
+    const exportKind = picks.fcr ? 'FCR' : 'B/L'
+    const exportStored = exportKind === 'FCR' ? bill.exportFcr : bill.exportBl
+    if (billMode === 'client' && bill.clientBlFile?.url) gsdModal.form.files.hc = { name: String(bill.clientBlFile.name || "Client's B/L"), url: String(bill.clientBlFile.url) }
+    else if (billMode === 'export' && exportStored) gsdModal.form.files.hc = { name: `${exportKind === 'FCR' ? 'FCR' : 'B-L'}.pdf`, url: '', billExport: exportKind }
+    else if (bill.hblFile?.name) gsdModal.form.files.hc = { name: String(bill.hblFile.name), url: String(bill.hblFile.url || bill.hblFile.dataUrl || '') }
     else delete gsdModal.form.files.hc
   } else {
     gsdModal.form.chk.hc = false
@@ -19610,6 +19623,18 @@ const handlePreAlertFile = async (event: Event) => {
 const viewPreAlertFile = async (key: string) => {
   const file = gsdModal.form.files?.[key]
   const name = preAlertFileName(file)
+  // HBL linked to Bill Detail's saved Export B/L / FCR: render that PDF on demand.
+  if ((file as any)?.billExport) {
+    const bill = billApprovalFormFromCell(preAlertSourceCell('BILL DETAIL', 'AWB DETAIL'))
+    const kind = (file as any).billExport === 'FCR' ? 'FCR' : 'B/L'
+    try {
+      const blob = await renderSavedBillAttachment(kind, kind === 'FCR' ? bill.exportFcr : bill.exportBl)
+      if (blob) window.open(URL.createObjectURL(blob), '_blank', 'noopener')
+    } catch (error: any) {
+      showToast(error?.message || `Could not open the ${kind}`)
+    }
+    return
+  }
   const url = String(file?.url || '')
   if (!url) {
     showToast(name ? 'Upload this file again to preview it' : 'No file uploaded')
@@ -22976,8 +23001,26 @@ const selectDatePopup = (date: Date) => {
   closeDatePopup()
   void persistDatePopupValue(row, column)
 }
+// PICKUP / RETURN STATUS on import (ATA-based) shipments:
+// Pickup Date >= max(today, ATA); Return Date >= Pickup Date.
+const pickupReturnMinIso = (record: any, field: 'pickupDate' | 'returnDate') => {
+  const iso = (date: Date | null) => date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : ''
+  const ataColumn = headerIndexOf(['ATA'])
+  if (ataColumn < 0) return ''
+  if (field === 'returnDate') return iso(parseOpsDate(String(record?.pickupDate || '').slice(0, 10)))
+  const today = new Date()
+  const ata = parseOpsDate(rows.value[gsdModal.row]?.[ataColumn])
+  const start = ata && ata.getTime() > today.getTime() ? ata : today
+  return iso(new Date(start.getFullYear(), start.getMonth(), start.getDate()))
+}
 const isDatePopupDayDisabled = (date: Date) => {
   const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+  if (datePopup.pickupReturnIndex >= 0 && datePopup.pickupReturnField) {
+    const record = pickupReturnRecords()[datePopup.pickupReturnIndex]
+    const min = pickupReturnMinIso(record, datePopup.pickupReturnField)
+    if (min && day < new Date(`${min}T00:00:00`).getTime()) return true
+    return false
+  }
   if (datePopup.cutoffField === 'tsEtd' || datePopup.cutoffField === 'tsEta') {
     // Transhipment (Tàu Shipment) dates must stay inside the original vessel's
     // current ETD-ETA window - its delayed window when it has an active delay.
@@ -24656,11 +24699,12 @@ onBeforeUnmount(() => {
 .an-detail-toolbar .send { min-width: 112px; }
 .an-detail-toolbar .send:not(:disabled) { border-color: #009457; background: #009457; color: #fff; }
 .an-detail-toolbar .send:not(:disabled):hover { border-color:#007f4a; background:#007f4a; }
-.an-detail-toolbar .wb-modal-btn:disabled { cursor:not-allowed; filter:none; opacity:1; box-shadow:none; transform:none; }
-.an-detail-toolbar .primary:disabled { border-color:#00643b; background:#00643b; color:rgba(255,255,255,.62); }
-.an-detail-toolbar .edit:disabled { border-color:#a65305; background:#a65305; color:rgba(255,255,255,.62); }
-.an-detail-toolbar .export:disabled { border-color:#1557a0; background:#1557a0; color:rgba(255,255,255,.62); }
-.an-detail-toolbar .send:disabled { border-color:#00643b; background:#00643b; color:rgba(255,255,255,.62); }
+/* Disabled = same colour, faded (like MASTER SI SUBMIT), never darker. */
+.an-detail-toolbar .wb-modal-btn:disabled { cursor:not-allowed; filter:none!important; opacity:.4!important; box-shadow:none; transform:none; color:#fff; }
+.an-detail-toolbar .primary:disabled { border-color:#009457; background:#009457; }
+.an-detail-toolbar .edit:disabled { border-color:#d97706; background:#d97706; }
+.an-detail-toolbar .export:disabled { border-color:#1f7ae0; background:#1f7ae0; }
+.an-detail-toolbar .send:disabled { border-color:#009457; background:#009457; }
 .an-detail-scroll { max-height: calc(100vh - 94px); overflow: auto; padding: 18px 22px 24px; }
 .an-detail-sheet { max-width: 824px; margin: 0 auto; color: #1f2a26; font-size: 13px; font-weight: 400; }
 .an-detail-letterhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 16px; border-bottom: 2px solid #16406e; padding: 0 34px 10px 0; }
@@ -24973,7 +25017,7 @@ onBeforeUnmount(() => {
 .do-document-sheet label>span{color:#6b7686;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}.do-document-sheet input,.do-document-sheet textarea{box-sizing:border-box;width:100%;border:1px solid #c9d3cf;border-radius:5px;background:#fff;padding:7px 9px;color:#26312b;font:12px Arial,sans-serif;outline:none;resize:vertical}.do-document-sheet input{height:34px}.do-document-sheet textarea{min-height:54px}.do-document-sheet input:disabled,.do-document-sheet textarea:disabled,.do-document-sheet input[readonly],.do-document-sheet textarea[readonly]{background:#f1f5f4;color:#46534d;opacity:1}
 .do-doc-addrow{margin-top:8px;border:0;border-radius:6px;background:#009457;padding:7px 12px;color:#fff;font-size:11.5px;font-weight:700;cursor:pointer}
 .do-print-sheet .do-doc-addrow{display:none!important}.do-doc-grid{display:grid;gap:14px}.do-doc-grid.two{grid-template-columns:1fr 1fr}.do-doc-grid.three{grid-template-columns:repeat(3,1fr)}.do-doc-section{margin-top:22px;padding-bottom:5px;border-bottom:1px solid #8fa9be;font-size:12px;letter-spacing:.4px}.do-doc-table{width:100%;margin-top:8px;border-collapse:collapse;table-layout:fixed}.do-doc-table th,.do-doc-table td{border:1px solid #c7d3dc;padding:0;text-align:center}.do-doc-table th{height:27px;background:#eef3f7;color:#0f4c81;font-size:9px}.do-doc-table th:first-child{width:30px}.do-doc-table input{height:30px;border:0;border-radius:0;text-align:center}.do-doc-add{margin-top:7px;border:0;border-radius:5px;background:#008f4c;color:#fff;padding:5px 10px;font-size:10px;font-weight:800;cursor:pointer}.do-doc-bottom{margin-top:16px}.do-doc-sign{display:grid;grid-template-columns:1fr 1fr;gap:54px;margin-top:52px;text-align:center;color:#526159;font-size:10px}.do-doc-sign>div{display:flex;flex-direction:column;align-items:center}.do-doc-sign b{margin-top:3px;color:#26312b;font-size:11px}.do-doc-sign i{display:block;width:100%;height:48px;border-bottom:1px solid #26312b}.do-doc-sign strong{margin-top:6px;color:#26312b;font-size:11px}@media(max-width:820px){.do-document-sheet{width:720px}.do-document-scroll{padding:10px}}
-.do-document-actions .wb-modal-btn.primary{border-color:#00c566;background:#00c566;color:#fff}.do-document-actions .wb-modal-btn.edit{border-color:#e67e22;background:#e67e22;color:#fff}.do-document-actions .wb-modal-btn.export{border-color:#237bdd;background:#237bdd;color:#fff}.do-document-actions .wb-modal-btn:disabled{filter:saturate(.42) brightness(.78);cursor:not-allowed}.do-doc-sign>div{display:grid;grid-template-rows:14px 18px 49px 18px;align-items:center}.do-doc-sign b,.do-doc-sign strong{display:block;margin:0}.do-doc-sign i{height:48px;align-self:start}.do-sign-placeholder{visibility:hidden}
+.do-document-actions .wb-modal-btn.primary{border-color:#00c566;background:#00c566;color:#fff}.do-document-actions .wb-modal-btn.edit{border-color:#e67e22;background:#e67e22;color:#fff}.do-document-actions .wb-modal-btn.export{border-color:#237bdd;background:#237bdd;color:#fff}.do-document-actions .wb-modal-btn:disabled{filter:none!important;opacity:.4!important;cursor:not-allowed}.do-doc-sign>div{display:grid;grid-template-rows:14px 18px 49px 18px;align-items:center}.do-doc-sign b,.do-doc-sign strong{display:block;margin:0}.do-doc-sign i{height:48px;align-self:start}.do-sign-placeholder{visibility:hidden}
 .do-document-modal{width:920px}.do-document-scroll{padding:18px 22px 24px}.do-document-sheet{width:min(824px,100%)}@media(max-width:820px){.do-document-sheet{width:100%}}
 .do-print-sheet{position:fixed!important;left:-10000px!important;top:0!important;width:824px!important;max-width:none!important;min-height:0!important;margin:0!important;padding:44px 50px 34px!important;box-shadow:none!important;overflow:visible!important}.do-print-sheet .do-print-value{display:flex;align-items:center;box-sizing:border-box;width:100%;min-height:34px;border:1px solid #c9d3cf;border-radius:5px;background:#f1f5f4;padding:1px 9px 7px;color:#46534d;font:12px/1.1 Arial,sans-serif;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}.do-print-sheet .do-print-textarea{display:block;min-height:54px;padding-top:4px;padding-bottom:10px;line-height:1.25}.do-print-sheet .do-doc-table .do-print-value{min-height:30px;justify-content:center;border:0;border-radius:0;background:#f1f5f4;padding:1px 3px 5px;text-align:center}.do-print-sheet .do-doc-party-head{justify-content:flex-start}.do-print-sheet .do-doc-sign{margin-bottom:18px;break-inside:avoid}
 .si-date-input:not(:disabled){cursor:pointer;padding-right:32px!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Crect x='3' y='4' width='18' height='17' rx='2'/%3E%3Cpath d='M8 2v4M16 2v4M3 10h18'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:15px}
