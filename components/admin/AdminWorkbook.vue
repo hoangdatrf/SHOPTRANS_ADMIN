@@ -2741,7 +2741,7 @@
                       <button v-for="match in paymentSearchResults" :key="match.id" class="pr-sr-item" type="button" @mousedown.prevent="selectPaymentHistoryMatch(match)">
                         <span class="pr-sr-info"><b class="pr-sr-line" :title="match.jobNo">{{ match.jobNo || '—' }}</b><span class="pr-sr-line pr-sr-sub" :title="`REF: ${match.refNo || '—'}`">{{ paymentMatchService(match) ? `${paymentMatchService(match)} · ` : '' }}{{ match.lineCount }} line(s)</span></span>
                       </button>
-                      <span v-if="!paymentSearchResults.length" class="pr-sr-empty">No previous Job No matches your search.</span>
+                      <span v-if="!paymentSearchResults.length" class="pr-sr-empty">{{ paymentSearchLoading ? 'Searching…' : 'No previous Job No matches your search.' }}</span>
                     </span>
                     </span>
                   </span>
@@ -3019,6 +3019,7 @@
                           <option class="ec-opt-ok">Approved</option>
                           <option class="ec-opt-reject">Rejected</option>
                           <option class="ec-opt-edit">Request Edit</option>
+                          <option class="ec-opt-return">Return Approve</option>
                         </select>
                       </td>
                       <td class="grp-fb"><input v-model.trim="line.reason" class="ec-reason" :class="{ invalid: expenseFeedbackReasonInvalid(line) }" placeholder="Enter reason" :disabled="!!line.statusDetails && !line.editing" @input="clearExpenseFeedbackReasonError(line); persistExpenseCollect()" /></td>
@@ -3080,7 +3081,7 @@
                 <label v-if="!isLclSheet()" class="an-detail-description"><span>Description</span><textarea v-model="gsdModal.form.description" :readonly="!gsdModal.editing" rows="2"></textarea></label>
                 <div v-if="!isLclSheet()" class="an-detail-g3 an-cargo-summary"><label><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="an-linked-field" :readonly="!gsdModal.editing" rows="1"></textarea></label><label><span>QTY</span><input :value="arrivalNoticeTotals().qty" readonly /></label><label><span>Unit</span><input v-model="gsdModal.form.unit" :readonly="!gsdModal.editing" /></label></div>
                 <div v-if="!isLclSheet()" class="an-detail-g2"><label><span>GW (KG)</span><input :value="arrivalNoticeTotals().gw" readonly /></label><label><span>MEA. (CBM)</span><input :value="arrivalNoticeTotals().mea" readonly /></label></div>
-                <div class="an-detail-section an-detail-section-ref"><span>Charges Due</span><span class="an-refbox"><label>RefLastBiz:</label><span class="an-ref-search"><input v-model.trim="gsdModal.form.refLastBiz" :disabled="!gsdModal.editing" placeholder="JOB NO# / REF NO#" autocomplete="off" @input="searchArrivalPaymentHistory" @keydown.escape="paymentSearchOpen = false" /><span class="pr-searchresults" :class="{ show: paymentSearchOpen }"><button v-for="match in paymentSearchResults" :key="`an-${match.id}`" class="pr-sr-item" type="button" @mousedown.prevent="selectArrivalPaymentHistoryMatch(match)"><span class="pr-sr-info"><b class="pr-sr-line" :title="match.jobNo">{{ match.jobNo || '—' }}</b><span class="pr-sr-line pr-sr-sub" :title="`REF: ${match.refNo || '—'}`">{{ paymentMatchService(match) ? `${paymentMatchService(match)} · ` : '' }}{{ match.lineCount }} line(s)</span></span></button><span v-if="!paymentSearchResults.length" class="pr-sr-empty">No previous Job No matches your search.</span></span></span><button type="button" :disabled="!gsdModal.editing" @click="openArrivalPaymentHistoryFilter">Search</button></span></div>
+                <div class="an-detail-section an-detail-section-ref"><span>Charges Due</span><span class="an-refbox"><label>RefLastBiz:</label><span class="an-ref-search"><input v-model.trim="gsdModal.form.refLastBiz" :disabled="!gsdModal.editing" placeholder="JOB NO# / REF NO#" autocomplete="off" @input="searchArrivalPaymentHistory" @keydown.escape="paymentSearchOpen = false" /><span class="pr-searchresults" :class="{ show: paymentSearchOpen }"><button v-for="match in paymentSearchResults" :key="`an-${match.id}`" class="pr-sr-item" type="button" @mousedown.prevent="selectArrivalPaymentHistoryMatch(match)"><span class="pr-sr-info"><b class="pr-sr-line" :title="match.jobNo">{{ match.jobNo || '—' }}</b><span class="pr-sr-line pr-sr-sub" :title="`REF: ${match.refNo || '—'}`">{{ paymentMatchService(match) ? `${paymentMatchService(match)} · ` : '' }}{{ match.lineCount }} line(s)</span></span></button><span v-if="!paymentSearchResults.length" class="pr-sr-empty">{{ paymentSearchLoading ? 'Searching…' : 'No previous Job No matches your search.' }}</span></span></span><button type="button" :disabled="!gsdModal.editing" @click="openArrivalPaymentHistoryFilter">Search</button></span></div>
                 <table class="an-detail-table"><thead><tr><th>#</th><th>Charge Name</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>CUR</th><th>Tax (%)</th><th>Total Price</th></tr></thead><tbody><tr v-for="(charge, index) in gsdModal.form.charges" :key="charge.key || index"><td>{{ index + 1 }}</td><td><input v-model.trim="charge.chargeName" :disabled="!gsdModal.editing" list="an-charge-options" autocomplete="off" placeholder="Type to filter" @focus="setActiveDatalistValue(charge.chargeName)" @input="setActiveDatalistValue(charge.chargeName)" /></td><td><input v-model="charge.qty" :disabled="!gsdModal.editing" /></td><td><input v-model.trim="charge.unit" :disabled="!gsdModal.editing" list="an-unit-options" autocomplete="off" placeholder="Type to filter" @focus="loadReferenceUnits" @input="charge.unit = upperText(charge.unit)" /></td><td><input v-model="charge.unitPrice" :disabled="!gsdModal.editing" @input="charge.unitPrice = sanitizeMoneyInput(charge.unitPrice)" @blur="charge.unitPrice = formatMoneyValue(charge.unitPrice)" /></td><td><input v-model.trim="charge.cur" :disabled="!gsdModal.editing" list="an-currency-options" autocomplete="off" placeholder="CUR" @focus="setActiveDatalistValue(charge.cur)" @input="charge.cur = upperText(charge.cur); setActiveDatalistValue(charge.cur)" @change="selectArrivalNoticeBankForCurrency(charge.cur)" /></td><td><input v-model="charge.taxRate" :disabled="!gsdModal.editing" /></td><td>{{ arrivalNoticeChargeTotal(charge) }}</td></tr><tr v-if="!gsdModal.form.charges.length"><td colspan="8" class="empty">No charge data</td></tr></tbody><tfoot><tr><td colspan="7" class="an-total-label">Total Tax Amount</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().tax }}</td></tr><tr><td colspan="7" class="an-total-label">Total Charge</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().total }}</td></tr></tfoot></table>
                 <datalist id="an-unit-options"><option v-for="option in referenceUnitOptions" :key="option.value" :value="option.value" /></datalist>
                 <datalist id="an-charge-options"><option v-for="option in paymentDatalistOptions(paymentChargeOptions)" :key="option" :value="option" /></datalist>
@@ -4857,6 +4858,9 @@ const paymentSearchRef = ref('')
 const paymentSearchOpen = ref(false)
 type PaymentHistoryMatch = { id: string; row: number; jobNo: string; refNo: string; lineCount: number; time: string; payload: PaymentRequestState }
 const paymentSearchResults = ref<PaymentHistoryMatch[]>([])
+const paymentSearchLoading = ref(false)
+// Sheets from the other services are reused for a short while so typing does not refetch them per keystroke.
+const paymentHistorySheetCache = new Map<string, { at: number; sheet: any }>()
 let paymentHistorySearchRun = 0
 const paymentHistoryPicker = reactive<any>({ open: false, row: -1, sourceColumn: -1, mode: 'payment', jobNo: '', refNo: '', lines: [] })
 let clientSearchRun = 0
@@ -10594,8 +10598,10 @@ const searchPaymentHistory = async (sourceColumn = paymentRequestHistoryColumn()
   // list every past job and also triggered the cross-service sheet lookups.
   if (sourceColumn < 0 || !term) {
     paymentSearchResults.value = []
+    paymentSearchLoading.value = false
     return
   }
+  paymentSearchLoading.value = true
   const matches: PaymentHistoryMatch[] = []
   const appendMatches = (sourceRows: any[][], header: string[], paymentColumn: number, sourceId: string, skipCurrentRow = false) => {
     const timeColumn = header.findIndex((value) => upperText(value) === 'TIME')
@@ -10625,7 +10631,12 @@ const searchPaymentHistory = async (sourceColumn = paymentRequestHistoryColumn()
     await Promise.all(['EXW', 'FCA', 'FCF'].filter((type) => type !== upperText(current.type)).map(async (type) => {
       try {
         const key = opsLeafKey(current.base, current.mode, type as any, current.dept as any)
-        const sheet = await props.request(`/workbook/sheets/${encodeURIComponent(sheetStorageKey(key))}`)
+        const storageKey = sheetStorageKey(key)
+        const cached = paymentHistorySheetCache.get(storageKey)
+        const sheet = cached && Date.now() - cached.at < 30000
+          ? cached.sheet
+          : await props.request(`/workbook/sheets/${encodeURIComponent(storageKey)}`)
+        if (!cached || cached.sheet !== sheet) paymentHistorySheetCache.set(storageKey, { at: Date.now(), sheet })
         const header = opsHeaderFor(current.base, current.mode, current.dept as any, type as any)
         const extracted = extractWorkbookRows(Array.isArray(sheet?.rows) ? sheet.rows.map((item: any[]) => [...item]) : [], sheet)
         const alignedRows = alignRowsToHeader(extracted.rows, header).rows
@@ -10638,6 +10649,7 @@ const searchPaymentHistory = async (sourceColumn = paymentRequestHistoryColumn()
   }
   if (searchRun !== paymentHistorySearchRun) return
   paymentSearchResults.value = matches.reverse().slice(0, 5)
+  paymentSearchLoading.value = false
 }
 const openPaymentHistoryFilter = () => {
   paymentSearchOpen.value = !!paymentSearchRef.value.trim()
@@ -10856,6 +10868,7 @@ const paymentStatusClass = (status: string) => ({
   'st-appr': upperText(status) === 'APPROVED',
   'st-rej': upperText(status) === 'REJECTED',
   'st-edit': upperText(status) === 'REQUEST EDIT',
+  'st-return': upperText(status) === 'RETURN APPROVE',
 })
 const paymentDoc = (line: PaymentLine, side: PaymentDocSide) => {
   const attachment = (side === 'pay' ? line.docsPay : side === 'collect' ? line.docsCollect : line.docsInvoice)[0]
@@ -13836,8 +13849,9 @@ const expenseStatusClass = (status: any) => ({
   ok: String(status || '').toUpperCase() === 'APPROVED',
   reject: String(status || '').toUpperCase() === 'REJECTED',
   edit: String(status || '').toUpperCase() === 'REQUEST EDIT',
+  return: String(status || '').toUpperCase() === 'RETURN APPROVE',
 })
-const expenseCollectValidStatus = (line: any) => ['APPROVED', 'REJECTED', 'REQUEST EDIT'].includes(upperText(line?.status || ''))
+const expenseCollectValidStatus = (line: any) => ['APPROVED', 'REJECTED', 'REQUEST EDIT', 'RETURN APPROVE'].includes(upperText(line?.status || ''))
 const expenseFeedbackReasonInvalid = (line: any) => expenseFeedbackInvalidReasonIds.value.has(String(line?.id || ''))
 const clearExpenseFeedbackReasonError = (line: any) => {
   const id = String(line?.id || '')
@@ -21645,7 +21659,8 @@ const runMirrorExwFclWorkflowCell = async (
   value: any,
   sourceRowIndex = gsdModal.row,
   source?: LinkedMirrorSource,
-) => {
+  attempt = 1,
+): Promise<boolean> => {
   const parsed = source?.parsed || opsParts.value
   if (!parsed) return false
   const type = String(parsed.type || '').toUpperCase()
@@ -21769,6 +21784,13 @@ const runMirrorExwFclWorkflowCell = async (
       })]] })
     return true
   } catch (error: any) {
+    // The target sheet was saved by someone else (or its own autosave) between our
+    // read and write. Re-read the latest version and apply the change again,
+    // instead of failing and making the user press Send a second time.
+    if (requestStatus(error) === 409 && attempt < 6) {
+      await new Promise((resolve) => setTimeout(resolve, 250 * attempt + Math.random() * 250))
+      return runMirrorExwFclWorkflowCell(targetDept, label, value, sourceRowIndex, source, attempt + 1)
+    }
     if (requestStatus(error) !== 404) console.warn(`Could not mirror ${label} to ${targetDept}`, error)
     return false
   }
@@ -24344,7 +24366,7 @@ onBeforeUnmount(() => {
 .gsd-expcol-modal .ec-statussel.ok{background:#cdeecd!important;border-color:#7fc98f;color:#0e1512}
 .gsd-expcol-modal .ec-statussel.reject{background:#fbd5d0!important;border-color:#e39b92;color:#0e1512}
 .gsd-expcol-modal .ec-statussel.edit{background:#fde3c6!important;border-color:#eac083;color:#0e1512}
-.gsd-payment-modal .gsd-pay-tools{flex-wrap:nowrap;align-items:flex-start}.gsd-payment-modal .gsd-pay-left-tools{flex:1 1 auto;min-width:0}.gsd-payment-modal .pay-send{flex:0 0 auto;margin-left:auto;white-space:nowrap}.gsd-payment-modal .air-pay-table{width:2956px}.gsd-payment-modal .gsd-pay-table .grp-fb{background:#f8fbff}.gsd-payment-modal .gsd-pay-table .grp-dn{background:#f7fbf8}.gsd-payment-modal .gsd-pay-table .grp-inv{background:#f8fbff}.gsd-payment-modal .prstat{display:inline-flex;align-items:center;justify-content:center;min-width:72px;height:22px;border-radius:999px;background:#eef1f5;color:#64748b;font-size:10.5px;font-weight:800}.gsd-payment-modal .prstat.st-appr{background:#e8f6ee;color:#0a6b3b}.gsd-payment-modal .prstat.st-rej{background:#fdecea;color:#c0392b}.gsd-payment-modal .prstat.st-edit{background:#fff4e5;color:#b45f04}.gsd-payment-modal .prreason{background:#f8faf8!important;color:#7a847d!important}.gsd-payment-modal .prdet{color:#33413b;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gsd-payment-modal .pdatec{padding:0 4px!important}
+.gsd-payment-modal .gsd-pay-tools{flex-wrap:nowrap;align-items:flex-start}.gsd-payment-modal .gsd-pay-left-tools{flex:1 1 auto;min-width:0}.gsd-payment-modal .pay-send{flex:0 0 auto;margin-left:auto;white-space:nowrap}.gsd-payment-modal .air-pay-table{width:2956px}.gsd-payment-modal .gsd-pay-table .grp-fb{background:#f8fbff}.gsd-payment-modal .gsd-pay-table .grp-dn{background:#f7fbf8}.gsd-payment-modal .gsd-pay-table .grp-inv{background:#f8fbff}.gsd-payment-modal .prstat{display:inline-flex;align-items:center;justify-content:center;min-width:72px;height:22px;border-radius:999px;background:#eef1f5;color:#64748b;font-size:10.5px;font-weight:800}.gsd-payment-modal .prstat.st-appr{background:#e8f6ee;color:#0a6b3b}.gsd-payment-modal .prstat.st-rej{background:#fdecea;color:#c0392b}.gsd-payment-modal .prstat.st-edit{background:#fff4e5;color:#b45f04}.gsd-payment-modal .prstat.st-return{background:#dbe4ff;color:#283f8f}.gsd-payment-modal .prreason{background:#f8faf8!important;color:#7a847d!important}.gsd-payment-modal .prdet{color:#33413b;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gsd-payment-modal .pdatec{padding:0 4px!important}
 .gsd-air-fca-tcd-payment-modal .gsd-pay-table{border-collapse:separate;border-spacing:0}.gsd-air-fca-tcd-payment-modal .gsd-pay-table th,.gsd-air-fca-tcd-payment-modal .gsd-pay-table td{border:1px solid #d3dacf}.gsd-air-fca-tcd-payment-modal .gsd-pay-table th{background:#f0f3ee;color:#3a463f;font-weight:700}.gsd-air-fca-tcd-payment-modal .gsd-pay-table th.grp-pay,.gsd-air-fca-tcd-payment-modal .gsd-pay-table td.grp-pay{background:#fdecea}.gsd-air-fca-tcd-payment-modal .gsd-pay-table th.grp-col,.gsd-air-fca-tcd-payment-modal .gsd-pay-table td.grp-col{background:#eaf7ef}.gsd-air-fca-tcd-payment-modal .gsd-pay-table th.grp-fb,.gsd-air-fca-tcd-payment-modal .gsd-pay-table td.grp-fb{background:#eef1f7}.gsd-air-fca-tcd-payment-modal .gsd-pay-table th.grp-dn,.gsd-air-fca-tcd-payment-modal .gsd-pay-table td.grp-dn{background:#fdf3e7}.gsd-air-fca-tcd-payment-modal .gsd-pay-table th.grp-inv,.gsd-air-fca-tcd-payment-modal .gsd-pay-table td.grp-inv{background:#e9f5ee}.gsd-air-fca-tcd-payment-modal .gsd-pay-table th.pchg,.gsd-air-fca-tcd-payment-modal .gsd-pay-table td.pchg{background:#fff}.gsd-air-fca-tcd-payment-modal .gsd-pay-table .pay-gap{border:0!important;background:#fff!important}.gsd-air-fca-tcd-payment-modal .gsd-pay-table .pay-gap + .grp-dn{border-left:1px solid #d3dacf!important}
 .gsd-air-payment-modal .gsd-pay-table{border-collapse:separate;border-spacing:0}.gsd-air-payment-modal .gsd-pay-table th,.gsd-air-payment-modal .gsd-pay-table td{border:1px solid #d3dacf}.gsd-air-payment-modal .gsd-pay-table th{background:#f0f3ee;color:#3a463f;font-weight:700}.gsd-air-payment-modal .gsd-pay-table th.grp-pay,.gsd-air-payment-modal .gsd-pay-table td.grp-pay{background:#fdecea}.gsd-air-payment-modal .gsd-pay-table th.grp-col,.gsd-air-payment-modal .gsd-pay-table td.grp-col{background:#eaf7ef}.gsd-air-payment-modal .gsd-pay-table th.grp-fb,.gsd-air-payment-modal .gsd-pay-table td.grp-fb{background:#eef1f7}.gsd-air-payment-modal .gsd-pay-table th.grp-dn,.gsd-air-payment-modal .gsd-pay-table td.grp-dn{background:#fdf3e7}.gsd-air-payment-modal .gsd-pay-table th.grp-inv,.gsd-air-payment-modal .gsd-pay-table td.grp-inv{background:#e9f5ee}.gsd-air-payment-modal .gsd-pay-table th.pchg,.gsd-air-payment-modal .gsd-pay-table td.pchg{background:#fff}.gsd-air-payment-modal .gsd-pay-table .pay-gap{border:0!important;background:#fff!important}.gsd-air-payment-modal .gsd-pay-table .pay-gap + .grp-dn{border-left:1px solid #d3dacf!important}
 .gsd-air-payment-modal .pay-send{width:92px;height:43px;min-width:92px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;text-align:center;font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;font-weight:700;line-height:1.05;letter-spacing:0;white-space:normal}
@@ -25231,6 +25253,8 @@ onBeforeUnmount(() => {
 .ec-statussel option.ec-opt-ok{background:#cdeecd;color:#0e5a32}
 .ec-statussel option.ec-opt-reject{background:#ffd8b5;color:#8a4310}
 .ec-statussel option.ec-opt-edit{background:#fff3a8;color:#6b5a00}
+.gsd-expcol-modal .expcol-table .ec-statussel.return,.ec-statussel.return:not(:disabled),.ec-statussel.return:disabled{background:#dbe4ff!important;color:#283f8f!important}
+.ec-statussel option.ec-opt-return{background:#dbe4ff;color:#283f8f}
 /* Editable cells inside popup tables: the blinking caret is enough - no focus border,
    outline or glow on free-text, dropdown or date fields. */
 .wb-modal-overlay td :is(input,select,textarea):focus,
@@ -25256,6 +25280,7 @@ td:not(#_x) :is(input:not([type=checkbox]):not([type=radio]),textarea,.ops-textc
 .gsd-payment-modal .gsd-pay-table:not(#_x) td :is(input:not([type=checkbox]),select){min-width:90px}
 .gsd-payment-modal .gsd-pay-table:not(#_x) col:not(:first-child),.gsd-expcol-modal .expcol-table:not(#_x) col:not(:first-child){width:auto!important}
 .gsd-payment-modal .gsd-pay-table:not(#_x) th.pay-gap,.gsd-payment-modal .gsd-pay-table:not(#_x) td.pay-gap{width:8px!important;min-width:8px!important;padding:0!important}
+/* Compact payment rows */:is(.gsd-payment-modal .gsd-pay-table,.gsd-expcol-modal .expcol-table):not(#_x) tbody td{height:30px!important;padding-top:1px!important;padding-bottom:1px!important}:is(.gsd-payment-modal .gsd-pay-table,.gsd-expcol-modal .expcol-table):not(#_x) tbody td :is(input:not([type=checkbox]),select,.pcell){height:28px!important;min-height:28px!important;line-height:26px!important;padding-top:0!important;padding-bottom:0!important}:is(.gsd-payment-modal .gsd-pay-table,.gsd-expcol-modal .expcol-table):not(#_x) tbody td button{height:22px!important;min-height:22px!important;line-height:20px!important;padding-top:0!important;padding-bottom:0!important}
 .gsd-payment-modal .gsd-pay-table:not(#_x) td input[type=date],.gsd-expcol-modal .expcol-table:not(#_x) td input[type=date]{min-width:120px}
 /* Confirm popups (YES/NO and OK/Cancel): only as wide as their message and buttons. */
 .wb-confirm-overlay .wb-confirm-modal:not(#_x),.wb-confirm-overlay .wsmodal:not(#_x){width:fit-content!important;min-width:260px!important;max-width:min(460px,92vw)!important}
