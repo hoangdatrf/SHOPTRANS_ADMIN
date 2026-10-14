@@ -2206,7 +2206,7 @@
               <button v-if="!isFclExwDcdSiModal() && !isLclSheet()" class="wb-modal-btn si-add-container" type="button" :disabled="!gsdModal.editing" @click="addSiSubmitContainer">+ Add Container</button>
               <div v-if="isLclSheet()" class="si-section-title">Cargo Description</div>
               <label v-if="isLclSheet()" class="si-f si-description si-lcl-description"><span>Description</span><textarea v-model="gsdModal.form.description" rows="2" :disabled="!gsdModal.editing"></textarea></label>
-              <div v-if="isLclSheet()" class="si-table-wrap gsd-five-row-scroll si-lcl-cargo-table"><table class="si-table"><thead><tr><th>#</th><th>Shipping Marks</th><th>Cargo Description</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th><th v-if="isAirMode()">C.W (KG)</th></tr></thead><tbody><tr v-for="(container, index) in siSubmitContainers()" :key="container.id"><td class="si-order">{{ index + 1 }}</td><td><input v-model="container.marks" :disabled="!gsdModal.editing" /></td><td><input v-model="container.cargoDescription" :disabled="!gsdModal.editing" /></td><td><input v-model="container.qty" type="number" min="0" step="1" :disabled="!gsdModal.editing" /></td><td><input v-model="container.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="container.gw" type="number" min="0" step="0.01" :disabled="!gsdModal.editing" /></td><td><input v-model="container.mea" type="number" min="0" step="0.001" :disabled="!gsdModal.editing" /></td><td v-if="isAirMode()"><input :value="siGoodsChargeable(container)" readonly /></td></tr></tbody></table></div>
+              <div v-if="isLclSheet()" class="si-table-wrap gsd-five-row-scroll si-lcl-cargo-table"><table class="si-table"><colgroup><col style="width:40px" /><col /><col /><col style="width:6px" /><col /><col /><col /><col /><col v-if="isAirMode()" /></colgroup><thead><tr><th>#</th><th>Shipping Marks</th><th>Cargo Description</th><th class="si-gap" aria-hidden="true"></th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th><th v-if="isAirMode()">C.W (KG)</th></tr></thead><tbody><tr v-for="(container, index) in siSubmitContainers()" :key="container.id"><td class="si-order">{{ index + 1 }}</td><td><input v-model="container.marks" :disabled="!gsdModal.editing" /></td><td><input v-model="container.cargoDescription" :disabled="!gsdModal.editing" /></td><td class="si-gap" aria-hidden="true"></td><td><input v-model="container.qty" type="number" min="0" step="1" :disabled="!gsdModal.editing" /></td><td><input v-model="container.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="container.gw" type="number" min="0" step="0.01" :disabled="!gsdModal.editing" /></td><td><input v-model="container.mea" type="number" min="0" step="0.001" :disabled="!gsdModal.editing" /></td><td v-if="isAirMode()"><input :value="siGoodsChargeable(container)" readonly /></td></tr></tbody></table></div>
               <div v-if="!isLclSheet()" class="si-section-title">Cargo Description</div>
               <label v-if="!isLclSheet()" class="si-f si-description"><span>Description</span><textarea v-model="gsdModal.form.description" rows="2" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('description') }"></textarea></label>
               <div v-if="!isLclSheet()" class="si-g3"><label class="si-f"><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="si-marks" rows="1" :disabled="!gsdModal.editing"></textarea><span class="si-attachment"><button class="si-attach-button" type="button" :disabled="!gsdModal.editing" @click="siMarksFileInput?.click()"><svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5 5 0 0 1-7-7l9-9a3.3 3.3 0 0 1 4.7 4.7l-9 9a1.7 1.7 0 0 1-2.4-2.4l8.1-8.1"/></svg>AttFile</button><span v-if="gsdModal.form.marksFile" class="si-file-name">{{ gsdModal.form.marksFile.name }}</span><button v-if="gsdModal.form.marksFile" class="si-file-icon" type="button" title="View" @click="viewSiMarksFile"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button><button v-if="gsdModal.form.marksFile" class="si-file-remove" type="button" title="Remove" :disabled="!gsdModal.editing" @click="removeSiMarksFile">&times;</button><em v-if="!gsdModal.editing && !gsdModal.form.marksFile">No file attached</em></span></label><label class="si-f"><span>QTY</span><input :value="siSubmitTotal('qty')" type="text" readonly /></label><label class="si-f"><span>Unit</span><input v-model="gsdModal.form.unit" type="text" :disabled="!gsdModal.editing" /></label></div>
@@ -11528,14 +11528,9 @@ const openGsdModal = async (row: number, column: number) => {
         gsdModal.formFields = []
         // Show the local copy immediately; refresh from the linked origin in the background.
         gsdModal.form = volumeFormFromCell(rawText)
-        gsdModal.editing = !isReadonlyTcdVolumeModal() && !isLinkedVolumeLocked(row)
+        gsdModal.editing = !isReadonlyTcdVolumeModal() && !isLinkedVolumeLocked(row) && !isBcSentRowLocked(row)
         if (isLinkedOriginImportRow(row)) {
-          // Two-way linked with the export row; locked once export has BC SENT.
-          void linkedOriginBcSent(row).then((sent) => {
-            if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
-            gsdModal.form.linkedLocked = sent
-            gsdModal.editing = !isReadonlyTcdVolumeModal() && !sent
-          }).catch((error) => console.warn('Could not check export BC SENT', error))
+          // One-way link: export row is the only source; import is read-only.
           void loadLinkedOriginCell(row, ['VOLUME']).then((linkedVolume) => {
             if (!String(linkedVolume || '').trim() || linkedVolume === rawText) return
             rows.value[row][column] = linkedVolume
@@ -13064,7 +13059,7 @@ const linkedOriginContSealHasData = () => {
 }
 const isReadonlyDoContSealModal = () => isReadonlyCcdDduContSealModal() || (
   !isStandaloneManualOpsRow(gsdModal.row) && isDoContSealModal() && (
-    isDoFcdSheet() || isDapFcdSheet() || isDupFcdSheet() || linkedOriginContSealHasData() || isLinkedOriginImportRow(gsdModal.row)
+    isDoFcdSheet() || isDapFcdSheet() || isDupFcdSheet() || isLinkedOriginImportRow(gsdModal.row)
   )
 )
 const isTruckContModal = () => !isDoContSealModal() && isGsdFormModalLabel('TRUCK & CONT/SEAL INFO', 'TRUCKS & CONT/SEAL DETAILS', 'CONT/SEAL INFO', 'TRUCKING INFO', 'TRUCKING DETAIL')
@@ -13727,8 +13722,8 @@ const isDapTcdVolumeDetailModal = () => isVolumeModal() && isDapTcdSheet()
 const isReadonlyTcdVolumeModal = () => isVolumeModal() && opsDeptUpper() === 'TCD'
 // A linked import row only locks VOLUME once the origin actually supplied volume
 // data; if the origin has none yet, the import ICD can enter it.
-const isLinkedVolumeLocked = (row: number) =>
-  isLinkedOriginImportRow(row) && !!gsdModal.form?.linkedLocked
+// Linked import rows only receive VOLUME from the export side (read-only).
+const isLinkedVolumeLocked = (row: number) => isLinkedOriginImportRow(row)
 const isCcdVolumeModal = () => isReadonlyTcdVolumeModal() || (isVolumeModal() && isLinkedVolumeLocked(gsdModal.row)) || (!isStandaloneManualOpsRow(gsdModal.row) && isVolumeModal() && (isExwCcdSheet() || isExwTcdSheet() || isExwDcdSheet() || isExwFcdSheet() || isFcaTcdSheet() || isFcaDcdSheet() || isFcaFcdSheet() || isFcfDcdSheet() || isFcfFcdSheet() || isDapTcdSheet() || isDapFcdSheet() || (isLclSheet() && (isDoFcdSheet() || isDupFcdSheet()))))
 const expenseCurrencies = ['ALL', 'USD', 'VND', 'EUR', 'CNY', 'JPY']
 const expenseFeedbackInvalidReasonIds = ref<Set<string>>(new Set())
@@ -17849,6 +17844,34 @@ const exportSiSubmitPdf = async (download: boolean | Event = true) => {
           }
         `
         clonedDocument.head.appendChild(pdfBaselineStyle)
+        // Side-by-side party boxes (Shipper / Consignee) share the tallest height.
+        clonedSheet.querySelectorAll<HTMLElement>('.si-g2').forEach((group) => {
+          const boxes = Array.from(group.querySelectorAll<HTMLElement>(':scope > .si-f > .si-pdf-field-value'))
+            .filter((box) => box.style.whiteSpace === 'pre-wrap')
+          if (boxes.length < 2) return
+          const tallest = Math.max(...boxes.map((box) => box.offsetHeight))
+          boxes.forEach((box) => { box.style.minHeight = `${tallest}px` })
+        })
+        // html2canvas drops collapsed table borders; draw every cell edge explicitly.
+        clonedSheet.querySelectorAll<HTMLTableElement>('.si-table').forEach((table) => {
+          table.style.borderCollapse = 'separate'
+          table.style.borderSpacing = '0'
+          table.style.border = '0'
+          Array.from(table.rows).forEach((row, rowIndex) => {
+            Array.from(row.cells).forEach((cell, cellIndex) => {
+              if (cell.classList.contains('si-gap')) {
+                cell.style.border = '0'
+                return
+              }
+              const prev = row.cells[cellIndex - 1]
+              const startsBlock = cellIndex === 0 || prev?.classList.contains('si-gap')
+              cell.style.borderTop = rowIndex === 0 ? '1px solid #d9e2dc' : '0'
+              cell.style.borderLeft = startsBlock ? '1px solid #d9e2dc' : '0'
+              cell.style.borderRight = '1px solid #d9e2dc'
+              cell.style.borderBottom = '1px solid #d9e2dc'
+            })
+          })
+        })
         // Measure after native controls have been replaced. Their PDF display
         // blocks can have a different height from the original textarea/input.
         const clonedSheetRect = clonedSheet.getBoundingClientRect()
@@ -20226,10 +20249,6 @@ const freetimeSummaryText = (value: any) => {
 const persistVolumeForm = (immediate = false) => {
   const value = JSON.stringify({ form: { records: volumeRecords(), typeOptions: gsdModal.form.typeOptions, purposeOptions: gsdModal.form.purposeOptions } })
   const result = persistGsdWorkflowCell(value, immediate)
-  // Linked import row: push the change back to the export ECD row (two-way link).
-  if (isVolumeModal() && isLinkedOriginImportRow(gsdModal.row) && !gsdModal.form.linkedLocked) {
-    void trackLinkedWrite(writeLinkedOriginCell(gsdModal.row, 'VOLUME', value)).catch((error) => console.warn('Could not sync VOLUME back to export', error))
-  }
   return result
 }
 const persistFreetimeForm = (immediate = false) => {
@@ -25304,6 +25323,14 @@ td:not(#_x) :is(input:not([type=checkbox]):not([type=radio]),textarea,.ops-textc
 /* LCL Master SI: Description field, then the cargo table with only a small gap. */
 .gsd-si-modal .si-lcl-description{margin-bottom:8px!important}
 .gsd-si-modal .si-lcl-cargo-table{margin-top:0!important;margin-bottom:12px}
+.gsd-si-modal .si-lcl-cargo-table .si-table th.si-gap:not(#_x),.gsd-si-modal .si-lcl-cargo-table .si-table td.si-gap:not(#_x){width:6px!important;min-width:6px!important;max-width:6px!important;padding:0!important;background:#fff!important;border-top:0!important;border-bottom:0!important}
+.gsd-si-modal .si-lcl-cargo-table:not(#_x){width:100%!important;max-width:none!important;padding-right:0!important;scrollbar-gutter:auto!important;box-sizing:border-box!important}
+.gsd-si-modal .si-lcl-cargo-table .si-table:not(#_x){width:100%!important;min-width:0!important;table-layout:fixed!important}
+.gsd-si-modal .si-lcl-cargo-table .si-table th:first-child:not(#_x){width:40px!important}
+.gsd-si-modal .si-lcl-cargo-table .si-table th.si-gap:not(#_x),.gsd-si-modal .si-lcl-cargo-table .si-table td.si-gap:not(#_x){width:6px!important;min-width:6px!important;max-width:6px!important}
+.gsd-si-modal .si-lcl-cargo-table .si-table th:not(#_x),.gsd-si-modal .si-lcl-cargo-table .si-table td:not(#_x){text-align:center!important}
+.gsd-si-modal .si-lcl-cargo-table .si-table td input:not(#_x){width:100%!important;box-sizing:border-box!important;padding-left:4px!important;padding-right:4px!important;text-align:center!important;-moz-appearance:textfield}
+.gsd-si-modal .si-lcl-cargo-table .si-table td input::-webkit-outer-spin-button,.gsd-si-modal .si-lcl-cargo-table .si-table td input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 /* DELIVERY ORDER - match AdminMockup/Mau_AN_SI_DO_MNF_2_1.html (FCL / LCL / AIR) */
 .do-document-sheet{color:#1f2733;font:13px/1.35 Arial,Helvetica,sans-serif}
 .do-document-head{align-items:flex-start;padding-bottom:10px;margin-bottom:16px;border-bottom:2px solid #1f2733;color:#1f2733}
