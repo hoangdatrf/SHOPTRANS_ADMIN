@@ -2991,7 +2991,7 @@ const apiFetch = async (url: string, options: any = {}) => {
     const status = Number(error?.statusCode || error?.status || error?.response?.status || error?.data?.statusCode)
     if (status === 401 || status === 403) {
       await adminStore.logout()
-      await router.replace({ path: '/admin/login', query: { redirect: '/admin' } })
+      await router.replace('/admin/login')
     }
     throw error
   }

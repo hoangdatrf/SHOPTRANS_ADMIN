@@ -229,6 +229,7 @@
                   >
                     <span v-if="truckDetailNeedsAttention(rowIndex, columnIndex)" class="detail-alert-icon">!</span>{{ truckActionIsDetail(rowIndex, columnIndex) ? 'DETAIL' : 'ADD+' }}
                   </button>
+                  <span v-else-if="isAgentNaCell(rowIndex, columnIndex)" class="ops-textcell ops-na-cell">N/A</span>
                   <button
                     v-else-if="isClientLinkCell(rowIndex, columnIndex) && canEditClientLinkCell(rowIndex, columnIndex) && !clientCellText(rows[rowIndex]?.[columnIndex])"
                     v-show="!hideLockedGsdAddAction(rowIndex, true)"
@@ -306,7 +307,7 @@
                       :key="`ops-dd-${columnIndex}-${String(option)}`"
                       :value="option"
                     >
-                      {{ option || '—' }}
+                      {{ option || (normalizedHeaderLabel(columnIndex).endsWith('+') ? 'N/A' : '—') }}
                     </option>
                   </select>
                   <input
@@ -664,6 +665,7 @@
                     >
                       <span v-if="truckDetailNeedsAttention(rowIndex, columnIndex)" class="detail-alert-icon">!</span>{{ truckActionIsDetail(rowIndex, columnIndex) ? 'DETAIL' : 'ADD+' }}
                     </button>
+                    <span v-else-if="isAgentNaCell(rowIndex, columnIndex)" class="ops-textcell ops-na-cell">N/A</span>
                     <button
                     v-else-if="isClientLinkCell(rowIndex, columnIndex) && canEditClientLinkCell(rowIndex, columnIndex) && !clientCellText(rows[rowIndex]?.[columnIndex])"
                       class="addcli"
@@ -779,7 +781,7 @@
           @click="selectDropdownOption(option)"
           @keydown.enter.prevent="selectDropdownOption(option)"
         >
-          <span>{{ option || '—' }}</span>
+          <span>{{ option || (normalizedHeaderLabel(dropdownPopup.column).endsWith('+') ? 'N/A' : '—') }}</span>
           <button v-if="dropdownPopup.mode === 'edit'" class="ddx" type="button" title="Remove" @click.stop="removeDropdownPopupOption(option)">x</button>
         </div>
         <div v-if="!filteredDropdownPopupOptions.length" class="ddempty">No options</div>
@@ -1176,7 +1178,7 @@
                     @keydown.enter.prevent="showFirstGsdClientDetail"
                   />
                 </div>
-                <label v-if="agentNotRequiredConfig()" class="gsd-client-not-required">
+                <label v-if="false && agentNotRequiredConfig()" class="gsd-client-not-required">
                   <input type="checkbox" :checked="isAgentNotRequired()" :disabled="!canEditClientLinkCell(gsdModal.row, gsdModal.column)" @change="toggleAgentNotRequired" />
                   <span>{{ agentNotRequiredConfig()?.label }}</span>
                 </label>
@@ -6303,18 +6305,28 @@ const loadSheet = async () => {
   if (isOpsPage.value) void loadOpsStaff()
   
   try {
-    // Wait for source-tab mirrors before hydrating the destination tab.
-    if (pendingLinkedWrites.size) await Promise.allSettled([...pendingLinkedWrites])
+    // Wait for source-tab mirrors before hydrating the destination tab, but never
+    // keep the screen behind the loader for long: a slow or retrying mirror
+    // (version conflicts on a busy server) used to freeze the tab until reload.
+    if (pendingLinkedWrites.size) {
+      await Promise.race([
+        Promise.allSettled([...pendingLinkedWrites]),
+        new Promise<void>((resolve) => window.setTimeout(resolve, 4000)),
+      ])
+    }
     if (run !== sheetLoadRun || activeKey.value !== requestedKey || countryViewId() !== requestedCountry) return
     let sheet: any
+    // A request that never answers (server busy, dropped connection) is cut off
+    // and retried automatically instead of leaving the loader spinning forever.
+    const sheetRequestTimeoutMs = 20000
     try {
-      sheet = await props.request(`/workbook/sheets/${encodeURIComponent(requestedStorageKey)}`)
+      sheet = await props.request(`/workbook/sheets/${encodeURIComponent(requestedStorageKey)}`, { timeout: sheetRequestTimeoutMs })
     } catch (firstError: any) {
       const status = requestStatus(firstError)
       if (status === 404 || (status >= 400 && status < 500)) throw firstError
       await new Promise<void>((resolve) => window.setTimeout(resolve, 250))
       if (run !== sheetLoadRun || activeKey.value !== requestedKey || countryViewId() !== requestedCountry) return
-      sheet = await props.request(`/workbook/sheets/${encodeURIComponent(requestedStorageKey)}`)
+      sheet = await props.request(`/workbook/sheets/${encodeURIComponent(requestedStorageKey)}`, { timeout: sheetRequestTimeoutMs })
     }
     if (run !== sheetLoadRun || activeKey.value !== requestedKey || countryViewId() !== requestedCountry) return
     loadedCountryId.value = requestedCountry
@@ -9476,6 +9488,14 @@ const isForcedNotRequiredAgentCell = (row: number, column: number) => {
   const label = normalizedHeaderLabel(column)
   return (['DESTINATION AGENT', 'DEST. AGENT'].includes(label) && agentForcedNotRequired(row, 'destination'))
     || (['ORIGIN AGENT', 'ORIGINAL AGENT'].includes(label) && agentForcedNotRequired(row, 'origin'))
+}
+// Origin/Destination Agent that is not required (no `+` service, or set to N/A)
+// shows a plain N/A value: no link, no popup.
+const isAgentNaCell = (row: number, column: number) => {
+  if (row <= 0 || !isClientLinkCell(row, column)) return false
+  const label = normalizedHeaderLabel(column)
+  if (!['DESTINATION AGENT', 'DEST. AGENT', 'ORIGIN AGENT', 'ORIGINAL AGENT'].includes(label)) return false
+  return isForcedNotRequiredAgentCell(row, column) || upperText(clientCellText(rows.value[row]?.[column])) === 'N/A'
 }
 const canEditClientLinkCell = (row: number, column: number) => {
   if (!isClientLinkCell(row, column)) return false
@@ -23583,8 +23603,8 @@ const displayCell = (value: any, row: number, column: number) => {
 }
 const opsGridCellText = (value: any, row: number, column: number) => {
   const label = upperText(rows.value[0]?.[column]).replace(/\s+/g, '')
-  if (row > 0 && ['EXW+', 'EFA+', 'FCA+', 'FCF+'].includes(label)) {
-    return normalizeDropdownOption(value) || '\u2014'
+  if (row > 0 && ['EXW+', 'EFA+', 'FCA+', 'FCF+', 'DO+', 'DAP+', 'DDU+', 'DDP+'].includes(label)) {
+    return normalizeDropdownOption(value) || 'N/A'
   }
   return displayCell(value, row, column)
 }

@@ -13,7 +13,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   const adminStore = useAdminConsoleStore()
   if (!adminStore.token) {
-    return navigateTo({ path: '/admin/login', query: { redirect: '/admin' } })
+    return navigateTo('/admin/login')
   }
 
   // Login already returns the complete admin profile. Avoid immediately
@@ -27,6 +27,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
     await adminStore.fetchProfile()
   } catch {
     await adminStore.logout()
-    return navigateTo({ path: '/admin/login', query: { redirect: to.fullPath || '/admin' } })
+    return navigateTo('/admin/login')
   }
 })
