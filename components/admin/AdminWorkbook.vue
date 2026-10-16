@@ -160,9 +160,12 @@
                 <th
                   v-for="column in visibleColumns"
                   :key="column"
+                  :class="{ 'ops-badge-head': opsColumnBadgeTotal(column) > 0, 'ops-badge-sorted': opsBadgeSortColumn === column && opsColumnBadgeTotal(column) > 0 }"
+                  :title="opsColumnBadgeTotal(column) > 0 ? (opsBadgeSortColumn === column ? 'Click to restore the normal order' : 'Click to show rows with new items first') : undefined"
+                  @click="toggleOpsBadgeSort(column)"
                   @contextmenu.prevent="openOpsHeaderMenu(column, $event)"
                 >
-                  {{ headerLabel(column).toUpperCase() }}
+                  {{ headerLabel(column).toUpperCase() }}<span v-if="opsColumnBadgeTotal(column) > 0" class="ops-head-badge">{{ opsColumnBadgeTotal(column) }}</span>
                   <span
                     class="ops-rsz"
                     title="Resize column"
@@ -1951,7 +1954,7 @@
                       <span v-else>—</span>
                     </td>
                     <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()"><input v-model.trim="record.container" :disabled="!truckContRowCanEdit(record)" /></td>
-                    <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()"><input v-if="truckContRowCanEdit(record)" v-model.trim="record.contType" /><span v-else class="truck-conttype-view">{{ truckContTypeDisplay(record, index) }}</span></td>
+                    <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()"><span class="truck-conttype-view">{{ truckContTypeDisplay(record, index) }}</span></td>
                     <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()"><input v-model.trim="record.seal" :disabled="!truckContRowCanEdit(record)" /></td>
                     <td>
                       <span v-if="isAirDcdTruckingModal() && isReadonlyTruckContModal() && !record.driver">—</span>
@@ -2213,7 +2216,7 @@
               <label v-if="!isLclSheet()" class="si-f si-description"><span>Description</span><textarea v-model="gsdModal.form.description" rows="2" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('description') }"></textarea></label>
               <div v-if="!isLclSheet()" class="si-g3"><label class="si-f"><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="si-marks" rows="1" :disabled="!gsdModal.editing"></textarea><span class="si-attachment"><button class="si-attach-button" type="button" :disabled="!gsdModal.editing" @click="siMarksFileInput?.click()"><svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5 5 0 0 1-7-7l9-9a3.3 3.3 0 0 1 4.7 4.7l-9 9a1.7 1.7 0 0 1-2.4-2.4l8.1-8.1"/></svg>AttFile</button><span v-if="gsdModal.form.marksFile" class="si-file-name">{{ gsdModal.form.marksFile.name }}</span><button v-if="gsdModal.form.marksFile" class="si-file-icon" type="button" title="View" @click="viewSiMarksFile"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button><button v-if="gsdModal.form.marksFile" class="si-file-remove" type="button" title="Remove" :disabled="!gsdModal.editing" @click="removeSiMarksFile">&times;</button><em v-if="!gsdModal.editing && !gsdModal.form.marksFile">No file attached</em></span></label><label class="si-f"><span>QTY</span><input :value="siSubmitTotal('qty')" type="text" readonly /></label><label class="si-f"><span>Unit</span><input v-model="gsdModal.form.unit" type="text" :disabled="!gsdModal.editing" /></label></div>
               <div v-if="!isLclSheet()" class="si-g2"><label class="si-f"><span>GW (KG)</span><input :value="siSubmitTotal('gw')" type="text" readonly /></label><label class="si-f"><span>MEA. (CBM)</span><input :value="siSubmitTotal('mea')" type="text" readonly /></label></div>
-              <label class="si-f"><span>Special Instructions</span><textarea v-model="gsdModal.form.specialInst" rows="3" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('specialInst') }"></textarea></label>
+              <label class="si-f si-special-inst"><span>Special Instructions</span><textarea v-model="gsdModal.form.specialInst" rows="3" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('specialInst') }"></textarea></label>
               <div class="si-sign-row">
                 <div v-if="isLclSheet()" class="si-signature si-signature-left"><div>SHIPPER'S CONFIRMATION</div><b>&nbsp;</b><span></span><strong>&nbsp;</strong></div>
                 <div class="si-signature"><div>{{ isLclSheet() ? 'RECEIVED BY' : 'ARRANGED BY' }}</div><b>{{ siCompanyName() }}</b><span></span><strong>NGUYEN HUU PHUOC</strong><em v-if="gsdModal.form.signedAt" class="si-signed-stamp">✓ Signed · {{ gsdModal.form.signedAt }}</em></div>
@@ -2520,7 +2523,7 @@
                     <th class="clr-allcell"><input type="checkbox" :checked="allClearanceRowsSelected()" @change="toggleAllClearanceRows" /></th>
                     <th>Order</th>
                     <th class="clr-declhead">
-                      <span class="clr-dcap"><span>Declaration</span><button class="clr-plus" :class="{ dim: isDupCcdClearanceDetailsModal() && !allClearanceRowsSelected() }" type="button" :title="isDupCcdClearanceDetailsModal() ? 'Link All Containers to One CDS No' : 'Add new'" @click="isDupCcdClearanceDetailsModal() ? addClearanceDeclarationToAll() : addSimpleCcdClearanceDeclaration()">+</button></span>
+                      <span class="clr-dcap"><span>Declaration</span><button class="clr-plus" :disabled="clearanceHasDraftDeclaration()" :class="{ dim: isDupCcdClearanceDetailsModal() && !allClearanceRowsSelected() }" type="button" :title="isDupCcdClearanceDetailsModal() ? 'Link All Containers to One CDS No' : 'Add new'" @click="isDupCcdClearanceDetailsModal() ? addClearanceDeclarationToAll() : addSimpleCcdClearanceDeclaration()">+</button></span>
                     </th>
                   </tr>
                 </thead>
@@ -2540,7 +2543,7 @@
                             <span class="clr-dots"><span v-for="n in 4" :key="n" class="clr-dot" :class="{ on: n <= clearanceDotCount(decl) }"></span></span>
                           </button>
                         </div>
-                        <div class="clr-dcapbox"><button class="clr-plus" :class="{ dim: allClearanceRowsSelected() }" type="button" title="assign Container to CDS No" @click="addClearanceDeclaration(row.key)">+</button></div>
+                        <div class="clr-dcapbox"><button class="clr-plus" :disabled="clearanceHasDraftDeclaration()" :class="{ dim: allClearanceRowsSelected() }" type="button" title="assign Container to CDS No" @click="addClearanceDeclaration(row.key)">+</button></div>
                       </div>
                     </td>
                   </tr>
@@ -2649,7 +2652,7 @@
                       <th>Seal No#</th>
                     </template>
                     <th class="clr-declhead">
-                      <span class="clr-dcap"><span>Declaration</span><button class="clr-plus" :class="{ dim: selectedClearanceRowKeys().length < 2 }" type="button" title="Link the ticked containers to one CDS No" @click="addClearanceDeclarationToAll">+</button></span>
+                      <span class="clr-dcap"><span>Declaration</span><button class="clr-plus" :disabled="clearanceHasDraftDeclaration()" :class="{ dim: selectedClearanceRowKeys().length < 2 }" type="button" title="Link the ticked containers to one CDS No" @click="addClearanceDeclarationToAll">+</button></span>
                     </th>
                   </tr>
                 </thead>
@@ -2677,7 +2680,7 @@
                             <span class="clr-dots"><span v-for="n in 4" :key="n" class="clr-dot" :class="{ on: n <= clearanceDotCount(decl) }"></span></span>
                           </button>
                         </div>
-                        <div class="clr-dcapbox"><button class="clr-plus" :class="{ dim: allClearanceRowsSelected() }" type="button" title="assign Container to CDS No" @click="addClearanceDeclaration(row.key)">+</button></div>
+                        <div class="clr-dcapbox"><button class="clr-plus" :disabled="clearanceHasDraftDeclaration()" :class="{ dim: allClearanceRowsSelected() }" type="button" title="assign Container to CDS No" @click="addClearanceDeclaration(row.key)">+</button></div>
                       </div>
                     </td>
                   </tr>
@@ -3451,8 +3454,8 @@
                   <th style="width:22%">Marks &amp; Nos.</th>
                   <th style="width:12%">No. of Pkgs</th>
                   <th style="width:34%">Description of Goods</th>
-                  <th style="width:14%">Gross Weight</th>
-                  <th style="width:18%">Measurement</th>
+                  <th style="width:16%">Gross Weight</th>
+                  <th style="width:16%">Measurement</th>
                 </tr>
               </thead>
               <tbody>
@@ -3521,8 +3524,8 @@
                   <th style="width:22%">Marks &amp; Nos.</th>
                   <th style="width:12%">No. of Pkgs</th>
                   <th style="width:34%">Description of Goods</th>
-                  <th style="width:14%">Gross Weight</th>
-                  <th style="width:18%">Measurement</th>
+                  <th style="width:16%">Gross Weight</th>
+                  <th style="width:16%">Measurement</th>
                 </tr>
               </thead>
               <tbody>
@@ -5938,8 +5941,27 @@ const filteredRowIndexes = computed(() => {
 const visibleRowsLimit = ref(250)
 const visibleRowIndexes = computed(() => filteredRowIndexes.value.slice(0, visibleRowsLimit.value))
 const selectableVisibleRows = computed(() => visibleRowIndexes.value.filter((index) => index > 0))
+// Columns with red counters (PAYMENT REQUEST, NOTICE, EXPENSE/COLLECT LIST): the
+// header shows the total; clicking it lifts rows that have a counter to the top
+// (keeping the normal order inside each group). Clicking again restores the order.
+const opsBadgeSortColumn = ref<number | null>(null)
+const opsColumnBadgeTotal = (column: number) => {
+  if (!isOpsPage.value) return 0
+  const label = normalizedHeaderLabel(column)
+  if (!['PAYMENT REQUEST', 'EXPENSE/COLLECT LIST', 'EXPENSE/COLLECTION LIST', 'REMINDER', 'NOTICE'].includes(label)) return 0
+  return filteredRowIndexes.value.reduce((sum, index) => sum + (index > 0 ? noticeBadgeCount(index, column) : 0), 0)
+}
+const toggleOpsBadgeSort = (column: number) => {
+  if (opsBadgeSortColumn.value === column) opsBadgeSortColumn.value = null
+  else if (opsColumnBadgeTotal(column) > 0) opsBadgeSortColumn.value = column
+}
 const opsBodyRows = computed(() => {
-  const body = filteredRowIndexes.value.filter((index) => index > 0)
+  let body = filteredRowIndexes.value.filter((index) => index > 0)
+  const badgeColumn = opsBadgeSortColumn.value
+  if (badgeColumn !== null) {
+    const flagged = body.filter((index) => noticeBadgeCount(index, badgeColumn) > 0)
+    if (flagged.length) body = [...flagged, ...body.filter((index) => noticeBadgeCount(index, badgeColumn) <= 0)]
+  }
   const editing = opsEditingRow.value
   if (!editing?.isNew || editing.row <= 0 || editing.row >= rows.value.length) return body
   // A newly added manual row must stay visible at the top while it is being
@@ -15999,7 +16021,9 @@ const clearanceRowsFromSource = (): ClearanceRow[] => {
       sealNo: String(record.seal || ''),
     }))
   }
-  const volumes = volumeFormFromCell(rowValueByHeader('VOLUME')).records
+  const volumes: any[] = isFclContSeal()
+    ? expandedVolumeContainers().map((item) => ({ id: item.key, type: item.type, purpose: item.purpose }))
+    : volumeFormFromCell(rowValueByHeader('VOLUME')).records
   const truckValue = rowValueByHeader('TRUCK & CONT/SEAL INFO') || rowValueByHeader('TRUCKING INFO') || rowValueByHeader('CONT/SEAL INFO')
   const trucks = truckContFormFromCell(truckValue).records.filter((truck) =>
     truck.container || truck.seal || truck.truck || truck.driver,
@@ -16200,17 +16224,22 @@ const toggleAllClearanceRows = (event: Event) => {
   clearanceRows().forEach((row) => { selected[row.key] = checked })
   gsdModal.form.selected = selected
 }
+// A new declaration must be entered and confirmed before another one can be added.
+const clearanceHasDraftDeclaration = () => clearanceDeclarations().some((decl) => decl.editing)
 const addClearanceDeclaration = (rowKey: string) => {
+  if (clearanceHasDraftDeclaration()) return
   clearanceDeclarations().push(emptyClearanceDeclaration([rowKey]))
 }
 // One declaration shared by the ticked containers (2 or more; not necessarily all).
 const selectedClearanceRowKeys = () => clearanceRows().filter((row) => !!gsdModal.form.selected?.[row.key]).map((row) => row.key)
 const addClearanceDeclarationToAll = () => {
+  if (clearanceHasDraftDeclaration()) return
   const keys = selectedClearanceRowKeys()
   if (keys.length < 2) return
   clearanceDeclarations().push(emptyClearanceDeclaration(keys))
 }
 const addSimpleCcdClearanceDeclaration = () => {
+  if (clearanceHasDraftDeclaration()) return
   if (!Array.isArray(gsdModal.form.rows)) gsdModal.form.rows = []
   const rowKey = `clr-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
   gsdModal.form.rows.push({ key: rowKey, type: '', purpose: '', containerNo: '', sealNo: '' })
@@ -16305,7 +16334,28 @@ const emptyTruckContRecord = (): TruckContRecord => ({
   gtime: '',
   epodSign: '',
 })
+// FCL: every unit of a VOLUME line is one container, e.g. 3 x 20GP + 1 x 40HQ
+// gives four Cont/Seal rows (20GP, 20GP, 20GP, 40HQ). The first container keeps
+// the line id as key (matches data saved per line); the others use "<id>|<n>".
+const expandedVolumeContainers = (volumeValue: any = rowValueByHeader('VOLUME')) => {
+  const out: Array<{ key: string; sourceId: string; type: string; purpose: string; contType: string }> = []
+  ;(volumeFormFromCell(volumeValue).records || []).forEach((record: any, recordIndex: number) => {
+    const sourceId = String(record?.id || recordIndex)
+    const qty = Math.min(Math.max(Number.parseInt(String(record?.volume ?? '').trim(), 10) || 1, 1), 200)
+    for (let unit = 0; unit < qty; unit += 1) {
+      out.push({
+        key: unit ? `${sourceId}|${unit}` : sourceId,
+        sourceId,
+        type: String(record?.type || ''),
+        purpose: String(record?.purpose || ''),
+        contType: contSealTypeLabel(record),
+      })
+    }
+  })
+  return out
+}
 const doContSealVolumeRows = () => {
+  if (isFclContSeal()) return expandedVolumeContainers().map(({ key, type, purpose }) => ({ key, type, purpose }))
   const volumeCell = rowValueByHeader('VOLUME')
   const volumeForm = volumeFormFromCell(volumeCell)
   const out: Array<{ key: string; type: string; purpose: string }> = []
@@ -16434,12 +16484,7 @@ const truckContFormFromCell = (value: any) => {
   return { records: records.length ? records : [emptyTruckContRecord()], locked, sentAt }
 }
 const seedTruckContFromVolume = (form: any) => {
-  const volume = volumeFormFromCell(rowValueByHeader('VOLUME'))
-  const expected: string[] = (volume.records || []).map((record: any) => {
-    const type = String(record.type || '').replace(/\s+/g, '').toUpperCase()
-    const purpose = String(record.purpose || '').replace(/\s+/g, '').toUpperCase()
-    return purpose && !type.endsWith(purpose) ? `${type}${purpose}` : type
-  })
+  const expected: string[] = expandedVolumeContainers().map((item) => item.contType)
   if (!expected.length) return form
   const current = Array.isArray(form.records) ? form.records : []
   form.records = expected.map((contType, index) => ({ ...emptyTruckContRecord(), ...(current[index] || {}), contType }))
@@ -16721,12 +16766,10 @@ const cancelTruckContEdit = () => {
   truckCompanyPicker.index = -1
 }
 // ContType shown like the VOLUME column: quantity x type, e.g. 1X20GP.
+// ContType is read-only and comes from the VOLUME line of the same order.
 const truckContTypeDisplay = (record: TruckContRecord, index: number) => {
-  const type = upperText(record.contType || '').replace(/\s+/g, '')
-  if (!type) return '—'
-  const volume: any = volumeFormFromCell(rowValueByHeader('VOLUME')).records[index]
-  const quantity = String(volume?.volume ?? '').trim()
-  return quantity ? `${quantity}X${type}` : type
+  const volumeType = upperText(expandedVolumeContainers()[index]?.contType || '').replace(/\s+/g, '')
+  return volumeType || upperText(record.contType || '').replace(/\s+/g, '') || '—'
 }
 const truckContRecordHasData = (record: TruckContRecord) =>
   ['truck', 'container', 'seal', 'driver', 'eta1', 'eta2', 'gdate', 'gtime'].some((key) => String((record as any)[key] || '').trim())
@@ -16883,6 +16926,8 @@ const sendTruckDetailsToShipper = async () => {
         shipper,
         jobNo: rowValueByHeader('JOB NO#') || rowValueByHeader('JOB NO') || rowValueByHeader('REF#'),
         refNo: rowValueByHeader('REF#') || rowValueByHeader('REF NO#'),
+        bookingNo: rowValueByHeader('BC NO#'),
+        consignee: rowValueByHeader('CNEE') || rowValueByHeader('CONSIGNEE'),
         shipmentType: `${opsParts.value?.mode || ''} ${opsParts.value?.type || ''}`.trim(),
         records: truckContRecords().map((record, index) => ({
           puNo: truckPuNumber(index),
@@ -17116,7 +17161,9 @@ const airDupIcdTruckingStatusRecords = () => pickupReturnRecords().filter((recor
 const truckRecordsForActiveRow = (linkedTruckValue: any = '') => {
   const truckValue = linkedTruckValue || rowValueByHeader('TRUCK & CONT/SEAL INFO') || rowValueByHeader('CONT/SEAL INFO')
   const trucks = truckContFormFromCell(truckValue).records
-  const volumeRows = volumeFormFromCell(rowValueByHeader('VOLUME')).records || []
+  const volumeRows = isFclContSeal()
+    ? expandedVolumeContainers().map((item) => ({ id: item.key, type: item.contType }))
+    : (volumeFormFromCell(rowValueByHeader('VOLUME')).records || [])
   const expectedCount = volumeRows.length || trucks.length || 1
   return Array.from({ length: expectedCount }, (_, index) => ({
     ...emptyTruckContRecord(),
@@ -17471,6 +17518,12 @@ const rawSiSourceValue = (label: string) => {
   const column = (rows.value[0] || []).findIndex((_: any, index: number) => normalizedHeaderLabel(index) === target)
   return column >= 0 ? rows.value[gsdModal.row]?.[column] : ''
 }
+// Default Gross Weight / Measurement on B/L & FCR: totals of the container table.
+const billContainerTotal = (containers: any[], field: 'gw' | 'mea') => {
+  const total = (containers || []).reduce((sum: number, item: any) => sum + (Number.parseFloat(String(item?.[field] || '').replace(/,/g, '')) || 0), 0)
+  if (!total) return ''
+  return `${Number(total.toFixed(field === 'mea' ? 3 : 2))} ${field === 'mea' ? 'CBM' : 'KGS'}`
+}
 const billContainersFromMasterSi = () => {
   const source = rawSiSourceValue('MASTER SI SUBMIT') || rawSiSourceValue('SI SUBMIT')
   if (!source) return []
@@ -17590,7 +17643,7 @@ const syncSiSubmitFromSources = () => {
   if (pod || isMasterSiSubmitModal()) gsdModal.form.pod = pod.toUpperCase()
   const truckValue = rawSiSourceValue('TRUCK & CONT/SEAL INFO') || rawSiSourceValue('TRUCKING INFO')
   const linked = truckContFormFromCell(truckValue).records.filter((item) => item.container || item.seal || item.contType)
-  const volumes = volumeFormFromCell(rawSiSourceValue('VOLUME')).records
+  const volumes: any[] = expandedVolumeContainers(rawSiSourceValue('VOLUME')).map((item) => ({ type: item.type, purpose: item.purpose }))
   const saved = siSubmitContainers()
   const rowCount = Math.max(linked.length, volumes.length)
   if (rowCount) {
@@ -17820,8 +17873,10 @@ const exportSiSubmitPdf = async (download: boolean | Event = true) => {
           cell.textContent = ''
           cell.appendChild(tableText)
         })
+        // An empty Special Instructions box is left out of the PDF.
+        if (!String(gsdModal.form.specialInst || '').trim()) clonedSheet.querySelector('.si-special-inst')?.remove()
         clonedSheet.querySelectorAll<HTMLElement>('.si-section-title').forEach((title) => {
-          title.style.marginTop = '18px'
+          title.style.marginTop = '6px'
           title.style.marginBottom = '0'
           title.style.paddingBottom = '0'
           title.style.borderBottom = '0'
@@ -17870,10 +17925,26 @@ const exportSiSubmitPdf = async (download: boolean | Event = true) => {
             position: relative;
             top: 5px;
           }
+          .gsd-si-modal .si-g2,
+          .gsd-si-modal .si-g3 {
+            margin: 4px 0 !important;
+            row-gap: 6px !important;
+          }
+          .gsd-si-modal .si-f {
+            gap: 2px !important;
+          }
+          .gsd-si-modal .si-radio {
+            margin: 0 !important;
+            padding-bottom: 8px;
+          }
+          .gsd-si-modal .si-table-wrap {
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+          }
           .gsd-si-modal .si-pdf-section-line {
             height: 1px;
             margin-top: 6px;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
             background: #16406e;
           }
         `
@@ -18869,7 +18940,7 @@ const openBillDocument = async (kind: 'B/L' | 'FCR', isRelease = false) => {
     notify: sameAsConsignee ? '(SAME AS CONSIGNEE)' : saved?.notify || siClientTextFromSource(rawSiSourceValue('DESTINATION AGENT')), notifyBackup: sameAsConsignee ? '' : saved?.notify || '', sameAsConsignee,
     preCarriage: saved?.preCarriage || '', receipt: saved?.receipt || '', vessel: linkedVesselText(saved?.vessel || rawSiSourceValue('VESSEL/VOYAGE')),
     pol: String(saved?.pol || linkedPol || '').toUpperCase(), pod: String(saved?.pod || linkedPod || '').toUpperCase(), delivery: saved?.delivery || '',
-    marks: saved?.marks || '', packages: saved?.packages || '', goodsDescription: saved ? (saved.goodsDescription || '') : (kind === 'B/L' ? defaultBillGoodsDescription() : ''), grossWeight: saved?.grossWeight || '', measurement: saved?.measurement || '', containers: masterSiContainers.length ? masterSiContainers : (Array.isArray(saved?.containers) ? saved.containers : []),
+    marks: saved?.marks || '', packages: saved?.packages || '', goodsDescription: saved ? (saved.goodsDescription || '') : (kind === 'B/L' ? defaultBillGoodsDescription() : ''), grossWeight: saved?.grossWeight || billContainerTotal(masterSiContainers.length ? masterSiContainers : (saved?.containers || []), 'gw'), measurement: saved?.measurement || billContainerTotal(masterSiContainers.length ? masterSiContainers : (saved?.containers || []), 'mea'), containers: masterSiContainers.length ? masterSiContainers : (Array.isArray(saved?.containers) ? saved.containers : []),
     freightCharges: saved?.freightCharges || '', freightPayableAt: saved?.freightPayableAt || saved?.pol || linkedPol || '', originalCount: saved?.originalCount || '3',
     placeOfIssue: saved?.placeOfIssue || 'HO CHI MINH CITY, VIETNAM', dateOfIssue: saved?.dateOfIssue || '', shippedOnBoardDate: saved?.shippedOnBoardDate || shippedDate,
     signedAt: saved?.signedAt || '',
@@ -18900,7 +18971,7 @@ const removeBillAttachedSheet = (index: number) => {
   showToast(`Attached sheet ${index} removed`)
 }
 const clearBillDocument = () => {
-  Object.assign(billDocModal, { docNo: '', refNo: '', shipper: '', consignee: '', notify: '', notifyBackup: '', sameAsConsignee: false, preCarriage: '', receipt: '', vessel: '', pol: '', pod: '', delivery: '', marks: '', packages: '', goodsDescription: billDocModal.kind === 'B/L' ? defaultBillGoodsDescription() : '', grossWeight: '', measurement: '', containers: billContainersFromMasterSi(), freightCharges: '', freightPayableAt: '', originalCount: '3', placeOfIssue: 'HO CHI MINH CITY, VIETNAM', dateOfIssue: '', shippedOnBoardDate: '', signedAt: '', attachments: 0, savedAt: '' })
+  Object.assign(billDocModal, { docNo: '', refNo: '', shipper: '', consignee: '', notify: '', notifyBackup: '', sameAsConsignee: false, preCarriage: '', receipt: '', vessel: '', pol: '', pod: '', delivery: '', marks: '', packages: '', goodsDescription: billDocModal.kind === 'B/L' ? defaultBillGoodsDescription() : '', grossWeight: billContainerTotal(billContainersFromMasterSi(), 'gw'), measurement: billContainerTotal(billContainersFromMasterSi(), 'mea'), containers: billContainersFromMasterSi(), freightCharges: '', freightPayableAt: '', originalCount: '3', placeOfIssue: 'HO CHI MINH CITY, VIETNAM', dateOfIssue: '', shippedOnBoardDate: '', signedAt: '', attachments: 0, savedAt: '' })
 }
 const saveBillDocument = async () => {
   billDocModal.pol = String(billDocModal.pol || '').toUpperCase()
@@ -23763,6 +23834,7 @@ watch(() => props.currentCountry?.id, async (country, previousCountry) => {
   await loadSheet()
 })
 watch(activeKey, loadSheet, { immediate: true })
+watch(activeKey, () => { opsBadgeSortColumn.value = null })
 watch(activeKey, () => {
   opsSelectedRows.value = new Set()
   opsFilterField.value = 'all'
@@ -24318,6 +24390,7 @@ onBeforeUnmount(() => {
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal){width:800px;max-width:96vw;padding:26px 18px 18px}
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-scroll{display:flex;justify-content:center}
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-table{width:100%;min-width:0;table-layout:fixed;font-size:11.5px}
+/* Clearance Details: compact table sized to its content, centered; row + beside the CDS number */.gsd-clr-modal:not(#_x){width:max-content!important;min-width:0!important;max-width:96vw!important}.gsd-clr-modal:not(#_x) .gsd-clr-panels:empty{display:none}.gsd-clr-modal:not(#_x) .clr-steps{justify-content:flex-start;flex-wrap:nowrap}.gsd-clr-modal:not(#_x) .clr-step{flex:0 0 auto;width:auto;padding:6px 8px;gap:5px}.gsd-clr-modal:not(#_x) .clr-step em{margin-left:2px}.gsd-clr-modal:not(#_x) .clr-plus:disabled{background:#b9c3be!important;border-color:#b9c3be!important;opacity:.6;cursor:not-allowed}.gsd-clr-modal:not(#_x) .gsd-clr-scroll{display:flex;justify-content:center}.gsd-clr-modal:not(#_x) .gsd-clr-table{width:auto;min-width:0;table-layout:auto;margin:0 auto;border-collapse:separate;border-spacing:0;border:1px solid #d9e2dc;border-radius:10px;overflow:hidden}.gsd-clr-modal:not(#_x) .gsd-clr-table :is(th,td){width:auto!important;white-space:nowrap;padding-left:14px;padding-right:14px;border:0;border-right:1px solid #d9e2dc;border-bottom:1px solid #d9e2dc}.gsd-clr-modal:not(#_x) .gsd-clr-table :is(th,td):last-child{border-right:0}.gsd-clr-modal:not(#_x) .gsd-clr-table tbody tr:last-child td{border-bottom:0}.gsd-clr-modal:not(#_x) .clr-declwrap{flex-direction:row;flex-wrap:wrap;align-items:center;max-width:none;gap:4px 6px}.gsd-clr-modal:not(#_x) .clr-declrow{flex:1 1 calc(100% - 34px)}.gsd-clr-modal:not(#_x) .clr-dcapbox{flex:0 0 auto}.gsd-clr-modal:not(#_x) .clr-declwrap:not(:has(.clr-declrow)){justify-content:center}
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-table th,.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-table td{padding:6px 7px}
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-allcell{width:26px}
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-allcell input{width:13px;height:13px;margin:0}
@@ -24459,6 +24532,7 @@ onBeforeUnmount(() => {
 .gsd-vty.dly{background:#fff4e5;color:#b45f04}
 .gsd-vty.ts{background:#fff0dc;color:#c45f08}
 .gsd-vty-group{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;padding:2px 0}.gsd-vty-group .gsd-vty{min-width:48px!important;margin:0!important}
+.ops-ms-table thead th.ops-badge-head{cursor:pointer}.ops-ms-table thead th.ops-badge-sorted{background:#dcefe3}.ops-head-badge{position:relative;top:-4px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:16px;height:16px;margin-left:3px;padding:0 4px;border-radius:999px;background:#d63a3a;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:700;line-height:16px;letter-spacing:0;text-indent:0;font-variant-numeric:tabular-nums;vertical-align:top}
 .ops-nbadge{display:inline-grid;place-items:center;min-width:14px;height:14px;margin-left:5px;padding:0 3px;border-radius:999px;background:#d63a3a;color:#fff;font-size:9px;font-weight:800;line-height:1}
 /* AIR/LCL — vessel delay panel + history on EXW ECD (mockup #ovs) */
 .gsd-modal.gsd-vessel-ecd-modal{width:min(980px,96vw);max-height:92vh;overflow:auto}
@@ -25317,7 +25391,8 @@ td:not(#_x) :is(input:not([type=checkbox]):not([type=radio]),textarea,.ops-textc
 /* The Date/Time pairs under "Pickup Location Arrival Time" and "Port/Warehouse Gatein Time"
    share one equal width, so both groups line up. */
 .gsd-truck-cont-modal .gsd-truck-table:not(#_x) thead tr:nth-child(2) th,
-.gsd-truck-cont-modal .gsd-truck-table:not(#_x) td.truck-datetime-cell{width:120px!important;min-width:120px!important;max-width:120px!important}
+.gsd-truck-cont-modal .gsd-truck-table:not(#_x) td.truck-datetime-cell{width:92px!important;min-width:92px!important;max-width:92px!important;padding-left:6px!important;padding-right:6px!important}.gsd-truck-cont-modal .gsd-truck-table:not(#_x):has(td.truck-datetime-cell>input) :is(thead tr:nth-child(2) th,td.truck-datetime-cell){width:118px!important;min-width:118px!important;max-width:118px!important}.gsd-truck-cont-modal .gsd-truck-table:not(#_x) td.truck-datetime-cell:has(>input){padding:2px 4px!important;overflow:hidden}.gsd-truck-cont-modal .gsd-truck-table:not(#_x) td.truck-datetime-cell>input{display:block;width:100%!important;min-width:0!important;max-width:100%!important;height:24px;box-sizing:border-box;margin:0 auto;padding:0 4px!important;font-size:12px;text-align:center}
+/* Truck & Cont/Seal: sticky header as one block (rowspan cells kept their borders) and compact rows */.gsd-truck-cont-modal .gsd-truck-table:not(#_x){border-collapse:separate;border-spacing:0;border-top:1px solid #c7d1ca;border-left:1px solid #c7d1ca}.gsd-truck-cont-modal .gsd-truck-table:not(#_x) :is(th,td){border:0;border-right:1px solid #c7d1ca;border-bottom:1px solid #c7d1ca}.gsd-truck-cont-modal .gsd-five-row-scroll .gsd-truck-table:not(#_x) thead{position:sticky;top:0;z-index:30}.gsd-truck-cont-modal .gsd-five-row-scroll .gsd-truck-table:not(#_x) thead th.tk-all{background:#eef3ee!important;position:sticky!important;left:0;top:auto!important}.gsd-truck-cont-modal .gsd-five-row-scroll .gsd-truck-table:not(#_x) thead th{position:static;background:#eef3ee}.gsd-truck-cont-modal .gsd-truck-table:not(#_x) tbody td{height:28px;padding-top:2px;padding-bottom:2px}
 /* Bill Detail export menu: same width as its button; a green tick after each document. */
 .bd-source-menu{position:relative}
 .bd-source-menu .bd-export-dropdown:not(#_x){left:0!important;right:0!important;width:auto!important;min-width:100%!important;box-sizing:border-box}
@@ -25368,6 +25443,7 @@ td:not(#_x) :is(input:not([type=checkbox]):not([type=radio]),textarea,.ops-textc
 /* LCL Master SI: Description field, then the cargo table with only a small gap. */
 .gsd-si-modal .si-lcl-description{margin-bottom:8px!important}
 .gsd-si-modal .si-lcl-cargo-table{margin-top:0!important;margin-bottom:12px}
+.gsd-si-modal .si-table-wrap:not(.si-lcl-cargo-table) .si-table:not(#_x) th:is(:nth-child(6),:nth-child(7),:nth-child(8)){width:13%!important}
 .gsd-si-modal .si-lcl-cargo-table .si-table th.si-gap:not(#_x),.gsd-si-modal .si-lcl-cargo-table .si-table td.si-gap:not(#_x){width:6px!important;min-width:6px!important;max-width:6px!important;padding:0!important;background:#fff!important;border-top:0!important;border-bottom:0!important}
 .gsd-si-modal .si-lcl-cargo-table:not(#_x){width:100%!important;max-width:none!important;padding-right:0!important;scrollbar-gutter:auto!important;box-sizing:border-box!important}
 .gsd-si-modal .si-lcl-cargo-table .si-table:not(#_x){width:100%!important;min-width:0!important;table-layout:fixed!important}
