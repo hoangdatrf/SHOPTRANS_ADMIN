@@ -233,6 +233,7 @@
                     <span v-if="truckDetailNeedsAttention(rowIndex, columnIndex)" class="detail-alert-icon">!</span>{{ truckActionIsDetail(rowIndex, columnIndex) ? 'DETAIL' : 'ADD+' }}
                   </button>
                   <span v-else-if="isAgentNaCell(rowIndex, columnIndex)" class="ops-textcell ops-na-cell">N/A</span>
+                  <span v-else-if="isLinkedImportPartyCell(rowIndex, columnIndex) && !clientCellText(rows[rowIndex]?.[columnIndex])" class="ops-textcell">—</span>
                   <button
                     v-else-if="isClientLinkCell(rowIndex, columnIndex) && canEditClientLinkCell(rowIndex, columnIndex) && !clientCellText(rows[rowIndex]?.[columnIndex])"
                     v-show="!hideLockedGsdAddAction(rowIndex, true)"
@@ -251,7 +252,7 @@
                   >
                     <span>{{ clientCellText(rows[rowIndex]?.[columnIndex]) }}</span>
                   </button>
-                  <span v-else-if="isClientLinkCell(rowIndex, columnIndex)" class="ops-textcell"></span>
+                  <span v-else-if="isClientLinkCell(rowIndex, columnIndex)" class="ops-textcell">{{ isLinkedImportPartyCell(rowIndex, columnIndex) ? '—' : '' }}</span>
                   <button
                     v-else-if="isDoInfoCell(rowIndex, columnIndex)"
                     v-show="!hideLockedGsdAddAction(rowIndex, !doInfoHasValue(rows[rowIndex]?.[columnIndex]))"
@@ -310,7 +311,7 @@
                       :key="`ops-dd-${columnIndex}-${String(option)}`"
                       :value="option"
                     >
-                      {{ option || (normalizedHeaderLabel(columnIndex).endsWith('+') ? 'N/A' : '—') }}
+                      {{ option || (['EXW+', 'EFA+', 'FCA+', 'FCF+'].includes(normalizedHeaderLabel(columnIndex)) ? 'N/A' : '—') }}
                     </option>
                   </select>
                   <input
@@ -669,6 +670,7 @@
                       <span v-if="truckDetailNeedsAttention(rowIndex, columnIndex)" class="detail-alert-icon">!</span>{{ truckActionIsDetail(rowIndex, columnIndex) ? 'DETAIL' : 'ADD+' }}
                     </button>
                     <span v-else-if="isAgentNaCell(rowIndex, columnIndex)" class="ops-textcell ops-na-cell">N/A</span>
+                    <span v-else-if="isLinkedImportPartyCell(rowIndex, columnIndex) && !clientCellText(rows[rowIndex]?.[columnIndex])" class="ops-textcell">—</span>
                     <button
                     v-else-if="isClientLinkCell(rowIndex, columnIndex) && canEditClientLinkCell(rowIndex, columnIndex) && !clientCellText(rows[rowIndex]?.[columnIndex])"
                       class="addcli"
@@ -784,7 +786,7 @@
           @click="selectDropdownOption(option)"
           @keydown.enter.prevent="selectDropdownOption(option)"
         >
-          <span>{{ option || (normalizedHeaderLabel(dropdownPopup.column).endsWith('+') ? 'N/A' : '—') }}</span>
+          <span>{{ option || (['EXW+', 'EFA+', 'FCA+', 'FCF+'].includes(normalizedHeaderLabel(dropdownPopup.column)) ? 'N/A' : '—') }}</span>
           <button v-if="dropdownPopup.mode === 'edit'" class="ddx" type="button" title="Remove" @click.stop="removeDropdownPopupOption(option)">x</button>
         </div>
         <div v-if="!filteredDropdownPopupOptions.length" class="ddempty">No options</div>
@@ -949,7 +951,7 @@
         <textarea :value="shipmentNotesDraft" autofocus placeholder="Enter notes for this shipment..." @input="handleShipmentNotesInput"></textarea>
       </div>
     </div>
-    <div v-if="gsdModal.open" class="wb-modal-overlay gsd-modal-overlay" :class="{ 'gsd-child-document-open': billDocModal.open && !billDocBackgroundRendering }" @mousedown.self="closeGsdModal">
+    <div v-if="gsdModal.open" class="wb-modal-overlay gsd-modal-overlay" :class="{ 'gsd-child-document-open': billDocModal.open && !billDocBackgroundRendering }" @mousedown.self="requestCloseGsdModal">
       <div
         class="wb-modal gsd-modal"
         :style="gsdModalShellStyle()"
@@ -1019,7 +1021,7 @@
         aria-modal="true"
         @mousedown="closePickupBcMenuOnOutside($event); closeBillExportMenuOnOutside($event); closeBillReleaseMenuOnOutside($event); clearVesselHistorySelectionOnBlank($event)"
       >
-        <button class="gsd-modal-x" type="button" title="Close" aria-label="Close" @pointerup.stop.prevent="closeGsdModal" @click.stop="closeGsdModal">&times;</button>
+        <button class="gsd-modal-x" type="button" title="Close" aria-label="Close" @pointerup.stop.prevent="requestCloseGsdModal" @click.stop="requestCloseGsdModal">&times;</button>
         <div v-if="gsdModal.loading && (isPaymentRequestModal() || isExpenseCollectModal())" class="payment-loading-screen" role="status" aria-live="polite">
           <AdminLoadingScreen compact message="Loading payment data" detail="Please wait a moment…" />
         </div>
@@ -1935,27 +1937,28 @@
                     <td><button class="gsd-pu-link" type="button" @click="openTruckPuDetail(index)">{{ truckPuNumber(index) }}</button></td>
                     <td class="truck-company-cell">
                       <template v-if="truckContRowCanEdit(record)">
+                        <span class="truck-sizer" aria-hidden="true">{{ record.truck || '' }}</span>
                         <input
                           v-model="record.truck"
-                          class="truck-company-select truck-company-filter"
+                          class="truck-company-select truck-company-filter truck-center-input"
+                          :class="{ 'truck-invalid': truckCompanyInvalid(record.truck) }"
                           type="text"
                           placeholder="Type to filter"
                           autocomplete="off"
-                          @focus="openTruckCompanyPicker(index)"
+                          @focus="openTruckCompanyPicker(index, $event)"
                           @input="handleTruckCompanyInput(record, index)"
                           @blur="closeTruckCompanyPickerSoon"
                         />
-                        <div v-if="truckCompanyPicker.open && truckCompanyPicker.index === index" class="truck-company-picker">
+                        <div v-if="truckCompanyPicker.open && truckCompanyPicker.index === index && filteredTruckCompanyOptions(record.truck).length" class="truck-company-picker" :style="{ position: 'fixed', left: `${truckCompanyPicker.left}px`, top: `${truckCompanyPicker.top}px`, minWidth: `${truckCompanyPicker.width}px` }">
                           <button v-for="option in filteredTruckCompanyOptions(record.truck)" :key="option" type="button" @mousedown.prevent="selectTruckCompanyOption(record, option)">{{ option }}</button>
-                          <div v-if="!filteredTruckCompanyOptions(record.truck).length" class="truck-company-picker-empty">No Haulier found</div>
                         </div>
                       </template>
                       <button v-else-if="record.truck" class="gsd-pu-link" type="button" @click="showTruckCompanyDetail(record.truck)">{{ record.truck }}</button>
                       <span v-else>—</span>
                     </td>
-                    <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()"><input v-model.trim="record.container" :disabled="!truckContRowCanEdit(record)" /></td>
+                    <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()" class="truck-input-cell"><span class="truck-sizer" aria-hidden="true">{{ record.container || '' }}</span><input v-model.trim="record.container" :class="{ 'truck-invalid': truckContDuplicate('container', record) }" class="truck-center-input" :disabled="!truckContRowCanEdit(record)" /></td>
                     <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()"><span class="truck-conttype-view">{{ truckContTypeDisplay(record, index) }}</span></td>
-                    <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()"><input v-model.trim="record.seal" :disabled="!truckContRowCanEdit(record)" /></td>
+                    <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()" class="truck-input-cell"><span class="truck-sizer" aria-hidden="true">{{ record.seal || '' }}</span><input v-model.trim="record.seal" :class="{ 'truck-invalid': truckContDuplicate('seal', record) }" class="truck-center-input" :disabled="!truckContRowCanEdit(record)" /></td>
                     <td>
                       <span v-if="isAirDcdTruckingModal() && isReadonlyTruckContModal() && !record.driver">—</span>
                       <button
@@ -2296,7 +2299,7 @@
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-div"></div>
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-sec-title">{{ isAwbDetailModal() ? 'HAWB DETAILS' : awbText('HBL DETAILS') }}</div>
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-rows">
-                  <div class="bd-row"><span class="bd-lab">SI RECEIVED:</span><input v-model="gsdModal.form.siReceived" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing" @change="syncBillDetailTimestamp('siReceived')" /><input v-model.trim="gsdModal.form.siReceivedAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><div class="bd-source-menu"><button class="bd-exportbtn" type="button" :disabled="!gsdModal.form.siReceived || !gsdModal.editing" @click="billExportMenuOpen = !billExportMenuOpen">{{ billSourceButtonLabel() }}<span class="bd-export-caret">&#9662;</span></button><div v-if="billExportMenuOpen" class="bd-export-dropdown bd-export-groups"><div class="bd-export-group"><label class="bd-export-heading-check"><input type="checkbox" :checked="billSourceMode() === 'export'" disabled /> Export (B/L, FCR)</label><div class="bd-export-options"><div class="bd-export-pick" :class="{ picked: billSourceMode() === 'export' && billExportPicks().bl }"><button type="button" @click="selectBillDocumentExport('B/L')">Export B/L</button><span class="bd-export-tick" aria-hidden="true">✓</span></div><div class="bd-export-pick" :class="{ picked: billSourceMode() === 'export' && billExportPicks().fcr }"><button type="button" @click="selectBillDocumentExport('FCR')">Export FCR</button><span class="bd-export-tick" aria-hidden="true">✓</span></div></div></div><div class="bd-export-group"><label><input type="checkbox" :checked="billSourceMode() === 'client'" @change="setBillSourceMode('client')" /> Use Client's B/L</label></div></div></div><template v-if="billSourceMode() === 'client'"><button class="booking-icon bd-client-upload" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.editing" title="Upload Customer B/L" @click="openBillDetailUpload('clientBlFile')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5" /></svg></button><button class="booking-eye" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.form.clientBlFile?.url" :title="gsdModal.form.clientBlFile?.url ? 'View Customer B/L' : 'No file attached'" @click="viewBillDetailFile(gsdModal.form.clientBlFile)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></template></div>
+                  <div class="bd-row"><span class="bd-lab">SI RECEIVED:</span><input v-model="gsdModal.form.siReceived" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing" @change="syncBillDetailTimestamp('siReceived')" /><input v-model.trim="gsdModal.form.siReceivedAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><div class="bd-source-menu"><button class="bd-exportbtn" type="button" :disabled="!gsdModal.form.siReceived || !gsdModal.editing" @click="billExportMenuOpen = !billExportMenuOpen">{{ billSourceButtonLabel() }}<span class="bd-export-caret">&#9662;</span></button><div v-if="billExportMenuOpen" class="bd-export-dropdown bd-export-groups"><div v-if="!billSiNotSubmittedByTx()" class="bd-export-group"><label class="bd-export-heading-check"><input type="checkbox" :checked="billSourceMode() === 'export'" disabled /> Export (B/L, FCR)</label><div class="bd-export-options"><div class="bd-export-pick" :class="{ picked: billSourceMode() === 'export' && billExportPicks().bl }"><button type="button" @click="selectBillDocumentExport('B/L')">Export B/L</button><span class="bd-export-tick" aria-hidden="true">✓</span></div><div class="bd-export-pick" :class="{ picked: billSourceMode() === 'export' && billExportPicks().fcr }"><button type="button" @click="selectBillDocumentExport('FCR')">Export FCR</button><span class="bd-export-tick" aria-hidden="true">✓</span></div></div></div><div class="bd-export-group"><label><input type="checkbox" :checked="billSourceMode() === 'client'" @change="setBillSourceMode('client')" /> Use Client's B/L</label></div></div></div><template v-if="billSourceMode() === 'client'"><button class="booking-icon bd-client-upload" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.editing" title="Upload Customer B/L" @click="openBillDetailUpload('clientBlFile')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5" /></svg></button><button class="booking-eye" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.form.clientBlFile?.url" :title="gsdModal.form.clientBlFile?.url ? 'View Customer B/L' : 'No file attached'" @click="viewBillDetailFile(gsdModal.form.clientBlFile)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></template></div>
                   <div class="bd-row"><span class="bd-lab">{{ isAwbDetailModal() ? 'HAWB APPROVED:' : awbText('HBL APPROVED:') }}</span><input v-model="gsdModal.form.hbl" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing || !gsdModal.form.siReceived" @change="syncBillTimestamp('hbl')" /><input v-model.trim="gsdModal.form.hblAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><button class="bd-eye" :class="{ on: !!gsdModal.form.hbl && (isAwbDetailModal() ? !!gsdModal.form.hblFile?.url : billBlReady()) }" type="button" :disabled="!gsdModal.form.hbl || (isAwbDetailModal() ? !gsdModal.form.hblFile?.url : !billBlReady())" :title="isAwbDetailModal() ? 'View HAWB file' : billSourceMode() === 'client' ? 'View Client B/L' : 'View Export B/L PDF'" @click="isAwbDetailModal() ? viewBillDetailFile(gsdModal.form.hblFile) : viewSelectedBillFile()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                 </div>
                 <input ref="billDetailFileInput" type="file" hidden @change="handleBillDetailFile" />
@@ -2401,8 +2404,8 @@
             </div>
             <div class="gsd-pc-actions">
               <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
-              <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="enableGsdModalEdit">Edit</button>
-              <button class="wb-modal-btn cancel" type="button" :disabled="!preAlertConfirmSelected() || gsdModal.form.linkedFromOrigin" @click="removePreAlertConfirmationFreetime">Remove</button>
+              <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || preAlertConfirmationLinked()" :title="preAlertConfirmationLinked() ? 'Linked from the export shipment' : ''" @click="enableGsdModalEdit">Edit</button>
+              <button class="wb-modal-btn cancel" type="button" :disabled="!preAlertConfirmSelected() || preAlertConfirmationLinked()" @click="removePreAlertConfirmationFreetime">Remove</button>
             </div>
             </template>
             </template>
@@ -3093,10 +3096,11 @@
                 <button v-if="isLclSheet() && gsdModal.editing && !arrivalNoticeIsCrossLinked()" class="an-add-row" type="button" @click="addArrivalContainer">+ Add Row</button>
                 <div v-if="!isLclSheet()" class="an-detail-section">Description of Goods</div>
                 <label v-if="!isLclSheet()" class="an-detail-description"><span>Description</span><textarea v-model="gsdModal.form.description" :readonly="!gsdModal.editing" rows="2"></textarea></label>
-                <div v-if="!isLclSheet()" class="an-detail-g3 an-cargo-summary"><label><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="an-linked-field" :readonly="!gsdModal.editing" rows="1"></textarea></label><label><span>QTY</span><input :value="arrivalNoticeTotals().qty" readonly /></label><label><span>Unit</span><input v-model="gsdModal.form.unit" :readonly="!gsdModal.editing" /></label></div>
+                <div v-if="!isLclSheet()" class="an-detail-g3 an-cargo-summary"><label><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="an-linked-field" :readonly="!gsdModal.editing" rows="1"></textarea></label><label><span>QTY</span><input :value="arrivalNoticeTotals().qty" readonly /></label><label><span>Unit</span><input v-model="gsdModal.form.unit" :readonly="!gsdModal.editing" list="an-unit-desc-options" autocomplete="off" placeholder="Type to filter" @focus="loadReferenceUnits" @input="gsdModal.form.unit = upperText(gsdModal.form.unit)" /></label></div>
                 <div v-if="!isLclSheet()" class="an-detail-g2"><label><span>GW (KG)</span><input :value="arrivalNoticeTotals().gw" readonly /></label><label><span>MEA. (CBM)</span><input :value="arrivalNoticeTotals().mea" readonly /></label></div>
                 <div class="an-detail-section an-detail-section-ref"><span>Charges Due</span><span class="an-refbox"><label>RefLastBiz:</label><span class="an-ref-search"><input v-model.trim="gsdModal.form.refLastBiz" :disabled="!gsdModal.editing" placeholder="JOB NO# / REF NO#" autocomplete="off" @input="searchArrivalPaymentHistory" @keydown.escape="paymentSearchOpen = false" /><span class="pr-searchresults" :class="{ show: paymentSearchOpen }"><button v-for="match in paymentSearchResults" :key="`an-${match.id}`" class="pr-sr-item" type="button" @mousedown.prevent="selectArrivalPaymentHistoryMatch(match)"><span class="pr-sr-info"><b class="pr-sr-line" :title="match.jobNo">{{ match.jobNo || '—' }}</b><span class="pr-sr-line pr-sr-sub" :title="`REF: ${match.refNo || '—'}`">{{ paymentMatchService(match) ? `${paymentMatchService(match)} · ` : '' }}{{ match.lineCount }} line(s)</span></span></button><span v-if="!paymentSearchResults.length" class="pr-sr-empty">{{ paymentSearchLoading ? 'Searching…' : 'No previous Job No matches your search.' }}</span></span></span><button type="button" :disabled="!gsdModal.editing" @click="openArrivalPaymentHistoryFilter">Search</button></span></div>
                 <table class="an-detail-table"><thead><tr><th>#</th><th>Charge Name</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>CUR</th><th>Tax (%)</th><th>Total Price</th></tr></thead><tbody><tr v-for="(charge, index) in gsdModal.form.charges" :key="charge.key || index"><td>{{ index + 1 }}</td><td><input v-model.trim="charge.chargeName" :disabled="!gsdModal.editing" list="an-charge-options" autocomplete="off" placeholder="Type to filter" @focus="setActiveDatalistValue(charge.chargeName)" @input="setActiveDatalistValue(charge.chargeName)" /></td><td><input v-model="charge.qty" :disabled="!gsdModal.editing" /></td><td><input v-model.trim="charge.unit" :disabled="!gsdModal.editing" list="an-unit-options" autocomplete="off" placeholder="Type to filter" @focus="loadReferenceUnits" @input="charge.unit = upperText(charge.unit)" /></td><td><input v-model="charge.unitPrice" :disabled="!gsdModal.editing" @input="charge.unitPrice = sanitizeMoneyInput(charge.unitPrice)" @blur="charge.unitPrice = formatMoneyValue(charge.unitPrice)" /></td><td><input v-model.trim="charge.cur" :disabled="!gsdModal.editing" list="an-currency-options" autocomplete="off" placeholder="CUR" @focus="setActiveDatalistValue(charge.cur)" @input="charge.cur = upperText(charge.cur); setActiveDatalistValue(charge.cur)" @change="selectArrivalNoticeBankForCurrency(charge.cur)" /></td><td><input v-model="charge.taxRate" :disabled="!gsdModal.editing" /></td><td>{{ arrivalNoticeChargeTotal(charge) }}</td></tr><tr v-if="!gsdModal.form.charges.length"><td colspan="8" class="empty">No charge data</td></tr></tbody><tfoot><tr><td colspan="7" class="an-total-label">Total Tax Amount</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().tax }}</td></tr><tr><td colspan="7" class="an-total-label">Total Charge</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().total }}</td></tr></tfoot></table>
+                <datalist id="an-unit-desc-options"><option v-for="option in referenceUnitOptions" :key="`d-${option.value}`" :value="referenceUnitDescription(option.value)" /></datalist>
                 <datalist id="an-unit-options"><option v-for="option in referenceUnitOptions" :key="option.value" :value="option.value" /></datalist>
                 <datalist id="an-charge-options"><option v-for="option in paymentDatalistOptions(paymentChargeOptions)" :key="option" :value="option" /></datalist>
                 <datalist id="an-currency-options"><option v-for="option in paymentDatalistOptions(paymentCurrencies)" :key="option" :value="option" /></datalist>
@@ -3574,6 +3578,7 @@
         <div class="bds-title">Send B/L to Shipper</div>
         <label class="bds-field"><span>To Shipper</span><input v-model="billSendModal.to" type="email" readonly /></label>
         <label class="bds-field"><span>CC emails</span><textarea v-model="billSendModal.cc" class="bds-emails" placeholder="Enter CC emails, separated by commas" @input="billSendModal.hint = ''"></textarea></label>
+        <div class="bds-field bds-deadline"><span>Deadline to confirm B/L</span><div class="bds-deadline-inputs"><input v-model="billSendModal.deadlineDate" type="date" lang="en-ZA" @input="billSendModal.hint = ''" /><input v-model="billSendModal.deadlineTime" type="time" @input="billSendModal.hint = ''" /></div></div>
         <div class="bds-hint">{{ billSendModal.hint }}</div>
         <div class="bds-foot">
           <button class="wb-modal-btn bds-no" type="button" @click="billSendModal.open = false">NO</button>
@@ -4851,7 +4856,7 @@ const routeCountryOptions = ref<string[]>([])
 const truckCompanyOptions = ref<string[]>([])
 const truckCompanyDriverMap = ref<Record<string, TruckDriverRecord[]>>({})
 const truckCompanyRecordMap = ref<Record<string, GsdClientRecord>>({})
-const truckCompanyPicker = reactive({ open: false, index: -1 })
+const truckCompanyPicker = reactive({ open: false, index: -1, left: 0, top: 0, width: 180 })
 const truckDetailsSending = ref(false)
 const truckDetailsSaving = ref(false)
 let epodStatusTimer: ReturnType<typeof setInterval> | null = null
@@ -5123,6 +5128,67 @@ const loadLiveTraderDirectory = (force = false) => {
     liveTraderCountry = country
   }).finally(() => { liveTraderLoading = null })
   return liveTraderLoading
+}
+// Pull the parties of every linked import row from its export ECD row, so changes
+// made on the export side show up here without re-sending the PRE-ALERT.
+const syncLinkedOriginParties = async (requestedKey: string, requestedCountry: string) => {
+  const current = opsParts.value
+  if (!current || !['DO', 'DAP', 'DDU', 'DDP'].includes(upperText(current.type))) return
+  const header = (rows.value[0] || []).map((item: any) => String(item ?? '').trim())
+  const linkedRows = rows.value.map((_row, index) => index).filter((index) => index > 0 && isLinkedOriginImportRow(index))
+  if (!linkedRows.length) return
+  const flowColumn = header.findIndex((label) => upperText(label) === `${upperText(current.type)}+`)
+  const rowType = (index: number) => {
+    const value = upperText(flowColumn >= 0 ? rows.value[index]?.[flowColumn] : '')
+    return ['EXW', 'FCA', 'FCF'].includes(value) ? value : ''
+  }
+  const types = [...new Set(linkedRows.map(rowType).filter(Boolean))]
+  if (linkedRows.some((index) => !rowType(index))) ['EXW', 'FCA', 'FCF'].forEach((type) => { if (!types.includes(type)) types.push(type) })
+  const origins = new Map<string, { header: string[]; rows: any[][]; settings: Record<string, any> }>()
+  await Promise.all(types.map(async (type) => {
+    const base = opsBaseForType(type as any)
+    const originHeader = opsHeaderFor(base, current.mode, 'ECD', type as any)
+    try {
+      const sheet = await props.request(`/workbook/sheets/${encodeURIComponent(sheetStorageKey(opsLeafKey(base, current.mode, type as any, 'ECD'), requestedCountry))}`)
+      const extracted = extractWorkbookRows(Array.isArray(sheet?.rows) ? sheet.rows.map((item: any[]) => [...item]) : [], sheet)
+      origins.set(type, { header: originHeader, rows: alignRowsToHeader(extracted.rows, originHeader).rows, settings: extracted.settings || sheet?.settings || {} })
+    } catch (error: any) {
+      if (requestStatus(error) !== 404) console.warn(`Could not load ${type} ECD parties`, error)
+    }
+  }))
+  if (activeKey.value !== requestedKey || countryViewId() !== requestedCountry) return
+  let changed = false
+  for (const index of linkedRows) {
+    const row = rows.value[index]
+    if (!row) continue
+    const link = opsShipmentLink(header, row, index, settings.value)
+    const jobColumn = header.indexOf('JOB NO#')
+    const job = jobColumn >= 0 ? String(row[jobColumn] || '').trim() : ''
+    const candidates = rowType(index) ? [rowType(index)] : types
+    let match: { header: string[]; row: any[] } | null = null
+    for (const type of candidates) {
+      const origin = origins.get(type)
+      if (!origin) continue
+      let originIndex = link ? origin.rows.findIndex((item, i) => i > 0 && opsShipmentLink(origin.header, item, i, origin.settings) === link) : -1
+      if (originIndex < 1 && job) {
+        const originJob = origin.header.indexOf('JOB NO#')
+        originIndex = originJob >= 0 ? origin.rows.findIndex((item, i) => i > 0 && String(item[originJob] || '').trim() === job) : -1
+      }
+      if (originIndex > 0) { match = { header: origin.header, row: origin.rows[originIndex] }; break }
+    }
+    if (!match) continue
+    for (const group of LINKED_PARTY_GROUPS) {
+      const localColumn = header.findIndex((label) => group.includes(upperText(label)))
+      const originColumn = match.header.findIndex((label) => group.includes(upperText(label)))
+      if (localColumn < 0 || originColumn < 0) continue
+      const value = match.row[originColumn] ?? ''
+      if (String(row[localColumn] ?? '') !== String(value)) {
+        row[localColumn] = value
+        changed = true
+      }
+    }
+  }
+  if (changed) scheduleSave()
 }
 const onWindowFocusRefreshTraders = () => { if (isOpsPage.value) void loadLiveTraderDirectory().catch(() => undefined) }
 const loadPaymentPartyOptions = async () => {
@@ -5501,6 +5567,17 @@ const loadTruckCompanyOptions = async () => {
     console.error('Could not load truck companies', error)
   }
 }
+// Truck Comp typed but not one of the Hauliers -> red border (no popup message).
+const truckCompanyInvalid = (value: any) => {
+  const text = upperText(value || '').trim()
+  return !!text && !truckCompanyOptions.value.some((option) => upperText(option).trim() === text)
+}
+// Container No# / Seal No# must be unique within this shipment's truck list.
+const truckContDuplicate = (key: 'container' | 'seal', record: any) => {
+  const value = upperText(record?.[key] || '').trim()
+  if (!value) return false
+  return truckContRecords().filter((item: any) => upperText(item?.[key] || '').trim() === value).length > 1
+}
 const filteredTruckCompanyOptions = (value = '') => {
   const needle = upperText(value).trim()
   return truckCompanyOptions.value.filter((option) => {
@@ -5508,7 +5585,18 @@ const filteredTruckCompanyOptions = (value = '') => {
     return normalized !== needle && (!needle || normalized.includes(needle))
   }).slice(0, 5)
 }
-const openTruckCompanyPicker = (index: number) => {
+// The Haulier list floats over the page (fixed position under the input), so the
+// table keeps its 5-row scroll area instead of growing to full height.
+const placeTruckCompanyPicker = (target?: EventTarget | null) => {
+  const input = target instanceof HTMLElement ? target : null
+  if (!input) return
+  const rect = input.getBoundingClientRect()
+  truckCompanyPicker.left = Math.round(rect.left)
+  truckCompanyPicker.top = Math.round(rect.bottom + 2)
+  truckCompanyPicker.width = Math.max(180, Math.round(rect.width))
+}
+const openTruckCompanyPicker = (index: number, event?: Event) => {
+  placeTruckCompanyPicker(event?.target)
   truckCompanyPicker.index = index
   truckCompanyPicker.open = true
   void loadTruckCompanyOptions()
@@ -6502,6 +6590,7 @@ const loadSheet = async () => {
         loading.value = false
         await nextTick()
         if (isOpsPage.value) void loadLiveTraderDirectory(true).catch(() => undefined)
+        if (isOpsPage.value) void syncLinkedOriginParties(requestedKey, requestedCountry).catch((error) => console.warn('Could not sync linked parties', error))
       }
       // DCD was consolidated into ECD. Import the DCD-owned workflow values
       // from legacy sheets so existing SI/Bill work remains available after
@@ -9579,8 +9668,14 @@ const isAgentNaCell = (row: number, column: number) => {
   if (!['DESTINATION AGENT', 'DEST. AGENT', 'ORIGIN AGENT', 'ORIGINAL AGENT'].includes(label)) return false
   return isForcedNotRequiredAgentCell(row, column) || upperText(clientCellText(rows.value[row]?.[column])) === 'N/A'
 }
+// Import rows linked to an export shipment receive these parties from the export
+// ECD row (read-only here; an empty value shows an em dash).
+const LINKED_PARTY_GROUPS = [['SHIPPER'], ['CNEE', 'CONSIGNEE'], ['ORIGIN AGENT', 'ORIGINAL AGENT'], ['DESTINATION AGENT', 'DEST. AGENT'], ['LINER'], ['AIRLINE']]
+const isLinkedImportPartyCell = (row: number, column: number) =>
+  row > 0 && LINKED_PARTY_GROUPS.some((group) => group.includes(normalizedHeaderLabel(column))) && isLinkedOriginImportRow(row)
 const canEditClientLinkCell = (row: number, column: number) => {
   if (!isClientLinkCell(row, column)) return false
+  if (isLinkedImportPartyCell(row, column)) return false
   if (isForcedNotRequiredAgentCell(row, column)) return false
   // Destination ICD owns these operational parties even when the shipment row
   // was linked from the origin service. Keep CLIENT inbound/read-only, while
@@ -10048,6 +10143,13 @@ const detailActionNeedsAttention = (row: number, column: number) => {
     const form: any = billApprovalFormFromCell(value)
     const hblRequired = label === 'AWB DETAIL' || hblRequiredForRow(row)
     return !(form.siSubmitted && form.mbl && (!hblRequired || (form.siReceived && form.hbl)))
+  }
+  // PICKUP / DELIVERY DETAIL: saved but not yet sent to Shipper / CNEE -> alert.
+  if (['PICKUP DETAIL', 'PICKUP DETAILS', 'DELIVERY DETAIL', 'DELIVERY DETAILS'].includes(label) && row > 0 && !['ECD', 'CCD', 'DCD', 'FCD'].includes(opsDeptUpper())) {
+    const parsed = parseJsonCell(rows.value[row]?.[column], null as any)
+    const form = parsed && typeof parsed === 'object' && 'form' in parsed ? (parsed as any).form || {} : null
+    // A non-empty Pickup/Delivery cell has been saved (the form itself has no "saved" flag).
+    if (form && !form.sent) return true
   }
   // PRE-ALERT CONFIRMATION keeps the alert until every confirmation is ticked.
   if (label === 'PRE-ALERT CONFIRMATION' && row > 0) {
@@ -11862,6 +11964,18 @@ const openGsdModal = async (row: number, column: number) => {
             gsdModal.form.hbl = !!preAlert.hblReleased
             gsdModal.form.hblAt = String(preAlert.hblReleasedAt || '')
           }
+          // Linked to an export shipment: MBL/HBL RELEASE follow the export BILL RELEASE.
+          if (isLinkedOriginImportRow(row)) {
+            const exportRelease = await loadLinkedOriginCell(row, ['BILL RELEASE', 'AWB RELEASE'], ['ECD', 'DCD']).catch(() => '')
+            if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
+            if (String(exportRelease || '').trim()) {
+              const released = billReleaseFormFromCell(exportRelease)
+              gsdModal.form.mbl = !!released.mbl
+              gsdModal.form.mblAt = String(released.mblAt || '')
+              gsdModal.form.hbl = !!released.hbl
+              gsdModal.form.hblAt = String(released.hblAt || '')
+            }
+          }
         }
         gsdModal.editing = true
         billReleaseInitialSnapshot.value = billReleaseSnapshot()
@@ -12046,6 +12160,45 @@ const openGsdModal = async (row: number, column: number) => {
     gsdModal.payment.lines.forEach((line) => { line.editing = false })
     if (Array.isArray(gsdModal.form.lines)) gsdModal.form.lines.forEach((line: any) => { line.editing = false })
   }
+}
+// Unsaved-changes guard for the detail popups: a snapshot of the form is taken when
+// editing starts (and once the form has finished loading); closing with the overlay
+// or the X while the form differs asks for confirmation first.
+const GSD_VOLATILE_KEYS = new Set(['hint', 'loading', 'selected', 'openId', 'initialSnapshot', 'originalRecordsSignature', 'editRecordsSnapshot', 'editLockedSnapshot', 'editSentAtSnapshot'])
+const gsdFormSignature = () => {
+  try {
+    return JSON.stringify(gsdModal.form ?? {}, (key, value) => (GSD_VOLATILE_KEYS.has(key) ? undefined : value))
+  } catch {
+    return ''
+  }
+}
+let gsdEditSnapshot = ''
+let gsdClosePending = false
+watch(() => [gsdModal.open, gsdModal.editing, gsdModal.loading, gsdModal.row, gsdModal.column] as const, ([open, editing, loading], previous) => {
+  if (!open) { gsdEditSnapshot = ''; return }
+  const [wasOpen, wasEditing, wasLoading, prevRow, prevColumn] = previous || []
+  const startedEditing = editing && (!wasEditing || !wasOpen || prevRow !== gsdModal.row || prevColumn !== gsdModal.column)
+  const finishedLoading = editing && !loading && wasLoading
+  if (startedEditing || finishedLoading) {
+    // Let async form hydration settle before recording the baseline.
+    void nextTick(() => { if (gsdModal.open && gsdModal.editing) gsdEditSnapshot = gsdFormSignature() })
+  }
+  if (!editing) gsdEditSnapshot = ''
+})
+const gsdModalHasUnsavedChanges = () =>
+  gsdModal.open && gsdModal.editing && !isPaymentRequestModal() && !!gsdEditSnapshot && gsdFormSignature() !== gsdEditSnapshot
+const requestCloseGsdModal = async () => {
+  if (gsdClosePending) return
+  if (gsdModalHasUnsavedChanges()) {
+    gsdClosePending = true
+    try {
+      const ok = await askConfirm('You have unsaved changes. Close without saving?', '', { okText: 'YES', cancelText: 'NO', tone: 'remove' })
+      if (!ok) return
+    } finally {
+      gsdClosePending = false
+    }
+  }
+  closeGsdModal()
 }
 const closeGsdModal = () => {
   if (isPaymentRequestModal() && !gsdModal.loading) {
@@ -13397,11 +13550,14 @@ const isArrivalNoticeDetailModal = () => isGsdFormModalLabel('ARRIVAL NOTICE DET
 const isArrivalNoticeSendingModal = () => isGsdFormModalLabel('ARRIVAL NOTICE SENDING')
 const isArrivalNoticeModal = () => isArrivalNoticeDetailModal() || isArrivalNoticeSendingModal()
 const arrivalNoticeExporting = ref(false)
-const arrivalNoticeIsCrossLinked = () => !!settings.value?.crossServiceInboundRows?.[String(gsdModal.row)]
+// Import rows linked to an export shipment: created by the export PRE-ALERT, or
+// opened on the import side with its DO+/DAP+/DDU+/DDP+ set to EXW/FCA/FCF.
+const arrivalNoticeIsCrossLinked = () => !!settings.value?.crossServiceInboundRows?.[String(gsdModal.row)] || isLinkedOriginImportRow(gsdModal.row)
+const preAlertConfirmationLinked = () => !!gsdModal.form?.linkedFromOrigin || isLinkedOriginImportRow(gsdModal.row)
 const loadLinkedOriginFreetime = async (row: number) => {
   const current = opsParts.value
   if (!current || row < 1) return null
-  if (!settings.value?.crossServiceInboundRows?.[String(row)]) return null
+  if (!settings.value?.crossServiceInboundRows?.[String(row)] && !isLinkedOriginImportRow(row)) return null
   const currentHeader = (rows.value[0] || []).map((item: any) => String(item ?? '').trim())
   const currentRow = rows.value[row] || []
   const originColumn = currentHeader.findIndex((label) => upperText(label) === `${upperText(current.type)}+`)
@@ -13560,8 +13716,8 @@ const arrivalNoticeDetail = () => {
     eta: isoDateValue(rowValueByHeader('ETA') || form?.eta || ''),
     blNo: String((hblNo && mblNo ? mblNo : hblNo || mblNo) || form?.blNo || ''),
     volume: String(volumeSummaryText(rowValueByHeader('VOLUME')) || form?.volume || ''),
-    pol: String(siRouteDisplay(rowValueByHeader('ROUTE'), 'pol') || routeData.polCode || routeData.pol || form?.pol || ''),
-    pod: String(siRouteDisplay(rowValueByHeader('ROUTE'), 'pod') || routeData.podCode || routeData.pod || form?.pod || ''),
+    pol: String(siRouteDisplay(rowValueByHeader('ROUTE'), 'pol') || routeData.polCode || routeData.pol || form?.pol || '').toUpperCase(),
+    pod: String(siRouteDisplay(rowValueByHeader('ROUTE'), 'pod') || routeData.podCode || routeData.pod || form?.pod || '').toUpperCase(),
     conts,
     description: String(form?.description || siSubmit.description || 'AS PER B/L'),
     marks: String(form?.marks || siSubmit.marks || 'AS PER B/L'),
@@ -13625,8 +13781,8 @@ const arrivalNoticeFormFromCell = (value: any) => {
     eta: fallback.eta || isoDateValue(stored?.eta || ''),
     blNo: fallback.blNo || String(stored?.blNo || ''),
     volume: fallback.volume || String(stored?.volume || ''),
-    pol: fallback.pol || String(stored?.pol || ''),
-    pod: fallback.pod || String(stored?.pod || ''),
+    pol: (fallback.pol || String(stored?.pol || '')).toUpperCase(),
+    pod: (fallback.pod || String(stored?.pod || '')).toUpperCase(),
     contact: fallback.contact || String(stored?.contact || ''),
     anNo: String(stored?.anNo || fallback.anNo || ''),
     anDate: isoDateValue(stored?.anDate || fallback.anDate || ''),
@@ -15669,6 +15825,8 @@ const clearPickupModal = async () => {
   const column = gsdModal.column
   const hadPendingSave = !!saveTimer || inFlightSaves.value > 0
   persistPickupModal(false, false)
+  // An emptied form leaves the cell blank so the worksheet shows ADD+ again.
+  if (!pickupHasInput()) rows.value[row][column] = ''
   const saved = hadPendingSave ? await saveSheet() : await saveOwnCellFast(row, column)
   if (!saved) {
     showToast(saveError.value || 'Could not save. Please try again.')
@@ -16989,6 +17147,11 @@ const saveTruckContDetails = async () => {
     showToast('Truck Comp must be selected from Internal Directory')
     return
   }
+  const duplicate = (['container', 'seal'] as const).find((key) => truckContRecords().some((record) => truckContDuplicate(key, record)))
+  if (duplicate) {
+    showToast(`${duplicate === 'container' ? 'Container No#' : 'Seal No#'} must not be duplicated in this shipment`)
+    return
+  }
   const originServiceTruck = isTcdTruckContModal() &&
     ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase())
   // LCL/AIR TRUCKING INFO has no Container/ContType/Seal columns; it records the
@@ -17532,6 +17695,8 @@ const billApprovalFormFromCell = (value: any) => {
     sentEmails: String(form.sentEmails || ''),
     sentCc: String(form.sentCc || ''),
     sentDocumentSignature: String(form.sentDocumentSignature || ''),
+    confirmDeadlineDate: String(form.confirmDeadlineDate || ''),
+    confirmDeadlineTime: String(form.confirmDeadlineTime || ''),
     locked: !!form.locked,
   }
 }
@@ -18311,7 +18476,9 @@ const openBillDetailUpload = (field: 'siSubmittedFile' | 'mblFile' | 'hblFile' |
   input.value = ''
   input.click()
 }
-const billSourceMode = () => gsdModal.form.billSourceMode === 'client' ? 'client' : 'export'
+// MASTER SI SUBMIT ticked "Not submitted by TX": only the client's own B/L can be used.
+const billSiNotSubmittedByTx = () => isBillApprovalModal() && String(gsdModal.form.siSubmittedSource || '') === 'external'
+const billSourceMode = () => billSiNotSubmittedByTx() || gsdModal.form.billSourceMode === 'client' ? 'client' : 'export'
 const billSourceButtonLabel = () => billSourceMode() === 'client' ? "Use Client's B/L" : 'Export (B/L, FCR)'
 const persistBillSourceMode = async () => {
   if (!isBillApprovalModal() || gsdModal.row <= 0 || gsdModal.column < 0) return
@@ -18347,7 +18514,8 @@ const billBlReady = () => {
 }
 // Send B/L to Shipper: no MBL APPROVED requirement; locked once HBL APPROVED is ticked.
 // After sending, a changed Export B/L / FCR (or client B/L) re-enables it.
-const billSentDocumentSignature = () => JSON.stringify([gsdModal.form.exportBl || '', gsdModal.form.exportFcr || '', gsdModal.form.clientBlFile?.url || '', billSourceMode()])
+// Only SI RECEIVED (its tick time) and the B/L documents decide whether a new send is due.
+const billSentDocumentSignature = () => JSON.stringify([gsdModal.form.exportBl || '', gsdModal.form.exportFcr || '', gsdModal.form.clientBlFile?.url || '', billSourceMode(), gsdModal.form.siReceivedAt || ''])
 const billDetailCanSend = () => !gsdModal.form.hbl && !!gsdModal.form.siReceived && billBlReady()
   && (!gsdModal.form.sentAt || (!!gsdModal.form.sentDocumentSignature && gsdModal.form.sentDocumentSignature !== billSentDocumentSignature()))
 const handleBillDetailFile = async (event: Event) => {
@@ -18682,6 +18850,7 @@ const confirmBillReleaseToShipper = async () => {
         vessel: emailCellDisplayValue('VESSEL/VOYAGE', rawSiSourceValue('VESSEL/VOYAGE') || rowValueByHeader('VESSEL/VOYAGE')),
         route: emailCellDisplayValue('ROUTE', rawSiSourceValue('ROUTE') || rowValueByHeader('ROUTE')),
         etd: rowValueByHeader('ETD'), eta: rowValueByHeader('ETA'), attachments,
+        release: true,
       },
     })
     const releasedAt = billTimestamp()
@@ -18737,7 +18906,7 @@ const enableBillApprovalEdit = () => {
   if (isBillReleaseModal() || isDoReleaseModal()) billReleaseInitialSnapshot.value = billReleaseSnapshot()
   if (isBillApprovalModal()) billDetailInitialSnapshot.value = billDetailSnapshot()
 }
-const billSendModal = reactive<{ open: boolean; to: string; cc: string; hint: string; sending: boolean }>({ open: false, to: '', cc: '', hint: '', sending: false })
+const billSendModal = reactive<{ open: boolean; to: string; cc: string; hint: string; sending: boolean; deadlineDate: string; deadlineTime: string }>({ open: false, to: '', cc: '', hint: '', sending: false, deadlineDate: '', deadlineTime: '' })
 const openBillSendModal = () => {
   if (gsdModal.form.hbl) {
     showToast(awbText('HBL APPROVED is already ticked'))
@@ -18762,6 +18931,8 @@ const openBillSendModal = () => {
   }
   billSendModal.to = String(shipperEmail)
   billSendModal.cc = String(gsdModal.form.sentCc || '')
+  billSendModal.deadlineDate = String(gsdModal.form.confirmDeadlineDate || '')
+  billSendModal.deadlineTime = String(gsdModal.form.confirmDeadlineTime || '')
   billSendModal.hint = ''
   billSendModal.sending = false
   billSendModal.open = true
@@ -18861,9 +19032,14 @@ const confirmBillSend = async () => {
         vessel: emailCellDisplayValue('VESSEL/VOYAGE', rawSiSourceValue('VESSEL/VOYAGE') || rowValueByHeader('VESSEL/VOYAGE')),
         route: emailCellDisplayValue('ROUTE', rawSiSourceValue('ROUTE') || rowValueByHeader('ROUTE')),
         etd: rowValueByHeader('ETD'), eta: rowValueByHeader('ETA'),
+        confirmDeadline: billSendModal.deadlineDate
+          ? `${String(formatAdminDateDisplay(billSendModal.deadlineDate) ?? billSendModal.deadlineDate)}${billSendModal.deadlineTime ? ` ${billSendModal.deadlineTime}` : ''}`
+          : '',
         attachments,
       },
     })
+    gsdModal.form.confirmDeadlineDate = billSendModal.deadlineDate
+    gsdModal.form.confirmDeadlineTime = billSendModal.deadlineTime
     gsdModal.form.sent = true
     gsdModal.form.sentAt = billTimestamp()
     gsdModal.form.sentDocumentSignature = billSentDocumentSignature()
@@ -18970,12 +19146,15 @@ const saveBillApproval = async (waitForPersistence: boolean | Event = true) => {
     showToast('Collection deadline is required when Collect later is selected')
     return
   }
-  if (isBillApprovalModal() && gsdModal.form.sentAt && billDetailDirty()) {
-    let initialSentAt = ''
-    try { initialSentAt = String(JSON.parse(billDetailInitialSnapshot.value || '{}')?.sentAt || '') } catch { initialSentAt = '' }
-    // A saved edit reopens the send action. Do not clear the timestamp created
-    // by the send flow itself, which calls this same persistence function.
-    if (initialSentAt && initialSentAt === String(gsdModal.form.sentAt || '')) {
+  if (isBillApprovalModal() && gsdModal.form.sentAt && !gsdModal.form.sentDocumentSignature && billDetailDirty()) {
+    // Older records sent before the document signature existed: only a change to
+    // SI RECEIVED or the B/L documents reopens the send action (other edits do not).
+    let initial: any = {}
+    try { initial = JSON.parse(billDetailInitialSnapshot.value || '{}') } catch { initial = {} }
+    const initialSentAt = String(initial?.sentAt || '')
+    const relevantChanged = ['siReceivedAt', 'exportBl', 'exportFcr', 'billSourceMode'].some((key) => String(initial?.[key] ?? '') !== String(gsdModal.form[key] ?? ''))
+      || String(initial?.clientBlFile?.url || '') !== String(gsdModal.form.clientBlFile?.url || '')
+    if (relevantChanged && initialSentAt && initialSentAt === String(gsdModal.form.sentAt || '')) {
       gsdModal.form.sent = false
       gsdModal.form.sentAt = ''
       gsdModal.form.sentEmails = ''
@@ -19045,6 +19224,8 @@ const saveBillApproval = async (waitForPersistence: boolean | Event = true) => {
       sentEmails: gsdModal.form.sentEmails || '',
       sentCc: gsdModal.form.sentCc || '',
       sentDocumentSignature: gsdModal.form.sentDocumentSignature || '',
+      confirmDeadlineDate: gsdModal.form.confirmDeadlineDate || '',
+      confirmDeadlineTime: gsdModal.form.confirmDeadlineTime || '',
       locked: true,
     },
   })
@@ -19291,6 +19472,22 @@ const saveBillDocument = async () => {
       return
     }
   } else {
+    // A changed B/L needs a new approval: untick HBL APPROVED so the updated B/L
+    // can be sent to the Shipper again.
+    const contentChanged = (value: any) => {
+      try {
+        const { savedAt: _a, signedAt: _b, locked: _c, ...rest } = JSON.parse(String(value || '{}'))
+        const { savedAt: _d, signedAt: _e, locked: _f, ...next } = JSON.parse(data)
+        return JSON.stringify(rest) !== JSON.stringify(next)
+      } catch {
+        return String(value || '') !== data
+      }
+    }
+    if (gsdModal.form.hbl && contentChanged(gsdModal.form.exportBl || gsdModal.form.exportFcr)) {
+      gsdModal.form.hbl = false
+      gsdModal.form.hblAt = ''
+      gsdModal.form.hblFile = null
+    }
     // Same content for both documents: saving one also fills the other.
     gsdModal.form.exportBl = data
     gsdModal.form.exportFcr = data
@@ -19353,7 +19550,8 @@ const printBillDocument = async (download: boolean | Event = true): Promise<Blob
       })
       renderSheet.querySelectorAll<HTMLElement>('.co-mark > span').forEach((value) => {
         value.style.position = 'relative'
-        value.style.top = '-2px'
+        // html2canvas draws the logo letters low inside the box: lift them to the centre.
+        value.style.top = '-6px'
       })
       // Header labels of the goods (Marks & Nos.) and Container & Seal tables are drawn
       // low by html2canvas and touch the bottom border: lift only the text, not the cell.
@@ -20609,7 +20807,9 @@ const sendPreAlert = async () => {
           jobNo: rowValueByHeader('JOB NO#') || rowValueByHeader('REF#'),
           mode: source.mode,
           shipmentType: `${source.mode} ${source.type}`,
-          service: hasDestinationService ? targetService : '',
+          // The follow-up service is the shipment's import service, also on a clearance-docs re-send
+          // (where the destination rows are not recreated).
+          service: ['DO', 'DAP', 'DDU', 'DDP'].includes(targetService) ? targetService : '',
           routeCode,
           details: {
             client: clientCellText(rowValueByHeader('CLIENT')),
@@ -22054,6 +22254,24 @@ const syncCrossServiceGsdRow = async (row: number, column: number, createdAt = f
       const index = sourceHeader.indexOf(label)
       return index >= 0 ? sourceRow[index] ?? '' : ''
     }
+    // The counterpart row may already exist because the shipment was opened on the
+    // other side first (e.g. DO GSD with DO+ = EXW). Reuse it instead of adding a
+    // duplicate: same shipment link, or same JOB NO# pointing back to this service.
+    if (targetRowIndex < 1) {
+      const sourceShipment = opsShipmentLink(sourceHeader, sourceRow, row, settings.value)
+      const targetOpsLinks = targetSettings.opsRowLinks && typeof targetSettings.opsRowLinks === 'object' ? targetSettings.opsRowLinks : {}
+      const jobColumn = targetHeader.indexOf('JOB NO#')
+      const reciprocal = targetHeader.indexOf(`${counterpartType}+`)
+      const sourceJob = String(sourceValue('JOB NO#') || '').trim()
+      targetRowIndex = targetRows.findIndex((item, index) => {
+        if (index <= 0) return false
+        const linkedElsewhere = targetLinks[String(index)]?.id && targetLinks[String(index)]?.id !== linkId
+        if (linkedElsewhere) return false
+        if (sourceShipment && String(targetOpsLinks[String(index)] || '') === sourceShipment) return true
+        return !!sourceJob && jobColumn >= 0 && String(item[jobColumn] || '').trim() === sourceJob
+          && (reciprocal < 0 || ['', String(parsed.type || '').toUpperCase()].includes(upperText(item[reciprocal] || '')))
+      })
+    }
     if (targetRowIndex < 1) {
       const time = createdAt
       const targetRow = targetHeader.map((label) => {
@@ -22084,9 +22302,11 @@ const syncCrossServiceGsdRow = async (row: number, column: number, createdAt = f
     targetLinks[String(targetRowIndex)] = { id: linkId, counterpartKey: sourceKey, counterpartType: String(parsed.type || '').toUpperCase() }
     targetSettings.crossServiceLinks = targetLinks
     const sourceShipmentLink = ensureOpsShipmentLink(sourceHeader, sourceRow, row, settings.value)
+    // Keep an existing shipment link: the row may already be tied to its own ICD row.
+    const existingTargetLink = String((targetSettings.opsRowLinks || {})[String(targetRowIndex)] || '')
     targetSettings.opsRowLinks = {
       ...(targetSettings.opsRowLinks || {}),
-      [String(targetRowIndex)]: sourceShipmentLink,
+      [String(targetRowIndex)]: existingTargetLink || sourceShipmentLink,
     }
     await patchLoadedWorkbookSheet(targetStorageKey, targetSheet, { rows: [...targetRows, [workbookMetaMarker, JSON.stringify({
         version: 1,
@@ -24121,8 +24341,11 @@ const displayCell = (value: any, row: number, column: number) => {
 }
 const opsGridCellText = (value: any, row: number, column: number) => {
   const label = upperText(rows.value[0]?.[column]).replace(/\s+/g, '')
-  if (row > 0 && ['EXW+', 'EFA+', 'FCA+', 'FCF+', 'DO+', 'DAP+', 'DDU+', 'DDP+'].includes(label)) {
+  if (row > 0 && ['EXW+', 'EFA+', 'FCA+', 'FCF+'].includes(label)) {
     return normalizeDropdownOption(value) || 'N/A'
+  }
+  if (row > 0 && ['DO+', 'DAP+', 'DDU+', 'DDP+'].includes(label)) {
+    return normalizeDropdownOption(value) || '\u2014'
   }
   return displayCell(value, row, column)
 }
@@ -24690,7 +24913,7 @@ onBeforeUnmount(() => {
 .gsd-clr-view-table .clr-link-red .clr-dot.on{background:#00924f}
 .gsd-truck-cont-modal{width:min(1360px,98vw);height:275px;padding:28px 24px 18px;border-radius:10px;overflow:hidden;font:12px/1.35 var(--sans,'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif)}.gsd-truck-cont-modal .gsd-modal-x{right:12px;top:12px;width:24px;height:24px;font-size:12.5px;font-weight:700}.gsd-truck-title{font-size:13px;font-weight:900;color:#0e1512;text-transform:uppercase;margin:0 0 14px}.gsd-truck-toolbar{display:flex;align-items:center;gap:8px;margin:0 0 14px}.gsd-truck-toolbar .wb-modal-btn{height:30px;min-height:30px;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:800}.gsd-truck-toolbar .primary{background:#008f4c;border-color:#008f4c;color:#fff}.gsd-truck-toolbar .edit{background:#f6c998;border-color:#f6c998;color:#fff}.gsd-truck-toolbar .remove{background:#e6a596;border-color:#e6a596;color:#fff}.gsd-truck-toolbar .wb-modal-btn:disabled{opacity:.45;cursor:not-allowed}.gsd-truck-table-wrap{overflow:visible;max-height:none}.gsd-truck-table{width:100%;min-width:0;border-collapse:collapse;table-layout:fixed;font-size:11.5px;color:#33413b}.gsd-truck-table th,.gsd-truck-table td{border:1px solid #c7d1ca;text-align:center;padding:6px 8px;height:32px}.gsd-truck-table th{background:#f0f4f2;color:#68756f;font-family:var(--mono,'Geist Mono',ui-monospace,monospace);font-size:10.5px;font-weight:800;letter-spacing:.02em;white-space:normal}.gsd-truck-table .tk-all{color:#1d4cff}.gsd-truck-table td{background:#f8fbfa}.gsd-truck-table input,.gsd-truck-table select{width:100%;height:26px;border:0;background:transparent;text-align:center;font:inherit;font-size:11.5px;color:#33413b;outline:none}.gsd-truck-table select{appearance:auto;color:#7a847d}.gsd-truck-table input:focus,.gsd-truck-table select:focus{background:#fff;box-shadow:inset 0 0 0 2px #00c566;border-radius:4px}.gsd-truck-table input:disabled,.gsd-truck-table select:disabled{color:#7a847d;opacity:1}.gsd-truck-table input[type=checkbox]{width:15px;height:15px;accent-color:#008f4c}.gsd-truck-table input[type=date]:disabled,.gsd-truck-table input[type=time]:disabled{color:#9aa6a1}.gsd-truck-plus{display:inline-grid;place-items:center;width:18px;height:18px;margin-left:5px;border:0;border-radius:5px;background:#008f4c;color:#fff;font-size:14px;font-weight:900;line-height:1;cursor:pointer}.gsd-pu-link,.gsd-driver-link{border:0;background:transparent;color:#1f4ed8;text-decoration:underline;font:inherit;font-weight:700;cursor:pointer}.gsd-driver-link{color:#33413b;text-decoration:none}.gsd-truck-table .tk-order{font-weight:700;color:#7a847d;background:#fff}.gsd-truck-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}.gsd-truck-foot .wb-modal-btn{height:32px;min-height:32px;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:800}.gsd-truck-foot .primary{background:#8fd8b7;border-color:#8fd8b7;color:#fff}.gsd-truck-foot .slate{background:#64748b;border-color:#64748b;color:#fff}.gsd-truck-foot .primary:not(:disabled){background:#6fcda5;border-color:#6fcda5}.gsd-truck-foot .wb-modal-btn:disabled{opacity:.55;cursor:not-allowed}
 .gsd-truck-table .truck-datetime-cell{text-align:center;vertical-align:middle}.gsd-truck-table .truck-datetime-cell>span{display:flex;align-items:center;justify-content:center;width:100%;min-height:26px;text-align:center;font-variant-numeric:tabular-nums}
-.gsd-truck-table input[type=checkbox]{appearance:auto!important;width:15px!important;height:15px!important;min-width:15px!important;padding:0!important;border:0!important;border-radius:0!important;outline:0!important;box-shadow:none!important;accent-color:#008f4c;background:transparent!important}.gsd-truck-table input[type=checkbox]:focus,.gsd-truck-table input[type=checkbox]:checked{border:0!important;outline:0!important;box-shadow:none!important}.gsd-truck-table .truck-select-cell{padding:6px!important;background:#f8fbfa!important}.gsd-truck-table tr.truck-row-editing td:has(input:not([type=checkbox]):not(:disabled)),.gsd-truck-table tr.truck-row-editing td:has(select:not(:disabled)){padding:0;background:#fff4df}.gsd-truck-table tr.truck-row-editing input:not([type=checkbox]):not(:disabled),.gsd-truck-table tr.truck-row-editing select:not(:disabled){display:block;width:100%;height:100%;min-height:36px;padding:6px 8px;border-radius:0;background:#fff4df;color:#26352e}.gsd-truck-table tr.truck-row-editing input:not([type=checkbox]):focus,.gsd-truck-table tr.truck-row-editing select:not(:disabled):focus{background:#fff;border-radius:0;box-shadow:inset 0 0 0 2px #f39a12}.gsd-truck-table .truck-company-select{min-width:120px;text-align:left}
+.gsd-truck-table input[type=checkbox]{appearance:auto!important;width:15px!important;height:15px!important;min-width:15px!important;padding:0!important;border:0!important;border-radius:0!important;outline:0!important;box-shadow:none!important;accent-color:#008f4c;background:transparent!important}.gsd-truck-table input[type=checkbox]:focus,.gsd-truck-table input[type=checkbox]:checked{border:0!important;outline:0!important;box-shadow:none!important}.gsd-truck-table .truck-select-cell{padding:6px!important;background:#f8fbfa!important}.gsd-truck-table tr.truck-row-editing td:has(input:not([type=checkbox]):not(:disabled)),.gsd-truck-table tr.truck-row-editing td:has(select:not(:disabled)){padding:0;background:#fff4df}.gsd-truck-table tr.truck-row-editing input:not([type=checkbox]):not(:disabled),.gsd-truck-table tr.truck-row-editing select:not(:disabled){display:block;width:100%;height:100%;min-height:36px;padding:6px 8px;border-radius:0;background:#fff4df;color:#26352e}.gsd-truck-table tr.truck-row-editing input:not([type=checkbox]):focus,.gsd-truck-table tr.truck-row-editing select:not(:disabled):focus{background:#fff;border-radius:0;box-shadow:inset 0 0 0 2px #f39a12}.gsd-truck-table .truck-company-select{min-width:0;text-align:center}
 .gsd-fcl-dup-tcd-truck-modal{height:auto;max-height:calc(100vh - 32px);overflow:auto}.gsd-fcl-dup-tcd-truck-modal .gsd-truck-table-wrap{max-height:calc(100vh - 190px);overflow:auto}.gsd-fcl-dup-tcd-truck-modal .gsd-truck-table input,.gsd-fcl-dup-tcd-truck-modal .gsd-truck-table select{box-sizing:border-box;min-width:0;padding:4px 6px;overflow:hidden;text-align:center;text-overflow:ellipsis;white-space:nowrap}.gsd-fcl-dup-tcd-truck-modal .epodcell{text-align:center}.gsd-fcl-dup-tcd-truck-modal .epodcell>*{margin:auto}
 .gsd-fcl-dap-tcd-truck-modal{width:min(1480px,calc(100vw - 24px));overflow:hidden}.gsd-fcl-dap-tcd-truck-modal .gsd-truck-table-wrap{max-width:100%;overflow:auto}.gsd-fcl-dap-tcd-truck-modal .gsd-truck-table{min-width:1380px;table-layout:fixed}.gsd-fcl-dap-tcd-truck-modal .gsd-truck-table th,.gsd-fcl-dap-tcd-truck-modal .gsd-truck-table td{box-sizing:border-box;overflow:hidden}.gsd-fcl-dap-tcd-truck-modal .gsd-truck-table input,.gsd-fcl-dap-tcd-truck-modal .gsd-truck-table select{display:block;width:100%;min-width:0;box-sizing:border-box;text-overflow:ellipsis}
 .gsd-truck-cont-modal .gsd-truck-table-wrap{overflow-x:auto;overflow-y:visible}.gsd-truck-cont-modal .gsd-truck-table{min-width:1280px;table-layout:auto}.gsd-truck-cont-modal .gsd-truck-table th,.gsd-truck-cont-modal .gsd-truck-table td{white-space:nowrap}.gsd-truck-cont-modal .gsd-truck-table input,.gsd-truck-cont-modal .gsd-truck-table select{box-sizing:border-box;min-width:72px;overflow:hidden;text-overflow:ellipsis}
@@ -25012,6 +25235,10 @@ onBeforeUnmount(() => {
 .release-target-icon{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:#e3f4ea;color:#0a6b3b;font-size:10px;font-weight:900}
 .release-sent-lines:not(#_x){display:flex;flex-direction:column;align-items:flex-start;gap:1px;flex:1 1 auto;min-width:0;margin-right:auto;font-size:10.5px;line-height:1.35;text-align:left;white-space:nowrap}.release-sent-lines:not(#_x)>span{display:flex;align-items:center;gap:4px}.release-sent-lines:not(#_x) .bd-check{transform:scale(.8)}
 .gsd-release-actions:has(.release-sent-lines):not(#_x){flex-wrap:nowrap}
+.bds-deadline-inputs{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:8px}.bds-deadline-inputs input{box-sizing:border-box;width:100%;height:36px;border:1px solid #cfd8d3;border-radius:8px;padding:0 10px;font:inherit;font-size:13px}
+/* Popup tables that scroll vertically: the select-all checkbox header stays frozen
+   (top) like the other headers, and stays pinned left for horizontal scrolling. */
+.gsd-five-row-scroll table thead th:first-child:has(input[type=checkbox]):not(#_x){position:sticky!important;top:0!important;left:0!important;z-index:23!important;background:#eef3ee!important;background-clip:padding-box}
 .gsd-pre-sent-info{display:flex;flex-direction:column;gap:2px;margin:10px 0 0;color:#4d5b54;font-size:12px}.gsd-pre-sent-info b{color:#0a6b3b}.gsd-pre-sent-info .pending{color:#b45f04;font-weight:700}
 .ops-nbadge{display:inline-grid;place-items:center;min-width:14px;height:14px;margin-left:5px;padding:0 3px;border-radius:999px;background:#d63a3a;color:#fff;font-size:9px;font-weight:800;line-height:1}
 /* AIR/LCL — vessel delay panel + history on EXW ECD (mockup #ovs) */
@@ -25585,7 +25812,7 @@ onBeforeUnmount(() => {
 .truck-driver-actions .select{background:#e67e22;color:#fff}.truck-driver-actions .select:hover:not(:disabled){background:#cf6f1c}.truck-driver-actions .select:disabled{background:#f4c79d;color:#fff;opacity:.55;cursor:not-allowed}
 .truck-driver-table tr.driver-row-editing td:has(input:not([type=checkbox])),.truck-driver-table tr.driver-row-editing td:has(select){padding:0;background:#fff4df}.truck-driver-table tr.driver-row-editing input:not([type=checkbox]),.truck-driver-table tr.driver-row-editing select{display:block;width:100%;height:100%;min-height:36px;box-sizing:border-box;padding:6px 8px;border-radius:0;background:#fff4df}.truck-driver-table tr.driver-row-editing input:focus,.truck-driver-table tr.driver-row-editing select:focus{border-radius:0;background:#fff;box-shadow:inset 0 0 0 2px #f39a12}.truck-driver-table .driver-status-cell.active,.truck-driver-table .driver-status-cell.active select{background:#dff5e8;color:#08743e;font-weight:800}.truck-driver-table .driver-status-cell.inactive,.truck-driver-table .driver-status-cell.inactive select{background:#f2f4f3;color:#7a847d}.truck-driver-name-link{width:100%;border:0;background:transparent;color:#08743e;text-decoration:underline;font:inherit;font-weight:800;cursor:pointer}.truck-driver-name-link:disabled{color:#7a847d;text-decoration:none;cursor:default}.truck-driver-picker-link.empty{color:#008f4c}.truck-driver-picker-link:disabled{color:#9aa6a1;text-decoration:none;cursor:not-allowed}
 .truck-driver-table tr.driver-row-current td{background:#dff5e8!important;box-shadow:inset 0 1px 0 #68c993,inset 0 -1px 0 #68c993}.truck-driver-table tr.driver-row-current td:first-child{box-shadow:inset 3px 0 0 #008f4c,inset 0 1px 0 #68c993,inset 0 -1px 0 #68c993}.truck-driver-table tr.driver-row-current .truck-driver-name-link{color:#006b38}.truck-company-cell{text-align:center!important}.truck-company-cell .truck-company-filter{text-align:center;text-align-last:center;cursor:text}.truck-company-cell>.gsd-pu-link{display:block;width:100%;text-align:center}.truck-company-picker button{text-align:center}
-.gsd-modal.gsd-truck-cont-modal:has(.truck-company-picker){overflow:visible}.gsd-truck-cont-modal:has(.truck-company-picker) .gsd-truck-table-wrap{overflow:visible}.truck-company-picker{max-height:172px;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
+.gsd-modal.gsd-truck-cont-modal:has(.truck-company-picker){overflow:visible}.truck-company-picker{max-height:172px;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
 .gsd-modal.gsd-export-trucking-info-modal{width:min(912px,calc(100vw - 24px));padding-left:20px;padding-right:20px}.gsd-export-trucking-info-modal .gsd-truck-table-wrap{max-width:100%;overflow-x:hidden!important}.gsd-export-trucking-info-modal .gsd-truck-table{width:862px!important;max-width:100%;min-width:0!important;margin:0 auto;table-layout:fixed!important}.gsd-export-trucking-info-modal .gsd-truck-table th,.gsd-export-trucking-info-modal .gsd-truck-table td{box-sizing:border-box;padding-left:4px;padding-right:4px;white-space:normal!important;overflow-wrap:anywhere}.gsd-export-trucking-info-modal .gsd-truck-table input,.gsd-export-trucking-info-modal .gsd-truck-table select{min-width:0!important}
 .gsd-modal.gsd-air-pickup-status-modal{width:min(460px,calc(100vw - 24px));padding-left:20px;padding-right:20px}.gsd-air-pickup-status-modal .gsd-prs-table-wrap{max-width:100%;overflow-x:hidden!important}.gsd-air-pickup-status-modal .gsd-prs-table{width:410px!important;max-width:100%;min-width:0!important;margin:0 auto;table-layout:fixed!important}.gsd-air-pickup-status-modal .gsd-prs-table th,.gsd-air-pickup-status-modal .gsd-prs-table td{box-sizing:border-box;padding-left:5px;padding-right:5px;white-space:normal}.gsd-air-pickup-status-modal .prs-date-field{min-width:0;padding-left:6px;padding-right:6px}
 .gsd-truck-foot .wb-modal-btn{transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease}.gsd-truck-foot .primary:disabled,.gsd-truck-foot .primary:disabled:hover{background:#8fd8b7!important;border-color:#8fd8b7!important;box-shadow:none!important;transform:none!important}.gsd-truck-foot .send:hover:not(:disabled){background:#00773f!important;border-color:#00773f!important;color:#fff!important;box-shadow:0 3px 9px rgba(0,119,63,.24)}
@@ -25775,7 +26002,7 @@ onBeforeUnmount(() => {
 .gsd-prs-table-wrap.gsd-five-row-scroll{position:relative}
 .gsd-prs-table-wrap.gsd-five-row-scroll .gsd-prs-table{border-collapse:separate;border-spacing:0}
 .gsd-prs-table-wrap.gsd-five-row-scroll .gsd-prs-table thead th{position:sticky!important;top:0!important;z-index:8!important;background:#eef3ee!important;background-clip:padding-box}
-.gsd-five-row-scroll:has(.truck-company-picker){max-height:none!important;overflow:visible!important}
+
 /* Vessel history: the 12px top padding and collapsed borders let rows peek above the
    sticky header while scrolling. Move the gap outside the scroller and keep header borders. */
 .gsd-vhist-wrap.ecd.gsd-five-row-scroll{padding-top:0;border-top:0;margin-top:16px;position:relative}
@@ -25873,7 +26100,7 @@ td:not(#_x) :is(input:not([type=checkbox]):not([type=radio]),textarea,.ops-textc
 .gsd-truck-cont-modal .gsd-truck-table:not(#_x) :is(th,td){width:auto!important;white-space:nowrap;padding-left:12px;padding-right:12px}
 .gsd-truck-cont-modal .gsd-truck-table:not(#_x) :is(th,td).truck-select-cell,.gsd-truck-cont-modal .gsd-truck-table:not(#_x) th.tk-all{width:40px!important;padding:0 8px}
 /* Inputs default to ~150px whatever they hold: size them to their text instead. */
-.gsd-truck-cont-modal .gsd-truck-table:not(#_x) td :is(input:not([type=checkbox]):not([type=date]):not([type=time]),select){field-sizing:content;width:auto!important;min-width:70px!important;max-width:220px}
+.gsd-truck-cont-modal .gsd-truck-table:not(#_x) td :is(input:not([type=checkbox]):not([type=date]):not([type=time]),select){field-sizing:fixed;width:100%!important;min-width:0!important;max-width:100%}
 .gsd-truck-cont-modal .gsd-truck-table:not(#_x) td input[type=date]{min-width:120px}
 /* The Date/Time pairs under "Pickup Location Arrival Time" and "Port/Warehouse Gatein Time"
    share one equal width, so both groups line up. */
@@ -25885,9 +26112,18 @@ td:not(#_x) :is(input:not([type=checkbox]):not([type=radio]),textarea,.ops-textc
 .gsd-truck-cont-modal .gsd-truck-table:not(#_x) tr.truck-row-editing td{background:#fff!important}
 .gsd-truck-cont-modal .gsd-truck-table:not(#_x) tbody td:has(>input:not([type=checkbox])),.gsd-truck-cont-modal .gsd-truck-table:not(#_x) tbody td.truck-company-cell:has(input){padding:0!important;overflow:hidden}
 .gsd-truck-cont-modal .gsd-truck-table:not(#_x) tbody td>input:not([type=checkbox]),.gsd-truck-cont-modal .gsd-truck-table:not(#_x) tbody td.truck-company-cell input{display:block;width:100%!important;min-width:0!important;max-width:100%!important;height:28px!important;box-sizing:border-box;margin:0;padding:0 4px!important;border:0!important;border-radius:0!important;outline:none!important;box-shadow:none!important;background-color:transparent!important;font-size:12px;text-align:center}
-.gsd-truck-cont-modal .gsd-truck-table:not(#_x){table-layout:fixed;width:100%}
+.gsd-truck-cont-modal .gsd-truck-table:not(#_x){table-layout:auto;width:auto;min-width:0}
 .gsd-truck-cont-modal .gsd-truck-table:not(#_x) :is(th,td).truck-select-cell,.gsd-truck-cont-modal .gsd-truck-table:not(#_x) th.tk-all{width:40px!important}
 .gsd-truck-cont-modal .gsd-truck-table:not(#_x) th.tk-order,.gsd-truck-cont-modal .gsd-truck-table:not(#_x) td.tk-order{width:56px}
+.gsd-truck-cont-modal .gsd-truck-table:not(#_x) tbody td{text-align:center!important;height:30px!important;box-sizing:border-box}
+.gsd-truck-cont-modal .gsd-truck-table:not(#_x):not(#_y) tbody td>input:not([type=checkbox]),.gsd-truck-cont-modal .gsd-truck-table:not(#_x):not(#_y) tbody td.truck-company-cell input{height:29px!important;padding:0 4px!important;text-align:center!important;text-indent:0!important}
+.truck-company-picker:not(#_x){z-index:2500}
+/* Edit inputs overlay their cell; an invisible copy of the text sizes the column,
+   so columns stay as wide as their content (no extra width or padding). */
+.gsd-truck-cont-modal .gsd-truck-table:not(#_x) tbody td:has(>input.truck-center-input){position:relative;padding:0 10px!important}
+.gsd-truck-cont-modal .gsd-truck-table:not(#_x) .truck-sizer{display:block;height:0;overflow:hidden;visibility:hidden;white-space:nowrap;font-size:12px}
+input.truck-center-input.truck-center-input.truck-center-input:not(#_x):not(#_y):not(#_z){position:absolute!important;inset:0!important;height:100%!important;field-sizing:fixed!important;min-width:0!important;max-width:100%!important;text-align:center!important;text-align-last:center!important;padding-left:4px!important;padding-right:4px!important;text-indent:0!important;width:100%!important;box-sizing:border-box!important}
+.gsd-truck-cont-modal .gsd-truck-table:not(#_x) tbody td input.truck-invalid{box-shadow:inset 0 0 0 1.5px #d63a3a!important;background-color:#fff5f4!important}
 /* Truck & Cont/Seal: sticky header as one block (rowspan cells kept their borders) and compact rows */.gsd-truck-cont-modal .gsd-truck-table:not(#_x){border-collapse:separate;border-spacing:0;border-top:1px solid #c7d1ca;border-left:1px solid #c7d1ca}.gsd-truck-cont-modal .gsd-truck-table:not(#_x) :is(th,td){border:0;border-right:1px solid #c7d1ca;border-bottom:1px solid #c7d1ca}.gsd-truck-cont-modal .gsd-five-row-scroll .gsd-truck-table:not(#_x) thead{position:sticky;top:0;z-index:30}.gsd-truck-cont-modal .gsd-five-row-scroll .gsd-truck-table:not(#_x) thead th.tk-all{background:#eef3ee!important;position:sticky!important;left:0;top:auto!important}.gsd-truck-cont-modal .gsd-five-row-scroll .gsd-truck-table:not(#_x) thead th{position:static;background:#eef3ee}.gsd-truck-cont-modal .gsd-truck-table:not(#_x) tbody td{height:28px;padding-top:2px;padding-bottom:2px}
 /* Bill Detail export menu: same width as its button; a green tick after each document. */
 .bd-source-menu{position:relative}
