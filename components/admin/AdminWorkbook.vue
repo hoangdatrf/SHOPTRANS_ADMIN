@@ -12185,6 +12185,12 @@ watch(() => [gsdModal.open, gsdModal.editing, gsdModal.loading, gsdModal.row, gs
   }
   if (!editing) gsdEditSnapshot = ''
 })
+// Saving writes the modal's cell: from then on the saved form is the new baseline
+// (some popups stay in edit mode after Save, e.g. Bill Detail).
+watch(() => (gsdModal.open ? rows.value[gsdModal.row]?.[gsdModal.column] : undefined), (value, previous) => {
+  if (!gsdModal.open || !gsdModal.editing || value === previous) return
+  void nextTick(() => { if (gsdModal.open && gsdModal.editing) gsdEditSnapshot = gsdFormSignature() })
+})
 const gsdModalHasUnsavedChanges = () =>
   gsdModal.open && gsdModal.editing && !isPaymentRequestModal() && !!gsdEditSnapshot && gsdFormSignature() !== gsdEditSnapshot
 const requestCloseGsdModal = async () => {
