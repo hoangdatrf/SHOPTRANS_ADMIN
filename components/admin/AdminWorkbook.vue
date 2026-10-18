@@ -2555,7 +2555,7 @@
                             <span class="clr-dots"><span v-for="n in 4" :key="n" class="clr-dot" :class="{ on: n <= clearanceDotCount(decl) }"></span></span>
                           </button>
                         </div>
-                        <div class="clr-dcapbox"><button class="clr-plus" :disabled="clearanceHasDraftDeclaration()" :class="{ dim: allClearanceRowsSelected() }" type="button" title="assign Container to CDS No" @click="addClearanceDeclaration(row.key)">+</button></div>
+                        <div class="clr-dcapbox"><button class="clr-plus" :disabled="clearanceHasDraftDeclaration() || clearanceRowInMultiSelection(row.key)" :class="{ dim: allClearanceRowsSelected() }" type="button" :title="clearanceRowInMultiSelection(row.key) ? 'Use + at Declaration to link the selected containers to one CDS No' : 'assign Container to CDS No'" @click="addClearanceDeclaration(row.key)">+</button></div>
                       </div>
                     </td>
                   </tr>
@@ -2692,7 +2692,7 @@
                             <span class="clr-dots"><span v-for="n in 4" :key="n" class="clr-dot" :class="{ on: n <= clearanceDotCount(decl) }"></span></span>
                           </button>
                         </div>
-                        <div class="clr-dcapbox"><button class="clr-plus" :disabled="clearanceHasDraftDeclaration()" :class="{ dim: allClearanceRowsSelected() }" type="button" title="assign Container to CDS No" @click="addClearanceDeclaration(row.key)">+</button></div>
+                        <div class="clr-dcapbox"><button class="clr-plus" :disabled="clearanceHasDraftDeclaration() || clearanceRowInMultiSelection(row.key)" :class="{ dim: allClearanceRowsSelected() }" type="button" :title="clearanceRowInMultiSelection(row.key) ? 'Use + at Declaration to link the selected containers to one CDS No' : 'assign Container to CDS No'" @click="addClearanceDeclaration(row.key)">+</button></div>
                       </div>
                     </td>
                   </tr>
@@ -16507,8 +16507,10 @@ const toggleAllClearanceRows = (event: Event) => {
 }
 // A new declaration must be entered and confirmed before another one can be added.
 const clearanceHasDraftDeclaration = () => clearanceDeclarations().some((decl) => decl.editing)
+// With 2+ rows ticked, their row "+" is off: the header "+" links them to one CDS No.
+const clearanceRowInMultiSelection = (rowKey: string) => selectedClearanceRowKeys().length >= 2 && !!gsdModal.form.selected?.[rowKey]
 const addClearanceDeclaration = (rowKey: string) => {
-  if (clearanceHasDraftDeclaration()) return
+  if (clearanceHasDraftDeclaration() || clearanceRowInMultiSelection(rowKey)) return
   clearanceDeclarations().push(emptyClearanceDeclaration([rowKey]))
 }
 // One declaration shared by the ticked containers (2 or more; not necessarily all).
