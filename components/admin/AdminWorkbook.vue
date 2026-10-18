@@ -2292,7 +2292,7 @@
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-div"></div>
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-sec-title">{{ isAwbDetailModal() ? 'HAWB DETAILS' : awbText('HBL DETAILS') }}</div>
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-rows">
-                  <div class="bd-row"><span class="bd-lab">SI RECEIVED:</span><input v-model="gsdModal.form.siReceived" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing" @change="syncBillDetailTimestamp('siReceived')" /><input v-model.trim="gsdModal.form.siReceivedAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><div class="bd-source-menu"><button class="bd-exportbtn" type="button" :disabled="!gsdModal.form.siReceived" @click="billExportMenuOpen = !billExportMenuOpen">{{ billSourceButtonLabel() }}<span class="bd-export-caret">&#9662;</span></button><div v-if="billExportMenuOpen" class="bd-export-dropdown bd-export-groups"><div class="bd-export-group"><label class="bd-export-heading-check"><input type="checkbox" :checked="billSourceMode() === 'export'" disabled /> Export (B/L, FCR)</label><div class="bd-export-options"><div class="bd-export-pick" :class="{ picked: billSourceMode() === 'export' && billExportPicks().bl }"><button type="button" @click="selectBillDocumentExport('B/L')">Export B/L</button><span class="bd-export-tick" aria-hidden="true">✓</span></div><div class="bd-export-pick" :class="{ picked: billSourceMode() === 'export' && billExportPicks().fcr }"><button type="button" @click="selectBillDocumentExport('FCR')">Export FCR</button><span class="bd-export-tick" aria-hidden="true">✓</span></div></div></div><div class="bd-export-group"><label><input type="checkbox" :checked="billSourceMode() === 'client'" @change="setBillSourceMode('client')" /> Use Client's B/L</label></div></div></div><template v-if="billSourceMode() === 'client'"><button class="booking-icon bd-client-upload" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.editing" title="Upload Customer B/L" @click="openBillDetailUpload('clientBlFile')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5" /></svg></button><button class="booking-eye" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.form.clientBlFile?.url" :title="gsdModal.form.clientBlFile?.url ? 'View Customer B/L' : 'No file attached'" @click="viewBillDetailFile(gsdModal.form.clientBlFile)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></template></div>
+                  <div class="bd-row"><span class="bd-lab">SI RECEIVED:</span><input v-model="gsdModal.form.siReceived" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing" @change="syncBillDetailTimestamp('siReceived')" /><input v-model.trim="gsdModal.form.siReceivedAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><div class="bd-source-menu"><button class="bd-exportbtn" type="button" :disabled="!gsdModal.form.siReceived || !gsdModal.editing" @click="billExportMenuOpen = !billExportMenuOpen">{{ billSourceButtonLabel() }}<span class="bd-export-caret">&#9662;</span></button><div v-if="billExportMenuOpen" class="bd-export-dropdown bd-export-groups"><div class="bd-export-group"><label class="bd-export-heading-check"><input type="checkbox" :checked="billSourceMode() === 'export'" disabled /> Export (B/L, FCR)</label><div class="bd-export-options"><div class="bd-export-pick" :class="{ picked: billSourceMode() === 'export' && billExportPicks().bl }"><button type="button" @click="selectBillDocumentExport('B/L')">Export B/L</button><span class="bd-export-tick" aria-hidden="true">✓</span></div><div class="bd-export-pick" :class="{ picked: billSourceMode() === 'export' && billExportPicks().fcr }"><button type="button" @click="selectBillDocumentExport('FCR')">Export FCR</button><span class="bd-export-tick" aria-hidden="true">✓</span></div></div></div><div class="bd-export-group"><label><input type="checkbox" :checked="billSourceMode() === 'client'" @change="setBillSourceMode('client')" /> Use Client's B/L</label></div></div></div><template v-if="billSourceMode() === 'client'"><button class="booking-icon bd-client-upload" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.editing" title="Upload Customer B/L" @click="openBillDetailUpload('clientBlFile')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5" /></svg></button><button class="booking-eye" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.form.clientBlFile?.url" :title="gsdModal.form.clientBlFile?.url ? 'View Customer B/L' : 'No file attached'" @click="viewBillDetailFile(gsdModal.form.clientBlFile)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></template></div>
                   <div class="bd-row"><span class="bd-lab">{{ isAwbDetailModal() ? 'HAWB APPROVED:' : awbText('HBL APPROVED:') }}</span><input v-model="gsdModal.form.hbl" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing || !gsdModal.form.siReceived" @change="syncBillTimestamp('hbl')" /><input v-model.trim="gsdModal.form.hblAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><button class="bd-eye" :class="{ on: !!gsdModal.form.hbl && (isAwbDetailModal() ? !!gsdModal.form.hblFile?.url : billBlReady()) }" type="button" :disabled="!gsdModal.form.hbl || (isAwbDetailModal() ? !gsdModal.form.hblFile?.url : !billBlReady())" :title="isAwbDetailModal() ? 'View HAWB file' : billSourceMode() === 'client' ? 'View Client B/L' : 'View Export B/L PDF'" @click="isAwbDetailModal() ? viewBillDetailFile(gsdModal.form.hblFile) : viewSelectedBillFile()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                 </div>
                 <input ref="billDetailFileInput" type="file" hidden @change="handleBillDetailFile" />
@@ -2418,7 +2418,7 @@
               </div>
             </div>
             <div v-if="preAlertShowsDestClearanceDocs()" class="pdcrow">
-              <button class="wb-modal-btn pdcbtn" type="button" :disabled="preAlertDestinationLocked()" @click="openPreDocsModal">
+              <button class="wb-modal-btn pdcbtn" type="button" :disabled="preAlertDestinationLocked() || (!gsdModal.editing && !preDocsFileCount())" :title="gsdModal.editing ? '' : 'Click Edit to update the documents'" @click="openPreDocsModal">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                 Attach Dest. Clearance Docs<span v-if="preDocsFileCount()" class="pdcbadge">{{ preDocsFileCount() }}</span>
               </button>
@@ -2448,6 +2448,11 @@
               <span>REMARKS</span>
               <textarea v-model.trim="gsdModal.form.remarks" rows="3" :disabled="!gsdModal.editing"></textarea>
             </label>
+            <div v-if="gsdModal.form.sent" class="gsd-pre-sent-info">
+              <span>Sent to Dest. Agent: <b>{{ preAlertSentLabel(gsdModal.form.sentAt) }}</b></span>
+              <span v-if="gsdModal.form.clearanceDocsSentAt">Clearance docs sent: <b>{{ preAlertSentLabel(gsdModal.form.clearanceDocsSentAt) }}</b></span>
+              <span v-if="gsdModal.form.clearanceDocsPending" class="pending">Clearance docs updated - ready to send</span>
+            </div>
             <div class="gsd-pre-actions">
               <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
               <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || preAlertDestinationLocked()" @click="enablePreAlertEdit">Edit</button>
@@ -2536,7 +2541,7 @@
                         <div v-for="decl in clearanceDeclarationsFor(row.key)" :key="decl.id" class="clr-declrow">
                           <template v-if="decl.editing">
                             <input v-model.trim="decl.no" class="clr-din" :class="{ 'clr-baderr': decl.bad }" placeholder="Enter CDS No" @input="decl.bad = false" />
-                            <button class="clr-tick" type="button" title="Confirm" @click="confirmClearanceDeclaration(decl.id)">✓</button>
+                            <button class="clr-tick" type="button" title="Confirm" :disabled="!String(decl.no || '').trim()" @click="confirmClearanceDeclaration(decl.id)">✓</button>
                           </template>
                           <button v-else class="clr-link" :class="{ 'clr-link-red': decl.result === 'Inspected' }" type="button" @click="toggleClearancePanel(decl.id)">
                             <b>{{ decl.no || '(no number)' }}</b>
@@ -2673,7 +2678,7 @@
                         <div v-for="decl in clearanceDeclarationsFor(row.key)" :key="decl.id" class="clr-declrow">
                           <template v-if="decl.editing">
                             <input v-model.trim="decl.no" class="clr-din" :class="{ 'clr-baderr': decl.bad }" placeholder="Enter CDS No" @input="decl.bad = false" />
-                            <button class="clr-tick" type="button" title="Confirm" @click="confirmClearanceDeclaration(decl.id)">✓</button>
+                            <button class="clr-tick" type="button" title="Confirm" :disabled="!String(decl.no || '').trim()" @click="confirmClearanceDeclaration(decl.id)">✓</button>
                           </template>
                           <button v-else class="clr-link" :class="{ 'clr-link-red': decl.result === 'Inspected' }" type="button" @click="toggleClearancePanel(decl.id)">
                             <b>{{ decl.no || '(no number)' }}</b>
@@ -2769,7 +2774,7 @@
                   </span>
                 </template>
               </div>
-              <button class="pay-send" type="button" :disabled="!paymentCanSendSelection()" @click="sendPaymentRequest">Send request</button>
+              <button class="pay-send" type="button" :disabled="paymentSendBusy || !paymentCanSendSelection()" @click="sendPaymentRequest">{{ paymentSendBusy ? 'Sending...' : 'Send request' }}</button>
             </div>
             <div class="gsd-pay-scroll">
               <table class="gsd-pay-table" :class="{ 'air-pay-table': usesFullPaymentRequestLayout() }">
@@ -2928,7 +2933,7 @@
                 </div>
                 <div class="ec-tright">
                   <button class="wb-modal-btn ecedit" type="button" :disabled="!expenseCollectCanEditSelected()" @click="unlockExpenseCollectSelected">Edit</button>
-                  <button class="wb-modal-btn ecblue" type="button" :disabled="!expenseCollectCanSendSelected()" @click="sendExpenseCollectFeedback">Send feedback</button>
+                  <button class="wb-modal-btn ecblue" type="button" :disabled="paymentSendBusy || !expenseCollectCanSendSelected()" @click="sendExpenseCollectFeedback">{{ paymentSendBusy ? 'Sending...' : 'Send feedback' }}</button>
                 </div>
               </div>
               <div class="pr-scroll-frame">
@@ -3360,9 +3365,9 @@
           <div class="pdc-addrow"><button class="wb-modal-btn primary" type="button" :disabled="!preDocsModal.editing" @click="addPreDocsOther">Add+</button></div>
         </div>
         <div class="wsmodal-foot">
-          <button type="button" class="wsmodal-btn pdc-edit" :disabled="preDocsModal.editing" @click="preDocsModal.editing = true">Edit</button>
-          <button type="button" class="wsmodal-btn pdc-clear" :disabled="!preDocsModal.editing" @click="clearPreDocs">Clear</button>
-          <button type="button" class="wsmodal-btn primary" :disabled="!preDocsModal.editing || !preDocsDirty()" @click="savePreDocs">Save</button>
+          <button type="button" class="wsmodal-btn pdc-edit" :disabled="preDocsModal.editing || !gsdModal.editing" :title="gsdModal.editing ? '' : 'Click Edit on Pre-alert first'" @click="preDocsModal.editing = true">Edit</button>
+          <button type="button" class="wsmodal-btn pdc-clear" :disabled="!preDocsModal.editing || preDocsModal.saving || (!preDocsAnyChecked() && !preDocsFileCount())" @click="clearPreDocs">Clear</button>
+          <button type="button" class="wsmodal-btn primary" :disabled="!preDocsModal.editing || preDocsModal.saving || !preDocsDirtyLive()" @click="savePreDocs">{{ preDocsModal.saving ? 'Saving...' : 'Save' }}</button>
         </div>
       </div>
     </div>
@@ -3452,10 +3457,10 @@
               <thead>
                 <tr>
                   <th style="width:22%">Marks &amp; Nos.</th>
-                  <th style="width:12%">No. of Pkgs</th>
-                  <th style="width:34%">Description of Goods</th>
-                  <th style="width:16%">Gross Weight</th>
-                  <th style="width:16%">Measurement</th>
+                  <th style="width:13%">No. of Pkgs</th>
+                  <th style="width:26%">Description of Goods</th>
+                  <th style="width:19.5%">Gross Weight</th>
+                  <th style="width:19.5%">Measurement</th>
                 </tr>
               </thead>
               <tbody>
@@ -3469,18 +3474,19 @@
               </tbody>
             </table>
             <div v-if="!isLclSheet()" class="bill-container-title">Container &amp; Seal Information</div>
+            <datalist id="bill-unit-options"><option v-for="option in referenceUnitOptions" :key="option.value" :value="referenceUnitDescription(option.value)" /></datalist>
             <table v-if="!isLclSheet()" class="ctab bill-container-table">
-              <thead><tr><th style="width:5%">#</th><template v-if="!isLclSheet()"><th style="width:19%">ContNo#</th><th style="width:14%">ContType</th><th style="width:18%">SealNo#</th></template><th style="width:10%">QTY</th><th style="width:13%">UNIT</th><th style="width:11%">GW (KG)</th><th style="width:10%">MEA. (CBM)</th></tr></thead>
+              <colgroup><col style="width:5%" /><col style="width:17%" /><col style="width:13%" /><col style="width:16%" /><col style="width:10%" /><col style="width:13%" /><col style="width:13%" /><col style="width:13%" /></colgroup><thead><tr><th>#</th><template v-if="!isLclSheet()"><th>ContNo#</th><th>ContType</th><th>SealNo#</th></template><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th></tr></thead>
               <tbody>
-                <tr v-for="(container, index) in billDocModal.containers" :key="container.id || index"><td class="ctr"><span>{{ index + 1 }}</span></td><template v-if="!isLclSheet()"><td><span>{{ container.contNo || '—' }}</span></td><td class="ctr"><span>{{ container.contType || '—' }}</span></td><td><span>{{ container.sealNo || '—' }}</span></td></template><td class="num"><span>{{ container.qty || '—' }}</span></td><td class="ctr"><span>{{ container.unit || '—' }}</span></td><td class="num"><span>{{ container.gw || '—' }}</span></td><td class="num"><span>{{ container.mea || '—' }}</span></td></tr>
+                <tr v-for="(container, index) in billDocModal.containers" :key="container.id || index"><td class="ctr"><span>{{ index + 1 }}</span></td><template v-if="!isLclSheet()"><td><span>{{ container.contNo || '—' }}</span></td><td class="ctr"><span>{{ container.contType || '—' }}</span></td><td><span>{{ container.sealNo || '—' }}</span></td></template><td class="num"><input v-if="!billDocModal.locked" class="bill-cell-input" :value="container.qty" @change="setBillContainerField(container, 'qty', $event)" /><span v-else>{{ container.qty || '—' }}</span></td><td class="ctr"><input v-if="!billDocModal.locked" class="bill-cell-input" :value="referenceUnitDescription(container.unit)" list="bill-unit-options" autocomplete="off" placeholder="Type to filter" @focus="loadReferenceUnits" @change="setBillContainerField(container, 'unit', $event)" /><span v-else>{{ referenceUnitDescription(container.unit) || '—' }}</span></td><td class="num"><input v-if="!billDocModal.locked" class="bill-cell-input" :value="container.gw" @change="setBillContainerField(container, 'gw', $event)" /><span v-else>{{ container.gw || '—' }}</span></td><td class="num"><input v-if="!billDocModal.locked" class="bill-cell-input" :value="container.mea" @change="setBillContainerField(container, 'mea', $event)" /><span v-else>{{ container.mea || '—' }}</span></td></tr>
                 <tr v-if="!billDocModal.containers.length" class="bill-container-empty"><td :colspan="isLclSheet() ? 5 : 8">No container data from MASTER SI SUBMIT</td></tr>
               </tbody>
             </table>
             <table class="bgrid bill-summary-grid" style="margin-top:6px">
-              <colgroup><col style="width:34%" /><col style="width:34%" /><col style="width:32%" /></colgroup>
+              <colgroup><col style="width:35%" /><col style="width:26%" /><col style="width:39%" /></colgroup>
               <tbody>
               <tr>
-                <td><span class="blabel">Freight &amp; Charges</span><select v-model="billDocModal.freightCharges" class="fsel" :disabled="billDocModal.locked"><option value=""></option><option>FREIGHT PREPAID</option><option>FREIGHT COLLECT</option><option>AS ARRANGED</option></select></td>
+                <td><span class="blabel">Freight &amp; Charges</span><span v-if="billDocModal.locked" class="bval">{{ billDocModal.freightCharges }}</span><select v-else v-model="billDocModal.freightCharges" class="fsel"><option value=""></option><option>FREIGHT PREPAID</option><option>FREIGHT COLLECT</option><option>AS ARRANGED</option></select></td>
                 <td><span class="blabel">Freight Payable At</span><span class="bval" :contenteditable="!billDocModal.locked" @blur="setBillDocField('freightPayableAt', $event)">{{ billDocValue('freightPayableAt') }}</span></td>
                 <td><span class="blabel">Number of Original B(s)/L</span><span class="bval" :contenteditable="!billDocModal.locked" @blur="setBillDocField('originalCount', $event)">{{ billDocValue('originalCount') }}</span></td>
               </tr>
@@ -3522,10 +3528,10 @@
               <thead>
                 <tr>
                   <th style="width:22%">Marks &amp; Nos.</th>
-                  <th style="width:12%">No. of Pkgs</th>
-                  <th style="width:34%">Description of Goods</th>
-                  <th style="width:16%">Gross Weight</th>
-                  <th style="width:16%">Measurement</th>
+                  <th style="width:13%">No. of Pkgs</th>
+                  <th style="width:26%">Description of Goods</th>
+                  <th style="width:19.5%">Gross Weight</th>
+                  <th style="width:19.5%">Measurement</th>
                 </tr>
               </thead>
               <tbody>
@@ -4406,7 +4412,16 @@ const uploadAdminAttachment = async (file: File) => {
   // Keep the established route so a newly deployed frontend remains
   // compatible while the backend process is rebuilt/restarted. The updated
   // backend stores every document type in the shared persistent directory.
-  const uploaded = await props.request('/attachments/booking-details', { method: 'POST', body })
+  // Show the processing overlay while the file is uploading (unless another action owns it).
+  const uploadingMessage = `Uploading ${file.name}...`
+  const ownsOverlay = !dispatchLoading.value
+  if (ownsOverlay) dispatchLoading.value = uploadingMessage
+  let uploaded: any
+  try {
+    uploaded = await props.request('/attachments/booking-details', { method: 'POST', body })
+  } finally {
+    if (ownsOverlay && dispatchLoading.value === uploadingMessage) dispatchLoading.value = ''
+  }
   const url = String(uploaded?.url || '').trim()
   if (!url) throw new Error('The server did not return the uploaded file URL')
   return {
@@ -10430,6 +10445,40 @@ const fclStructureSyncPeers = (label: string): FclStructureDept[] => {
   }
   return peers.filter(activePeer) as FclStructureDept[]
 }
+// Payment Request / Payment Approval sends run one at a time: a second Send pressed
+// while the first is still saving waits for it instead of racing it (which used to
+// fail with a version conflict -> "Could not send ...").
+const paymentSendBusy = ref(false)
+let paymentSendChain: Promise<unknown> = Promise.resolve()
+let paymentSendPending = 0
+const runPaymentSend = <T,>(task: () => Promise<T>, message = 'Processing...'): Promise<T> => {
+  paymentSendPending += 1
+  paymentSendBusy.value = true
+  // Full-screen processing overlay: no other action until the send has finished.
+  dispatchLoading.value = message
+  const run = paymentSendChain.catch(() => undefined).then(task)
+  paymentSendChain = run
+  const done = () => {
+    paymentSendPending = Math.max(0, paymentSendPending - 1)
+    if (!paymentSendPending) {
+      paymentSendBusy.value = false
+      if (dispatchLoading.value === message) dispatchLoading.value = ''
+    }
+  }
+  void run.then(done, done)
+  return run
+}
+// Only the receiving department is awaited; the other linked departments are
+// updated in the background so the user is not kept waiting for them.
+const mirrorPaymentToPeers = (peers: FclStructureDept[], requiredReceiver: string, payload: string) => {
+  const required = requiredReceiver && peers.includes(requiredReceiver as FclStructureDept)
+    ? mirrorExwFclWorkflowCell(requiredReceiver as FclStructureDept, 'PAYMENT REQUEST', payload)
+    : Promise.resolve(true)
+  peers.filter((dept) => dept !== requiredReceiver).forEach((dept) => {
+    void mirrorExwFclWorkflowCell(dept, 'PAYMENT REQUEST', payload)
+  })
+  return required
+}
 const persistPaymentRequest = async (immediate = false, syncAfterSend = false) => {
   if (isGsdModalWorkflowLocked()) return
   if (!rows.value[gsdModal.row]) return
@@ -10459,14 +10508,15 @@ const persistPaymentRequest = async (immediate = false, syncAfterSend = false) =
   let lastError: Error | null = null
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
-      const [saved, results] = await Promise.all([
+      const [saved, delivered] = await Promise.all([
         queuePaymentSheetSave(sourceKey, sourceCountry, attempt === 1 ? sourcePayload : sheetPayload(sourceKey, false, sourceCountry)),
-        Promise.all(peers.map((dept) => mirrorExwFclWorkflowCell(dept, 'PAYMENT REQUEST', sentPayload))),
+        attempt === 1
+          ? mirrorPaymentToPeers(peers, requiredReceiver, sentPayload)
+          : (requiredReceiver ? mirrorExwFclWorkflowCell(requiredReceiver as FclStructureDept, 'PAYMENT REQUEST', sentPayload) : Promise.resolve(true)),
       ])
       if (!saved) throw new Error('Could not save Payment Request')
-      if (requiredReceiver) {
-        const receiverIndex = peers.indexOf(requiredReceiver as FclStructureDept)
-        if (receiverIndex < 0 || results[receiverIndex] !== true) throw new Error(`Could not deliver Payment Request to ${requiredReceiver}`)
+      if (requiredReceiver && (!peers.includes(requiredReceiver as FclStructureDept) || delivered !== true)) {
+        throw new Error(`Could not deliver Payment Request to ${requiredReceiver}`)
       }
       return
     } catch (error: any) {
@@ -11009,8 +11059,7 @@ const sendPaymentRequest = async () => {
       }
     : line)
   await nextTick()
-  showToast(`Sending ${target.length} payment request line(s)...`)
-  void persistPaymentRequest(true, true).then(() => {
+  void runPaymentSend(() => persistPaymentRequest(true, true), 'Sending Payment Request...').then(() => {
     showToast(`${target.length} payment request line(s) sent`)
   }).catch((error: any) => {
     gsdModal.payment.lines.forEach((line) => {
@@ -13942,16 +13991,17 @@ const persistExpenseCollect = async (immediate = false, syncAfterFeedback = fals
   const sourceKey = activeKey.value
   const sourceCountry = loadedCountryId.value
   const sourcePayload = sheetPayload(sourceKey, false, sourceCountry)
-  const [saved, results] = await Promise.all([
+  // The request owner is ECD on export services and ICD on import services (DO/DAP/DDU/DDP).
+  const ownerDept = shouldSync && opsDeptUpper() === 'FCD'
+    ? (['EXW', 'FCA', 'FCF'].includes(upperText(opsParts.value?.type)) ? 'ECD' : 'ICD')
+    : ''
+  const [saved, delivered] = await Promise.all([
     queuePaymentSheetSave(sourceKey, sourceCountry, sourcePayload),
-    Promise.all(peers.map((dept) => mirrorExwFclWorkflowCell(dept, 'PAYMENT REQUEST', feedbackPayload))),
+    mirrorPaymentToPeers(peers, ownerDept, feedbackPayload),
   ])
   if (!saved) throw new Error('Could not save Payment Approval feedback')
-  if (shouldSync && opsDeptUpper() === 'FCD') {
-    // The request owner is ECD on export services and ICD on import services (DO/DAP/DDU/DDP).
-    const ownerDept = ['EXW', 'FCA', 'FCF'].includes(upperText(opsParts.value?.type)) ? 'ECD' : 'ICD'
-    const ownerIndex = peers.indexOf(ownerDept as any)
-    if (ownerIndex < 0 || results[ownerIndex] !== true) throw new Error(`Could not return Payment Approval feedback to ${ownerDept}`)
+  if (ownerDept && (!peers.includes(ownerDept as FclStructureDept) || delivered !== true)) {
+    throw new Error(`Could not return Payment Approval feedback to ${ownerDept}`)
   }
 }
 const unlockExpenseCollectSelected = () => {
@@ -13985,8 +14035,7 @@ const sendExpenseCollectFeedback = async () => {
   })
   expenseFeedbackInvalidReasonIds.value = new Set()
   const targetIds = new Set(selected.map((line: any) => String(line.id)))
-  showToast('Sending feedback...')
-  void persistExpenseCollect(true, true).then(() => {
+  void runPaymentSend(() => persistExpenseCollect(true, true), 'Sending Payment Approval feedback...').then(() => {
     showToast('Feedback sent')
   }).catch((error: any) => {
     expenseCollectLines().forEach((line: any) => {
@@ -16252,7 +16301,13 @@ const addSimpleCcdClearanceDeclaration = () => {
 const confirmClearanceDeclaration = (id: string) => {
   const decl = clearanceDeclarations().find((item) => item.id === id)
   if (!decl) return
-  decl.no = upperText(decl.no)
+  decl.no = upperText(String(decl.no || '').trim())
+  // A declaration can only be created with its CDS number.
+  if (!decl.no) {
+    decl.bad = true
+    showToast('Enter the CDS No first')
+    return
+  }
   decl.bad = false
   decl.editing = false
   if (isSimpleCcdClearanceDetailsModal()) {
@@ -17392,6 +17447,7 @@ const billApprovalFormFromCell = (value: any) => {
     sentAt: String(form.sentAt || ''),
     sentEmails: String(form.sentEmails || ''),
     sentCc: String(form.sentCc || ''),
+    sentDocumentSignature: String(form.sentDocumentSignature || ''),
     locked: !!form.locked,
   }
 }
@@ -18200,7 +18256,11 @@ const billBlReady = () => {
   const picks = billExportPicks()
   return (picks.bl || picks.fcr) && (!picks.bl || !!gsdModal.form.exportBl) && (!picks.fcr || !!gsdModal.form.exportFcr)
 }
-const billDetailCanSend = () => !gsdModal.form.sentAt && !!gsdModal.form.mbl && !!gsdModal.form.siReceived && billBlReady()
+// Send B/L to Shipper: no MBL APPROVED requirement; locked once HBL APPROVED is ticked.
+// After sending, a changed Export B/L / FCR (or client B/L) re-enables it.
+const billSentDocumentSignature = () => JSON.stringify([gsdModal.form.exportBl || '', gsdModal.form.exportFcr || '', gsdModal.form.clientBlFile?.url || '', billSourceMode()])
+const billDetailCanSend = () => !gsdModal.form.hbl && !!gsdModal.form.siReceived && billBlReady()
+  && (!gsdModal.form.sentAt || (!!gsdModal.form.sentDocumentSignature && gsdModal.form.sentDocumentSignature !== billSentDocumentSignature()))
 const handleBillDetailFile = async (event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
@@ -18531,9 +18591,16 @@ const enableBillApprovalEdit = () => {
 }
 const billSendModal = reactive<{ open: boolean; to: string; cc: string; hint: string; sending: boolean }>({ open: false, to: '', cc: '', hint: '', sending: false })
 const openBillSendModal = () => {
-  if (gsdModal.form.sentAt) return
-  if (!gsdModal.form.mbl || !gsdModal.form.siReceived) {
-    showToast(awbText('MBL APPROVED and SI RECEIVED are required'))
+  if (gsdModal.form.hbl) {
+    showToast(awbText('HBL APPROVED is already ticked'))
+    return
+  }
+  if (!gsdModal.form.siReceived) {
+    showToast(awbText('SI RECEIVED is required'))
+    return
+  }
+  if (gsdModal.form.sentAt && gsdModal.form.sentDocumentSignature === billSentDocumentSignature()) {
+    showToast('B/L already sent - update the Export B/L to send again')
     return
   }
   if (!billBlReady()) {
@@ -18651,6 +18718,7 @@ const confirmBillSend = async () => {
     })
     gsdModal.form.sent = true
     gsdModal.form.sentAt = billTimestamp()
+    gsdModal.form.sentDocumentSignature = billSentDocumentSignature()
     gsdModal.form.sentEmails = to.join(', ')
     gsdModal.form.sentCc = cc.join(', ')
     billSendModal.open = false
@@ -18819,6 +18887,7 @@ const saveBillApproval = async (waitForPersistence: boolean | Event = true) => {
       sentAt: gsdModal.form.sentAt || '',
       sentEmails: gsdModal.form.sentEmails || '',
       sentCc: gsdModal.form.sentCc || '',
+      sentDocumentSignature: gsdModal.form.sentDocumentSignature || '',
       locked: true,
     },
   })
@@ -18857,6 +18926,43 @@ const viewBillDetailFile = (file: any) => {
 const billDocValue = (key: string) => ['dateOfIssue', 'shippedOnBoardDate'].includes(key)
   ? String(formatAdminDateDisplay(billDocModal[key]) || '')
   : String(billDocModal[key] || '')
+// Container table on B/L / FCR: QTY, UNIT, GW, MEA are editable. Editing GW/MEA
+// refreshes Gross Weight / Measurement above (which stay editable afterwards).
+const setBillContainerField = (container: any, key: 'qty' | 'unit' | 'gw' | 'mea', event: Event) => {
+  if (billDocModal.locked) return
+  const target = event.target as HTMLInputElement
+  const raw = String(target?.value ?? '').trim()
+  let value = key === 'unit' ? raw.toUpperCase() : raw
+  // UNIT is picked from Reference Data / Units.
+  if (key === 'unit' && value && referenceUnitOptions.value.length) {
+    // The list shows descriptions (PACKAGES); the code (PK) is stored.
+    const match = referenceUnitOptions.value.find((option) => upperText(option.value) === value || referenceUnitDescription(option.value) === value)
+    if (!match) {
+      target.value = referenceUnitDescription(container.unit)
+      showToast('Select UNIT from Reference Data')
+      return
+    }
+    value = match.value
+  }
+  if (target) target.value = key === 'unit' ? referenceUnitDescription(value) : value
+  if (String(container[key] ?? '') === value) return
+  container[key] = value
+  billDocModal.containersEdited = true
+  if (key === 'gw') billDocModal.grossWeight = billContainerTotal(billDocModal.containers, 'gw')
+  if (key === 'mea') billDocModal.measurement = billContainerTotal(billDocModal.containers, 'mea')
+}
+// Defaults from MASTER SI SUBMIT: Marks & Numbers, and No. of Pkgs = total QTY + unit.
+const billSiDefaults = () => {
+  const source = rawSiSourceValue('MASTER SI SUBMIT') || rawSiSourceValue('SI SUBMIT')
+  const si: any = source ? siSubmitFormFromCell(source) : {}
+  return { marks: String(si?.marks || ''), unit: upperText(si?.unit || '') }
+}
+const billPackagesDefault = (containers: any[], siUnit = '') => {
+  const total = (containers || []).reduce((sum: number, item: any) => sum + (Number.parseFloat(String(item?.qty || '').replace(/,/g, '')) || 0), 0)
+  if (!total) return ''
+  const unit = siUnit || upperText((containers || []).map((item: any) => item?.unit).find((unit: any) => String(unit || '').trim()) || '')
+  return `${Number(total.toFixed(2))}${unit ? ` ${unit}` : ''}`
+}
 const setBillDocField = (key: string, event: Event) => {
   const value = String((event.target as HTMLElement)?.innerText || '').trim()
   billDocModal[key] = ['pol', 'pod'].includes(key) ? value.toUpperCase() : value
@@ -18929,7 +19035,11 @@ const openBillDocument = async (kind: 'B/L' | 'FCR', isRelease = false) => {
   const linkedPol = siRouteDisplay(routeValue, 'pol').toUpperCase()
   const linkedPod = siRouteDisplay(routeValue, 'pod').toUpperCase()
   const shippedDate = String(rowValueByHeader('ATD') || rowValueByHeader('ETD') || '').trim()
-  const masterSiContainers = billContainersFromMasterSi()
+  // Containers edited on this B/L/FCR keep the user's QTY/UNIT/GW/MEA; otherwise follow MASTER SI.
+  void loadReferenceUnits()
+  const siContainers = billContainersFromMasterSi()
+  const masterSiContainers = saved?.containersEdited && Array.isArray(saved?.containers) && saved.containers.length ? saved.containers : siContainers
+  const siDefaults = billSiDefaults()
   const sameAsConsignee = !!saved?.sameAsConsignee || /^\(?SAME AS CONSIGNEE\)?$/i.test(String(saved?.notify || '').trim())
   Object.assign(billDocModal, {
     open: true, readonly: !isRelease && isReadonlyExwFclEcdBillDetail(), isRelease, billType: saved?.billType || 'ORIGINAL B/L', savedBillType: saved?.billType || 'ORIGINAL B/L',
@@ -18940,7 +19050,8 @@ const openBillDocument = async (kind: 'B/L' | 'FCR', isRelease = false) => {
     notify: sameAsConsignee ? '(SAME AS CONSIGNEE)' : saved?.notify || siClientTextFromSource(rawSiSourceValue('DESTINATION AGENT')), notifyBackup: sameAsConsignee ? '' : saved?.notify || '', sameAsConsignee,
     preCarriage: saved?.preCarriage || '', receipt: saved?.receipt || '', vessel: linkedVesselText(saved?.vessel || rawSiSourceValue('VESSEL/VOYAGE')),
     pol: String(saved?.pol || linkedPol || '').toUpperCase(), pod: String(saved?.pod || linkedPod || '').toUpperCase(), delivery: saved?.delivery || '',
-    marks: saved?.marks || '', packages: saved?.packages || '', goodsDescription: saved ? (saved.goodsDescription || '') : (kind === 'B/L' ? defaultBillGoodsDescription() : ''), grossWeight: saved?.grossWeight || billContainerTotal(masterSiContainers.length ? masterSiContainers : (saved?.containers || []), 'gw'), measurement: saved?.measurement || billContainerTotal(masterSiContainers.length ? masterSiContainers : (saved?.containers || []), 'mea'), containers: masterSiContainers.length ? masterSiContainers : (Array.isArray(saved?.containers) ? saved.containers : []),
+    containersEdited: !!(saved?.containersEdited && masterSiContainers !== siContainers),
+    marks: saved ? (saved.marks || '') : siDefaults.marks, packages: saved ? (saved.packages || '') : billPackagesDefault(masterSiContainers, siDefaults.unit), goodsDescription: saved ? (saved.goodsDescription || '') : (kind === 'B/L' ? defaultBillGoodsDescription() : ''), grossWeight: saved?.grossWeight || billContainerTotal(masterSiContainers.length ? masterSiContainers : (saved?.containers || []), 'gw'), measurement: saved?.measurement || billContainerTotal(masterSiContainers.length ? masterSiContainers : (saved?.containers || []), 'mea'), containers: masterSiContainers.length ? masterSiContainers : (Array.isArray(saved?.containers) ? saved.containers : []),
     freightCharges: saved?.freightCharges || '', freightPayableAt: saved?.freightPayableAt || saved?.pol || linkedPol || '', originalCount: saved?.originalCount || '3',
     placeOfIssue: saved?.placeOfIssue || 'HO CHI MINH CITY, VIETNAM', dateOfIssue: saved?.dateOfIssue || '', shippedOnBoardDate: saved?.shippedOnBoardDate || shippedDate,
     signedAt: saved?.signedAt || '',
@@ -18959,6 +19070,11 @@ const copyBillDocumentFromSi = () => {
   billDocModal.pod = siRouteDisplay(routeValue, 'pod').toUpperCase()
   billDocModal.freightPayableAt = billDocModal.pol
   billDocModal.containers = billContainersFromMasterSi()
+  billDocModal.containersEdited = false
+  billDocModal.marks = billSiDefaults().marks
+  billDocModal.packages = billPackagesDefault(billDocModal.containers, billSiDefaults().unit)
+  billDocModal.grossWeight = billContainerTotal(billDocModal.containers, 'gw')
+  billDocModal.measurement = billContainerTotal(billDocModal.containers, 'mea')
 }
 const addBillAttachedSheet = () => {
   if (billDocModal.locked) return
@@ -18971,7 +19087,7 @@ const removeBillAttachedSheet = (index: number) => {
   showToast(`Attached sheet ${index} removed`)
 }
 const clearBillDocument = () => {
-  Object.assign(billDocModal, { docNo: '', refNo: '', shipper: '', consignee: '', notify: '', notifyBackup: '', sameAsConsignee: false, preCarriage: '', receipt: '', vessel: '', pol: '', pod: '', delivery: '', marks: '', packages: '', goodsDescription: billDocModal.kind === 'B/L' ? defaultBillGoodsDescription() : '', grossWeight: billContainerTotal(billContainersFromMasterSi(), 'gw'), measurement: billContainerTotal(billContainersFromMasterSi(), 'mea'), containers: billContainersFromMasterSi(), freightCharges: '', freightPayableAt: '', originalCount: '3', placeOfIssue: 'HO CHI MINH CITY, VIETNAM', dateOfIssue: '', shippedOnBoardDate: '', signedAt: '', attachments: 0, savedAt: '' })
+  Object.assign(billDocModal, { docNo: '', refNo: '', shipper: '', consignee: '', notify: '', notifyBackup: '', sameAsConsignee: false, preCarriage: '', receipt: '', vessel: '', pol: '', pod: '', delivery: '', marks: billSiDefaults().marks, packages: billPackagesDefault(billContainersFromMasterSi(), billSiDefaults().unit), containersEdited: false, goodsDescription: billDocModal.kind === 'B/L' ? defaultBillGoodsDescription() : '', grossWeight: billContainerTotal(billContainersFromMasterSi(), 'gw'), measurement: billContainerTotal(billContainersFromMasterSi(), 'mea'), containers: billContainersFromMasterSi(), freightCharges: '', freightPayableAt: '', originalCount: '3', placeOfIssue: 'HO CHI MINH CITY, VIETNAM', dateOfIssue: '', shippedOnBoardDate: '', signedAt: '', attachments: 0, savedAt: '' })
 }
 const saveBillDocument = async () => {
   billDocModal.pol = String(billDocModal.pol || '').toUpperCase()
@@ -18992,7 +19108,7 @@ const saveBillDocument = async () => {
   }
   billDocModal.savedAt = billTimestamp()
   billDocModal.signedAt = billTimestamp()
-  const data = JSON.stringify(Object.fromEntries(['company','attachments','savedAt','signedAt','docNo','refNo','shipper','consignee','notify','sameAsConsignee','preCarriage','receipt','vessel','pol','pod','delivery','marks','packages','goodsDescription','grossWeight','measurement','containers','freightCharges','freightPayableAt','originalCount','placeOfIssue','dateOfIssue','shippedOnBoardDate','billType'].map((key) => [key, billDocModal[key]]).concat([['locked', true]])))
+  const data = JSON.stringify(Object.fromEntries(['company','attachments','savedAt','signedAt','docNo','refNo','shipper','consignee','notify','sameAsConsignee','preCarriage','receipt','vessel','pol','pod','delivery','marks','packages','goodsDescription','grossWeight','measurement','containers','containersEdited','freightCharges','freightPayableAt','originalCount','placeOfIssue','dateOfIssue','shippedOnBoardDate','billType'].map((key) => [key, billDocModal[key]]).concat([['locked', true]])))
   billDocModal.locked = true
 
   if (billDocModal.isRelease) {
@@ -19056,7 +19172,26 @@ const printBillDocument = async (download: boolean | Event = true): Promise<Blob
       renderSheet.querySelectorAll<HTMLElement>('button,.att-tools,.remove-attached,.same-wrap').forEach((control) => control.remove())
       renderSheet.querySelectorAll<HTMLElement>('.bill-container-table tbody td > span').forEach((value) => {
         value.style.position = 'relative'
-        value.style.top = '-3px'
+        value.style.top = '-4px'
+      })
+      // html2canvas drops some collapsed borders (e.g. the last container row's bottom
+      // line): draw each cell's right/bottom edge and the table's top/left edge explicitly.
+      renderSheet.querySelectorAll<HTMLTableElement>('table.ctab').forEach((table) => {
+        const color = window.getComputedStyle(table.querySelector('td, th') || table).borderTopColor || '#0f4c81'
+        table.style.borderCollapse = 'separate'
+        table.style.borderSpacing = '0'
+        table.style.borderTop = `1px solid ${color}`
+        table.style.borderLeft = `1px solid ${color}`
+        table.querySelectorAll<HTMLElement>('th, td').forEach((cell) => {
+          cell.style.border = '0'
+          cell.style.borderRight = `1px solid ${color}`
+          cell.style.borderBottom = `1px solid ${color}`
+        })
+      })
+      // html2canvas draws values a few px low, close to the bottom border: lift them.
+      renderSheet.querySelectorAll<HTMLElement>('.bgrid .bval, .bgrid .bl-pdf-select').forEach((value) => {
+        value.style.position = 'relative'
+        value.style.top = '-4px'
       })
       renderSheet.querySelectorAll<HTMLElement>('.co-mark > span').forEach((value) => {
         value.style.position = 'relative'
@@ -19651,6 +19786,9 @@ const preAlertFormFromCell = (value: any) => {
     sentAt: String(form.sentAt || ''),
     targetService: String(form.targetService || ''),
     locked: !!form.locked,
+    // Dest. clearance docs changed after the pre-alert was sent: allow one more send.
+    clearanceDocsPending: !!form.clearanceDocsPending,
+    clearanceDocsSentAt: String(form.clearanceDocsSentAt || ''),
     preDocs,
     // FCL uses the separate Attach Dest. Clearance Docs dialog instead of this inline block.
     showDocs: opsParts.value?.mode !== 'FCL' && (efa === 'DDU' || efa === 'DDP') && !(isExwEcdSheet() && opsParts.value?.mode !== 'FCL'),
@@ -19716,7 +19854,7 @@ const addPreAlertDoc = () => {
   docs.push({ key, label: 'OTHER', checked: false, name: '', custom: true })
   gsdModal.form.docs = docs
 }
-const preDocsModal = reactive({ open: false, editing: false, snapshot: '' })
+const preDocsModal = reactive({ open: false, editing: false, snapshot: '', saving: false })
 // Modal form keystrokes must not patch the large worksheet behind the overlay.
 // The background is refreshed once when the first modal opens and again after
 // the last modal closes, while every field inside the active modal stays fully
@@ -19737,6 +19875,8 @@ const workbookBackgroundMemoKey = () => workbookBackgroundFrozen.value ? frozenW
 const preDocsFileTarget = ref<{ section: 'ci' | 'pl' | 'other'; index: number } | null>(null)
 const preDocsFileInput = ref<HTMLInputElement | null>(null)
 let preDocsOtherDrafts: string[] = []
+// Bumped on every keystroke in an OTHER name so the Save button reacts before the debounce.
+const preDocsDraftTick = ref(0)
 const preDocsOtherTimers = new Map<number, ReturnType<typeof setTimeout>>()
 const preDocsData = () => {
   if (!gsdModal.form.preDocs || typeof gsdModal.form.preDocs !== 'object') {
@@ -19748,6 +19888,15 @@ const preDocsData = () => {
 }
 const preDocsSnapshot = () => JSON.stringify(preDocsData())
 const preDocsDirty = () => preDocsSnapshot() !== String(preDocsModal.snapshot || '')
+// Dirty check that also counts OTHER names still being typed (not yet flushed).
+const preDocsDirtyLive = () => {
+  void preDocsDraftTick.value
+  const current = JSON.parse(preDocsSnapshot())
+  ;(current.others || []).forEach((other: any, index: number) => {
+    if (preDocsOtherDrafts[index] !== undefined) other.name = String(preDocsOtherDrafts[index]).trim()
+  })
+  return JSON.stringify(current) !== String(preDocsModal.snapshot || '')
+}
 const preDocsOtherDraft = (index: number, savedName: any) => {
   if (preDocsOtherDrafts[index] === undefined) preDocsOtherDrafts[index] = String(savedName || '')
   return preDocsOtherDrafts[index]
@@ -19762,6 +19911,7 @@ const flushPreDocsOtherName = (index: number) => {
 const flushAllPreDocsOtherNames = () => preDocsData().others.forEach((_: any, index: number) => flushPreDocsOtherName(index))
 const inputPreDocsOtherName = (index: number, event: Event) => {
   preDocsOtherDrafts[index] = (event.target as HTMLInputElement).value
+  preDocsDraftTick.value += 1
   const currentTimer = preDocsOtherTimers.get(index)
   if (currentTimer) clearTimeout(currentTimer)
   preDocsOtherTimers.set(index, setTimeout(() => flushPreDocsOtherName(index), 220))
@@ -19786,6 +19936,7 @@ const openPreDocsModal = () => {
   // unsent draft opens ready for input, while a sent pre-alert is view-only.
   preDocsModal.editing = !!gsdModal.editing
   preDocsModal.snapshot = preDocsSnapshot()
+  preDocsModal.saving = false
   preDocsModal.open = true
 }
 const closePreDocsModal = () => {
@@ -19850,23 +20001,100 @@ const clearPreDocs = async () => {
   ;[pd.ci, pd.pl, ...pd.others].forEach((bucket: any) => (bucket.files || []).forEach((f: any) => f?.url && URL.revokeObjectURL(f.url)))
   gsdModal.form.preDocs = { ci: { on: false, files: [] }, pl: { on: false, files: [] }, others: [{ name: '', files: [] }] }
   preDocsOtherDrafts = ['']
+  preDocsDraftTick.value += 1
+  // Confirmed Clear is saved right away (no extra Save click).
+  if (preDocsDirty()) await savePreDocs()
 }
-const savePreDocs = () => {
+const savePreDocs = async () => {
   flushAllPreDocsOtherNames()
-  if (!preDocsDirty()) return
+  if (preDocsModal.saving) return
+  if (!preDocsDirty()) {
+    showToast('No changes to save')
+    return
+  }
   const pd = preDocsData()
-  const missingFile = (pd.ci.on && !pd.ci.files.length) || (pd.pl.on && !pd.pl.files.length) || pd.others.some((other: any) => other.name.trim() && !other.files.length)
+  // An unticked CI/PL (or an OTHER row without a name) drops its attached files on save.
+  if (!pd.ci.on) pd.ci.files = []
+  if (!pd.pl.on) pd.pl.files = []
+  pd.others.forEach((other: any) => { if (!String(other.name || '').trim()) other.files = [] })
+  const missingFile = (pd.ci.on && !pd.ci.files.length) || (pd.pl.on && !pd.pl.files.length) || pd.others.some((other: any) => String(other.name || '').trim() && !other.files.length)
   if (missingFile) {
     showToast('Each ticked/named item must have an uploaded document')
     return
   }
-  if (!pd.ci.on && !pd.pl.on && !pd.others.some((other: any) => other.name.trim())) {
-    showToast('Nothing to save')
+  // Clearing every document is a valid change and is saved like any other update.
+  const previous = {
+    pending: !!gsdModal.form.clearanceDocsPending,
+    locked: !!gsdModal.form.locked,
+    editing: !!gsdModal.editing,
+  }
+  const sent = !!gsdModal.form.sent
+  if (sent) {
+    // Updating the docs of a sent pre-alert re-enables Send (mail subject gets [CLEARANCE DOCS]).
+    gsdModal.form.clearanceDocsPending = preDocsFileCount() > 0
+    gsdModal.form.locked = true
+    gsdModal.editing = false
+  }
+  preDocsModal.saving = true
+  // Other edits still waiting for autosave -> save the whole sheet; otherwise only this cell.
+  const hadPendingSave = !!saveTimer || inFlightSaves.value > 0
+  persistPreAlert(false)
+  if (!hadPendingSave) resetSaveTimer()
+  const saved = hadPendingSave ? await saveSheet() : await saveOwnCellFast(gsdModal.row, gsdModal.column)
+  preDocsModal.saving = false
+  if (!saved) {
+    gsdModal.form.clearanceDocsPending = previous.pending
+    gsdModal.form.locked = previous.locked
+    gsdModal.editing = previous.editing
+    persistPreAlert(false)
+    showToast(saveError.value || 'Could not save the documents. Please try again.')
     return
   }
   preDocsModal.editing = false
   preDocsModal.snapshot = preDocsSnapshot()
-  persistPreAlert(true)
+  if (sent || !gsdModal.editing) gsdModal.form.initialSnapshot = preAlertSnapshot()
+  showToast(sent && gsdModal.form.clearanceDocsPending ? 'Documents saved - you can send them to Dest. Agent' : 'Documents saved')
+}
+const preAlertSentLabel = (value: any) => {
+  const text = String(value || '').trim()
+  if (!text) return '-'
+  const date = /^\d{4}-\d{2}-\d{2}T/.test(text) ? new Date(text) : null
+  if (date && !Number.isNaN(date.getTime())) {
+    const part = (n: number) => String(n).padStart(2, '0')
+    return `${part(date.getDate())}/${part(date.getMonth() + 1)}/${date.getFullYear()} ${part(date.getHours())}:${part(date.getMinutes())}`
+  }
+  return String(formatAdminDateDisplay(text) ?? text)
+}
+const blobToBase64 = (blob: Blob) => new Promise<string>((resolve, reject) => {
+  const reader = new FileReader()
+  reader.onload = () => resolve(String(reader.result || '').replace(/^data:[^;]+;base64,/, ''))
+  reader.onerror = () => reject(reader.error)
+  reader.readAsDataURL(blob)
+})
+// Files sent with the pre-alert. HBL/MBL linked from Bill Detail's Export B/L/FCR
+// have no uploaded file: render that PDF here and send its content.
+const preAlertEmailDocuments = async (includeMain: boolean) => {
+  const documents: Array<{ name: string; url?: string; content?: string }> = []
+  if (includeMain) {
+    for (const file of Object.values(gsdModal.form.files || {}) as any[]) {
+      const name = preAlertFileName(file)
+      if (!name) continue
+      if (file?.billExport) {
+        const bill = billApprovalFormFromCell(preAlertSourceCell('BILL DETAIL', 'AWB DETAIL'))
+        const kind = file.billExport === 'FCR' ? 'FCR' : 'B/L'
+        const blob = await renderSavedBillAttachment(kind, kind === 'FCR' ? bill.exportFcr : bill.exportBl)
+        if (!blob) throw new Error(`Could not prepare the ${kind} PDF for the email`)
+        documents.push({ name: /\.pdf$/i.test(name) ? name : `${name}.pdf`, content: await blobToBase64(blob) })
+      } else {
+        documents.push({ name, url: String(file?.url || '') })
+      }
+    }
+  }
+  const pd = preDocsData()
+  ;[pd.ci, pd.pl, ...(pd.others || [])].forEach((item: any) => (item?.files || []).forEach((file: any) => {
+    if (String(file?.name || '').trim()) documents.push({ name: String(file.name), url: String(file?.url || '') })
+  }))
+  return documents
 }
 const attachPreAlertFile = (key: string) => {
   if (!preAlertRowChecked(key)) return
@@ -19922,6 +20150,36 @@ const preAlertValidate = () => {
   }
   return missing
 }
+// Save just one cell of the open sheet (server applies it onto the latest version).
+// Much lighter than re-sending the whole worksheet; falls back to a full save when
+// other edits are still waiting to be saved.
+const saveOwnCellFast = async (row: number, column: number): Promise<boolean> => {
+  if (saveTimer || inFlightSaves.value > 0 || !isOpsPage.value || row <= 0) return saveSheet()
+  const key = activeKey.value
+  const country = loadedCountryId.value
+  const storageKey = sheetStorageKey(key, country)
+  const header = (rows.value[0] || []).map((value: any) => String(value ?? '').trim())
+  const currentRow = rows.value[row] || []
+  const link = opsShipmentLink(header, currentRow, row, settings.value)
+  const identity = Object.fromEntries(['JOB NO#', 'REF#', 'TIME']
+    .map((label) => [label, header.findIndex((value) => upperText(value) === label)] as const)
+    .filter(([, index]) => index >= 0 && String(currentRow[index] ?? '').trim())
+    .map(([label, index]) => [label, String(currentRow[index] ?? '')]))
+  try {
+    const response = await props.request(`/workbook/sheets/${encodeURIComponent(storageKey)}/cells`, {
+      method: 'PATCH',
+      body: { cells: [{ link: link || '', rowIndex: row, identity, label: header[column], value: currentRow[column] ?? '' }] },
+    })
+    if (Number(response?.data?.applied ?? response?.applied ?? 0) > 0) {
+      rememberSheetUpdatedAt(storageKey, responseUpdatedAt(response))
+      saveState.value = `Saved ${new Date().toLocaleTimeString('en-GB')}`
+      return true
+    }
+  } catch (error) {
+    console.warn('Fast cell save failed; saving the whole sheet', error)
+  }
+  return saveSheet()
+}
 const persistPreAlert = (immediate = false) => {
   rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({
     form: {
@@ -19940,6 +20198,8 @@ const persistPreAlert = (immediate = false) => {
       sentAt: String(gsdModal.form.sentAt || ''),
       targetService: String(gsdModal.form.targetService || ''),
       locked: !!gsdModal.form.locked,
+      clearanceDocsPending: !!gsdModal.form.clearanceDocsPending,
+      clearanceDocsSentAt: String(gsdModal.form.clearanceDocsSentAt || ''),
       preDocs: JSON.parse(JSON.stringify(preDocsData())),
     },
   })
@@ -19955,8 +20215,10 @@ const savePreAlert = async () => {
   gsdModal.form.sentAt = ''
   gsdModal.form.locked = true
   gsdModal.editing = false
+  const hadPendingSave = !!saveTimer || inFlightSaves.value > 0
   persistPreAlert(false)
-  const saved = await saveSheet()
+  if (!hadPendingSave) resetSaveTimer()
+  const saved = hadPendingSave ? await saveSheet() : await saveOwnCellFast(gsdModal.row, gsdModal.column)
   if (!saved) {
     // Keep the uploaded file in the open form so the user can retry Save;
     // never present a failed asynchronous PATCH as a completed save.
@@ -19992,6 +20254,7 @@ const preAlertTargetService = () => {
 // linked import GSD/ICD rows get created (the email itself is not re-sent).
 const preAlertSentUpToDate = () => {
   if (!gsdModal.form.sent) return false
+  if (gsdModal.form.clearanceDocsPending) return false
   const target = preAlertTargetService()
   const hasDestinationService = ['DO', 'DAP', 'DDU', 'DDP'].includes(target)
   return !hasDestinationService || upperText(gsdModal.form.targetService || '') === target
@@ -20063,8 +20326,11 @@ const sendPreAlert = async () => {
     return
   }
   const wasAlreadySent = !!gsdModal.form.sent
+  const clearanceDocsUpdate = wasAlreadySent && !!gsdModal.form.clearanceDocsPending
   const targetService = preAlertTargetService()
+  // Re-sending only the updated clearance docs must not recreate destination rows.
   const hasDestinationService = ['DO', 'DAP', 'DDU', 'DDP'].includes(targetService)
+    && !(clearanceDocsUpdate && upperText(gsdModal.form.targetService || '') === targetService)
   const destinationCell = preAlertSourceCell('DESTINATION AGENT', 'DEST. AGENT')
   const destinationAgentNotRequired = upperText(clientCellText(destinationCell)) === 'N/A'
   const destinationEmail = linkedEntityEmail(destinationCell)
@@ -20158,7 +20424,7 @@ const sendPreAlert = async () => {
     let emailSentAt = ''
     // Retrying an already-sent PRE-ALERT is an idempotent destination-data
     // repair. Do not send the external email a second time.
-    if (!destinationAgentNotRequired && !wasAlreadySent) {
+    if (!destinationAgentNotRequired && (!wasAlreadySent || clearanceDocsUpdate)) {
       const isAir = upperText(source.mode) === 'AIR'
       const routeCell = rowValueByHeader('ROUTE')
       const routeData = routeFromCellValue(routeCell)
@@ -20198,17 +20464,20 @@ const sendPreAlert = async () => {
             vessel: movement,
             volume: emailCellDisplayValue('VOLUME', rowValueByHeader('VOLUME')), remarks: gsdModal.form.remarks,
           },
-          documents: [
-            ...Object.values(gsdModal.form.files || {}).map((file: any) => ({ name: preAlertFileName(file), url: String(file?.url || '') })),
-            ...[preDocsData().ci, preDocsData().pl, ...(preDocsData().others || [])].flatMap((item: any) => (item.files || []).map((file: any) => ({ name: String(file?.name || ''), url: String(file?.url || '') }))),
-          ].filter((file: any) => file.name),
+          clearanceDocsUpdate,
+          documents: await preAlertEmailDocuments(!clearanceDocsUpdate),
         },
       })
       emailSentAt = String(result?.data?.sentAt || '')
     }
     gsdModal.form.sent = true
-    gsdModal.form.sentAt = emailSentAt || gsdModal.form.sentAt || new Date().toISOString()
-    gsdModal.form.targetService = targetService
+    if (clearanceDocsUpdate) {
+      gsdModal.form.clearanceDocsSentAt = emailSentAt || new Date().toISOString()
+      gsdModal.form.clearanceDocsPending = false
+    } else {
+      gsdModal.form.sentAt = emailSentAt || gsdModal.form.sentAt || new Date().toISOString()
+    }
+    if (targetService) gsdModal.form.targetService = targetService
     gsdModal.form.locked = true
     gsdModal.editing = false
     persistPreAlert(false)
@@ -21769,6 +22038,7 @@ const runMirrorExwFclWorkflowCell = async (
     const targetHeader = opsHeaderFor(parsed.base, parsed.mode, targetDept as any, parsed.type)
     const extracted = extractWorkbookRows(Array.isArray(targetSheet.rows) ? targetSheet.rows.map((item: any[]) => [...item]) : [], targetSheet)
     const targetRows = alignRowsToHeader(extracted.rows, targetHeader).rows
+    const originalTargetRows = targetRows.map((row) => [...row])
     const targetSettings = extracted.settings || targetSheet.settings || {}
     const targetLinks = targetSettings.opsRowLinks && typeof targetSettings.opsRowLinks === 'object' ? targetSettings.opsRowLinks : {}
     const linkedRow = sourceLink ? targetRows.findIndex((_targetRow, targetIndex) => targetIndex > 0 && String(targetLinks[String(targetIndex)] || '') === sourceLink) : -1
@@ -21865,15 +22135,33 @@ const runMirrorExwFclWorkflowCell = async (
     } else {
       targetRows[matchingRow][targetColumn] = value
     }
-    await patchLoadedWorkbookSheet(targetStorageKey, targetSheet, { rows: [...targetRows, [workbookMetaMarker, JSON.stringify({
-        version: 1,
-        columnWidths: targetSheet.columnWidths || targetHeader.map(() => 100),
-        rowHeights: targetSheet.rowHeights || {},
-        formatting: targetSheet.formatting || {},
-        merges: targetSheet.merges || [],
-        settings: targetSettings,
-      })]] })
-    return true
+    // Send only the cells that changed; the server applies them onto the latest
+    // version of the target sheet (no whole-sheet overwrite, no version conflict).
+    const before = originalTargetRows[matchingRow] || []
+    const cells = targetHeader
+      .map((headerLabel, column) => ({ headerLabel, column }))
+      .filter(({ column }) => JSON.stringify(targetRows[matchingRow][column] ?? '') !== JSON.stringify(before[column] ?? ''))
+      .map(({ headerLabel, column }) => ({
+        link: sourceLink || '',
+        rowIndex: matchingRow,
+        identity: Object.fromEntries(['JOB NO#', 'REF#', 'TIME']
+          .map((key) => [key, targetHeader.indexOf(key)] as const)
+          .filter(([, index]) => index >= 0 && String(before[index] ?? '').trim())
+          .map(([key, index]) => [key, String(before[index] ?? '')])),
+        label: headerLabel,
+        value: targetRows[matchingRow][column] ?? '',
+      }))
+    if (!cells.length && (!sourceLink || wasAlreadyLinked)) return true
+    const patched = await props.request(`/workbook/sheets/${encodeURIComponent(targetStorageKey)}/cells`, {
+      method: 'PATCH',
+      body: {
+        cells: cells.length ? cells : [{ link: sourceLink, rowIndex: matchingRow, label: targetHeader[targetColumn], value: targetRows[matchingRow][targetColumn] ?? '' }],
+        settingsPatch: { linkedDateChanges: targetSettings.linkedDateChanges || {} },
+      },
+    })
+    rememberSheetUpdatedAt(targetStorageKey, responseUpdatedAt(patched))
+    const applied = Number(patched?.data?.applied ?? patched?.applied ?? 1)
+    return applied > 0
   } catch (error: any) {
     // The target sheet was saved by someone else (or its own autosave) between our
     // read and write. Re-read the latest version and apply the change again,
@@ -24390,7 +24678,16 @@ onBeforeUnmount(() => {
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal){width:800px;max-width:96vw;padding:26px 18px 18px}
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-scroll{display:flex;justify-content:center}
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-table{width:100%;min-width:0;table-layout:fixed;font-size:11.5px}
-/* Clearance Details: compact table sized to its content, centered; row + beside the CDS number */.gsd-clr-modal:not(#_x){width:max-content!important;min-width:0!important;max-width:96vw!important}.gsd-clr-modal:not(#_x) .gsd-clr-panels:empty{display:none}.gsd-clr-modal:not(#_x) .clr-steps{justify-content:flex-start;flex-wrap:nowrap}.gsd-clr-modal:not(#_x) .clr-step{flex:0 0 auto;width:auto;padding:6px 8px;gap:5px}.gsd-clr-modal:not(#_x) .clr-step em{margin-left:2px}.gsd-clr-modal:not(#_x) .clr-plus:disabled{background:#b9c3be!important;border-color:#b9c3be!important;opacity:.6;cursor:not-allowed}.gsd-clr-modal:not(#_x) .gsd-clr-scroll{display:flex;justify-content:center}.gsd-clr-modal:not(#_x) .gsd-clr-table{width:auto;min-width:0;table-layout:auto;margin:0 auto;border-collapse:separate;border-spacing:0;border:1px solid #d9e2dc;border-radius:10px;overflow:hidden}.gsd-clr-modal:not(#_x) .gsd-clr-table :is(th,td){width:auto!important;white-space:nowrap;padding-left:14px;padding-right:14px;border:0;border-right:1px solid #d9e2dc;border-bottom:1px solid #d9e2dc}.gsd-clr-modal:not(#_x) .gsd-clr-table :is(th,td):last-child{border-right:0}.gsd-clr-modal:not(#_x) .gsd-clr-table tbody tr:last-child td{border-bottom:0}.gsd-clr-modal:not(#_x) .clr-declwrap{flex-direction:row;flex-wrap:wrap;align-items:center;max-width:none;gap:4px 6px}.gsd-clr-modal:not(#_x) .clr-declrow{flex:1 1 calc(100% - 34px)}.gsd-clr-modal:not(#_x) .clr-dcapbox{flex:0 0 auto}.gsd-clr-modal:not(#_x) .clr-declwrap:not(:has(.clr-declrow)){justify-content:center}
+/* Clearance Details: compact table sized to its content, centered; row + beside the CDS number */.gsd-clr-modal:not(#_x){width:max-content!important;min-width:0!important;max-width:96vw!important}.gsd-clr-modal:not(#_x) .gsd-clr-panels:empty{display:none}.gsd-clr-modal:not(#_x) .clr-steps{display:grid!important;grid-template-columns:repeat(4,1fr);width:max-content!important;gap:6px}.gsd-clr-modal:not(#_x) .clr-step{flex:none;width:auto;min-width:0;padding:6px 8px;gap:5px}.gsd-clr-modal:not(#_x) .clr-step em{display:inline-block;min-width:56px;margin-left:auto;text-align:right}.gsd-clr-modal:not(#_x) .clr-step{gap:4px;padding:5px 7px}.gsd-clr-modal:not(#_x) .clr-plus:disabled{background:#b9c3be!important;border-color:#b9c3be!important;opacity:.6;cursor:not-allowed}.gsd-clr-modal:not(#_x) .gsd-clr-scroll{display:flex;justify-content:center}.gsd-clr-modal:not(#_x) .gsd-clr-table{width:auto;min-width:0;table-layout:auto;margin:0 auto;border-collapse:separate;border-spacing:0;border:1px solid #d9e2dc;border-radius:10px;overflow:visible}
+.gsd-clr-modal:not(#_x) .gsd-clr-table thead th{position:sticky;top:0;z-index:22;background:#eef3ee;background-clip:border-box;border-right:0!important;border-bottom:0!important;box-shadow:inset -1px 0 0 #d9e2dc,inset 0 -1px 0 #d9e2dc!important}.gsd-clr-modal:not(#_x) .gsd-clr-table thead th:last-child{box-shadow:inset 0 -1px 0 #d9e2dc!important}.gsd-clr-modal:not(#_x) .gsd-clr-table thead th:first-child{z-index:23;border-top-left-radius:10px}.gsd-clr-modal:not(#_x) .gsd-clr-table thead th:last-child{border-top-right-radius:10px}.gsd-clr-modal:not(#_x) .gsd-clr-table tbody tr:last-child td:first-child{border-bottom-left-radius:10px}.gsd-clr-modal:not(#_x) .gsd-clr-table tbody tr:last-child td:last-child{border-bottom-right-radius:10px}.gsd-clr-modal:not(#_x) .gsd-clr-table :is(th,td){width:auto!important;white-space:nowrap;padding-left:14px;padding-right:14px;border:0;border-right:1px solid #d9e2dc;border-bottom:1px solid #d9e2dc}.gsd-clr-modal:not(#_x) .gsd-clr-table :is(th,td):last-child{border-right:0}.gsd-clr-modal:not(#_x) .gsd-clr-table tbody tr:last-child td{border-bottom:0}.gsd-clr-modal:not(#_x) .clr-declwrap{flex-direction:row;flex-wrap:wrap;align-items:center;max-width:none;gap:4px 6px}.gsd-clr-modal:not(#_x) .clr-declrow{flex:1 1 calc(100% - 34px)}.gsd-clr-modal:not(#_x) .clr-dcapbox{flex:0 0 auto}.gsd-clr-modal:not(#_x) .gsd-clr-table :is(th.clr-declhead,td.clr-declcell){width:196px!important;min-width:196px!important;max-width:196px!important;white-space:normal}
+.gsd-clr-modal:not(#_x) .clr-declwrap{display:grid!important;grid-template-columns:minmax(0,1fr) 22px;grid-auto-flow:row;align-items:center;gap:4px 6px;width:100%}
+.gsd-clr-modal:not(#_x) .clr-declrow{grid-column:1;min-width:0;flex:none}
+.gsd-clr-modal:not(#_x) .clr-declrow :is(.clr-link,.clr-din){flex:1 1 auto;min-width:0;width:100%;box-sizing:border-box}
+.gsd-clr-modal:not(#_x) .clr-dcapbox{grid-column:2;justify-self:end;display:flex;align-items:center}
+.gsd-clr-modal:not(#_x) .clr-link{display:flex;align-items:center;gap:6px;overflow:hidden}.gsd-clr-modal:not(#_x) .clr-link>b{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}.gsd-clr-modal:not(#_x) .clr-link .clr-dots{flex:0 0 auto}
+.clr-tick:disabled{background:#b9c3be!important;border-color:#b9c3be!important;opacity:.6;cursor:not-allowed}
+.gsd-clr-modal:not(#_x) .clr-dcap{display:flex;align-items:center;justify-content:center;gap:6px}
+.overlay .modal table :is(th,td):first-child:has(input[type=checkbox]),.wb-modal-overlay .gsd-modal table :is(th,td):first-child:has(input[type=checkbox]){box-shadow:none!important}
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-table th,.gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .gsd-clr-table td{padding:6px 7px}
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-allcell{width:26px}
 .gsd-clr-modal:not(.gsd-simple-clr-modal):not(.gsd-dup-tcd-clr-modal) .clr-allcell input{width:13px;height:13px;margin:0}
@@ -24533,6 +24830,15 @@ onBeforeUnmount(() => {
 .gsd-vty.ts{background:#fff0dc;color:#c45f08}
 .gsd-vty-group{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;padding:2px 0}.gsd-vty-group .gsd-vty{min-width:48px!important;margin:0!important}
 .ops-ms-table thead th.ops-badge-head{cursor:pointer}.ops-ms-table thead th.ops-badge-sorted{background:#dcefe3}.ops-head-badge{position:relative;top:-4px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:16px;height:16px;margin-left:3px;padding:0 4px;border-radius:999px;background:#d63a3a;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:700;line-height:16px;letter-spacing:0;text-indent:0;font-variant-numeric:tabular-nums;vertical-align:top}
+/* Worksheet buttons: the "!" alert and red counters sit as a small badge on the top-right
+   corner, so every DETAIL / VIEW / ADD+ button keeps the same width. */
+.ops-ms-table :is(.ops-pill,.gsd-btn,.ad-btn):not(#_x):has(>:is(.detail-alert-icon,.do-release-warn-icon,.ops-nbadge)){position:relative;overflow:visible!important}
+.ops-ms-table :is(.ops-pill,.gsd-btn,.ad-btn).detail-alert:not(#_x){width:auto!important;max-width:none!important;min-width:48px;height:20px;gap:0;padding:0 9px}
+.ops-ms-table :is(.ops-pill,.gsd-btn,.ad-btn):not(#_x)>:is(.detail-alert-icon,.do-release-warn-icon,.ops-nbadge){position:absolute;top:-6px;right:-7px;z-index:2;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:14px;width:auto;height:14px;margin:0;padding:0 3px;border:1.5px solid #fff;border-radius:999px;font-family:Arial,Helvetica,sans-serif;font-size:8.5px;font-weight:800;line-height:1;letter-spacing:0}
+.ops-ms-table :is(.ops-pill,.gsd-btn,.ad-btn):not(#_x)>:is(.detail-alert-icon,.do-release-warn-icon){background:#f39c12;color:#fff}
+.ops-ms-table :is(.ops-pill,.gsd-btn,.ad-btn):not(#_x)>.ops-nbadge{background:#d63a3a;color:#fff}
+.ops-ms-table td:has(>:is(.ops-pill,.gsd-btn,.ad-btn)>:is(.detail-alert-icon,.do-release-warn-icon,.ops-nbadge)){overflow:visible}
+.gsd-pre-sent-info{display:flex;flex-direction:column;gap:2px;margin:10px 0 0;color:#4d5b54;font-size:12px}.gsd-pre-sent-info b{color:#0a6b3b}.gsd-pre-sent-info .pending{color:#b45f04;font-weight:700}
 .ops-nbadge{display:inline-grid;place-items:center;min-width:14px;height:14px;margin-left:5px;padding:0 3px;border-radius:999px;background:#d63a3a;color:#fff;font-size:9px;font-weight:800;line-height:1}
 /* AIR/LCL — vessel delay panel + history on EXW ECD (mockup #ovs) */
 .gsd-modal.gsd-vessel-ecd-modal{width:min(980px,96vw);max-height:92vh;overflow:auto}
@@ -24744,6 +25050,13 @@ onBeforeUnmount(() => {
 .blform .ss-time{font-size:12px;font-weight:800;color:#222;letter-spacing:.02em}
 .blform .foot{margin-top:14px;border-top:1px solid #9db3c7;padding-top:4px;font-size:8.5px;color:#667;display:flex;justify-content:space-between}
 .blform [contenteditable="true"]:focus{background:#f2f8ff}
+.blform [contenteditable="true"]:focus,.blform .bill-cell-input:focus{outline:none!important;box-shadow:none!important}
+.blform .bill-container-table td:has(>.bill-cell-input){padding:0!important}
+.blform .bill-container-table:not(#_x){table-layout:fixed}.blform .bill-container-table .bill-cell-input{min-width:0}
+.blform .bill-container-table tbody td{height:22px;box-sizing:border-box}
+.blform .bill-container-table tbody td:has(>span){padding-top:0!important;padding-bottom:0!important}
+.blform .bill-container-table .bill-cell-input{display:block;width:100%;height:22px;min-height:22px;line-height:22px;box-sizing:border-box;margin:0;border:0!important;border-radius:0;outline:none;background:transparent;padding:0 4px;color:inherit;font:inherit;text-align:center}
+.blform .bill-container-table .bill-cell-input:focus{background:#f2f8ff}
 .blform.locked .f:empty::before,.blform.locked .bval:empty::before,.blform.locked .ctab td[data-ph]:empty::before{content:""}
 .blform .bl-watermark{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);font-size:70px;font-weight:900;color:rgba(15,76,129,.10);letter-spacing:8px;pointer-events:none;white-space:nowrap;z-index:1}
 .blform>*:not(.bl-watermark){position:relative;z-index:2}
@@ -25151,10 +25464,10 @@ onBeforeUnmount(() => {
 /* FCD Payment Approval: inherited request data is read-only/darker; FCD feedback fields fill the cell. */
 .gsd-expcol-modal .ec-locked-input,.gsd-expcol-modal .expcol-table tbody td:has(>span.ec-cell){background:#e3e9e5!important;color:#4d5b54!important;opacity:1}.gsd-expcol-modal .ec-issinp{min-width:220px;background:#fff}.gsd-expcol-modal .ec-fcd-input{display:block;width:100%;height:100%;min-height:28px;box-sizing:border-box;border:1px solid #cfd8d2;border-radius:0;background:#fff;padding:4px 6px;text-align:center;font:inherit;color:#24332c;outline:none}.gsd-expcol-modal .ec-fcd-input:focus{box-shadow:inset 0 0 0 2px #00a860}.gsd-expcol-modal .ec-fcd-input:disabled{border-color:#cbd3ce;background:#dfe5e1;color:#66736c;opacity:1;cursor:not-allowed}.gsd-expcol-modal .expcol-table td:has(>.ec-fcd-input){padding:0;background:#fff}
 /* Keep selection checkboxes visible while any modal table scrolls sideways. */
-.gsd-expcol-modal .expcol-table th.pcheck,.gsd-expcol-modal .expcol-table .ec-sumrow th.pcheck{position:sticky!important;left:0!important;z-index:21!important;width:34px!important;min-width:34px!important;max-width:34px!important;overflow:hidden!important;background:#eef3ee!important;background-clip:padding-box!important;border-right:1px solid #c5d2ca!important;box-shadow:3px 0 4px -3px rgba(15,61,35,.45)}.gsd-expcol-modal .expcol-table td.pcheck{position:sticky!important;left:0!important;z-index:20!important;width:34px!important;min-width:34px!important;max-width:34px!important;overflow:hidden!important;background:#fff!important;background-clip:padding-box!important;border-right:1px solid #c5d2ca!important;box-shadow:3px 0 4px -3px rgba(15,61,35,.38)}.gsd-expcol-modal .expcol-table td:has(>.ec-statussel),.gsd-expcol-modal .expcol-table td:has(>.ec-reason),.gsd-expcol-modal .expcol-table td:has(>.ec-fcd-input){padding:0!important}.gsd-expcol-modal .ec-statussel,.gsd-expcol-modal .ec-reason,.gsd-expcol-modal .ec-fcd-input{display:block;width:100%!important;height:100%;min-height:34px;box-sizing:border-box;border:0!important;border-radius:0!important;padding:4px 7px}.gsd-expcol-modal .ec-statussel:not(:disabled),.gsd-expcol-modal .ec-reason:not(:disabled),.gsd-expcol-modal .ec-fcd-input:not(:disabled){background:#fff!important;color:#24332c}.gsd-expcol-modal .ec-statussel:disabled,.gsd-expcol-modal .ec-reason:disabled,.gsd-expcol-modal .ec-fcd-input:disabled{background:#dfe5e1!important;color:#66736c!important;opacity:1}
+.gsd-expcol-modal .expcol-table th.pcheck,.gsd-expcol-modal .expcol-table .ec-sumrow th.pcheck{position:sticky!important;left:0!important;z-index:21!important;width:34px!important;min-width:34px!important;max-width:34px!important;overflow:hidden!important;background:#eef3ee!important;background-clip:padding-box!important;border-right:1px solid #c5d2ca!important;box-shadow:none}.gsd-expcol-modal .expcol-table td.pcheck{position:sticky!important;left:0!important;z-index:20!important;width:34px!important;min-width:34px!important;max-width:34px!important;overflow:hidden!important;background:#fff!important;background-clip:padding-box!important;border-right:1px solid #c5d2ca!important;box-shadow:none}.gsd-expcol-modal .expcol-table td:has(>.ec-statussel),.gsd-expcol-modal .expcol-table td:has(>.ec-reason),.gsd-expcol-modal .expcol-table td:has(>.ec-fcd-input){padding:0!important}.gsd-expcol-modal .ec-statussel,.gsd-expcol-modal .ec-reason,.gsd-expcol-modal .ec-fcd-input{display:block;width:100%!important;height:100%;min-height:34px;box-sizing:border-box;border:0!important;border-radius:0!important;padding:4px 7px}.gsd-expcol-modal .ec-statussel:not(:disabled),.gsd-expcol-modal .ec-reason:not(:disabled),.gsd-expcol-modal .ec-fcd-input:not(:disabled){background:#fff!important;color:#24332c}.gsd-expcol-modal .ec-statussel:disabled,.gsd-expcol-modal .ec-reason:disabled,.gsd-expcol-modal .ec-fcd-input:disabled{background:#dfe5e1!important;color:#66736c!important;opacity:1}
 /* Generic fallback for every other modal whose selection checkbox is its first column. */
-.overlay .modal table th:first-child:has(input[type=checkbox]),.wb-modal-overlay .gsd-modal table th:first-child:has(input[type=checkbox]){position:sticky;left:0;z-index:21;overflow:hidden;background:#eef3ee;background-clip:padding-box;border-right:1px solid #c5d2ca;box-shadow:3px 0 4px -3px rgba(15,61,35,.45)}
-.overlay .modal table td:first-child:has(input[type=checkbox]),.wb-modal-overlay .gsd-modal table td:first-child:has(input[type=checkbox]){position:sticky;left:0;z-index:20;overflow:hidden;background:#fff;background-clip:padding-box;border-right:1px solid #c5d2ca;box-shadow:3px 0 4px -3px rgba(15,61,35,.38)}
+.overlay .modal table th:first-child:has(input[type=checkbox]),.wb-modal-overlay .gsd-modal table th:first-child:has(input[type=checkbox]){position:sticky;left:0;z-index:21;overflow:hidden;background:#eef3ee;background-clip:padding-box;border-right:1px solid #c5d2ca;box-shadow:none}
+.overlay .modal table td:first-child:has(input[type=checkbox]),.wb-modal-overlay .gsd-modal table td:first-child:has(input[type=checkbox]){position:sticky;left:0;z-index:20;overflow:hidden;background:#fff;background-clip:padding-box;border-right:1px solid #c5d2ca;box-shadow:none}
 .gsd-expcol-modal .ec-reason.invalid{background:#fff5f4!important;box-shadow:inset 0 0 0 2px #c0392b!important}
 .gsd-expcol-modal col.ec-col-reason{width:220px;min-width:220px}.gsd-expcol-modal col.ec-col-status-details{width:220px!important;min-width:220px!important}.gsd-expcol-modal .expcol-table th:nth-child(17),.gsd-expcol-modal .expcol-table td:nth-child(17){width:220px;min-width:220px}
 /* The sticky checkbox must sit on the outer scroll edge without a strip of the scrolled columns showing beside it. */
