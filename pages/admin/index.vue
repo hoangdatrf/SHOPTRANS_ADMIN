@@ -1125,6 +1125,7 @@
               </div>
               <div
                 v-if="analysisGroundPanel.visible"
+                ref="analysisGroundBarEl"
                 class="analysis-ground-bar"
                 :style="{ left: `${sidebarWidth}px` }"
               >
@@ -5080,6 +5081,25 @@ watch(analysisGroundSelectionKey, () => {
   analysisGroundLocked.value = false
   syncAnalysisGroundDraft()
 })
+// The Ground panel is fixed at the bottom: lift the table's bottom edge by the
+// panel height so its last rows and horizontal scrollbar stay visible.
+const analysisGroundBarEl = ref<HTMLElement | null>(null)
+let analysisGroundObserver: ResizeObserver | null = null
+const setAnalysisBarHeight = (height: number) => {
+  if (typeof document !== 'undefined') document.documentElement.style.setProperty('--analysis-ground-h', `${Math.max(0, Math.round(height))}px`)
+}
+watch(analysisGroundBarEl, (element) => {
+  analysisGroundObserver?.disconnect()
+  analysisGroundObserver = null
+  if (!element || typeof ResizeObserver === 'undefined') {
+    setAnalysisBarHeight(element ? element.offsetHeight : 0)
+    return
+  }
+  analysisGroundObserver = new ResizeObserver(() => setAnalysisBarHeight(element.offsetHeight))
+  analysisGroundObserver.observe(element)
+  setAnalysisBarHeight(element.offsetHeight)
+})
+onUnmounted(() => { analysisGroundObserver?.disconnect(); setAnalysisBarHeight(0) })
 const analysisGroundPanel = computed(() => {
   const key = analysisGroundKey.value
   const config = key ? analysisGroundConfigs[key] : null
@@ -9410,6 +9430,7 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer;bo
 .sm-tablewrap.analysis-tablewrap thead th.sel-col,
 .sm-tablewrap.analysis-tablewrap thead th.sm-order-col{background:#d8f3e2!important;color:#063d25!important;border-color:#bfe8cf!important;font-weight:750!important}
 .sm-tablewrap.analysis-tablewrap tbody td.sm-order-cell{background:inherit!important;color:#5d7567!important;font-weight:700}
+.sm-tablewrap.analysis-tablewrap{margin-bottom:calc(22px + var(--analysis-ground-h, 0px))}
 .sm-tablewrap.analysis-tablewrap tbody tr.sel td{background:#e6f6ee!important}
 .sm-tablewrap.analysis-tablewrap tbody tr.analysis-warning-row:not(.sel) td{background:#fdecea!important}
 .sm-tablewrap.analysis-tablewrap tbody tr.analysis-warning-row.sel td{background:#e6f6ee!important}

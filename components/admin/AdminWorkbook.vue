@@ -193,7 +193,8 @@
                   :class="opsCellClass(rowIndex, columnIndex)"
                   @dblclick="handleOpsCellDblClick(rowIndex, columnIndex, $event)"
                 >
-                  <div v-if="isStampedOpsCheckboxColumn(columnIndex)" class="ops-sent-cell">
+                  <span v-if="isLinkedImportShipmentCell(rowIndex, columnIndex) && !String(rows[rowIndex]?.[columnIndex] ?? '').trim()" class="ops-textcell" title="Update it on the export shipment">—</span>
+                  <div v-else-if="isStampedOpsCheckboxColumn(columnIndex)" class="ops-sent-cell">
                     <span class="sent-check-row"><input
                         class="ops-check"
                         type="checkbox"
@@ -888,6 +889,29 @@
       <svg v-if="pickerFieldProxy.type === 'date'" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
       <svg v-else viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
     </div>
+    <Teleport to="body">
+      <div
+        v-if="comboPopup.open && comboPopup.items.length"
+        class="st-combo-list"
+        role="listbox"
+        :style="{ left: `${comboPopup.left}px`, top: `${comboPopup.top}px`, minWidth: `${comboPopup.minWidth}px`, maxHeight: `${comboPopup.maxHeight}px`, fontFamily: comboPopup.fontFamily || undefined, fontSize: comboPopup.fontSize || undefined }"
+        @mousedown.prevent
+      >
+        <button
+          v-for="(item, index) in comboPopup.items"
+          :key="`${item.value}-${index}`"
+          type="button"
+          role="option"
+          class="st-combo-item"
+          :class="{ active: index === comboPopup.active, current: item.value === comboPopup.current }"
+          @mouseenter="comboPopup.active = index"
+          @click="pickComboItem(item.value)"
+        >
+          <span>{{ item.value }}</span>
+          <small v-if="item.label && item.label !== item.value">{{ item.label }}</small>
+        </button>
+      </div>
+    </Teleport>
     <div v-if="dispatchLoading" class="dispatch-loading-overlay" role="dialog" aria-modal="true" aria-live="polite">
       <AdminLoadingScreen compact message="Processing" />
     </div>
@@ -955,6 +979,8 @@
       <div
         class="wb-modal gsd-modal"
         :style="gsdModalShellStyle()"
+        @input="markGsdUserEdit"
+        @change="markGsdUserEdit"
         :class="{
           'gsd-reminder-modal': gsdModal.kind === 'reminder',
           'gsd-client-modal': gsdModal.kind === 'client',
@@ -1946,6 +1972,7 @@
                           placeholder="Type to filter"
                           autocomplete="off"
                           @focus="openTruckCompanyPicker(index, $event)"
+                          @click="openTruckCompanyPicker(index, $event)"
                           @input="handleTruckCompanyInput(record, index)"
                           @blur="closeTruckCompanyPickerSoon"
                         />
@@ -2179,7 +2206,7 @@
             <div class="gsd-prs-actions">
               <button class="wb-modal-btn slate" type="button" @click="requestCloseGsdModal">Close</button>
               <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing" @click="savePickupReturnStatus">Save</button>
-              <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || !hasPickupReturnSelection()" @click="enablePickupReturnEdit">Edit</button>
+              <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || !hasPickupReturnSelection() || isLinkedOriginImportRow(gsdModal.row)" :title="isLinkedOriginImportRow(gsdModal.row) ? 'Update it on the export shipment' : ''" @click="enablePickupReturnEdit">Edit</button>
             </div>
             </template>
           </template>
@@ -2300,7 +2327,7 @@
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-sec-title">{{ isAwbDetailModal() ? 'HAWB DETAILS' : awbText('HBL DETAILS') }}</div>
                 <div v-if="isAwbDetailModal() || currentRowRequiresHbl()" class="bd-rows">
                   <div class="bd-row"><span class="bd-lab">SI RECEIVED:</span><input v-model="gsdModal.form.siReceived" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing" @change="syncBillDetailTimestamp('siReceived')" /><input v-model.trim="gsdModal.form.siReceivedAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><div class="bd-source-menu"><button class="bd-exportbtn" type="button" :disabled="!gsdModal.form.siReceived || !gsdModal.editing" @click="billExportMenuOpen = !billExportMenuOpen">{{ billSourceButtonLabel() }}<span class="bd-export-caret">&#9662;</span></button><div v-if="billExportMenuOpen" class="bd-export-dropdown bd-export-groups"><div v-if="!billSiNotSubmittedByTx()" class="bd-export-group"><label class="bd-export-heading-check"><input type="checkbox" :checked="billSourceMode() === 'export'" disabled /> Export (B/L, FCR)</label><div class="bd-export-options"><div class="bd-export-pick" :class="{ picked: billSourceMode() === 'export' && billExportPicks().bl }"><button type="button" @click="selectBillDocumentExport('B/L')">Export B/L</button><span class="bd-export-tick" aria-hidden="true">✓</span></div><div class="bd-export-pick" :class="{ picked: billSourceMode() === 'export' && billExportPicks().fcr }"><button type="button" @click="selectBillDocumentExport('FCR')">Export FCR</button><span class="bd-export-tick" aria-hidden="true">✓</span></div></div></div><div class="bd-export-group"><label><input type="checkbox" :checked="billSourceMode() === 'client'" @change="setBillSourceMode('client')" /> Use Client's B/L</label></div></div></div><template v-if="billSourceMode() === 'client'"><button class="booking-icon bd-client-upload" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.editing" title="Upload Customer B/L" @click="openBillDetailUpload('clientBlFile')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5" /></svg></button><button class="booking-eye" :class="{ attached: !!gsdModal.form.clientBlFile?.url }" type="button" :disabled="!gsdModal.form.clientBlFile?.url" :title="gsdModal.form.clientBlFile?.url ? 'View Customer B/L' : 'No file attached'" @click="viewBillDetailFile(gsdModal.form.clientBlFile)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></svg></button></template></div>
-                  <div class="bd-row"><span class="bd-lab">{{ isAwbDetailModal() ? 'HAWB APPROVED:' : awbText('HBL APPROVED:') }}</span><input v-model="gsdModal.form.hbl" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing || !gsdModal.form.siReceived" @change="syncBillTimestamp('hbl')" /><input v-model.trim="gsdModal.form.hblAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><button class="bd-eye" :class="{ on: !!gsdModal.form.hbl && (isAwbDetailModal() ? !!gsdModal.form.hblFile?.url : billBlReady()) }" type="button" :disabled="!gsdModal.form.hbl || (isAwbDetailModal() ? !gsdModal.form.hblFile?.url : !billBlReady())" :title="isAwbDetailModal() ? 'View HAWB file' : billSourceMode() === 'client' ? 'View Client B/L' : 'View Export B/L PDF'" @click="isAwbDetailModal() ? viewBillDetailFile(gsdModal.form.hblFile) : viewSelectedBillFile()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+                  <div class="bd-row"><span class="bd-lab">{{ isAwbDetailModal() ? 'HAWB APPROVED:' : awbText('HBL APPROVED:') }}</span><input v-model="gsdModal.form.hbl" type="checkbox" class="bd-cb" :disabled="isReadonlyExwFclEcdBillDetail() || !gsdModal.editing || !gsdModal.form.siReceived || (!gsdModal.form.hbl && !billHblApprovable())" :title="!gsdModal.form.hbl && !billHblApprovable() ? 'Save the Export B/L (or FCR / Client B/L) and send it to the Shipper first' : ''" @change="syncBillTimestamp('hbl')" /><input v-model.trim="gsdModal.form.hblAt" type="text" class="bd-date" readonly placeholder="dd/mm/yyyy hh:mm" /><button class="bd-eye" :class="{ on: !!gsdModal.form.hbl && (isAwbDetailModal() ? !!gsdModal.form.hblFile?.url : billBlReady()) }" type="button" :disabled="!gsdModal.form.hbl || (isAwbDetailModal() ? !gsdModal.form.hblFile?.url : !billBlReady())" :title="isAwbDetailModal() ? 'View HAWB file' : billSourceMode() === 'client' ? 'View Client B/L' : 'View Export B/L PDF'" @click="isAwbDetailModal() ? viewBillDetailFile(gsdModal.form.hblFile) : viewSelectedBillFile()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                 </div>
                 <input ref="billDetailFileInput" type="file" hidden @change="handleBillDetailFile" />
               </div>
@@ -3100,7 +3127,7 @@
                 <div v-if="!isLclSheet()" class="an-detail-g3 an-cargo-summary"><label><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="an-linked-field" :readonly="!gsdModal.editing" rows="1"></textarea></label><label><span>QTY</span><input :value="arrivalNoticeTotals().qty" readonly /></label><label><span>Unit</span><input v-model="gsdModal.form.unit" :readonly="!gsdModal.editing" list="an-unit-desc-options" autocomplete="off" placeholder="Type to filter" @focus="loadReferenceUnits" @input="gsdModal.form.unit = upperText(gsdModal.form.unit)" /></label></div>
                 <div v-if="!isLclSheet()" class="an-detail-g2"><label><span>GW (KG)</span><input :value="arrivalNoticeTotals().gw" readonly /></label><label><span>MEA. (CBM)</span><input :value="arrivalNoticeTotals().mea" readonly /></label></div>
                 <div class="an-detail-section an-detail-section-ref"><span>Charges Due</span><span class="an-refbox"><label>RefLastBiz:</label><span class="an-ref-search"><input v-model.trim="gsdModal.form.refLastBiz" :disabled="!gsdModal.editing" placeholder="JOB NO# / REF NO#" autocomplete="off" @input="searchArrivalPaymentHistory" @keydown.escape="paymentSearchOpen = false" /><span class="pr-searchresults" :class="{ show: paymentSearchOpen }"><button v-for="match in paymentSearchResults" :key="`an-${match.id}`" class="pr-sr-item" type="button" @mousedown.prevent="selectArrivalPaymentHistoryMatch(match)"><span class="pr-sr-info"><b class="pr-sr-line" :title="match.jobNo">{{ match.jobNo || '—' }}</b><span class="pr-sr-line pr-sr-sub" :title="`REF: ${match.refNo || '—'}`">{{ paymentMatchService(match) ? `${paymentMatchService(match)} · ` : '' }}{{ match.lineCount }} line(s)</span></span></button><span v-if="!paymentSearchResults.length" class="pr-sr-empty">{{ paymentSearchLoading ? 'Searching…' : 'No previous Job No matches your search.' }}</span></span></span><button type="button" :disabled="!gsdModal.editing" @click="openArrivalPaymentHistoryFilter">Search</button></span></div>
-                <table class="an-detail-table"><thead><tr><th>#</th><th>Charge Name</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>CUR</th><th>Tax (%)</th><th>Total Price</th></tr></thead><tbody><tr v-for="(charge, index) in gsdModal.form.charges" :key="charge.key || index"><td>{{ index + 1 }}</td><td><input v-model.trim="charge.chargeName" :disabled="!gsdModal.editing" list="an-charge-options" autocomplete="off" placeholder="Type to filter" @focus="setActiveDatalistValue(charge.chargeName)" @input="setActiveDatalistValue(charge.chargeName)" /></td><td><input v-model="charge.qty" :disabled="!gsdModal.editing" /></td><td><input v-model.trim="charge.unit" :disabled="!gsdModal.editing" list="an-unit-options" autocomplete="off" placeholder="Type to filter" @focus="loadReferenceUnits" @input="charge.unit = upperText(charge.unit)" /></td><td><input v-model="charge.unitPrice" :disabled="!gsdModal.editing" @input="charge.unitPrice = sanitizeMoneyInput(charge.unitPrice)" @blur="charge.unitPrice = formatMoneyValue(charge.unitPrice)" /></td><td><input v-model.trim="charge.cur" :disabled="!gsdModal.editing" list="an-currency-options" autocomplete="off" placeholder="CUR" @focus="setActiveDatalistValue(charge.cur)" @input="charge.cur = upperText(charge.cur); setActiveDatalistValue(charge.cur)" @change="selectArrivalNoticeBankForCurrency(charge.cur)" /></td><td><input v-model="charge.taxRate" :disabled="!gsdModal.editing" /></td><td>{{ arrivalNoticeChargeTotal(charge) }}</td></tr><tr v-if="!gsdModal.form.charges.length"><td colspan="8" class="empty">No charge data</td></tr></tbody><tfoot><tr><td colspan="7" class="an-total-label">Total Tax Amount</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().tax }}</td></tr><tr><td colspan="7" class="an-total-label">Total Charge</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().total }}</td></tr></tfoot></table>
+                <table class="an-detail-table"><thead><tr><th>#</th><th>Charge Name</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>CUR</th><th>Tax (%)</th><th>Total Price</th></tr></thead><tbody><tr v-for="(charge, index) in gsdModal.form.charges" :key="charge.key || index"><td>{{ index + 1 }}</td><td><input v-model.trim="charge.chargeName" :disabled="!gsdModal.editing" list="an-charge-options" autocomplete="off" placeholder="Type to filter" @focus="setActiveDatalistValue(charge.chargeName)" @input="setActiveDatalistValue(charge.chargeName)" /></td><td><input v-model="charge.qty" :disabled="!gsdModal.editing" /></td><td><input v-model.trim="charge.unit" :disabled="!gsdModal.editing" list="an-unit-desc-options" autocomplete="off" placeholder="Type to filter" @focus="loadReferenceUnits" @input="charge.unit = upperText(charge.unit)" /></td><td><input v-model="charge.unitPrice" :disabled="!gsdModal.editing" @input="charge.unitPrice = sanitizeMoneyInput(charge.unitPrice)" @blur="charge.unitPrice = formatMoneyValue(charge.unitPrice)" /></td><td><input v-model.trim="charge.cur" :disabled="!gsdModal.editing" list="an-currency-options" autocomplete="off" placeholder="CUR" @focus="setActiveDatalistValue(charge.cur)" @input="charge.cur = upperText(charge.cur); setActiveDatalistValue(charge.cur)" @change="selectArrivalNoticeBankForCurrency(charge.cur)" /></td><td><input v-model="charge.taxRate" :disabled="!gsdModal.editing" /></td><td>{{ arrivalNoticeChargeTotal(charge) }}</td></tr><tr v-if="!gsdModal.form.charges.length"><td colspan="8" class="empty">No charge data</td></tr></tbody><tfoot><tr><td colspan="7" class="an-total-label">Total Tax Amount</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().tax }}</td></tr><tr><td colspan="7" class="an-total-label">Total Charge</td><td class="an-total-value">{{ arrivalNoticeChargeTotals().total }}</td></tr></tfoot></table>
                 <datalist id="an-unit-desc-options"><option v-for="option in referenceUnitOptions" :key="`d-${option.value}`" :value="referenceUnitDescription(option.value)" /></datalist>
                 <datalist id="an-unit-options"><option v-for="option in referenceUnitOptions" :key="option.value" :value="option.value" /></datalist>
                 <datalist id="an-charge-options"><option v-for="option in paymentDatalistOptions(paymentChargeOptions)" :key="option" :value="option" /></datalist>
@@ -5130,8 +5157,9 @@ const loadLiveTraderDirectory = (force = false) => {
   }).finally(() => { liveTraderLoading = null })
   return liveTraderLoading
 }
-// Pull the parties of every linked import row from its export ECD row, so changes
-// made on the export side show up here without re-sending the PRE-ALERT.
+// Pull the parties and shipment fields (HBL/MBL, VOLUME, ROUTE, VESSEL, ATD, ETA) of
+// every linked import row from its export ECD row, so changes made on the export side
+// show up here without re-sending the PRE-ALERT.
 const syncLinkedOriginParties = async (requestedKey: string, requestedCountry: string) => {
   const current = opsParts.value
   if (!current || !['DO', 'DAP', 'DDU', 'DDP'].includes(upperText(current.type))) return
@@ -5178,7 +5206,7 @@ const syncLinkedOriginParties = async (requestedKey: string, requestedCountry: s
       if (originIndex > 0) { match = { header: origin.header, row: origin.rows[originIndex] }; break }
     }
     if (!match) continue
-    for (const group of LINKED_PARTY_GROUPS) {
+    for (const group of [...LINKED_PARTY_GROUPS, ...LINKED_SHIPMENT_GROUPS]) {
       const localColumn = header.findIndex((label) => group.includes(upperText(label)))
       const originColumn = match.header.findIndex((label) => group.includes(upperText(label)))
       if (localColumn < 0 || originColumn < 0) continue
@@ -5190,6 +5218,139 @@ const syncLinkedOriginParties = async (requestedKey: string, requestedCountry: s
     }
   }
   if (changed) scheduleSave()
+}
+// ---- Type-to-filter dropdown ----------------------------------------------------
+// Replaces the browser's native <datalist> popup (unstyleable: dark/white by theme,
+// bold text, misplaced arrow) for every input with a `list`. The options still come
+// from the same <datalist>; picking one fires input/change so v-model and the
+// existing validation handlers run exactly as before.
+const comboPopup = reactive({ open: false, left: 0, top: 0, minWidth: 120, maxHeight: 240, active: -1, current: '', fontFamily: '', fontSize: '', items: [] as Array<{ value: string; label: string }> })
+let comboInput: HTMLInputElement | null = null
+let comboCloseTimer: ReturnType<typeof setTimeout> | null = null
+const comboListId = (input: HTMLInputElement) => input.dataset.comboList || input.getAttribute('list') || ''
+const isComboInput = (target: EventTarget | null): target is HTMLInputElement =>
+  target instanceof HTMLInputElement && !!comboListId(target) && !target.disabled && !target.readOnly
+const refreshComboItems = (showAll = false) => {
+  const input = comboInput
+  if (!input) return
+  const list = document.getElementById(comboListId(input))
+  const options = list ? Array.from(list.querySelectorAll('option')) : []
+  const term = showAll ? '' : String(input.value || '').trim().toUpperCase()
+  const seen = new Set<string>()
+  comboPopup.items = options
+    .map((option) => ({ value: String(option.value || '').trim(), label: String(option.label || option.textContent || '').trim() }))
+    .filter((item) => {
+      if (!item.value || seen.has(item.value)) return false
+      seen.add(item.value)
+      return !term || item.value.toUpperCase().includes(term) || item.label.toUpperCase().includes(term)
+    })
+    // While filtering only the best 5 matches are listed.
+    .slice(0, term ? 5 : 200)
+  comboPopup.current = String(input.value || '').trim()
+  const currentIndex = comboPopup.items.findIndex((item) => item.value === comboPopup.current)
+  comboPopup.active = currentIndex >= 0 ? currentIndex : (term ? 0 : -1)
+}
+const placeCombo = () => {
+  const input = comboInput
+  if (!input) return
+  const rect = input.getBoundingClientRect()
+  const below = window.innerHeight - rect.bottom - 8
+  const above = rect.top - 8
+  const height = Math.min(240, Math.max(below, above))
+  comboPopup.left = Math.round(Math.min(rect.left, window.innerWidth - 200))
+  comboPopup.top = Math.round(below >= Math.min(160, above) ? rect.bottom + 3 : rect.top - Math.min(240, height) - 3)
+  comboPopup.minWidth = Math.round(rect.width)
+  // Same font family and size as the input it belongs to.
+  const style = window.getComputedStyle(input)
+  comboPopup.fontFamily = style.fontFamily
+  comboPopup.fontSize = style.fontSize
+  comboPopup.maxHeight = Math.max(120, Math.round(height))
+}
+const openCombo = (input: HTMLInputElement, showAll: boolean) => {
+  if (comboCloseTimer) { clearTimeout(comboCloseTimer); comboCloseTimer = null }
+  // Detach the native datalist (no native popup / arrow); keep the id for our list.
+  if (input.getAttribute('list')) {
+    input.dataset.comboList = input.getAttribute('list') || ''
+    input.removeAttribute('list')
+    input.setAttribute('autocomplete', 'off')
+  }
+  comboInput = input
+  refreshComboItems(showAll)
+  placeCombo()
+  comboPopup.open = true
+}
+const closeCombo = () => {
+  comboPopup.open = false
+  comboPopup.active = -1
+  comboInput = null
+}
+let comboUserIntentAt = 0
+let comboIntentTarget: EventTarget | null = null
+const markComboUserIntent = (event: Event) => {
+  if (event instanceof KeyboardEvent && event.key !== 'Tab') return
+  comboUserIntentAt = Date.now()
+  comboIntentTarget = event instanceof KeyboardEvent ? null : event.target
+}
+const onComboFocusIn = (event: FocusEvent) => {
+  // Only a click on this very field (or Tab into it) unfolds the list; a popup that
+  // focuses its first field on open must not unfold it by itself.
+  const userMoved = Date.now() - comboUserIntentAt <= 400 && (comboIntentTarget === null || comboIntentTarget === event.target)
+  if (!userMoved) {
+    if (isComboInput(event.target) && event.target.getAttribute('list')) {
+      event.target.dataset.comboList = event.target.getAttribute('list') || ''
+      event.target.removeAttribute('list')
+    }
+    return
+  }
+  if (isComboInput(event.target)) openCombo(event.target, true)
+}
+// Clicking an input that already has focus (list closed after a pick or Esc) does
+// not fire focusin again: reopen the list on the click itself.
+const onComboClick = (event: MouseEvent) => {
+  if (!isComboInput(event.target)) return
+  if (!comboPopup.open || comboInput !== event.target) openCombo(event.target, true)
+}
+const onComboInput = (event: Event) => {
+  if (!event.isTrusted || !isComboInput(event.target)) return
+  if (comboInput !== event.target) openCombo(event.target, false)
+  else { refreshComboItems(false); placeCombo(); comboPopup.open = true }
+}
+const onComboFocusOut = (event: FocusEvent) => {
+  if (event.target !== comboInput) return
+  comboCloseTimer = setTimeout(closeCombo, 120)
+}
+const closeComboOnScroll = (event: Event) => {
+  if (!comboPopup.open) return
+  const target = event.target as HTMLElement | null
+  if (target?.closest?.('.st-combo-list')) return
+  placeCombo()
+}
+const pickComboItem = (value: string) => {
+  const input = comboInput
+  if (!input) return
+  input.value = value
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+  input.dispatchEvent(new Event('change', { bubbles: true }))
+  closeCombo()
+}
+const onComboKeyDown = (event: KeyboardEvent) => {
+  if (!comboPopup.open || event.target !== comboInput) return
+  const count = comboPopup.items.length
+  if (event.key === 'ArrowDown' && count) {
+    event.preventDefault()
+    comboPopup.active = (comboPopup.active + 1) % count
+  } else if (event.key === 'ArrowUp' && count) {
+    event.preventDefault()
+    comboPopup.active = (comboPopup.active - 1 + count) % count
+  } else if (event.key === 'Enter' && comboPopup.active >= 0 && comboPopup.items[comboPopup.active]) {
+    event.preventDefault()
+    pickComboItem(comboPopup.items[comboPopup.active].value)
+  } else if (event.key === 'Escape') {
+    closeCombo()
+  } else {
+    return
+  }
+  void nextTick(() => document.querySelector('.st-combo-list .st-combo-item.active')?.scrollIntoView({ block: 'nearest' }))
 }
 const onWindowFocusRefreshTraders = () => { if (isOpsPage.value) void loadLiveTraderDirectory().catch(() => undefined) }
 const loadPaymentPartyOptions = async () => {
@@ -5594,16 +5755,22 @@ const placeTruckCompanyPicker = (target?: EventTarget | null) => {
   const rect = input.getBoundingClientRect()
   truckCompanyPicker.left = Math.round(rect.left)
   truckCompanyPicker.top = Math.round(rect.bottom + 2)
-  truckCompanyPicker.width = Math.max(180, Math.round(rect.width))
+  truckCompanyPicker.width = Math.round(rect.width)
 }
 const openTruckCompanyPicker = (index: number, event?: Event) => {
+  if (truckCompanyPickerCloseTimer) { clearTimeout(truckCompanyPickerCloseTimer); truckCompanyPickerCloseTimer = null }
   placeTruckCompanyPicker(event?.target)
   truckCompanyPicker.index = index
   truckCompanyPicker.open = true
   void loadTruckCompanyOptions()
 }
+// The pending close from the field just left must not shut the list that the next
+// field has opened meanwhile (that made a second click necessary).
+let truckCompanyPickerCloseTimer: ReturnType<typeof setTimeout> | null = null
 const closeTruckCompanyPickerSoon = () => {
-  window.setTimeout(() => {
+  if (truckCompanyPickerCloseTimer) clearTimeout(truckCompanyPickerCloseTimer)
+  truckCompanyPickerCloseTimer = setTimeout(() => {
+    truckCompanyPickerCloseTimer = null
     truckCompanyPicker.open = false
     truckCompanyPicker.index = -1
   }, 120)
@@ -8099,6 +8266,10 @@ const beginEditCell = async (row: number, col: number) => {
     showToast('Column locked')
     return
   }
+  if (isLinkedImportShipmentCell(row, col) || isLinkedImportPartyCell(row, col)) {
+    showToast('Update it on the export shipment')
+    return
+  }
   if (isSentEcdRowLocked(row)) {
     showToast('Row locked after SENT ECD. Use the Edit icon at SENT ECD to unlock it.')
     return
@@ -9444,6 +9615,8 @@ const isBcSentBookingCellLocked = (row: number, column: number) => {
 }
 const isWorkflowLockedOpsCell = (row: number, column: number) =>
   isSentEcdRowLocked(row) || isBcSentBookingCellLocked(row, column)
+  // Linked import rows: shipment fields and parties come from the export side.
+  || isLinkedImportShipmentCell(row, column) || isLinkedImportPartyCell(row, column)
 const isLockedAfterBcSentDate = (row: number, column: number) =>
   isBcSentRowLocked(row) && ['ETD', 'ETA'].includes(normalizedHeaderLabel(column))
 const hideLockedGsdAddAction = (row: number, isAddAction: boolean) =>
@@ -9672,6 +9845,10 @@ const isAgentNaCell = (row: number, column: number) => {
 // Import rows linked to an export shipment receive these parties from the export
 // ECD row (read-only here; an empty value shows an em dash).
 const LINKED_PARTY_GROUPS = [['SHIPPER'], ['CNEE', 'CONSIGNEE'], ['ORIGIN AGENT', 'ORIGINAL AGENT'], ['DESTINATION AGENT', 'DEST. AGENT'], ['LINER'], ['AIRLINE']]
+// Shipment fields also owned by the export side for linked import rows.
+const LINKED_SHIPMENT_GROUPS = [['HBL NO#', 'HAWB NO#'], ['MBL NO#', 'MAWB NO#'], ['VOLUME'], ['ROUTE'], ['VESSEL/VOYAGE', 'FLIGHT NO#'], ['ATD'], ['ETA'], ['ATA'], ['PICKUP/RETURN STATUS', 'PICKUP STATUS']]
+const isLinkedImportShipmentCell = (row: number, column: number) =>
+  row > 0 && LINKED_SHIPMENT_GROUPS.some((group) => group.includes(normalizedHeaderLabel(column))) && isLinkedOriginImportRow(row)
 const isLinkedImportPartyCell = (row: number, column: number) =>
   row > 0 && LINKED_PARTY_GROUPS.some((group) => group.includes(normalizedHeaderLabel(column))) && isLinkedOriginImportRow(row)
 const canEditClientLinkCell = (row: number, column: number) => {
@@ -11805,13 +11982,14 @@ const openGsdModal = async (row: number, column: number) => {
         await Promise.all([loadRouteCountryOptions(), loadRouteReferenceData()])
         gsdModal.formFields = []
         gsdModal.form = routeFormFromCell(rawText)
-        gsdModal.editing = !isExwFclTcdInboundView()
+        // Linked import rows show the export ROUTE read-only.
+        gsdModal.editing = !isExwFclTcdInboundView() && !isLinkedOriginImportRow(row)
         if (gsdModal.editing) nextTick(() => (document.querySelector('.gsd-route-input') as HTMLInputElement | null)?.focus())
       } else if (label === 'VESSEL/VOYAGE' || label === 'VESSEL NAME') {
         await Promise.all([loadVesselReferenceData(), loadTranshipmentPlaces()])
         gsdModal.formFields = []
         gsdModal.form = vesselFormFromCell(rawText)
-        gsdModal.editing = !isExwFclTcdInboundView() && !isVesselViewOnlyModal()
+        gsdModal.editing = !isExwFclTcdInboundView() && !isVesselViewOnlyModal() && !isLinkedOriginImportRow(row)
         if (gsdModal.editing) nextTick(() => (document.querySelector('.gsd-vessel-input') as HTMLInputElement | null)?.focus())
       } else if (label === 'PICKUP DETAIL' || label === 'DELIVERY DETAIL' || label === 'DELIVERY DETAILS') {
         await loadPickupReferenceData()
@@ -12059,21 +12237,27 @@ const openGsdModal = async (row: number, column: number) => {
         // Linked import row: MBL/HBL CONFIRMED come from the export PRE-ALERT SENDING and
         // MBL/HBL RELEASED from the export BILL RELEASE - always the latest values.
         if (isLinkedOriginImportRow(row)) {
-          const [sendingCell, releaseCell] = await Promise.all([
+          const [sendingCell, releaseCell, detailCell] = await Promise.all([
             loadLinkedOriginCell(row, ['PRE-ALERT SENDING']).catch(() => ''),
             loadLinkedOriginCell(row, ['BILL RELEASE', 'AWB RELEASE']).catch(() => ''),
+            loadLinkedOriginCell(row, ['BILL DETAIL', 'BILL APPROVAL', 'AWB DETAIL']).catch(() => ''),
           ])
           if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
           let changed = false
           const assign = (key: string, value: any) => {
             if (gsdModal.form[key] !== value) { gsdModal.form[key] = value; changed = true }
           }
-          if (String(sendingCell || '').trim()) {
-            const sending = preAlertFormFromCell(sendingCell)
-            assign('mblConfirmed', !!sending.chk?.mc)
-            assign('mblConfirmedAt', String(sending.at?.mc || ''))
-            assign('hblConfirmed', !!sending.chk?.hc)
-            assign('hblConfirmedAt', String(sending.at?.hc || ''))
+          // CONFIRMED = export MBL / HBL APPROVED (Bill Detail), or the ticks saved in
+          // the export PRE-ALERT SENDING.
+          const sending = String(sendingCell || '').trim() ? preAlertFormFromCell(sendingCell) : null
+          const detail: any = String(detailCell || '').trim() ? billApprovalFormFromCell(detailCell) : null
+          if (sending || detail) {
+            const mbl = !!(sending?.chk?.mc || detail?.mbl)
+            const hbl = !!(sending?.chk?.hc || detail?.hbl)
+            assign('mblConfirmed', mbl)
+            assign('mblConfirmedAt', mbl ? String(sending?.at?.mc || detail?.mblAt || '') : '')
+            assign('hblConfirmed', hbl)
+            assign('hblConfirmedAt', hbl ? String(sending?.at?.hc || detail?.hblAt || '') : '')
           }
           if (String(releaseCell || '').trim()) {
             const release: any = billReleaseFormFromCell(releaseCell)
@@ -12117,6 +12301,19 @@ const openGsdModal = async (row: number, column: number) => {
         const isNewPickupReturn = label === 'PICKUP/RETURN STATUS' && !String(rawText || '').trim()
         if (isNewPickupReturn) gsdModal.form.locked = false
         gsdModal.editing = isNewPickupReturn || !gsdModal.form.locked
+        // Linked import row: view-only, showing the export PICKUP STATUS.
+        if (isLinkedOriginImportRow(row)) {
+          gsdModal.editing = false
+          gsdModal.form.locked = true
+          const exportStatus = await loadLinkedOriginCell(row, ['PICKUP STATUS', 'PICKUP/RETURN STATUS'], ['ECD']).catch(() => '')
+          if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
+          if (String(exportStatus || '').trim() && exportStatus !== rawText) {
+            gsdModal.form = { ...pickupReturnFormFromCell(exportStatus, linkedTruckValue), locked: true }
+            gsdModal.editing = false
+            rows.value[row][column] = exportStatus
+            scheduleSave()
+          }
+        }
       } else if (label === 'CLEARANCE DOCS APPROVAL') {
         gsdModal.formFields = []
         gsdModal.form = clearanceDocsFormFromCell(rawText)
@@ -12175,8 +12372,17 @@ const gsdFormSignature = () => {
 }
 let gsdEditSnapshot = ''
 let gsdClosePending = false
+// Only changes typed/picked by the user count: background loading (linked data,
+// read marks, defaults) also changes the form and must not trigger the dialog.
+let gsdUserEdited = false
+const markGsdUserEdit = (event: Event) => {
+  if (!event.isTrusted) return
+  const target = event.target as HTMLInputElement | null
+  if (target?.type === 'checkbox' && target.closest('th, td.clr-allcell, td.truck-select-cell, .pay-check, .sel-col')) return
+  gsdUserEdited = true
+}
 watch(() => [gsdModal.open, gsdModal.editing, gsdModal.loading, gsdModal.row, gsdModal.column] as const, ([open, editing, loading], previous) => {
-  if (!open) { gsdEditSnapshot = ''; return }
+  if (!open) { gsdEditSnapshot = ''; gsdUserEdited = false; return }
   const [wasOpen, wasEditing, wasLoading, prevRow, prevColumn] = previous || []
   const startedEditing = editing && (!wasEditing || !wasOpen || prevRow !== gsdModal.row || prevColumn !== gsdModal.column)
   const finishedLoading = editing && !loading && wasLoading
@@ -12184,16 +12390,17 @@ watch(() => [gsdModal.open, gsdModal.editing, gsdModal.loading, gsdModal.row, gs
     // Let async form hydration settle before recording the baseline.
     void nextTick(() => { if (gsdModal.open && gsdModal.editing) gsdEditSnapshot = gsdFormSignature() })
   }
-  if (!editing) gsdEditSnapshot = ''
+  if (startedEditing) gsdUserEdited = false
+  if (!editing) { gsdEditSnapshot = ''; gsdUserEdited = false }
 })
 // Saving writes the modal's cell: from then on the saved form is the new baseline
 // (some popups stay in edit mode after Save, e.g. Bill Detail).
 watch(() => (gsdModal.open ? rows.value[gsdModal.row]?.[gsdModal.column] : undefined), (value, previous) => {
   if (!gsdModal.open || !gsdModal.editing || value === previous) return
-  void nextTick(() => { if (gsdModal.open && gsdModal.editing) gsdEditSnapshot = gsdFormSignature() })
+  void nextTick(() => { if (gsdModal.open && gsdModal.editing) { gsdEditSnapshot = gsdFormSignature(); gsdUserEdited = false } })
 })
 const gsdModalHasUnsavedChanges = () =>
-  gsdModal.open && gsdModal.editing && !isPaymentRequestModal() && !!gsdEditSnapshot && gsdFormSignature() !== gsdEditSnapshot
+  gsdModal.open && gsdModal.editing && gsdUserEdited && !isPaymentRequestModal() && gsdModal.kind !== 'reminder' && !!gsdEditSnapshot && gsdFormSignature() !== gsdEditSnapshot
 // Clicking outside never closes the popup: it briefly pulses to draw attention.
 // Close it with the X or Close button.
 // Toggled directly on the element: a reactive flag would re-render the whole
@@ -13666,18 +13873,24 @@ const loadLinkedExportMasterSiContainers = async (row: number) => {
       }
       const siColumn = sourceHeader.findIndex((label) => upperText(label) === 'MASTER SI SUBMIT')
       if (sourceRowIndex < 1 || siColumn < 0) continue
+      // Container / Seal numbers are usually entered in the export Truck & Cont/Seal
+      // table rather than in the SI: use them where the SI row has none.
+      const truckColumn = sourceHeader.findIndex((label) => ['TRUCK & CONT/SEAL INFO', 'TRUCKING INFO', 'CONT/SEAL INFO'].includes(upperText(label)))
+      const trucks = truckColumn >= 0
+        ? truckContFormFromCell(sourceRows[sourceRowIndex]?.[truckColumn]).records.filter((truck: any) => String(truck.container || truck.seal || '').trim())
+        : []
       // LCL/AIR cargo rows have no container/seal; keep rows that carry marks or quantities.
       const containers = siSubmitFormFromCell(sourceRows[sourceRowIndex]?.[siColumn]).containers
-        .filter((item: any) => String(item?.contNo || item?.container || item?.sealNo || item?.seal || '').trim() ||
-          (isLclSheet() && String(item?.marks || item?.qty || item?.gw || item?.mea || '').trim()))
+        .filter((item: any) => String(item?.contNo || item?.container || item?.sealNo || item?.seal || item?.contType || item?.qty || item?.gw || item?.mea || '').trim() ||
+          (isLclSheet() && String(item?.marks || '').trim()))
         .map((item: any, index: number) => ({
           key: String(item?.id || item?.key || `AN-LINKED-CONT-${index}`),
           marks: String(item?.marks || ''),
-          contNo: String(item?.contNo || item?.container || ''),
-          contType: String(item?.contType || item?.type || ''),
-          sealNo: String(item?.sealNo || item?.seal || ''),
+          contNo: String(item?.contNo || item?.container || trucks[index]?.container || ''),
+          contType: String(item?.contType || item?.type || trucks[index]?.contType || ''),
+          sealNo: String(item?.sealNo || item?.seal || trucks[index]?.seal || ''),
           qty: String(item?.qty || ''),
-          unit: String(item?.unit || ''),
+          unit: String(referenceUnitDescription(item?.unit) || item?.unit || ''),
           gw: String(item?.gw || ''),
           mea: String(item?.mea || ''),
         }))
@@ -17294,6 +17507,7 @@ const sendTruckDetailsToShipper = async () => {
       pickupDate: record.eta1,
       pickupTime: record.eta2,
       returnDate: record.gdate,
+      returnTime: record.gtime,
       epodUrl: record.epodUrl,
     }))
     const result = await props.request('/workbook/send-truck-details-email', {
@@ -17674,7 +17888,7 @@ const selectLockedPickupReturnRow = (record: PickupReturnRecord) => {
   record.selected = true
 }
 const enablePickupReturnEdit = () => {
-  if (!hasPickupReturnSelection()) return
+  if (!hasPickupReturnSelection() || isLinkedOriginImportRow(gsdModal.row)) return
   gsdModal.editing = true
 }
 const persistPickupReturnStatus = (immediate = false) => {
@@ -17868,12 +18082,11 @@ const loadReferenceUnits = () => {
   }
   return referenceUnitsLoading
 }
+// Same unit list everywhere (SI, Arrival Notice, B/L / FCR): Reference Data / Units,
+// shown by their description.
 const siUnitOptions = () => {
-  const volume = volumeFormFromCell(rawSiSourceValue('VOLUME'))
-  const values = ['PALLET', 'PALLETS', 'CARTON', 'CARTONS', 'PACKAGE', 'PACKAGES', 'BAG', 'BAGS', 'BOX', 'BOXES', 'CTNS', 'PLTS', 'PCES']
-  for (const option of volume.typeOptions || []) values.push(String(option || ''))
-  for (const record of volume.records || []) values.push(String(record?.unit || record?.type || ''))
-  return [...new Set(values.map((value) => upperText(value).trim()).filter(Boolean))]
+  void loadReferenceUnits()
+  return [...new Set(referenceUnitOptions.value.map((option) => referenceUnitDescription(option.value)).filter(Boolean))]
 }
 const bindSiUnitInputs = () => nextTick(() => {
   const modal = document.querySelector<HTMLElement>('.gsd-si-modal')
@@ -18551,7 +18764,8 @@ const billSiNotSubmittedByTx = () => {
   return !!source && !!siSubmitFormFromCell(source).notSubmittedByShoptrans
 }
 const billSourceMode = () => billSiNotSubmittedByTx() || gsdModal.form.billSourceMode === 'client' ? 'client' : 'export'
-const billSourceButtonLabel = () => billSourceMode() === 'client' ? "Use Client's B/L" : 'Export (B/L, FCR)'
+// The button keeps one label; the chosen source is shown by the tick in its menu.
+const billSourceButtonLabel = () => 'Export (B/L, FCR)'
 const persistBillSourceMode = async () => {
   if (!isBillApprovalModal() || gsdModal.row <= 0 || gsdModal.column < 0) return
   const raw = parseJsonCell(rows.value[gsdModal.row]?.[gsdModal.column], {} as any)
@@ -18588,6 +18802,9 @@ const billBlReady = () => {
 // After sending, a changed Export B/L / FCR (or client B/L) re-enables it.
 // Only SI RECEIVED (its tick time) and the B/L documents decide whether a new send is due.
 const billSentDocumentSignature = () => JSON.stringify([gsdModal.form.exportBl || '', gsdModal.form.exportFcr || '', gsdModal.form.clientBlFile?.url || '', billSourceMode(), gsdModal.form.siReceivedAt || ''])
+// HBL APPROVED can only be ticked once the B/L is saved and has been sent to the
+// Shipper at least once (unticking stays possible).
+const billHblApprovable = () => isAwbDetailModal() || (billBlReady() && !!String(gsdModal.form.sentAt || '').trim())
 const billDetailCanSend = () => !gsdModal.form.hbl && !!gsdModal.form.siReceived && billBlReady()
   && (!gsdModal.form.sentAt || (!!gsdModal.form.sentDocumentSignature && gsdModal.form.sentDocumentSignature !== billSentDocumentSignature()))
 const handleBillDetailFile = async (event: Event) => {
@@ -18922,6 +19139,12 @@ const confirmBillReleaseToShipper = async () => {
         vessel: emailCellDisplayValue('VESSEL/VOYAGE', rawSiSourceValue('VESSEL/VOYAGE') || rowValueByHeader('VESSEL/VOYAGE')),
         route: emailCellDisplayValue('ROUTE', rawSiSourceValue('ROUTE') || rowValueByHeader('ROUTE')),
         etd: rowValueByHeader('ETD'), eta: rowValueByHeader('ETA'), attachments,
+        confirmDeadline: (() => {
+          const detailColumn = (rows.value[0] || []).findIndex((_: any, i: number) => ['BILL DETAIL', 'BILL APPROVAL', 'AWB DETAIL'].includes(normalizedHeaderLabel(i)))
+          const detail: any = detailColumn >= 0 ? billApprovalFormFromCell(rows.value[gsdModal.row]?.[detailColumn]) : {}
+          const date = String(detail.confirmDeadlineDate || '')
+          return date ? `${String(formatAdminDateDisplay(date) ?? date)}${detail.confirmDeadlineTime ? ` ${detail.confirmDeadlineTime}` : ''}` : ''
+        })(),
         release: true,
       },
     })
@@ -21972,7 +22195,7 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
         if (sourceStillVisible()) {
           input.checked = true
           saveState.value = `Saved ${new Date().toLocaleTimeString('en-GB')}`
-          showToast(`${upperText(sentColumnLabel || 'SENT')} saved - shipment sent to ${targetDept}`)
+          showToast(`${upperText(sentColumnLabel || 'SENT')} saved - shipment shared`)
         }
       } else {
         const results = await Promise.all(dispatchDepts.map((dept) => transferRowToNextDept(row, dept, sentAt, false, transferSource)))
@@ -22059,7 +22282,7 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
         if (jobColumn >= 0) rows.value[row][jobColumn] = sourceRow[jobColumn]
         input.checked = true
         saveState.value = `Saved ${new Date().toLocaleTimeString('en-GB')}`
-        if (!emailResult || !['failed', 'no-recipients', 'not-configured'].includes(String(emailResult.status || ''))) showToast('BC SENT saved - booking sent')
+        if (!emailResult || !['failed', 'no-recipients', 'not-configured'].includes(String(emailResult.status || ''))) showToast('BC SENT saved - shipment shared')
       }
     } catch (error: any) {
       if (sourceStillVisible()) input.checked = isChecked(rows.value[row]?.[column])
@@ -22108,7 +22331,7 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
         settings.value = normalizeWorkbookCell(sourceState.settings)
         input.checked = true
         saveState.value = `Saved ${new Date().toLocaleTimeString('en-GB')}`
-        showToast('MANIFEST SUBMIT saved - shipment sent to the next departments')
+        showToast('MANIFEST SUBMIT saved - shipment shared')
       }
     } catch (error: any) {
       if (requestStatus(error) === 409 && sourceStillVisible()) {
@@ -23921,6 +24144,10 @@ const openSiDatePopup = (event: MouseEvent) => {
 }
 const sameDate = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 const openDatePopup = (row: number, column: number, target: HTMLElement) => {
+  if (isLinkedImportShipmentCell(row, column)) {
+    showToast('Update it on the export shipment')
+    return
+  }
   nativePickerInput = null
   nativePickerType = ''
   if (isLockedOpsCell(row, column)) {
@@ -24029,6 +24256,14 @@ const pickupReturnMinIso = (record: any, field: 'pickupDate' | 'returnDate') => 
 }
 const isDatePopupDayDisabled = (date: Date) => {
   const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+  // Native date fields shown through this calendar keep their own min / max
+  // (e.g. Pickup date cannot be before today).
+  if (nativePickerInput && datePopup.row === -1 && !datePopup.cutoffField) {
+    const min = String(nativePickerInput.min || '').slice(0, 10)
+    const max = String(nativePickerInput.max || '').slice(0, 10)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(min) && day < new Date(`${min}T00:00:00`).getTime()) return true
+    if (/^\d{4}-\d{2}-\d{2}$/.test(max) && day > new Date(`${max}T00:00:00`).getTime()) return true
+  }
   if (datePopup.pickupReturnIndex >= 0 && datePopup.pickupReturnField) {
     const record = pickupReturnRecords()[datePopup.pickupReturnIndex]
     const min = pickupReturnMinIso(record, datePopup.pickupReturnField)
@@ -24412,6 +24647,7 @@ const displayCell = (value: any, row: number, column: number) => {
   return formatAdminDateDisplay(value)
 }
 const opsGridCellText = (value: any, row: number, column: number) => {
+  if (!String(value ?? '').trim() && isLinkedImportShipmentCell(row, column)) return '—'
   const label = upperText(rows.value[0]?.[column]).replace(/\s+/g, '')
   if (row > 0 && ['EXW+', 'EFA+', 'FCA+', 'FCF+'].includes(label)) {
     return normalizeDropdownOption(value) || 'N/A'
@@ -24604,6 +24840,14 @@ watch([selectedRect, selectionKind, visibleRowIndexes], () => {
 }, { flush: 'post' })
 
 onMounted(() => {
+  document.addEventListener('pointerdown', markComboUserIntent, true)
+  document.addEventListener('keydown', markComboUserIntent, true)
+  document.addEventListener('focusin', onComboFocusIn, true)
+  document.addEventListener('click', onComboClick, true)
+  document.addEventListener('input', onComboInput)
+  document.addEventListener('keydown', onComboKeyDown, true)
+  document.addEventListener('focusout', onComboFocusOut, true)
+  window.addEventListener('scroll', closeComboOnScroll, true)
   window.addEventListener('mousemove', onGlobalMouseMove)
   window.addEventListener('mouseup', onGlobalMouseUp)
   window.addEventListener('mousedown', onGlobalMouseDown, true)
@@ -24618,6 +24862,14 @@ onMounted(() => {
 })
 onUpdated(syncRenderedRowHeights)
 onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', markComboUserIntent, true)
+  document.removeEventListener('keydown', markComboUserIntent, true)
+  document.removeEventListener('focusin', onComboFocusIn, true)
+  document.removeEventListener('click', onComboClick, true)
+  document.removeEventListener('input', onComboInput)
+  document.removeEventListener('keydown', onComboKeyDown, true)
+  document.removeEventListener('focusout', onComboFocusOut, true)
+  window.removeEventListener('scroll', closeComboOnScroll, true)
   window.removeEventListener('mousemove', onGlobalMouseMove)
   window.removeEventListener('mouseup', onGlobalMouseUp)
   window.removeEventListener('mousedown', onGlobalMouseDown, true)
@@ -25313,6 +25565,15 @@ onBeforeUnmount(() => {
 .gsd-five-row-scroll table thead th:first-child:has(input[type=checkbox]):not(#_x){position:sticky!important;top:0!important;left:0!important;z-index:23!important;background:#eef3ee!important;background-clip:padding-box}
 .gsd-modal{outline:4px solid transparent;outline-offset:0;transition:outline-color .25s ease}
 .gsd-modal.gsd-modal-attention{outline-color:rgba(240,160,32,.65)}
+.st-combo-list{position:fixed;z-index:3000;display:flex;flex-direction:column;width:max-content;max-width:min(260px,92vw);overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;padding:4px;border:1px solid #d4ddd8;border-radius:8px;background:#fff;box-shadow:0 10px 28px rgba(16,40,28,.16);font-family:inherit}
+.st-combo-item{display:flex;align-items:baseline;justify-content:space-between;gap:12px;width:100%;overflow:hidden;text-overflow:ellipsis;min-height:28px;padding:5px 10px;border:0;border-radius:5px;background:transparent;color:#24332c;font-family:inherit;font-size:inherit;font-weight:400;line-height:1.3;text-align:left;white-space:nowrap;cursor:pointer}
+.st-combo-item small{color:#7a8a82;font-size:.88em;font-weight:400}
+.st-combo-item.active{background:#eaf6ef;color:#0a6b3b}
+.st-combo-item.current{font-weight:600;color:#0a6b3b}
+/* Filter inputs: the browser's datalist arrow sat low in the cell; use our own
+   chevron, vertically centred with the text, on hover / focus. */
+input:is([list],[data-combo-list])::-webkit-calendar-picker-indicator{display:none!important;opacity:0!important}
+input:is([list],[data-combo-list]):not(:disabled):not([readonly]):is(:hover,:focus){background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%235b6b63' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:right 7px center!important;background-size:10px 6px!important}
 .gsd-pre-sent-info{display:flex;flex-direction:column;gap:2px;margin:10px 0 0;color:#4d5b54;font-size:12px}.gsd-pre-sent-info b{color:#0a6b3b}.gsd-pre-sent-info .pending{color:#b45f04;font-weight:700}
 .ops-nbadge{display:inline-grid;place-items:center;min-width:14px;height:14px;margin-left:5px;padding:0 3px;border-radius:999px;background:#d63a3a;color:#fff;font-size:9px;font-weight:800;line-height:1}
 /* AIR/LCL — vessel delay panel + history on EXW ECD (mockup #ovs) */
@@ -26192,6 +26453,11 @@ td:not(#_x) :is(input:not([type=checkbox]):not([type=radio]),textarea,.ops-textc
 .gsd-truck-cont-modal .gsd-truck-table:not(#_x) tbody td{text-align:center!important;height:30px!important;box-sizing:border-box}
 .gsd-truck-cont-modal .gsd-truck-table:not(#_x):not(#_y) tbody td>input:not([type=checkbox]),.gsd-truck-cont-modal .gsd-truck-table:not(#_x):not(#_y) tbody td.truck-company-cell input{height:29px!important;padding:0 4px!important;text-align:center!important;text-indent:0!important}
 .truck-company-picker:not(#_x){z-index:2500}
+/* Truck Comp list: same look as the other type-to-filter dropdowns. */
+.truck-company-picker:not(#_x):not(#_y){display:flex;flex-direction:column;width:max-content;min-width:0;max-width:min(260px,92vw);overflow-x:hidden;max-height:240px;padding:4px;border:1px solid #d4ddd8;border-radius:8px;background:#fff;box-shadow:0 10px 28px rgba(16,40,28,.16);text-align:left}
+.truck-company-picker:not(#_x):not(#_y) button{display:block;width:100%;height:auto;min-height:28px;padding:5px 10px;overflow:hidden;text-overflow:ellipsis;border:0;border-radius:5px;background:transparent;color:#24332c;font-family:inherit;font-size:12px;font-weight:400;line-height:1.3;text-align:left;white-space:nowrap;cursor:pointer}
+.truck-company-picker:not(#_x):not(#_y) button:hover{background:#eaf6ef;color:#0a6b3b}
+input.truck-company-filter:not(:disabled):is(:hover,:focus){background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%235b6b63' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:right 7px center!important;background-size:10px 6px!important}
 /* Edit inputs overlay their cell; an invisible copy of the text sizes the column,
    so columns stay as wide as their content (no extra width or padding). */
 .gsd-truck-cont-modal .gsd-truck-table:not(#_x) tbody td:has(>input.truck-center-input){position:relative;padding:0 10px!important}
