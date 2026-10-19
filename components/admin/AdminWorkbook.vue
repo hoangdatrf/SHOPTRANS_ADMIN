@@ -951,7 +951,7 @@
         <textarea :value="shipmentNotesDraft" autofocus placeholder="Enter notes for this shipment..." @input="handleShipmentNotesInput"></textarea>
       </div>
     </div>
-    <div v-if="gsdModal.open" class="wb-modal-overlay gsd-modal-overlay" :class="{ 'gsd-child-document-open': billDocModal.open && !billDocBackgroundRendering }" @mousedown.self="requestCloseGsdModal">
+    <div v-if="gsdModal.open" class="wb-modal-overlay gsd-modal-overlay" :class="{ 'gsd-child-document-open': billDocModal.open && !billDocBackgroundRendering }" @mousedown.self.prevent="onGsdOverlayMouseDown">
       <div
         class="wb-modal gsd-modal"
         :style="gsdModalShellStyle()"
@@ -1355,7 +1355,7 @@
               </table>
             </div>
             <div class="gsd-cutoff-footer">
-              <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
+              <button class="wb-modal-btn slate" type="button" @click="requestCloseGsdModal">Close</button>
               <button v-if="!isCcdCutoffModal()" class="wb-modal-btn edit" type="button" :disabled="!gsdModal.form.selectedId" @click="editCutoffRecord">Edit</button>
               <button v-if="!isCcdCutoffModal()" class="wb-modal-btn cancel" type="button" :disabled="!gsdModal.form.selectedId" @click="removeCutoffRecord">Remove</button>
             </div>
@@ -1441,7 +1441,7 @@
               </table>
             </div>
             <div class="gsd-record-footer">
-              <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
+              <button class="wb-modal-btn slate" type="button" @click="requestCloseGsdModal">Close</button>
               <button v-if="!isCcdVolumeModal()" class="wb-modal-btn edit" type="button" :disabled="!gsdModal.form.selectedId" @click="editVolumeRecord">{{ gsdModal.form.editId ? 'Editing...' : 'Edit' }}</button>
               <button v-if="!isCcdVolumeModal()" class="wb-modal-btn cancel" type="button" :disabled="!gsdModal.form.selectedId" @click="removeVolumeRecord">Remove</button>
             </div>
@@ -1476,7 +1476,7 @@
               </table>
             </div>
             <div class="gsd-record-footer">
-              <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
+              <button class="wb-modal-btn slate" type="button" @click="requestCloseGsdModal">Close</button>
               <button class="wb-modal-btn edit" type="button" :disabled="!gsdModal.form.selectedId" @click="editFreetimeRecord">Edit</button>
               <button class="wb-modal-btn cancel" type="button" :disabled="!gsdModal.form.selectedId" @click="removeFreetimeRecord">Remove</button>
             </div>
@@ -1775,7 +1775,7 @@
                   </tbody>
                 </table>
               </div>
-              <div class="gsd-do-cont-foot"><button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button></div>
+              <div class="gsd-do-cont-foot"><button class="wb-modal-btn slate" type="button" @click="requestCloseGsdModal">Close</button></div>
             </template>
             <template v-else>
             <div class="gsd-do-cont-wrap">
@@ -2177,7 +2177,7 @@
               </table>
             </div>
             <div class="gsd-prs-actions">
-              <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
+              <button class="wb-modal-btn slate" type="button" @click="requestCloseGsdModal">Close</button>
               <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing" @click="savePickupReturnStatus">Save</button>
               <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || !hasPickupReturnSelection()" @click="enablePickupReturnEdit">Edit</button>
             </div>
@@ -2310,7 +2310,8 @@
                 <div class="gsd-bill-row"><span>{{ awbText('MBL APPROVED') }}</span><input v-model="gsdModal.form.mbl" type="checkbox" disabled /><input v-model.trim="gsdModal.form.mblAt" type="text" readonly /></div>
                 <div v-if="currentRowRequiresHbl()" class="gsd-bill-row"><span>{{ awbText('HBL APPROVED') }}</span><input v-model="gsdModal.form.hbl" type="checkbox" disabled /><input v-model.trim="gsdModal.form.hblAt" type="text" readonly /></div>
                 <div v-for="file in gsdModal.form.files || []" :key="file.name" class="gsd-bill-file"><span>{{ file.name }}</span><button type="button" class="gsd-pre-icon eye on" title="View attachment" @click="viewBillDetailFile(file)">◉</button></div>
-                <div v-if="currentRowRequiresHbl()" class="gsd-bill-exports"><button type="button" class="wb-modal-btn primary" @click="exportBillDetailPdf('B/L')">Export B/L</button><button type="button" class="wb-modal-btn primary" @click="exportBillDetailPdf('FCR')">Export FCR</button></div>
+                <div v-if="currentRowRequiresHbl() && billSourceMode() === 'client'" class="gsd-bill-exports"><button type="button" class="wb-modal-btn primary" :disabled="!gsdModal.form.clientBlFile?.url" :title="gsdModal.form.clientBlFile?.name || 'No Client B/L uploaded'" @click="viewBillDetailFile(gsdModal.form.clientBlFile)">Client's B/L</button></div>
+                <div v-else-if="currentRowRequiresHbl()" class="gsd-bill-exports"><button type="button" class="wb-modal-btn primary" @click="exportBillDetailPdf('B/L')">Export B/L</button><button type="button" class="wb-modal-btn primary" @click="exportBillDetailPdf('FCR')">Export FCR</button></div>
               </div>
             </template>
             <template v-else>
@@ -2332,7 +2333,7 @@
               <button v-if="!isReadonlyExwFclEcdBillDetail()" class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="enableBillApprovalEdit">Edit</button>
               <button v-if="!isReadonlyExwFclEcdBillDetail()" class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing || !billDetailDirty()" @click="saveBillApproval">Save</button>
               <button v-if="isBillApprovalModal() && !isBillMblOnlyDetailModal() && ['ECD', 'DCD'].includes(opsDeptUpper())" class="wb-modal-btn bill-send" type="button" :disabled="!billDetailCanSend()" @click="openBillSendModal">Send B/L to Shipper</button>
-              <button v-if="!isBillApprovalModal()" class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
+              <button v-if="!isBillApprovalModal()" class="wb-modal-btn slate" type="button" @click="requestCloseGsdModal">Close</button>
             </div>
           </template>
           <template v-else-if="isPreAlertConfirmationModal()">
@@ -2354,7 +2355,7 @@
               </div>
             </div>
             <div v-if="isAirDoIcdPreAlertConfirmationModal()" class="gsd-pc-actions gsd-pc-simple-actions">
-              <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
+              <button class="wb-modal-btn slate" type="button" @click="requestCloseGsdModal">Close</button>
             </div>
             <template v-else>
             <div class="gsd-pc-sep"></div>
@@ -2378,7 +2379,7 @@
               </div>
               <div v-if="!isAirDupCompactPreAlertConfirmationModal()" class="gsd-pc-sep"></div>
             </template>
-            <div v-if="isAirDupCcdPreAlertConfirmationModal() || isFclDduCcdPreAlertConfirmationModal()" class="gsd-pc-ccd-close"><button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button></div>
+            <div v-if="isAirDupCcdPreAlertConfirmationModal() || isFclDduCcdPreAlertConfirmationModal()" class="gsd-pc-ccd-close"><button class="wb-modal-btn slate" type="button" @click="requestCloseGsdModal">Close</button></div>
             <template v-if="!isAirDupCompactPreAlertConfirmationModal()">
             <div class="gsd-pc-free-title">RECEIVED FREETIME INFO</div>
             <div class="gsd-pc-free">
@@ -2403,7 +2404,7 @@
               </table>
             </div>
             <div class="gsd-pc-actions">
-              <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
+              <button class="wb-modal-btn slate" type="button" @click="requestCloseGsdModal">Close</button>
               <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || preAlertConfirmationLinked()" :title="preAlertConfirmationLinked() ? 'Linked from the export shipment' : ''" @click="enableGsdModalEdit">Edit</button>
               <button class="wb-modal-btn cancel" type="button" :disabled="!preAlertConfirmSelected() || preAlertConfirmationLinked()" @click="removePreAlertConfirmationFreetime">Remove</button>
             </div>
@@ -2461,7 +2462,7 @@
               <span v-if="gsdModal.form.clearanceDocsPending" class="pending">Clearance docs updated - ready to send</span>
             </div>
             <div class="gsd-pre-actions">
-              <button class="wb-modal-btn slate" type="button" @click="closeGsdModal">Close</button>
+              <button class="wb-modal-btn slate" type="button" @click="requestCloseGsdModal">Close</button>
               <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || preAlertDestinationLocked()" @click="enablePreAlertEdit">Edit</button>
               <button class="wb-modal-btn primary" type="button" :disabled="!preAlertCanSave()" @click="savePreAlert">Save</button>
               <button class="wb-modal-btn send" type="button" :disabled="preAlertIsDirty() || preAlertDestinationLocked() || preAlertSentUpToDate()" :title="gsdModal.form.sent ? `Sent ${gsdModal.form.sentAt || ''} - update data to send again` : ''" @click="sendPreAlert">Send to Dest. Agent</button>
@@ -2725,7 +2726,7 @@
                 <div v-if="!isClearanceViewOnly() && (!decl.tax || !decl.fee)" class="clr-warn">Tax and Fee must be checked before Customs cleared.</div>
                 <div v-if="!isClearanceViewOnly()" class="clr-pfoot">
                   <button class="wb-modal-btn slate" type="button" @click="removeClearanceDeclaration(decl.id)">Clear</button>
-                  <button class="wb-modal-btn edit" type="button" :disabled="!decl.locked" @click="decl.locked = false">Edit</button>
+                  <button class="wb-modal-btn edit" type="button" :disabled="!decl.locked || clearanceHasDraftDeclaration()" @click="startClearanceDeclarationEdit(decl)">Edit</button>
                   <button class="wb-modal-btn primary" type="button" :disabled="!clearanceDeclarationCanSave(decl)" @click="saveClearanceDeclaration(decl)">Save</button>
                 </div>
               </div>
@@ -12193,6 +12194,18 @@ watch(() => (gsdModal.open ? rows.value[gsdModal.row]?.[gsdModal.column] : undef
 })
 const gsdModalHasUnsavedChanges = () =>
   gsdModal.open && gsdModal.editing && !isPaymentRequestModal() && !!gsdEditSnapshot && gsdFormSignature() !== gsdEditSnapshot
+// Clicking outside never closes the popup: it briefly pulses to draw attention.
+// Close it with the X or Close button.
+// Toggled directly on the element: a reactive flag would re-render the whole
+// worksheet component and make the popup look like it reloads.
+let gsdModalAttentionTimer: ReturnType<typeof setTimeout> | null = null
+const onGsdOverlayMouseDown = (event: MouseEvent) => {
+  const modal = (event.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>('.gsd-modal')
+  if (!modal) return
+  modal.classList.add('gsd-modal-attention')
+  if (gsdModalAttentionTimer) clearTimeout(gsdModalAttentionTimer)
+  gsdModalAttentionTimer = setTimeout(() => modal.classList.remove('gsd-modal-attention'), 350)
+}
 const requestCloseGsdModal = async () => {
   if (gsdClosePending) return
   if (gsdModalHasUnsavedChanges()) {
@@ -12209,6 +12222,25 @@ const requestCloseGsdModal = async () => {
 const closeGsdModal = () => {
   if (isPaymentRequestModal() && !gsdModal.loading) {
     persistPaymentRequest()
+  }
+  // Closing Clearance Details drops a declaration that was added without a CDS No,
+  // and restores a saved declaration whose edit was not saved.
+  if (isClearanceDetailsModal() && !gsdModal.loading && rows.value[gsdModal.row]) {
+    if (restoreUnsavedClearanceEdits() && parseJsonCell(rows.value[gsdModal.row][gsdModal.column], null as any)) persistClearanceDetails()
+    const declarations = clearanceDeclarations()
+    const kept = declarations.filter((decl) => !(decl.editing && !String(decl.no || '').trim()))
+    if (kept.length !== declarations.length) {
+      const removedIds = new Set(declarations.filter((decl) => !kept.includes(decl)).map((decl) => decl.id))
+      gsdModal.form.declarations = kept
+      if (removedIds.has(String(gsdModal.form.openId || ''))) gsdModal.form.openId = ''
+      // Simple CCD rows exist only for their declaration: remove the empty row too.
+      if (isSimpleCcdClearanceDetailsModal() && Array.isArray(gsdModal.form.rows)) {
+        const usedKeys = new Set(kept.flatMap((decl) => decl.rowKeys || []))
+        gsdModal.form.rows = gsdModal.form.rows.filter((item: any) => usedKeys.has(item.key))
+      }
+      const stored = parseJsonCell(rows.value[gsdModal.row][gsdModal.column], null as any)
+      if (stored) persistClearanceDetails()
+    }
   }
   gsdModalLoadId += 1
   gsdModal.loading = false
@@ -16506,7 +16538,29 @@ const toggleAllClearanceRows = (event: Event) => {
   gsdModal.form.selected = selected
 }
 // A new declaration must be entered and confirmed before another one can be added.
-const clearanceHasDraftDeclaration = () => clearanceDeclarations().some((decl) => decl.editing)
+// A declaration being created (no CDS No yet) or edited in its panel and not saved
+// blocks "+" and other Edits, so unsaved values never mix into another declaration.
+const clearanceHasDraftDeclaration = () => clearanceDeclarations().some((decl) => decl.editing || (decl.locked === false && decl.id === gsdModal.form.openId))
+// Saved copy taken when a saved declaration is opened for editing; restored if the
+// panel or the popup is closed without Save.
+const clearanceEditBackups = new Map<string, string>()
+const startClearanceDeclarationEdit = (decl: ClearanceDeclaration) => {
+  if (!decl.locked || clearanceHasDraftDeclaration()) return
+  clearanceEditBackups.set(decl.id, JSON.stringify(decl))
+  decl.locked = false
+}
+const restoreUnsavedClearanceEdits = () => {
+  let restored = false
+  clearanceDeclarations().forEach((decl, index) => {
+    const backup = clearanceEditBackups.get(decl.id)
+    if (backup && decl.locked === false) {
+      clearanceDeclarations().splice(index, 1, JSON.parse(backup))
+      restored = true
+    }
+  })
+  clearanceEditBackups.clear()
+  return restored
+}
 // With 2+ rows ticked, their row "+" is off: the header "+" links them to one CDS No.
 const clearanceRowInMultiSelection = (rowKey: string) => selectedClearanceRowKeys().length >= 2 && !!gsdModal.form.selected?.[rowKey]
 const addClearanceDeclaration = (rowKey: string) => {
@@ -16552,6 +16606,8 @@ const confirmClearanceDeclaration = (id: string) => {
   }
 }
 const toggleClearancePanel = (id: string) => {
+  // Leaving a panel that was opened for editing drops its unsaved changes.
+  restoreUnsavedClearanceEdits()
   gsdModal.form.openId = gsdModal.form.openId === id ? '' : id
 }
 const openClearanceDeclarations = () => clearanceDeclarations().filter((decl) => decl.id === gsdModal.form.openId)
@@ -16579,7 +16635,8 @@ const persistClearanceDetails = () => {
     form: {
       rows: Array.isArray(gsdModal.form.rows) ? gsdModal.form.rows : [],
       selected: gsdModal.form.selected || {},
-      declarations: clearanceDeclarations(),
+      // A new declaration that never got its CDS No is not kept.
+      declarations: clearanceDeclarations().filter((decl) => !(decl.editing && !String(decl.no || '').trim())),
       openId: isSimpleCcdClearanceDetailsModal() ? '' : gsdModal.form.openId || '',
     },
   })
@@ -16598,6 +16655,7 @@ const saveClearanceDeclaration = (decl: ClearanceDeclaration) => {
   if (!String(decl.result || '').trim()) return showToast('Please select Result')
   decl.locked = true
   decl.editing = false
+  clearanceEditBackups.delete(decl.id)
   persistClearanceDetails()
 }
 const removeClearanceDeclaration = async (id: string) => {
@@ -18485,7 +18543,13 @@ const openBillDetailUpload = (field: 'siSubmittedFile' | 'mblFile' | 'hblFile' |
   input.click()
 }
 // MASTER SI SUBMIT ticked "Not submitted by TX": only the client's own B/L can be used.
-const billSiNotSubmittedByTx = () => isBillApprovalModal() && String(gsdModal.form.siSubmittedSource || '') === 'external'
+const billSiNotSubmittedByTx = () => {
+  if (!isBillApprovalModal()) return false
+  if (String(gsdModal.form.siSubmittedSource || '') === 'external') return true
+  // Read the row's MASTER SI SUBMIT directly (also when it was not locked/submitted).
+  const source = rawSiSourceValue('MASTER SI SUBMIT') || rawSiSourceValue('SI SUBMIT')
+  return !!source && !!siSubmitFormFromCell(source).notSubmittedByShoptrans
+}
 const billSourceMode = () => billSiNotSubmittedByTx() || gsdModal.form.billSourceMode === 'client' ? 'client' : 'export'
 const billSourceButtonLabel = () => billSourceMode() === 'client' ? "Use Client's B/L" : 'Export (B/L, FCR)'
 const persistBillSourceMode = async () => {
@@ -25247,6 +25311,8 @@ onBeforeUnmount(() => {
 /* Popup tables that scroll vertically: the select-all checkbox header stays frozen
    (top) like the other headers, and stays pinned left for horizontal scrolling. */
 .gsd-five-row-scroll table thead th:first-child:has(input[type=checkbox]):not(#_x){position:sticky!important;top:0!important;left:0!important;z-index:23!important;background:#eef3ee!important;background-clip:padding-box}
+.gsd-modal{outline:4px solid transparent;outline-offset:0;transition:outline-color .25s ease}
+.gsd-modal.gsd-modal-attention{outline-color:rgba(240,160,32,.65)}
 .gsd-pre-sent-info{display:flex;flex-direction:column;gap:2px;margin:10px 0 0;color:#4d5b54;font-size:12px}.gsd-pre-sent-info b{color:#0a6b3b}.gsd-pre-sent-info .pending{color:#b45f04;font-weight:700}
 .ops-nbadge{display:inline-grid;place-items:center;min-width:14px;height:14px;margin-left:5px;padding:0 3px;border-radius:999px;background:#d63a3a;color:#fff;font-size:9px;font-weight:800;line-height:1}
 /* AIR/LCL — vessel delay panel + history on EXW ECD (mockup #ovs) */
