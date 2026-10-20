@@ -802,7 +802,7 @@
       </template>
       <button v-else class="ddfoot ddedit" type="button" @click="dropdownPopup.mode = 'edit'">Edit</button>
     </div>
-    <div v-if="datePopup.open" class="datepop on" :class="{ 'modal-datepop': !!datePopup.cutoffField || !!nativePickerInput || datePopup.pickupReturnIndex >= 0 }" :style="{ left: `${datePopup.left}px`, top: `${datePopup.top}px` }">
+    <div v-if="datePopup.open" class="datepop on" :class="{ 'modal-datepop': !!datePopup.cutoffField || !!nativePickerInput || datePopup.pickupReturnIndex >= 0 || datePopup.row === -2 }" :style="{ left: `${datePopup.left}px`, top: `${datePopup.top}px` }">
       <div class="dp-head">
         <button type="button" @click="shiftDateMonth(-1)">‹</button>
         <strong>{{ datePopupMonthLabel }}</strong>
@@ -1983,7 +1983,7 @@
                       <button v-else-if="record.truck" class="gsd-pu-link" type="button" @click="showTruckCompanyDetail(record.truck)">{{ record.truck }}</button>
                       <span v-else>—</span>
                     </td>
-                    <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()" class="truck-input-cell"><span class="truck-sizer" aria-hidden="true">{{ record.container || '' }}</span><input v-model.trim="record.container" :class="{ 'truck-invalid': truckContDuplicate('container', record) }" class="truck-center-input" :disabled="!truckContRowCanEdit(record)" /></td>
+                    <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()" class="truck-input-cell"><span class="truck-sizer" aria-hidden="true">{{ record.container || '' }}</span><input v-model.trim="record.container" :class="{ 'truck-invalid': truckContDuplicate('container', record) || truckContainerFormatInvalid(record.container) }" class="truck-center-input" maxlength="11" placeholder="ABCD1234567" :title="truckContainerFormatInvalid(record.container) ? 'Container No# = 4 letters + 7 digits (e.g. ABCD1234567)' : ''" @input="record.container = normalizeTruckContainerNo(record.container)" :disabled="!truckContRowCanEdit(record)" /></td>
                     <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()"><span class="truck-conttype-view">{{ truckContTypeDisplay(record, index) }}</span></td>
                     <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()" class="truck-input-cell"><span class="truck-sizer" aria-hidden="true">{{ record.seal || '' }}</span><input v-model.trim="record.seal" :class="{ 'truck-invalid': truckContDuplicate('seal', record) }" class="truck-center-input" :disabled="!truckContRowCanEdit(record)" /></td>
                     <td>
@@ -2000,9 +2000,9 @@
                     </td>
                     <template v-if="usesTcdTruckStatusTemplate() || isLclTruckingDetailModal()">
                       <td class="prs-days">{{ truckDaysAfterAta(record) }}</td>
-                      <td class="truck-datetime-cell"><input v-if="truckContRowCanEdit(record)" v-model="record.eta1" type="date" /><span v-else>{{ formatTruckDate(record.eta1) }}</span></td>
+                      <td class="truck-datetime-cell"><input v-if="truckContRowCanEdit(record)" v-model="record.eta1" type="date" :min="todayIso()" /><span v-else>{{ formatTruckDate(record.eta1) }}</span></td>
                       <td class="truck-datetime-cell"><input v-if="truckContRowCanEdit(record)" v-model="record.eta2" type="time" /><span v-else>{{ formatTruckTime(record.eta2) }}</span></td>
-                      <td v-if="!isLclTruckingDetailModal()" class="truck-datetime-cell"><input v-if="truckContRowCanEdit(record)" v-model="record.gdate" type="date" /><span v-else>{{ formatTruckDate(record.gdate) }}</span></td>
+                      <td v-if="!isLclTruckingDetailModal()" class="truck-datetime-cell"><input v-if="truckContRowCanEdit(record)" v-model="record.gdate" type="date" :min="truckReturnMinDate(record)" /><span v-else>{{ formatTruckDate(record.gdate) }}</span></td>
                       <td class="epodcell">
                         <button class="gsd-eye-btn" :class="{ on: !!record.epodSign }" type="button" :disabled="!record.epodSign" :title="record.epodSign ? 'View signed ePOD' : 'Not signed yet'" @click="openEpodSignDetail(record)">
                           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -2010,9 +2010,9 @@
                       </td>
                     </template>
                     <template v-else>
-                      <td class="truck-datetime-cell"><input v-if="truckContRowCanEdit(record)" v-model="record.eta1" type="date" /><span v-else>{{ formatTruckDate(record.eta1) }}</span></td>
+                      <td class="truck-datetime-cell"><input v-if="truckContRowCanEdit(record)" v-model="record.eta1" type="date" :min="todayIso()" /><span v-else>{{ formatTruckDate(record.eta1) }}</span></td>
                       <td class="truck-datetime-cell"><input v-if="truckContRowCanEdit(record)" v-model="record.eta2" type="time" /><span v-else>{{ formatTruckTime(record.eta2) }}</span></td>
-                      <td class="truck-datetime-cell"><input v-if="truckContRowCanEdit(record)" v-model="record.gdate" type="date" /><span v-else>{{ formatTruckDate(record.gdate) }}</span></td>
+                      <td class="truck-datetime-cell"><input v-if="truckContRowCanEdit(record)" v-model="record.gdate" type="date" :min="truckReturnMinDate(record)" /><span v-else>{{ formatTruckDate(record.gdate) }}</span></td>
                       <td class="truck-datetime-cell"><input v-if="truckContRowCanEdit(record)" v-model="record.gtime" type="time" /><span v-else>{{ formatTruckTime(record.gtime) }}</span></td>
                     </template>
                   </tr>
@@ -2870,13 +2870,13 @@
                     <th v-if="usesFullPaymentRequestLayout()" class="grp-fb">Status details</th>
                     <th class="pay-gap"></th>
                     <template v-if="usesFullPaymentRequestLayout()">
-                      <th class="grp-dn">E.DNNo#</th>
+                      <th class="grp-dn pay-no-col">E.DNNo#</th>
                       <th class="grp-dn">E.DNDate</th>
-                      <th class="grp-dn">I.DNNo#</th>
+                      <th class="grp-dn pay-no-col">I.DNNo#</th>
                       <th class="grp-dn">I.DNDate</th>
-                      <th class="grp-inv">E.InvoiceNo#</th>
+                      <th class="grp-inv pay-no-col">E.InvoiceNo#</th>
                       <th class="grp-inv">E.InvoiceDate</th>
-                      <th class="grp-inv">I.InvoiceNo#</th>
+                      <th class="grp-inv pay-no-col">I.InvoiceNo#</th>
                       <th class="grp-inv">I.InvoiceDate</th>
                     </template>
                     <template v-else>
@@ -2912,14 +2912,14 @@
                     <td v-if="usesFullPaymentRequestLayout()" class="grp-fb prdet" :title="line.statusDetails">{{ line.statusDetails }}</td>
                     <td class="pay-gap"></td>
                     <template v-if="usesFullPaymentRequestLayout()">
-                      <td class="grp-dn"><input v-model.trim="line.ednNo" class="pcell" @input="upperPaymentField(line, 'ednNo')" /></td>
-                      <td class="grp-dn"><input v-model="line.ednDate" type="date" class="pcell pdatec" @input="persistPaymentRequest" /></td>
-                      <td class="grp-dn"><input v-model.trim="line.idnNo" class="pcell" @input="upperPaymentField(line, 'idnNo')" /></td>
-                      <td class="grp-dn"><input v-model="line.idnDate" type="date" class="pcell pdatec" @input="persistPaymentRequest" /></td>
-                      <td class="grp-inv"><input v-model.trim="line.einvNo" class="pcell" @input="upperPaymentField(line, 'einvNo')" /></td>
-                      <td class="grp-inv"><input v-model="line.einvDate" type="date" class="pcell pdatec" @input="persistPaymentRequest" /></td>
-                      <td class="grp-inv"><input v-model.trim="line.iinvNo" class="pcell" @input="upperPaymentField(line, 'iinvNo')" /></td>
-                      <td class="grp-inv"><input v-model="line.iinvDate" type="date" class="pcell pdatec" @input="persistPaymentRequest" /></td>
+                      <td class="grp-dn pay-no-col"><input v-model.trim="line.ednNo" class="pcell" @input="upperPaymentField(line, 'ednNo')" /></td>
+                      <td class="grp-dn pay-date-cell"><button type="button" class="pay-date-btn" :class="{ has: !!line.ednDate }" @click.stop="openLineDatePopup($event, line, 'ednDate', () => persistPaymentRequest())"><span v-if="line.ednDate">{{ formatAdminDateDisplay(line.ednDate) }}</span><svg v-else viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M8 2v4M16 2v4M3 10h18" /></svg></button></td>
+                      <td class="grp-dn pay-no-col"><input v-model.trim="line.idnNo" class="pcell" @input="upperPaymentField(line, 'idnNo')" /></td>
+                      <td class="grp-dn pay-date-cell"><button type="button" class="pay-date-btn" :class="{ has: !!line.idnDate }" @click.stop="openLineDatePopup($event, line, 'idnDate', () => persistPaymentRequest())"><span v-if="line.idnDate">{{ formatAdminDateDisplay(line.idnDate) }}</span><svg v-else viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M8 2v4M16 2v4M3 10h18" /></svg></button></td>
+                      <td class="grp-inv pay-no-col"><input v-model.trim="line.einvNo" class="pcell" @input="upperPaymentField(line, 'einvNo')" /></td>
+                      <td class="grp-inv pay-date-cell"><button type="button" class="pay-date-btn" :class="{ has: !!line.einvDate }" @click.stop="openLineDatePopup($event, line, 'einvDate', () => persistPaymentRequest())"><span v-if="line.einvDate">{{ formatAdminDateDisplay(line.einvDate) }}</span><svg v-else viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M8 2v4M16 2v4M3 10h18" /></svg></button></td>
+                      <td class="grp-inv pay-no-col"><input v-model.trim="line.iinvNo" class="pcell" @input="upperPaymentField(line, 'iinvNo')" /></td>
+                      <td class="grp-inv pay-date-cell"><button type="button" class="pay-date-btn" :class="{ has: !!line.iinvDate }" @click.stop="openLineDatePopup($event, line, 'iinvDate', () => persistPaymentRequest())"><span v-if="line.iinvDate">{{ formatAdminDateDisplay(line.iinvDate) }}</span><svg v-else viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M8 2v4M16 2v4M3 10h18" /></svg></button></td>
                     </template>
                     <template v-else>
                       <td class="grp-dr pay-ready"><input v-model="line.ready" type="checkbox" :disabled="paymentLineLocked(line)" @change="persistPaymentRequest" /></td>
@@ -3031,8 +3031,8 @@
                       <th class="grp-col">Collect from</th><th class="grp-col">Collect at</th><th class="grp-col">Currency</th><th class="grp-col">Total</th><th class="grp-col">Upload</th>
                       <th class="grp-fb">Sender</th><th class="grp-fb">Note from sender</th><th class="grp-fb">Requested Date</th><th class="grp-fb">Last Feedback</th><th class="grp-fb">Status</th><th class="grp-fb">Reason</th>
                       <template v-if="expenseCollectShowsDebitInvoiceColumns()">
-                        <th class="grp-dn">E.DNNo#</th><th class="grp-dn">E.DNDate</th><th class="grp-dn">I.DNNo#</th><th class="grp-dn">I.DNDate</th>
-                        <th class="grp-inv">E.InvoiceNo#</th><th class="grp-inv">E.InvoiceDate</th><th class="grp-inv">I.InvoiceNo#</th><th class="grp-inv">I.InvoiceDate</th>
+                        <th class="grp-dn pay-no-col">E.DNNo#</th><th class="grp-dn">E.DNDate</th><th class="grp-dn pay-no-col">I.DNNo#</th><th class="grp-dn">I.DNDate</th>
+                        <th class="grp-inv pay-no-col">E.InvoiceNo#</th><th class="grp-inv">E.InvoiceDate</th><th class="grp-inv pay-no-col">I.InvoiceNo#</th><th class="grp-inv">I.InvoiceDate</th>
                       </template>
                       <template v-else>
                         <th class="grp-fb">Status details</th>
@@ -3061,22 +3061,22 @@
                       <td class="ec-status grp-fb">
                         <select v-model="line.status" class="ec-statussel" :class="expenseStatusClass(line.status)" :disabled="!!line.statusDetails && !line.editing" @change="persistExpenseCollect()">
                           <option value="" class="ec-opt-none">-</option>
-                          <option class="ec-opt-ok">Approved</option>
-                          <option class="ec-opt-reject">Rejected</option>
-                          <option class="ec-opt-edit">Request Edit</option>
+                          <option class="ec-opt-ok" :disabled="expenseLineApprovedSent(line)">Approved</option>
+                          <option class="ec-opt-reject" :disabled="expenseLineApprovedSent(line)">Rejected</option>
+                          <option class="ec-opt-edit" :disabled="expenseLineApprovedSent(line)">Request Edit</option>
                           <option class="ec-opt-return">Return Approve</option>
                         </select>
                       </td>
                       <td class="grp-fb"><input v-model.trim="line.reason" class="ec-reason" :class="{ invalid: expenseFeedbackReasonInvalid(line) }" placeholder="Enter reason" :disabled="!!line.statusDetails && !line.editing" @input="clearExpenseFeedbackReasonError(line); persistExpenseCollect()" /></td>
                       <template v-if="expenseCollectShowsDebitInvoiceColumns()">
-                        <td class="grp-dn"><input v-model.trim="line.ednNo" class="ec-fcd-input" :disabled="!!line.statusDetails && !line.editing" @input="line.ednNo = upperText(line.ednNo); persistExpenseCollect()" /></td>
-                        <td class="grp-dn"><input v-model="line.ednDate" class="ec-fcd-input" type="date" :disabled="!!line.statusDetails && !line.editing" @input="persistExpenseCollect()" /></td>
-                        <td class="grp-dn"><input v-model.trim="line.idnNo" class="ec-fcd-input" :disabled="!!line.statusDetails && !line.editing" @input="line.idnNo = upperText(line.idnNo); persistExpenseCollect()" /></td>
-                        <td class="grp-dn"><input v-model="line.idnDate" class="ec-fcd-input" type="date" :disabled="!!line.statusDetails && !line.editing" @input="persistExpenseCollect()" /></td>
-                        <td class="grp-inv"><input v-model.trim="line.einvNo" class="ec-fcd-input" :disabled="!!line.statusDetails && !line.editing" @input="line.einvNo = upperText(line.einvNo); persistExpenseCollect()" /></td>
-                        <td class="grp-inv"><input v-model="line.einvDate" class="ec-fcd-input" type="date" :disabled="!!line.statusDetails && !line.editing" @input="persistExpenseCollect()" /></td>
-                        <td class="grp-inv"><input v-model.trim="line.iinvNo" class="ec-fcd-input" :disabled="!!line.statusDetails && !line.editing" @input="line.iinvNo = upperText(line.iinvNo); persistExpenseCollect()" /></td>
-                        <td class="grp-inv"><input v-model="line.iinvDate" class="ec-fcd-input" type="date" :disabled="!!line.statusDetails && !line.editing" @input="persistExpenseCollect()" /></td>
+                        <td class="grp-dn pay-no-col"><input v-model.trim="line.ednNo" class="ec-fcd-input" :disabled="!!line.statusDetails && !line.editing" @input="line.ednNo = upperText(line.ednNo); persistExpenseCollect()" /></td>
+                        <td class="grp-dn pay-date-cell"><button type="button" class="pay-date-btn" :class="{ has: !!line.ednDate }" :disabled="!!line.statusDetails && !line.editing" @click.stop="openLineDatePopup($event, line, 'ednDate', () => persistExpenseCollect())"><span v-if="line.ednDate">{{ formatAdminDateDisplay(line.ednDate) }}</span><svg v-else viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M8 2v4M16 2v4M3 10h18" /></svg></button></td>
+                        <td class="grp-dn pay-no-col"><input v-model.trim="line.idnNo" class="ec-fcd-input" :disabled="!!line.statusDetails && !line.editing" @input="line.idnNo = upperText(line.idnNo); persistExpenseCollect()" /></td>
+                        <td class="grp-dn pay-date-cell"><button type="button" class="pay-date-btn" :class="{ has: !!line.idnDate }" :disabled="!!line.statusDetails && !line.editing" @click.stop="openLineDatePopup($event, line, 'idnDate', () => persistExpenseCollect())"><span v-if="line.idnDate">{{ formatAdminDateDisplay(line.idnDate) }}</span><svg v-else viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M8 2v4M16 2v4M3 10h18" /></svg></button></td>
+                        <td class="grp-inv pay-no-col"><input v-model.trim="line.einvNo" class="ec-fcd-input" :disabled="!!line.statusDetails && !line.editing" @input="line.einvNo = upperText(line.einvNo); persistExpenseCollect()" /></td>
+                        <td class="grp-inv pay-date-cell"><button type="button" class="pay-date-btn" :class="{ has: !!line.einvDate }" :disabled="!!line.statusDetails && !line.editing" @click.stop="openLineDatePopup($event, line, 'einvDate', () => persistExpenseCollect())"><span v-if="line.einvDate">{{ formatAdminDateDisplay(line.einvDate) }}</span><svg v-else viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M8 2v4M16 2v4M3 10h18" /></svg></button></td>
+                        <td class="grp-inv pay-no-col"><input v-model.trim="line.iinvNo" class="ec-fcd-input" :disabled="!!line.statusDetails && !line.editing" @input="line.iinvNo = upperText(line.iinvNo); persistExpenseCollect()" /></td>
+                        <td class="grp-inv pay-date-cell"><button type="button" class="pay-date-btn" :class="{ has: !!line.iinvDate }" :disabled="!!line.statusDetails && !line.editing" @click.stop="openLineDatePopup($event, line, 'iinvDate', () => persistExpenseCollect())"><span v-if="line.iinvDate">{{ formatAdminDateDisplay(line.iinvDate) }}</span><svg v-else viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M8 2v4M16 2v4M3 10h18" /></svg></button></td>
                       </template>
                       <template v-else>
                         <td class="grp-fb"><span class="ec-cell" :title="line.statusDetails">{{ line.statusDetails }}</span></td>
@@ -3606,7 +3606,7 @@
         <div class="bds-title">Send B/L to Shipper</div>
         <label class="bds-field"><span>To Shipper</span><input v-model="billSendModal.to" type="email" readonly /></label>
         <label class="bds-field"><span>CC emails</span><textarea v-model="billSendModal.cc" class="bds-emails" placeholder="Enter CC emails, separated by commas" @input="billSendModal.hint = ''"></textarea></label>
-        <div class="bds-field bds-deadline"><span>Deadline to confirm B/L</span><div class="bds-deadline-inputs"><input v-model="billSendModal.deadlineDate" type="date" lang="en-ZA" @input="billSendModal.hint = ''" /><input v-model="billSendModal.deadlineTime" type="time" @input="billSendModal.hint = ''" /></div></div>
+        <div class="bds-field bds-deadline"><span>Deadline to confirm B/L</span><div class="bds-deadline-inputs"><input v-model="billSendModal.deadlineDate" type="date" lang="en-ZA" :min="todayIso()" @input="billSendModal.hint = ''" /><input v-model="billSendModal.deadlineTime" type="time" @input="billSendModal.hint = ''" /></div></div>
         <div class="bds-hint">{{ billSendModal.hint }}</div>
         <div class="bds-foot">
           <button class="wb-modal-btn bds-no" type="button" @click="billSendModal.open = false">NO</button>
@@ -5734,6 +5734,12 @@ const truckCompanyInvalid = (value: any) => {
   const text = upperText(value || '').trim()
   return !!text && !truckCompanyOptions.value.some((option) => upperText(option).trim() === text)
 }
+// Container No# format: 4 capital letters + 7 digits (ISO 6346, e.g. ABCD1234567).
+const normalizeTruckContainerNo = (value: any) => String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11)
+const truckContainerFormatInvalid = (value: any) => {
+  const text = String(value || '').trim()
+  return !!text && !/^[A-Z]{4}\d{7}$/.test(text)
+}
 // Container No# / Seal No# must be unique within this shipment's truck list.
 const truckContDuplicate = (key: 'container' | 'seal', record: any) => {
   const value = upperText(record?.[key] || '').trim()
@@ -6075,6 +6081,7 @@ const datePopupDays = computed(() => {
     ? gsdModal.form[datePopup.cutoffField]
     : datePopup.pickupReturnField && pickupReturnRecord
       ? pickupReturnRecord[datePopup.pickupReturnField]
+      : datePopup.row === -2 && datePopupLineTarget ? datePopupLineTarget.obj?.[datePopupLineTarget.key]
       : nativePickerInput ? nativePickerInput.value : rows.value[datePopup.row]?.[datePopup.column])
   const today = new Date()
   return Array.from({ length: 42 }, (_, index) => {
@@ -12107,9 +12114,8 @@ const openGsdModal = async (row: number, column: number) => {
             }
           }
         }
-        // BILL DETAIL is immediately editable whenever it is opened. Users
-        // should not need an extra Edit click before updating its workflow.
-        gsdModal.editing = true
+        // Saved BILL DETAIL opens locked (click Edit to change it); a new one opens ready to fill.
+        gsdModal.editing = !String(rawText || '').trim()
         billDetailInitialSnapshot.value = billDetailSnapshot()
       } else if (label === 'BILL RELEASE' || label === 'AWB RELEASE' || (label === 'DO RELEASE' && isDoIcdSheet())) {
         gsdModal.formFields = []
@@ -12156,7 +12162,8 @@ const openGsdModal = async (row: number, column: number) => {
             }
           }
         }
-        gsdModal.editing = true
+        // Saved BILL / DO RELEASE opens locked (click Edit); a new one opens ready to fill.
+        gsdModal.editing = !String(rawText || '').trim()
         billReleaseInitialSnapshot.value = billReleaseSnapshot()
         restoreOpsScroll()
       } else if (label === 'ARRIVAL NOTICE SENDING' || label === 'ARRIVAL NOTICE DETAIL') {
@@ -14396,6 +14403,8 @@ const expenseStatusClass = (status: any) => ({
   edit: String(status || '').toUpperCase() === 'REQUEST EDIT',
   return: String(status || '').toUpperCase() === 'RETURN APPROVE',
 })
+// Once an APPROVED feedback has been sent, the only next status is Return Approve.
+const expenseLineApprovedSent = (line: any) => upperText(String(line?.statusDetails || '')).startsWith('APPROVED')
 const expenseCollectValidStatus = (line: any) => ['APPROVED', 'REJECTED', 'REQUEST EDIT', 'RETURN APPROVE'].includes(upperText(line?.status || ''))
 const expenseFeedbackReasonInvalid = (line: any) => expenseFeedbackInvalidReasonIds.value.has(String(line?.id || ''))
 const clearExpenseFeedbackReasonError = (line: any) => {
@@ -14491,6 +14500,8 @@ const sendExpenseCollectFeedback = async () => {
   const targetIds = new Set(selected.map((line: any) => String(line.id)))
   void runPaymentSend(() => persistExpenseCollect(true, true), 'Sending Payment Approval feedback...').then(() => {
     showToast('Feedback sent')
+    void syncApprovalListLines(expenseCollectLines(), rowCollectionDeadline())
+      .catch((error: any) => console.warn('Could not update PaymentList / CollectionList', error))
   }).catch((error: any) => {
     expenseCollectLines().forEach((line: any) => {
       if (targetIds.has(String(line.id))) {
@@ -17412,6 +17423,31 @@ const persistTruckContCell = (immediate = false) => {
   scheduleSave()
   if (immediate) void saveSheet()
 }
+// Pickup / return date-time: not in the past, and the return not before the pickup.
+const truckReturnMinDate = (record: any) => {
+  const pickup = String(record?.eta1 || '').slice(0, 10)
+  const today = todayIso()
+  return pickup && pickup > today ? pickup : today
+}
+const truckDateTimeValue = (date: any, time: any) => {
+  const day = String(date || '').slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null
+  const value = new Date(`${day}T${/^\d{2}:\d{2}/.test(String(time || '')) ? String(time).slice(0, 5) : '00:00'}:00`)
+  return Number.isNaN(value.getTime()) ? null : value
+}
+const truckScheduleProblem = (records: any[]) => {
+  const now = new Date()
+  now.setSeconds(0, 0)
+  for (const [index, record] of records.entries()) {
+    const label = `row ${index + 1}`
+    const pickup = truckDateTimeValue(record.eta1, record.eta2)
+    const back = truckDateTimeValue(record.gdate, record.gtime)
+    if (pickup && pickup < now) return `Pickup date/time cannot be in the past (${label})`
+    if (back && back < now) return `Return date/time cannot be in the past (${label})`
+    if (pickup && back && back < pickup) return `Return date/time must be after the pickup (${label})`
+  }
+  return ''
+}
 const saveTruckContDetails = async () => {
   if (!gsdModal.editing) return
   const editedRecords = truckContRecords().filter((record, index) =>
@@ -17424,6 +17460,16 @@ const saveTruckContDetails = async () => {
   const allowedTruckCompanies = new Set(truckCompanyOptions.value.map(upperText))
   if (editedRecords.some((record) => record.truck && !allowedTruckCompanies.has(upperText(record.truck)))) {
     showToast('Truck Comp must be selected from Internal Directory')
+    return
+  }
+  const badContainer = editedRecords.findIndex((record: any) => truckContainerFormatInvalid(record.container))
+  if (badContainer >= 0) {
+    showToast('Container No# must be 4 capital letters + 7 digits (e.g. ABCD1234567)')
+    return
+  }
+  const scheduleProblem = truckScheduleProblem(editedRecords)
+  if (scheduleProblem) {
+    showToast(scheduleProblem)
     return
   }
   const duplicate = (['container', 'seal'] as const).find((key) => truckContRecords().some((record) => truckContDuplicate(key, record)))
@@ -19301,6 +19347,12 @@ const confirmBillSend = async () => {
     billSendModal.hint = 'Enter valid CC emails separated by commas'
     return
   }
+  // The confirmation deadline cannot be in the past.
+  const deadline = truckDateTimeValue(billSendModal.deadlineDate, billSendModal.deadlineTime || '23:59')
+  if (billSendModal.deadlineDate && deadline && deadline.getTime() < Date.now()) {
+    billSendModal.hint = 'Deadline to confirm B/L cannot be in the past'
+    return
+  }
   if (!billBlReady()) {
     billSendModal.hint = billSourceMode() === 'client' ? "Upload Client's B/L before sending" : 'Tick and save the Export B/L / FCR to send'
     return
@@ -19355,11 +19407,35 @@ const sendBillDetailToShipper = openBillSendModal
 // CollectionList. "Collect later" sets the CollectionDeadline of the collect rows.
 const syncCollectionDeadlineToApprovalList = async () => {
   if (!isEcdPaymentOnlyBillRelease()) return
+  const payment = paymentRequestFromCell(rowValueByHeader('PAYMENT REQUEST') || rowValueByHeader('PAYMENT REQUEST APPLICATION'))
+  await syncApprovalListLines(payment.lines, gsdModal.form.collectLater ? String(gsdModal.form.deadline || '') : '')
+}
+// Collection deadline saved in this row's BILL RELEASE (null when the sheet has none).
+const rowCollectionDeadline = (): string | null => {
+  const column = (rows.value[0] || []).findIndex((_: any, index: number) => ['BILL RELEASE', 'AWB RELEASE'].includes(normalizedHeaderLabel(index)))
+  if (column < 0) return null
+  const parsed = parseJsonCell(rows.value[gsdModal.row]?.[column], null as any)
+  const form = parsed && typeof parsed === 'object' ? (parsed.form || parsed) : null
+  if (!form) return null
+  return form.collectLater ? String(form.deadline || '') : ''
+}
+// PaymentList / CollectionList follow the payment lines: every APPROVED line is
+// listed (no Bill Release step needed); a line that is no longer approved (e.g.
+// Return Approve) is removed. `deadline` null keeps the deadline already listed.
+const syncApprovalListLines = async (lines: any[], deadline: string | null) => {
   const ref = String(rowValueByHeader('REF#') || rowValueByHeader('JOB NO#')).trim()
   if (!ref) return
-  const deadline = gsdModal.form.collectLater ? String(gsdModal.form.deadline || '') : ''
-  const payment = paymentRequestFromCell(rowValueByHeader('PAYMENT REQUEST') || rowValueByHeader('PAYMENT REQUEST APPLICATION'))
-  const approved = payment.lines.filter((line: any) => upperText(line.status || '') === 'APPROVED')
+  // Payment Approval (FCD) lines use short keys (charge, collect, colAt, curCol, totalCol).
+  const approved = (lines || [])
+    .map((line: any) => ({
+      ...line,
+      chargeName: line.chargeName || line.charge || '',
+      collectFrom: line.collectFrom || line.collect || '',
+      collectAt: line.collectAt || line.colAt || '',
+      curCollect: line.curCollect || line.curCol || '',
+      totalCollect: line.totalCollect ?? line.totalCol ?? '',
+    }))
+    .filter((line: any) => upperText(line.status || '') === 'APPROVED' && String(line.statusDetails || line.approvedAt || '').trim())
   const route = routeFromCellValue(rowValueByHeader('ROUTE')) as any
   const vessel = vesselFromCellValue(rowValueByHeader('VESSEL/VOYAGE')) as any
   const isoDate = (value: any) => {
@@ -19369,11 +19445,14 @@ const syncCollectionDeadlineToApprovalList = async () => {
   const shipment = {
     ref, type: String(opsParts.value?.type || ''), typeplus: preAlertForwardingOption(),
     bu: rowValueByHeader('BU'), sales: rowValueByHeader('SALES'),
-    ops: rowValueByHeader('ECD OPS') || rowValueByHeader('OPS'),
+    ops: rowValueByHeader('ECD OPS') || rowValueByHeader('OPS') || rowValueByHeader('FCD OPS') || rowValueByHeader('ICD OPS'),
     clientcode: clientCellText(rowValueByHeader('CLIENT')), shippercode: clientCellText(rowValueByHeader('SHIPPER')), cneecode: clientCellText(rowValueByHeader('CNEE')),
     hbl: linkedDocumentNumber(rowValueByHeader('HBL NO#')), mbl: linkedDocumentNumber(rowValueByHeader('MBL NO#')),
     pol: String(route?.polCode || route?.pol || ''), pod: String(route?.podCode || route?.pod || ''),
     vesselvoyage: vessel ? [vessel.name, vessel.voyage].filter(Boolean).join(' / ') : '',
+    // Origin / destination BU = country code of POL / POD (VNSGN -> VN).
+    originbu: upperText(String(route?.polCode || '')).slice(0, 2),
+    destinationbu: upperText(String(route?.podCode || '')).slice(0, 2),
   }
   const plan = [
     {
@@ -19382,7 +19461,7 @@ const syncCollectionDeadlineToApprovalList = async () => {
         ...shipment,
         lineid: `${ref}:${line.id}:pay`,
         approveddate: isoDate(line.approvedAt),
-        chargename: String(line.chargeName || ''), amount: String(line.totalPay || '').replace(/,/g, ''), currency: String(line.curPay || ''),
+        chargename: String(line.chargeName || ''), unit: String(line.unit || 'SET'), amount: String(line.totalPay || '').replace(/,/g, ''), currency: String(line.curPay || ''),
         payto: String(line.payTo || ''), namecode: String(line.payTo || ''), payat: String(line.payAt || ''),
         debitno: String(line.idnNo || ''), debitdate: isoDate(line.idnDate),
         invoiceno: String(line.iinvNo || ''), invoicedate: isoDate(line.iinvDate),
@@ -19394,11 +19473,11 @@ const syncCollectionDeadlineToApprovalList = async () => {
         ...shipment,
         lineid: `${ref}:${line.id}:collect`,
         approveddate: isoDate(line.approvedAt),
-        chargename: String(line.chargeName || ''), amount: String(line.totalCollect || '').replace(/,/g, ''), currency: String(line.curCollect || ''),
+        chargename: String(line.chargeName || ''), unit: String(line.unit || 'SET'), amount: String(line.totalCollect || '').replace(/,/g, ''), currency: String(line.curCollect || ''),
         collectfrom: String(line.collectFrom || ''), namecode: String(line.collectFrom || ''), collectat: String(line.collectAt || ''),
         debitno: String(line.ednNo || ''), debitdate: isoDate(line.ednDate),
         invoiceno: String(line.einvNo || ''), invoicedate: isoDate(line.einvDate),
-        collectiondeadline: deadline, deadlinedate: deadline,
+        ...(deadline !== null ? { collectiondeadline: deadline, deadlinedate: deadline } : {}),
       })),
     },
   ]
@@ -19415,8 +19494,13 @@ const syncCollectionDeadlineToApprovalList = async () => {
         ? props.request(`/records/${existing.id}`, { method: 'PATCH', body: { country: existing.country, page: existing.page, kind: existing.kind, data: { ...(existing.data || {}), ...data }, sortOrder: existing.sortOrder || 0 } })
         : props.request('/records', { method: 'POST', body: { country: 'GLOBAL', page, kind: 'analysis-statistics', data, sortOrder: 0 } }))
     }
+    // Lines that are no longer approved (Return Approve, removed...) leave the list.
+    const wantedIds = new Set(wanted.map((data: any) => String(data.lineid)))
+    for (const [lineId, record] of byLine.entries()) {
+      if (!wantedIds.has(lineId)) writes.push(props.request(`/records/${record.id}`, { method: 'DELETE' }))
+    }
     // Older single summary row for this ref (no charge line): keep its deadline in sync.
-    if (page === 'analysis_collectionlist') {
+    if (page === 'analysis_collectionlist' && deadline !== null) {
       for (const legacy of sameRef.filter((record) => !record?.data?.lineid)) {
         writes.push(props.request(`/records/${legacy.id}`, { method: 'PATCH', body: { country: legacy.country, page: legacy.page, kind: legacy.kind, data: { ...(legacy.data || {}), collectiondeadline: deadline, deadlinedate: deadline }, sortOrder: legacy.sortOrder || 0 } }))
       }
@@ -24198,6 +24282,15 @@ const persistDatePopupValue = async (row: number, column: number) => {
 }
 const selectDatePopup = (date: Date) => {
   if (isDatePopupDayDisabled(date)) return
+  if (datePopupLineTarget && datePopup.row === -2) {
+    const pad = (part: number) => String(part).padStart(2, '0')
+    const target = datePopupLineTarget
+    target.obj[target.key] = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+    datePopupLineTarget = null
+    closeDatePopup()
+    target.after?.()
+    return
+  }
   if (datePopup.cutoffField) {
     const pad = (part: number) => String(part).padStart(2, '0')
     gsdModal.form[datePopup.cutoffField] = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
@@ -24254,8 +24347,25 @@ const pickupReturnMinIso = (record: any, field: 'pickupDate' | 'returnDate') => 
   const start = ata && ata.getTime() > today.getTime() ? ata : today
   return iso(new Date(start.getFullYear(), start.getMonth(), start.getDate()))
 }
+// Date fields of popup tables (Payment Request / Approval DN & Invoice dates) use
+// the same calendar as ETD/ETA: a button shows the date or a calendar icon.
+let datePopupLineTarget: { obj: any; key: string; after?: () => void } | null = null
+const openLineDatePopup = (event: MouseEvent, obj: any, key: string, after?: () => void) => {
+  const target = event.currentTarget as HTMLElement
+  nativePickerInput = null
+  nativePickerType = ''
+  datePopupLineTarget = { obj, key, after }
+  const current = parseOpsDate(obj?.[key]) || new Date()
+  const pos = positionPopupNear(target, 240)
+  Object.assign(datePopup, { open: true, cutoffField: '', pickupReturnIndex: -1, pickupReturnField: '', row: -2, column: -2, left: pos.left, top: pos.top, viewYear: current.getFullYear(), viewMonth: current.getMonth() })
+}
 const isDatePopupDayDisabled = (date: Date) => {
   const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+  // Payment DN / Invoice dates: no day in the past.
+  if (datePopup.row === -2 && datePopupLineTarget) {
+    const now = new Date()
+    return day < new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  }
   // Native date fields shown through this calendar keep their own min / max
   // (e.g. Pickup date cannot be before today).
   if (nativePickerInput && datePopup.row === -1 && !datePopup.cutoffField) {
@@ -24332,6 +24442,14 @@ const isDatePopupDayDisabled = (date: Date) => {
   return day < new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
 }
 const clearDatePopup = () => {
+  if (datePopupLineTarget && datePopup.row === -2) {
+    const target = datePopupLineTarget
+    target.obj[target.key] = ''
+    datePopupLineTarget = null
+    closeDatePopup()
+    target.after?.()
+    return
+  }
   if (datePopup.cutoffField) {
     gsdModal.form[datePopup.cutoffField] = ''
     clearCutoffHint()
@@ -25574,6 +25692,14 @@ onBeforeUnmount(() => {
    chevron, vertically centred with the text, on hover / focus. */
 input:is([list],[data-combo-list])::-webkit-calendar-picker-indicator{display:none!important;opacity:0!important}
 input:is([list],[data-combo-list]):not(:disabled):not([readonly]):is(:hover,:focus){background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%235b6b63' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:right 7px center!important;background-size:10px 6px!important}
+:is(.gsd-pay-table,.expcol-table) :is(th,td).pay-no-col:not(#_x):not(#_y){width:110px!important;min-width:110px!important;max-width:110px!important}
+:is(.gsd-pay-table,.expcol-table) td.pay-no-col:not(#_x):not(#_y) input{width:100%!important;min-width:0!important;box-sizing:border-box}
+.pay-date-cell:not(#_x){padding:0 4px!important;text-align:center!important;vertical-align:middle!important}
+.pay-date-btn{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:26px;margin:0 auto;padding:0 6px;border:1px solid #d4ddd8;border-radius:6px;background:#fff;color:#5b6b63;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+.pay-date-btn.has{border-color:transparent;background:transparent;color:#24332c}
+.pay-date-btn:hover:not(:disabled){border-color:#008f4c;color:#0a6b3b}
+.pay-date-btn:disabled{cursor:default;opacity:.6}
+.pay-date-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .gsd-pre-sent-info{display:flex;flex-direction:column;gap:2px;margin:10px 0 0;color:#4d5b54;font-size:12px}.gsd-pre-sent-info b{color:#0a6b3b}.gsd-pre-sent-info .pending{color:#b45f04;font-weight:700}
 .ops-nbadge{display:inline-grid;place-items:center;min-width:14px;height:14px;margin-left:5px;padding:0 3px;border-radius:999px;background:#d63a3a;color:#fff;font-size:9px;font-weight:800;line-height:1}
 /* AIR/LCL — vessel delay panel + history on EXW ECD (mockup #ovs) */
