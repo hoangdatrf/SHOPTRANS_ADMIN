@@ -194,6 +194,8 @@
                   @dblclick="handleOpsCellDblClick(rowIndex, columnIndex, $event)"
                 >
                   <span v-if="isLinkedImportShipmentCell(rowIndex, columnIndex) && !String(rows[rowIndex]?.[columnIndex] ?? '').trim()" class="ops-textcell" title="Update it on the export shipment">—</span>
+                  <span v-else-if="isLinkedExportImportCell(rowIndex, columnIndex) && !String(rows[rowIndex]?.[columnIndex] ?? '').trim()" class="ops-textcell" title="Update it on the import shipment">—</span>
+                  <span v-else-if="isPreAlertSendingNaCell(rowIndex, columnIndex)" class="ops-textcell ops-na-cell">N/A</span>
                   <div v-else-if="isStampedOpsCheckboxColumn(columnIndex)" class="ops-sent-cell">
                     <span class="sent-check-row"><input
                         class="ops-check"
@@ -266,6 +268,8 @@
                     v-show="['EXTRA SERVICE', 'NOTES'].includes(normalizedHeaderLabel(columnIndex)) || !hideLockedGsdAddAction(rowIndex, gsdActionButtonText(rowIndex, columnIndex) === 'ADD+')"
                     class="ops-pill"
                     type="button"
+                    :disabled="isDoHblPendingCell(rowIndex, columnIndex)"
+                    :title="isDoHblPendingCell(rowIndex, columnIndex) ? 'Enter HBL NO# first' : undefined"
                     :class="{ view: normalizedHeaderLabel(columnIndex) === 'REMINDER', has: !!String(rows[rowIndex]?.[columnIndex] || '').trim() && !['REMINDER', 'NOTICE'].includes(normalizedHeaderLabel(columnIndex)), 'linked-value': showActionEditIcon(rowIndex, columnIndex), 'document-value': isPlainDocumentValue(rowIndex, columnIndex), 'do-release-warn': isDoReleaseWarnCell(rowIndex, columnIndex), 'detail-alert': detailActionNeedsAttention(rowIndex, columnIndex) || billDetailMnfMissing(rowIndex, columnIndex), 'volume-summary-btn': normalizedHeaderLabel(columnIndex) === 'VOLUME' && !!volumeSummaryText(rows[rowIndex]?.[columnIndex]) }"
                     @click="handleGsdActionButton(rowIndex, columnIndex)"
                   >
@@ -1315,7 +1319,7 @@
             <div class="gsd-hbl-title">{{ awbText('Is HBL required for this batch?') }}</div>
             <div class="gsd-hbl-buttons">
               <button class="wb-modal-btn" :class="{ primary: gsdModal.form.required === 'YES' }" type="button" :disabled="!gsdModal.editing" @click="setHblRequired('YES')">YES</button>
-              <button class="wb-modal-btn" :class="{ primary: gsdModal.form.required === 'NO' }" type="button" :disabled="!gsdModal.editing" @click="setHblRequired('NO')">NO</button>
+              <button class="wb-modal-btn" :class="{ primary: gsdModal.form.required === 'NO' }" type="button" :disabled="!gsdModal.editing || exportHblMandatory(gsdModal.row)" :title="exportHblMandatory(gsdModal.row) ? 'HBL is required: this shipment is linked to DO' : undefined" @click="setHblRequired('NO')">NO</button>
             </div>
             <input
               ref="hblNumberInput"
@@ -2206,7 +2210,7 @@
             <div class="gsd-prs-actions">
               <button class="wb-modal-btn slate" type="button" @click="requestCloseGsdModal">Close</button>
               <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing" @click="savePickupReturnStatus">Save</button>
-              <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || !hasPickupReturnSelection() || isLinkedOriginImportRow(gsdModal.row)" :title="isLinkedOriginImportRow(gsdModal.row) ? 'Update it on the export shipment' : ''" @click="enablePickupReturnEdit">Edit</button>
+              <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || !hasPickupReturnSelection() || isLinkedExportRow(gsdModal.row)" :title="isLinkedExportRow(gsdModal.row) ? 'Update it on the import shipment' : ''" @click="enablePickupReturnEdit">Edit</button>
             </div>
             </template>
           </template>
@@ -3606,7 +3610,7 @@
         <div class="bds-title">Send B/L to Shipper</div>
         <label class="bds-field"><span>To Shipper</span><input v-model="billSendModal.to" type="email" readonly /></label>
         <label class="bds-field"><span>CC emails</span><textarea v-model="billSendModal.cc" class="bds-emails" placeholder="Enter CC emails, separated by commas" @input="billSendModal.hint = ''"></textarea></label>
-        <div class="bds-field bds-deadline"><span>Deadline to confirm B/L</span><div class="bds-deadline-inputs"><input v-model="billSendModal.deadlineDate" type="date" lang="en-ZA" :min="todayIso()" @input="billSendModal.hint = ''" /><input v-model="billSendModal.deadlineTime" type="time" @input="billSendModal.hint = ''" /></div></div>
+        <div class="bds-field bds-deadline"><span>Deadline to confirm B/L <b class="bds-required">*</b></span><div class="bds-deadline-inputs"><input v-model="billSendModal.deadlineDate" type="date" lang="en-ZA" :min="todayIso()" @input="billSendModal.hint = ''" /><input v-model="billSendModal.deadlineTime" type="time" @input="billSendModal.hint = ''" /></div></div>
         <div class="bds-hint">{{ billSendModal.hint }}</div>
         <div class="bds-foot">
           <button class="wb-modal-btn bds-no" type="button" @click="billSendModal.open = false">NO</button>
@@ -5678,7 +5682,42 @@ const loadClientOptionLists = () => {
   void loadEntityOptions('city')
   void loadEntityOptions('country')
 }
-const loadRouteReferenceData = async () => {
+// Reference lists (routes, vessels, ports, countries) are loaded once and then served
+// from memory, so modals open with their data immediately; a call after
+// REFERENCE_TTL (5 min) refreshes the list in the background instead of blocking.
+const REFERENCE_TTL = 5 * 60_000
+const referenceLoads = new Map<string, { at: number; promise: Promise<void> }>()
+const cachedReferenceLoad = (key: string, loader: () => Promise<void>) => {
+  const cached = referenceLoads.get(key)
+  if (cached && Date.now() - cached.at < REFERENCE_TTL) return cached.promise
+  const promise = loader()
+  referenceLoads.set(key, { at: Date.now(), promise })
+  // Already loaded once: answer now, refresh behind the scenes.
+  return cached ? Promise.resolve() : promise
+}
+// Warms the modal reference lists once per session, well after the sheet has
+// painted and one request at a time, so it never competes with sheet loading.
+let modalReferencePrefetched = false
+const prefetchModalReferenceData = () => {
+  if (modalReferencePrefetched) return
+  modalReferencePrefetched = true
+  const steps = [loadRouteReferenceData, loadRouteCountryOptions, loadVesselReferenceData, loadTranshipmentPlaces, loadPickupReferenceData]
+  const idle = (callback: () => void) => {
+    const request = (window as any).requestIdleCallback
+    if (typeof request === 'function') request(callback, { timeout: 5000 })
+    else setTimeout(callback, 500)
+  }
+  const next = () => {
+    const step = steps.shift()
+    if (!step) return
+    // Skip while a sheet is still loading; try again on the next idle slot.
+    if (loading.value) { steps.unshift(step); setTimeout(() => idle(next), 1000); return }
+    void Promise.resolve(step()).catch(() => {}).finally(() => idle(next))
+  }
+  setTimeout(() => idle(next), 2000)
+}
+const loadRouteReferenceData = () => cachedReferenceLoad('routes', fetchRouteReferenceData)
+const fetchRouteReferenceData = async () => {
   try {
     const res = await props.request('/records?country=GLOBAL&page=ref_routes&limit=1000')
     const routes = (Array.isArray(res?.items) ? res.items : [])
@@ -6766,6 +6805,9 @@ const loadSheet = async () => {
         await nextTick()
         if (isOpsPage.value) void loadLiveTraderDirectory(true).catch(() => undefined)
         if (isOpsPage.value) void syncLinkedOriginParties(requestedKey, requestedCountry).catch((error) => console.warn('Could not sync linked parties', error))
+        if (isOpsPage.value) prefetchModalReferenceData()
+        if (isOpsPage.value) void syncLinkedImportFields(requestedKey, requestedCountry).catch((error) => console.warn('Could not sync linked import fields', error))
+        if (isOpsPage.value) void syncLinkedOriginWorkflowCells(requestedKey, requestedCountry).catch((error) => console.warn('Could not sync linked pre-alert / cont-seal', error))
       }
       // DCD was consolidated into ECD. Import the DCD-owned workflow values
       // from legacy sheets so existing SI/Bill work remains available after
@@ -7023,7 +7065,8 @@ const loadSheet = async () => {
     if (run === sheetLoadRun && activeKey.value === requestedKey && countryViewId() === requestedCountry) loading.value = false
   }
 }
-const loadVesselReferenceData = async () => {
+const loadVesselReferenceData = () => cachedReferenceLoad('vessels', fetchVesselReferenceData)
+const fetchVesselReferenceData = async () => {
   try {
     const res = await props.request('/records?country=GLOBAL&page=ref_vessels&limit=1000')
     vesselDirectory.value = (Array.isArray(res?.items) ? res.items : [])
@@ -7034,7 +7077,8 @@ const loadVesselReferenceData = async () => {
     console.error('Could not load vessel reference data', error)
   }
 }
-const loadTranshipmentPlaces = async () => {
+const loadTranshipmentPlaces = () => cachedReferenceLoad(isAirSheet() ? 'transhipment-air' : 'transhipment-sea', fetchTranshipmentPlaces)
+const fetchTranshipmentPlaces = async () => {
   try {
     const page = isAirSheet() ? 'ref_airports' : 'ref_ports'
     const res = await props.request(`/records?country=GLOBAL&page=${page}&limit=1000`)
@@ -7054,7 +7098,8 @@ const loadTranshipmentPlaces = async () => {
     console.error('Could not load transhipment places', error)
   }
 }
-const loadRouteCountryOptions = async () => {
+const loadRouteCountryOptions = () => cachedReferenceLoad('route-countries', fetchRouteCountryOptions)
+const fetchRouteCountryOptions = async () => {
   try {
     const res = await props.request('/records?country=GLOBAL&page=ref_countries&limit=1000')
     routeCountryOptions.value = Array.from(new Set(
@@ -8275,6 +8320,10 @@ const beginEditCell = async (row: number, col: number) => {
   }
   if (isLinkedImportShipmentCell(row, col) || isLinkedImportPartyCell(row, col)) {
     showToast('Update it on the export shipment')
+    return
+  }
+  if (isLinkedExportImportCell(row, col)) {
+    showToast('Update it on the import shipment')
     return
   }
   if (isSentEcdRowLocked(row)) {
@@ -9579,8 +9628,50 @@ const missingEcdBcSentFields = (row: number) => {
 // A row added with Add Row only exists on screen until Save. Dispatching it with a
 // SENT checkbox would hand the next department a record that was never stored.
 const isUnsavedNewOpsRow = (row: number) => !!opsEditingRow.value?.isNew && opsEditingRow.value.row === row
+// DO: MANIFEST SUBMIT and ARRIVAL NOTICE wait until the HBL/HAWB is entered
+// (a number, or set to N/A when the shipment has no house bill).
+const doRowHblEntered = (row: number) => {
+  const column = (rows.value[0] || []).findIndex((_: any, index: number) => ['HBL NO#', 'HAWB NO#'].includes(normalizedHeaderLabel(index)))
+  if (column < 0) return true
+  const raw = String(rows.value[row]?.[column] ?? '').trim()
+  if (!raw) return false
+  if (!raw.startsWith('{')) return true
+  const parsed = parseJsonCell(raw, null as any)
+  const form = parsed && typeof parsed === 'object' && 'form' in parsed ? (parsed as any).form || {} : parsed || {}
+  return !!String(form?.hblNo || form?.hawbNo || '').trim() || upperText(form?.required || '') === 'NO'
+}
+// HBL number of a row ('' when empty or N/A).
+const rowHblNumber = (row: number) => {
+  const column = (rows.value[0] || []).findIndex((_: any, index: number) => ['HBL NO#', 'HAWB NO#'].includes(normalizedHeaderLabel(index)))
+  if (column < 0) return ''
+  const raw = String(rows.value[row]?.[column] ?? '').trim()
+  if (!raw.startsWith('{')) return upperText(raw) === 'N/A' ? '' : raw
+  const parsed = parseJsonCell(raw, null as any)
+  const form = parsed && typeof parsed === 'object' && 'form' in parsed ? (parsed as any).form || {} : parsed || {}
+  return upperText(form?.required || '') === 'NO' ? '' : String(form?.hblNo || form?.hawbNo || '').trim()
+}
+const rowHasHblColumn = () => (rows.value[0] || []).some((_: any, index: number) => ['HBL NO#', 'HAWB NO#'].includes(normalizedHeaderLabel(index)))
+// Export row continuing into DO: the import side needs the HBL, so HBL is mandatory.
+const exportHblMandatory = (row: number) => row > 0 && linkedExportService(row) === 'DO'
+// Switching an export row's EXW+/FCA+/FCF+ to DO requires the HBL NO# first.
+const blockDoLinkWithoutHbl = (row: number, column: number, option: any) => {
+  const type = upperText(opsParts.value?.type || '')
+  if (!['EXW', 'FCA', 'FCF'].includes(type)) return false
+  const labels = type === 'EXW' ? ['EXW+', 'EFA+'] : type === 'FCF' ? ['FCF+', 'EFA+'] : ['FCA+']
+  if (!labels.includes(normalizedHeaderLabel(column))) return false
+  if (upperText(normalizeDropdownOption(option) || '') !== 'DO') return false
+  if (upperText(normalizeDropdownOption(rows.value[row]?.[column]) || '') === 'DO') return false
+  if (!rowHasHblColumn() || rowHblNumber(row)) return false
+  showToast('Enter HBL NO# (YES + number) before linking to DO')
+  return true
+}
+const isDoHblPendingCell = (row: number, column: number) =>
+  row > 0 && isDoSheet() &&
+  ['MANIFEST SUBMIT', 'ARRIVAL NOTICE SENDING', 'ARRIVAL NOTICE DETAIL'].includes(normalizedHeaderLabel(column)) &&
+  !doRowHblEntered(row)
 const isStampedOpsCheckboxDisabled = (row: number, column: number) => {
   if (isSentCheckboxColumn(column) && isUnsavedNewOpsRow(row)) return true
+  if (isDoHblPendingCell(row, column) && !isChecked(rows.value[row]?.[column])) return true
   if (isExwFclGsdSentEcdColumn(column)) {
     return isSentEcdLocked(rows.value[row]?.[column]) || !gsdDispatchPrerequisitesComplete(row)
   }
@@ -9624,6 +9715,8 @@ const isWorkflowLockedOpsCell = (row: number, column: number) =>
   isSentEcdRowLocked(row) || isBcSentBookingCellLocked(row, column)
   // Linked import rows: shipment fields and parties come from the export side.
   || isLinkedImportShipmentCell(row, column) || isLinkedImportPartyCell(row, column)
+  // Linked export rows: ATA / pickup status come from the import side.
+  || isLinkedExportImportCell(row, column)
 const isLockedAfterBcSentDate = (row: number, column: number) =>
   isBcSentRowLocked(row) && ['ETD', 'ETA'].includes(normalizedHeaderLabel(column))
 const hideLockedGsdAddAction = (row: number, isAddAction: boolean) =>
@@ -9836,6 +9929,10 @@ const agentForcedNotRequired = (row: number, kind: 'origin' | 'destination') => 
   if (sourceColumn < 0) return false
   return !normalizeDropdownOption(rows.value[row]?.[sourceColumn])
 }
+// Export row with no import service (no EXW+/FCA+/FCF+ option): there is no
+// destination side to pre-alert, so PRE-ALERT SENDING is N/A like the agent.
+const isPreAlertSendingNaCell = (row: number, column: number) =>
+  row > 0 && normalizedHeaderLabel(column) === 'PRE-ALERT SENDING' && agentForcedNotRequired(row, 'destination')
 const isForcedNotRequiredAgentCell = (row: number, column: number) => {
   const label = normalizedHeaderLabel(column)
   return (['DESTINATION AGENT', 'DEST. AGENT'].includes(label) && agentForcedNotRequired(row, 'destination'))
@@ -9852,8 +9949,92 @@ const isAgentNaCell = (row: number, column: number) => {
 // Import rows linked to an export shipment receive these parties from the export
 // ECD row (read-only here; an empty value shows an em dash).
 const LINKED_PARTY_GROUPS = [['SHIPPER'], ['CNEE', 'CONSIGNEE'], ['ORIGIN AGENT', 'ORIGINAL AGENT'], ['DESTINATION AGENT', 'DEST. AGENT'], ['LINER'], ['AIRLINE']]
+// Export rows whose shipment continues in an import service (EXW+/FCA+/FCF+ = DO/DAP/DDU/DDP):
+// ATA and the pickup/return status are owned by the import side.
+const LINKED_IMPORT_GROUPS = [['ATA'], ['PICKUP STATUS', 'PICKUP/RETURN STATUS']]
+const linkedExportService = (row: number) => {
+  const parsed = opsParts.value
+  if (row < 1 || !parsed || !['EXW', 'FCA', 'FCF'].includes(upperText(parsed.type))) return ''
+  const type = upperText(parsed.type)
+  const labels = type === 'EXW' ? ['EXW+', 'EFA+'] : type === 'FCF' ? ['FCF+', 'EFA+'] : ['FCA+']
+  const column = (rows.value[0] || []).findIndex((_: any, index: number) => labels.includes(normalizedHeaderLabel(index)))
+  const value = column >= 0 ? upperText(normalizeDropdownOption(rows.value[row]?.[column]) || '') : ''
+  return ['DO', 'DAP', 'DDU', 'DDP'].includes(value) ? value : ''
+}
+const isLinkedExportRow = (row: number) => !!linkedExportService(row)
+const isLinkedExportImportCell = (row: number, column: number) =>
+  row > 0 && LINKED_IMPORT_GROUPS.some((group) => group.includes(normalizedHeaderLabel(column))) && isLinkedExportRow(row)
+// Reads one cell of the import ICD row this export row continues into.
+const loadLinkedImportCell = async (row: number, labels: string[]) => {
+  const current = opsParts.value
+  const service = linkedExportService(row)
+  if (!current || !service) return ''
+  const header = (rows.value[0] || []).map((item: any) => String(item ?? '').trim())
+  const link = opsShipmentLink(header, rows.value[row] || [], row, settings.value)
+  const jobColumn = header.findIndex((label) => upperText(label) === 'JOB NO#')
+  const job = jobColumn >= 0 ? String(rows.value[row]?.[jobColumn] || '').trim() : ''
+  const base = opsBaseForType(service as any)
+  const icdHeader = opsHeaderFor(base, current.mode, 'ICD', service as any)
+  const sheet = await props.request(`/workbook/sheets/${encodeURIComponent(sheetStorageKey(opsLeafKey(base, current.mode, service as any, 'ICD')))}`).catch(() => null)
+  if (!sheet) return ''
+  const extracted = extractWorkbookRows(Array.isArray(sheet?.rows) ? sheet.rows.map((item: any[]) => [...item]) : [], sheet)
+  const icdRows = alignRowsToHeader(extracted.rows, icdHeader).rows
+  const icdSettings = extracted.settings || sheet?.settings || {}
+  let index = link ? icdRows.findIndex((item, i) => i > 0 && opsShipmentLink(icdHeader, item, i, icdSettings) === link) : -1
+  const icdJob = icdHeader.indexOf('JOB NO#')
+  if (index < 1 && job && icdJob >= 0) index = icdRows.findIndex((item, i) => i > 0 && String(item[icdJob] || '').trim() === job)
+  if (index < 1) return ''
+  const column = icdHeader.findIndex((label) => labels.includes(upperText(label)))
+  return column >= 0 ? icdRows[index][column] ?? '' : ''
+}
+// On load: copy ATA / pickup status of every linked export row from its import ICD row.
+const syncLinkedImportFields = async (requestedKey: string, requestedCountry: string) => {
+  const current = opsParts.value
+  if (!current || !['EXW', 'FCA', 'FCF'].includes(upperText(current.type))) return
+  const header = (rows.value[0] || []).map((item: any) => String(item ?? '').trim())
+  const linked = rows.value.map((_row, index) => index).filter((index) => isLinkedExportRow(index))
+  if (!linked.length) return
+  const services = [...new Set(linked.map((index) => linkedExportService(index)))]
+  const sheets = new Map<string, { header: string[]; rows: any[][]; settings: Record<string, any> }>()
+  await Promise.all(services.map(async (service) => {
+    const base = opsBaseForType(service as any)
+    const icdHeader = opsHeaderFor(base, current.mode, 'ICD', service as any)
+    try {
+      const sheet = await props.request(`/workbook/sheets/${encodeURIComponent(sheetStorageKey(opsLeafKey(base, current.mode, service as any, 'ICD'), requestedCountry))}`)
+      const extracted = extractWorkbookRows(Array.isArray(sheet?.rows) ? sheet.rows.map((item: any[]) => [...item]) : [], sheet)
+      sheets.set(service, { header: icdHeader, rows: alignRowsToHeader(extracted.rows, icdHeader).rows, settings: extracted.settings || sheet?.settings || {} })
+    } catch (error: any) {
+      if (requestStatus(error) !== 404) console.warn(`Could not load ${service} ICD for linked export rows`, error)
+    }
+  }))
+  if (activeKey.value !== requestedKey || countryViewId() !== requestedCountry) return
+  let changed = false
+  for (const index of linked) {
+    const row = rows.value[index]
+    const target = sheets.get(linkedExportService(index))
+    if (!row || !target) continue
+    const link = opsShipmentLink(header, row, index, settings.value)
+    const jobColumn = header.findIndex((label) => upperText(label) === 'JOB NO#')
+    const job = jobColumn >= 0 ? String(row[jobColumn] || '').trim() : ''
+    let match = link ? target.rows.findIndex((item, i) => i > 0 && opsShipmentLink(target.header, item, i, target.settings) === link) : -1
+    const icdJob = target.header.indexOf('JOB NO#')
+    if (match < 1 && job && icdJob >= 0) match = target.rows.findIndex((item, i) => i > 0 && String(item[icdJob] || '').trim() === job)
+    if (match < 1) continue
+    for (const group of LINKED_IMPORT_GROUPS) {
+      const localColumn = header.findIndex((label) => group.includes(upperText(label)))
+      const sourceColumn = target.header.findIndex((label) => group.includes(upperText(label)))
+      if (localColumn < 0 || sourceColumn < 0) continue
+      const value = target.rows[match][sourceColumn] ?? ''
+      if (String(row[localColumn] ?? '') !== String(value)) {
+        row[localColumn] = value
+        changed = true
+      }
+    }
+  }
+  if (changed) scheduleSave()
+}
 // Shipment fields also owned by the export side for linked import rows.
-const LINKED_SHIPMENT_GROUPS = [['HBL NO#', 'HAWB NO#'], ['MBL NO#', 'MAWB NO#'], ['VOLUME'], ['ROUTE'], ['VESSEL/VOYAGE', 'FLIGHT NO#'], ['ATD'], ['ETA'], ['ATA'], ['PICKUP/RETURN STATUS', 'PICKUP STATUS']]
+const LINKED_SHIPMENT_GROUPS = [['HBL NO#', 'HAWB NO#'], ['MBL NO#', 'MAWB NO#'], ['VOLUME'], ['ROUTE'], ['VESSEL/VOYAGE', 'FLIGHT NO#'], ['ATD'], ['ETA']]
 const isLinkedImportShipmentCell = (row: number, column: number) =>
   row > 0 && LINKED_SHIPMENT_GROUPS.some((group) => group.includes(normalizedHeaderLabel(column))) && isLinkedOriginImportRow(row)
 const isLinkedImportPartyCell = (row: number, column: number) =>
@@ -10317,6 +10498,7 @@ const infoDetailNeedsAttention = (row: number, column: number) =>
 const truckDetailNeedsAttention = (row: number, column: number) =>
   truckActionIsDetail(row, column) && !hasTruckRecords(row, column)
 const detailActionNeedsAttention = (row: number, column: number) => {
+  if (isPreAlertSendingNaCell(row, column)) return false
   const label = normalizedHeaderLabel(column)
   if (['CLEARANCE DETAIL', 'CLEARANCE DETAILS', 'CUSTOMS CLEARANCE DETAILS'].includes(label)) {
     return clearanceDetailsNeedsAttention(rows.value[row]?.[column])
@@ -10424,6 +10606,10 @@ const recoverLinkedNoticeInbox = async (row: number, column: number) => {
   }
 }
 const handleGsdActionButton = (row: number, column: number) => {
+  if (isDoHblPendingCell(row, column)) {
+    showToast('Enter HBL NO# first')
+    return
+  }
   if (normalizedHeaderLabel(column) === 'NOTES') {
     shipmentNotesModal.row = row
     shipmentNotesModal.column = column
@@ -10813,6 +10999,35 @@ const mirrorPaymentToPeers = (peers: FclStructureDept[], requiredReceiver: strin
   })
   return required
 }
+// Saves one cell of the visible sheet through the cell endpoint (applied onto the
+// latest server version: no 409 against concurrent linked writes). Falls back to
+// the queued whole-sheet save.
+const savePaymentCell = async (row: number, column: number, key: string, country: string, payload: ReturnType<typeof sheetPayload>) => {
+  const storageKey = sheetStorageKey(key, country)
+  const header = (rows.value[0] || []).map((value: any) => String(value ?? '').trim())
+  const currentRow = rows.value[row] || []
+  const link = opsShipmentLink(header, currentRow, row, settings.value)
+  const identity = Object.fromEntries(['JOB NO#', 'REF#', 'TIME']
+    .map((label) => [label, header.findIndex((value) => upperText(value) === label)] as const)
+    .filter(([, index]) => index >= 0 && String(currentRow[index] ?? '').trim())
+    .map(([label, index]) => [label, String(currentRow[index] ?? '')]))
+  if (isOpsPage.value && row > 0 && !isUnsavedNewOpsRow(row)) {
+    try {
+      const response = await props.request(`/workbook/sheets/${encodeURIComponent(storageKey)}/cells`, {
+        method: 'PATCH',
+        body: { cells: [{ link: link || '', rowIndex: row, identity, label: header[column], value: currentRow[column] ?? '' }] },
+      })
+      if (Number(response?.data?.applied ?? response?.applied ?? 0) > 0) {
+        rememberSheetUpdatedAt(storageKey, responseUpdatedAt(response))
+        if (isVisibleSheet(key, country)) saveState.value = `Saved ${new Date().toLocaleTimeString('en-GB')}`
+        return true
+      }
+    } catch (error) {
+      console.warn('Payment cell save failed; saving the whole sheet', error)
+    }
+  }
+  return queuePaymentSheetSave(key, country, payload)
+}
 const persistPaymentRequest = async (immediate = false, syncAfterSend = false) => {
   if (isGsdModalWorkflowLocked()) return
   if (!rows.value[gsdModal.row]) return
@@ -10843,14 +11058,19 @@ const persistPaymentRequest = async (immediate = false, syncAfterSend = false) =
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
       const [saved, delivered] = await Promise.all([
-        queuePaymentSheetSave(sourceKey, sourceCountry, attempt === 1 ? sourcePayload : sheetPayload(sourceKey, false, sourceCountry)),
+        savePaymentCell(gsdModal.row, gsdModal.column, sourceKey, sourceCountry, attempt === 1 ? sourcePayload : sheetPayload(sourceKey, false, sourceCountry)),
         attempt === 1
           ? mirrorPaymentToPeers(peers, requiredReceiver, sentPayload)
           : (requiredReceiver ? mirrorExwFclWorkflowCell(requiredReceiver as FclStructureDept, 'PAYMENT REQUEST', sentPayload) : Promise.resolve(true)),
       ])
       if (!saved) throw new Error('Could not save Payment Request')
       if (requiredReceiver && (!peers.includes(requiredReceiver as FclStructureDept) || delivered !== true)) {
-        throw new Error(`Could not deliver Payment Request to ${requiredReceiver}`)
+        const receiverKey = sheetStorageKey(opsLeafKey(opsParts.value!.base, opsParts.value!.mode, opsParts.value!.type, requiredReceiver as any), countryViewId())
+        const reason = mirrorFailureReasons.get(receiverKey)
+        const error = new Error(`Could not deliver Payment Request to ${requiredReceiver}${reason ? `: ${reason}` : ''}`)
+        // A missing row/sheet will not appear by retrying.
+        if (reason && /not on the|does not exist|no .* column/.test(reason)) { lastError = error; break }
+        throw error
       }
       return
     } catch (error: any) {
@@ -11931,7 +12151,9 @@ const openGsdModal = async (row: number, column: number) => {
       }
       hblNumberDraft = gsdModal.form.hblNo
       gsdModal.editing = true
-      if (required === 'YES') nextTick(() => hblNumberInput.value?.focus())
+      // Linked to DO: HBL is mandatory, so the modal always starts on YES.
+      if (exportHblMandatory(row)) gsdModal.form.required = 'YES'
+      if (gsdModal.form.required === 'YES') nextTick(() => hblNumberInput.value?.focus())
     } else if (gsdModal.kind === 'form') {
       const parsed = parseJsonCell(rawText, null as any)
       if (label === 'PAYMENT REQUEST' && opsDeptUpper() !== 'FCD') {
@@ -11986,22 +12208,28 @@ const openGsdModal = async (row: number, column: number) => {
         gsdModal.form = freetimeFormFromCell(rawText)
         gsdModal.editing = true
       } else if (label === 'ROUTE') {
-        await Promise.all([loadRouteCountryOptions(), loadRouteReferenceData()])
         gsdModal.formFields = []
+        gsdModal.form = routeFormFromCell(rawText)
+        await Promise.all([loadRouteCountryOptions(), loadRouteReferenceData()])
+        if (loadId !== gsdModalLoadId) return
         gsdModal.form = routeFormFromCell(rawText)
         // Linked import rows show the export ROUTE read-only.
         gsdModal.editing = !isExwFclTcdInboundView() && !isLinkedOriginImportRow(row)
         if (gsdModal.editing) nextTick(() => (document.querySelector('.gsd-route-input') as HTMLInputElement | null)?.focus())
       } else if (label === 'VESSEL/VOYAGE' || label === 'VESSEL NAME') {
-        await Promise.all([loadVesselReferenceData(), loadTranshipmentPlaces()])
         gsdModal.formFields = []
+        gsdModal.form = vesselFormFromCell(rawText)
+        await Promise.all([loadVesselReferenceData(), loadTranshipmentPlaces()])
+        if (loadId !== gsdModalLoadId) return
         gsdModal.form = vesselFormFromCell(rawText)
         gsdModal.editing = !isExwFclTcdInboundView() && !isVesselViewOnlyModal() && !isLinkedOriginImportRow(row)
         if (gsdModal.editing) nextTick(() => (document.querySelector('.gsd-vessel-input') as HTMLInputElement | null)?.focus())
       } else if (label === 'PICKUP DETAIL' || label === 'DELIVERY DETAIL' || label === 'DELIVERY DETAILS') {
-        await loadPickupReferenceData()
         gsdModal.formFields = []
         gsdModal.form = pickupFormFromCell(rawText)
+        gsdModal.editing = false
+        await loadPickupReferenceData()
+        if (loadId !== gsdModalLoadId) return
         ensurePickupReferenceValues()
         const lclReadonlyPickup = isReadonlyPickupModal()
         if (['ECD', 'CCD', 'DCD', 'FCD'].includes(upperText(activeDept.value || ''))) {
@@ -12244,35 +12472,9 @@ const openGsdModal = async (row: number, column: number) => {
         // Linked import row: MBL/HBL CONFIRMED come from the export PRE-ALERT SENDING and
         // MBL/HBL RELEASED from the export BILL RELEASE - always the latest values.
         if (isLinkedOriginImportRow(row)) {
-          const [sendingCell, releaseCell, detailCell] = await Promise.all([
-            loadLinkedOriginCell(row, ['PRE-ALERT SENDING']).catch(() => ''),
-            loadLinkedOriginCell(row, ['BILL RELEASE', 'AWB RELEASE']).catch(() => ''),
-            loadLinkedOriginCell(row, ['BILL DETAIL', 'BILL APPROVAL', 'AWB DETAIL']).catch(() => ''),
-          ])
+          const cells = await loadLinkedPreAlertCells(row)
           if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
-          let changed = false
-          const assign = (key: string, value: any) => {
-            if (gsdModal.form[key] !== value) { gsdModal.form[key] = value; changed = true }
-          }
-          // CONFIRMED = export MBL / HBL APPROVED (Bill Detail), or the ticks saved in
-          // the export PRE-ALERT SENDING.
-          const sending = String(sendingCell || '').trim() ? preAlertFormFromCell(sendingCell) : null
-          const detail: any = String(detailCell || '').trim() ? billApprovalFormFromCell(detailCell) : null
-          if (sending || detail) {
-            const mbl = !!(sending?.chk?.mc || detail?.mbl)
-            const hbl = !!(sending?.chk?.hc || detail?.hbl)
-            assign('mblConfirmed', mbl)
-            assign('mblConfirmedAt', mbl ? String(sending?.at?.mc || detail?.mblAt || '') : '')
-            assign('hblConfirmed', hbl)
-            assign('hblConfirmedAt', hbl ? String(sending?.at?.hc || detail?.hblAt || '') : '')
-          }
-          if (String(releaseCell || '').trim()) {
-            const release: any = billReleaseFormFromCell(releaseCell)
-            assign('mblReleased', !!release.mbl)
-            assign('mblReleasedAt', String(release.mblAt || ''))
-            assign('hblReleased', !!release.hbl)
-            assign('hblReleasedAt', String(release.hblAt || ''))
-          }
+          const changed = applyLinkedPreAlertConfirmation(gsdModal.form, ...cells)
           if (changed && rows.value[row]) {
             rows.value[row][column] = JSON.stringify({ form: { ...gsdModal.form } })
             scheduleSave()
@@ -12308,16 +12510,16 @@ const openGsdModal = async (row: number, column: number) => {
         const isNewPickupReturn = label === 'PICKUP/RETURN STATUS' && !String(rawText || '').trim()
         if (isNewPickupReturn) gsdModal.form.locked = false
         gsdModal.editing = isNewPickupReturn || !gsdModal.form.locked
-        // Linked import row: view-only, showing the export PICKUP STATUS.
-        if (isLinkedOriginImportRow(row)) {
+        // Export row linked to an import shipment: view-only, showing the import status.
+        if (isLinkedExportRow(row)) {
           gsdModal.editing = false
           gsdModal.form.locked = true
-          const exportStatus = await loadLinkedOriginCell(row, ['PICKUP STATUS', 'PICKUP/RETURN STATUS'], ['ECD']).catch(() => '')
+          const importStatus = await loadLinkedImportCell(row, ['PICKUP/RETURN STATUS', 'PICKUP STATUS']).catch(() => '')
           if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
-          if (String(exportStatus || '').trim() && exportStatus !== rawText) {
-            gsdModal.form = { ...pickupReturnFormFromCell(exportStatus, linkedTruckValue), locked: true }
+          if (String(importStatus || '').trim() && importStatus !== rawText) {
+            gsdModal.form = { ...pickupReturnFormFromCell(importStatus, linkedTruckValue), locked: true }
             gsdModal.editing = false
-            rows.value[row][column] = exportStatus
+            rows.value[row][column] = importStatus
             scheduleSave()
           }
         }
@@ -13087,6 +13289,10 @@ const confirmExtraOther = (index: number) => {
 }
 const setHblRequired = (value: 'YES' | 'NO') => {
   if (!gsdModal.editing) return
+  if (value === 'NO' && exportHblMandatory(gsdModal.row)) {
+    gsdModal.form.hint = 'HBL is required: this shipment is linked to DO'
+    return
+  }
   gsdModal.form.required = value
   gsdModal.form.hint = ''
   if (value === 'NO') {
@@ -13544,6 +13750,14 @@ const writeLinkedOriginCell = async (row: number, label: string, value: any) => 
   return true
 }
 // Reads one cell of the export-side row this import row was created from.
+// While a load-time sync runs, every linked lookup reuses the same fetched sheets.
+let linkedOriginSheetCache: Map<string, Promise<any>> | null = null
+const fetchLinkedOriginSheet = (storageKey: string) => {
+  const load = () => props.request(`/workbook/sheets/${encodeURIComponent(storageKey)}`)
+  if (!linkedOriginSheetCache) return load()
+  if (!linkedOriginSheetCache.has(storageKey)) linkedOriginSheetCache.set(storageKey, load())
+  return linkedOriginSheetCache.get(storageKey)!
+}
 const loadLinkedOriginCell = async (row: number, labels: string[], depts: string[] = ['ECD', 'DCD']) => {
   const current = opsParts.value
   if (!current || !isLinkedOriginImportRow(row)) return ''
@@ -13563,7 +13777,7 @@ const loadLinkedOriginCell = async (row: number, labels: string[], depts: string
       if (sourceColumn < 0) continue
       try {
         const sourceKey = opsLeafKey(base, current.mode, originType as any, sourceDept as any)
-        const sheet = await props.request(`/workbook/sheets/${encodeURIComponent(sheetStorageKey(sourceKey))}`)
+        const sheet = await fetchLinkedOriginSheet(sheetStorageKey(sourceKey))
         const extracted = extractWorkbookRows(Array.isArray(sheet?.rows) ? sheet.rows.map((item: any[]) => [...item]) : [], sheet)
         const sourceRows = alignRowsToHeader(extracted.rows, sourceHeader).rows
         const sourceSettings = extracted.settings || sheet?.settings || {}
@@ -13586,6 +13800,83 @@ const loadLinkedOriginCell = async (row: number, labels: string[], depts: string
     }
   }
   return ''
+}
+// Linked import PRE-ALERT CONFIRMATION: CONFIRMED = export MBL / HBL APPROVED (Bill
+// Detail) or the ticks of the export PRE-ALERT SENDING; RELEASED = export BILL RELEASE.
+const applyLinkedPreAlertConfirmation = (form: any, sendingCell: any, releaseCell: any, detailCell: any) => {
+  let changed = false
+  const assign = (key: string, value: any) => {
+    if (form[key] !== value) { form[key] = value; changed = true }
+  }
+  const sending = String(sendingCell || '').trim() ? preAlertFormFromCell(sendingCell) : null
+  const detail: any = String(detailCell || '').trim() ? billApprovalFormFromCell(detailCell) : null
+  if (sending || detail) {
+    const mbl = !!(sending?.chk?.mc || detail?.mbl)
+    const hbl = !!(sending?.chk?.hc || detail?.hbl)
+    assign('mblConfirmed', mbl)
+    assign('mblConfirmedAt', mbl ? String(sending?.at?.mc || detail?.mblAt || '') : '')
+    assign('hblConfirmed', hbl)
+    assign('hblConfirmedAt', hbl ? String(sending?.at?.hc || detail?.hblAt || '') : '')
+  }
+  if (String(releaseCell || '').trim()) {
+    const release: any = billReleaseFormFromCell(releaseCell)
+    assign('mblReleased', !!release.mbl)
+    assign('mblReleasedAt', String(release.mblAt || ''))
+    assign('hblReleased', !!release.hbl)
+    assign('hblReleasedAt', String(release.hblAt || ''))
+  }
+  return changed
+}
+const loadLinkedPreAlertCells = (row: number) => Promise.all([
+  loadLinkedOriginCell(row, ['PRE-ALERT SENDING']).catch(() => ''),
+  loadLinkedOriginCell(row, ['BILL RELEASE', 'AWB RELEASE']).catch(() => ''),
+  loadLinkedOriginCell(row, ['BILL DETAIL', 'BILL APPROVAL', 'AWB DETAIL']).catch(() => ''),
+])
+// On load of an import sheet: linked rows get the export PRE-ALERT CONFIRMATION
+// ticks and CONT/SEAL records up front, so alerts are right and the modals open
+// with the data already in place.
+const syncLinkedOriginWorkflowCells = async (requestedKey: string, requestedCountry: string) => {
+  const current = opsParts.value
+  if (!current || !['DO', 'DAP', 'DDU', 'DDP'].includes(upperText(current.type))) return
+  const preAlertColumn = (rows.value[0] || []).findIndex((_: any, index: number) => normalizedHeaderLabel(index) === 'PRE-ALERT CONFIRMATION')
+  const contSealColumn = (isDoSheet() || isDapSheet() || isDupSheet()) && !isCcdDduDdpFlow()
+    ? (rows.value[0] || []).findIndex((_: any, index: number) => normalizedHeaderLabel(index) === 'CONT/SEAL INFO')
+    : -1
+  if (preAlertColumn < 0 && contSealColumn < 0) return
+  const linked = rows.value.map((_row, index) => index).filter((index) => isLinkedOriginImportRow(index) && !isStandaloneManualOpsRow(index))
+  if (!linked.length) return
+  linkedOriginSheetCache = new Map()
+  try {
+    const results = await Promise.all(linked.map(async (index) => ({
+      index,
+      preAlert: preAlertColumn >= 0 ? await loadLinkedPreAlertCells(index) : null,
+      contSeal: contSealColumn >= 0 ? await loadLinkedOriginContSealRecords(index).catch(() => []) : [],
+    })))
+    if (activeKey.value !== requestedKey || countryViewId() !== requestedCountry) return
+    let changed = false
+    for (const { index, preAlert, contSeal } of results) {
+      const row = rows.value[index]
+      if (!row) continue
+      if (preAlert) {
+        const form = preAlertConfirmationFormFromCell(row[preAlertColumn])
+        if (applyLinkedPreAlertConfirmation(form, ...preAlert)) {
+          row[preAlertColumn] = JSON.stringify({ form: { ...form } })
+          changed = true
+        }
+      }
+      if (contSeal.length) {
+        const value = JSON.stringify({ form: { linkedOrigin: true, records: contSeal } })
+        if (row[contSealColumn] !== value) {
+          row[contSealColumn] = value
+          mirrorFclLinkedCell(index, contSealColumn)
+          changed = true
+        }
+      }
+    }
+    if (changed) scheduleSave()
+  } finally {
+    linkedOriginSheetCache = null
+  }
 }
 // Export containers come from MASTER SI SUBMIT, falling back to the trucking record.
 const loadLinkedOriginContSealRecords = async (row: number) => {
@@ -17934,7 +18225,7 @@ const selectLockedPickupReturnRow = (record: PickupReturnRecord) => {
   record.selected = true
 }
 const enablePickupReturnEdit = () => {
-  if (!hasPickupReturnSelection() || isLinkedOriginImportRow(gsdModal.row)) return
+  if (!hasPickupReturnSelection() || isLinkedExportRow(gsdModal.row)) return
   gsdModal.editing = true
 }
 const persistPickupReturnStatus = (immediate = false) => {
@@ -19347,7 +19638,11 @@ const confirmBillSend = async () => {
     billSendModal.hint = 'Enter valid CC emails separated by commas'
     return
   }
-  // The confirmation deadline cannot be in the past.
+  // The confirmation deadline (date and time) is required and cannot be in the past.
+  if (!billSendModal.deadlineDate || !billSendModal.deadlineTime) {
+    billSendModal.hint = 'Enter the Deadline to confirm B/L (date and time)'
+    return
+  }
   const deadline = truckDateTimeValue(billSendModal.deadlineDate, billSendModal.deadlineTime || '23:59')
   if (billSendModal.deadlineDate && deadline && deadline.getTime() < Date.now()) {
     billSendModal.hint = 'Deadline to confirm B/L cannot be in the past'
@@ -19422,6 +19717,58 @@ const rowCollectionDeadline = (): string | null => {
 // PaymentList / CollectionList follow the payment lines: every APPROVED line is
 // listed (no Bill Release step needed); a line that is no longer approved (e.g.
 // Return Approve) is removed. `deadline` null keeps the deadline already listed.
+// ProfitShare: one row per shipment and currency, TotalMargin = approved Collect - Pay.
+// Split: linked export<->import shipment -> OwnerBU != OriginBU: 1/3 each to Owner,
+// Origin and Destination; OwnerBU = OriginBU: half to Owner, half to Destination.
+// Export-only / import-only shipment: Owner keeps the whole margin.
+const profitShareRows = (approved: any[], shipment: Record<string, any>, linked: boolean) => {
+  const amount = (value: any) => {
+    const num = Number(String(value ?? '').replace(/,/g, ''))
+    return Number.isFinite(num) ? num : 0
+  }
+  const round = (value: number) => String(Math.round(value * 100) / 100)
+  const byCurrency = new Map<string, { margin: number; approvedAt: string }>()
+  const add = (currency: any, delta: number, approvedAt: any) => {
+    const key = upperText(String(currency || '').trim())
+    if (!key || !delta) return
+    const entry = byCurrency.get(key) || { margin: 0, approvedAt: '' }
+    entry.margin += delta
+    if (String(approvedAt || '') > entry.approvedAt) entry.approvedAt = String(approvedAt || '')
+    byCurrency.set(key, entry)
+  }
+  for (const line of approved) {
+    if (String(line.collectFrom || '').trim()) add(line.curCollect, amount(line.totalCollect), line.approvedAt)
+    if (String(line.payTo || '').trim()) add(line.curPay, -amount(line.totalPay), line.approvedAt)
+  }
+  const ownerBu = upperText(String(shipment.bu || '').trim())
+  const originBu = upperText(String(shipment.originbu || '').trim())
+  return [...byCurrency.entries()].map(([currency, { margin, approvedAt }]) => {
+    let owner = margin
+    let origin = 0
+    let destination = 0
+    if (linked && ownerBu && originBu && ownerBu !== originBu) {
+      owner = margin / 3
+      origin = margin / 3
+      destination = margin - owner - origin
+    } else if (linked) {
+      owner = margin / 2
+      destination = margin - owner
+    }
+    const date = parseOpsDate(String(approvedAt || '').slice(0, 10))
+    return {
+      ...shipment,
+      lineid: `${shipment.ref}:profit:${currency}`,
+      approveddate: date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : '',
+      ownerbu: ownerBu,
+      linked: linked ? 'YES' : 'NO',
+      totalmargin: round(margin),
+      currency,
+      ownerbumargin: round(owner),
+      originbumargin: round(origin),
+      destinationbumargin: round(destination),
+    }
+  })
+}
 const syncApprovalListLines = async (lines: any[], deadline: string | null) => {
   const ref = String(rowValueByHeader('REF#') || rowValueByHeader('JOB NO#')).trim()
   if (!ref) return
@@ -19442,8 +19789,16 @@ const syncApprovalListLines = async (lines: any[], deadline: string | null) => {
     const date = parseOpsDate(String(value || '').trim().slice(0, 10))
     return date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : ''
   }
+  const shipmentType = upperText(opsParts.value?.type || '')
+  const importSide = ['DO', 'DAP', 'DDU', 'DDP'].includes(shipmentType)
+  const typeplus = upperText(normalizeDropdownOption(importSide ? rowValueByHeader(`${shipmentType}+`) : preAlertForwardingOption()) || '')
+  // Linked export <-> import shipment: export continues into DO/DAP/DDU/DDP, or
+  // the import row comes from EXW/FCA/FCF.
+  const linkedShipment = importSide
+    ? isLinkedOriginImportRow(gsdModal.row) || ['EXW', 'FCA', 'FCF'].includes(typeplus)
+    : ['DO', 'DAP', 'DDU', 'DDP'].includes(typeplus)
   const shipment = {
-    ref, type: String(opsParts.value?.type || ''), typeplus: preAlertForwardingOption(),
+    ref, type: String(opsParts.value?.type || ''), typeplus,
     bu: rowValueByHeader('BU'), sales: rowValueByHeader('SALES'),
     ops: rowValueByHeader('ECD OPS') || rowValueByHeader('OPS') || rowValueByHeader('FCD OPS') || rowValueByHeader('ICD OPS'),
     clientcode: clientCellText(rowValueByHeader('CLIENT')), shippercode: clientCellText(rowValueByHeader('SHIPPER')), cneecode: clientCellText(rowValueByHeader('CNEE')),
@@ -19480,6 +19835,7 @@ const syncApprovalListLines = async (lines: any[], deadline: string | null) => {
         ...(deadline !== null ? { collectiondeadline: deadline, deadlinedate: deadline } : {}),
       })),
     },
+    { page: 'analysis_profitshare', rows: profitShareRows(approved, shipment, linkedShipment) },
   ]
   for (const { page, rows: wanted } of plan) {
     const response = await props.request(`/records?country=GLOBAL&page=${page}&limit=1000&skip=0`)
@@ -21934,6 +22290,10 @@ const saveGsdModal = async () => {
       gsdModal.form.hint = 'Please choose YES or NO'
       return
     }
+    if (required === 'NO' && exportHblMandatory(gsdModal.row)) {
+      gsdModal.form.hint = 'HBL is required: this shipment is linked to DO'
+      return
+    }
     if (required === 'YES') {
       const hblNo = upperText(hblNumberDraft).trim()
       if (!hblNo) {
@@ -22117,6 +22477,11 @@ const cellClass = (row: number, column: number) => ({
   'linked-date-changed': linkedDateChanged(row, column),
 })
 const toggleCheckbox = async (row: number, column: number, event: Event) => {
+  if (isDoHblPendingCell(row, column) && !isChecked(rows.value[row]?.[column])) {
+    ;(event.target as HTMLInputElement).checked = false
+    showToast('Enter HBL NO# first')
+    return
+  }
   if (isSentCheckboxColumn(column) && isUnsavedNewOpsRow(row)) {
     ;(event.target as HTMLInputElement).checked = isChecked(rows.value[row]?.[column])
     showToast('Save the new row before sending it')
@@ -22771,6 +23136,8 @@ const markLinkedDateChange = (targetSettings: Record<string, any>, row: number, 
 const linkedDateChanged = (row: number, column: number) =>
   row > 0 && linkedDateLabels.has(normalizedHeaderLabel(column)) &&
   Boolean(settings.value.linkedDateChanges?.[String(row)]?.[normalizedHeaderLabel(column)])
+// Last failure reason per target sheet, so a failed send can say what went wrong.
+const mirrorFailureReasons = new Map<string, string>()
 const runMirrorExwFclWorkflowCell = async (
   targetDept: FclStructureDept,
   label: string,
@@ -22824,7 +23191,10 @@ const runMirrorExwFclWorkflowCell = async (
     let targetColumn = targetLabels.map((candidate) => targetHeader.indexOf(candidate)).find((index) => index >= 0) ?? -1
     if (targetColumn < 0 && label === 'TRUCKING INFO') targetColumn = targetHeader.indexOf('TRUCK & CONT/SEAL INFO')
     if (targetColumn < 0 && label === 'TRUCK & CONT/SEAL INFO') targetColumn = targetHeader.indexOf('TRUCKING INFO')
-    if (targetColumn < 0) return false
+    if (targetColumn < 0) {
+      mirrorFailureReasons.set(targetStorageKey, `${targetDept} has no ${effectiveLabel} column`)
+      return false
+    }
     // Older GSD -> ECD transfers may have created the target row without
     // copying JOB NO#/TIME. In that case the row position is the only stable
     // link left; repair its identity while mirroring the changed field.
@@ -22843,7 +23213,10 @@ const runMirrorExwFclWorkflowCell = async (
     if (matchingRow < 1 && sourceDept === 'TCD' && targetDept === 'ECD' && sourceRowIndex > 0 && sourceRowIndex < targetRows.length) {
       matchingRow = sourceRowIndex
     }
-    if (matchingRow < 1) return false
+    if (matchingRow < 1) {
+      mirrorFailureReasons.set(targetStorageKey, `this shipment is not on the ${targetDept} sheet yet`)
+      return false
+    }
     const wasAlreadyLinked = !!sourceLink && String(targetLinks[String(matchingRow)] || '') === sourceLink
     if (sourceLink) {
       targetSettings.opsRowLinks = { ...targetLinks, [String(matchingRow)]: sourceLink }
@@ -22919,6 +23292,8 @@ const runMirrorExwFclWorkflowCell = async (
     })
     rememberSheetUpdatedAt(targetStorageKey, responseUpdatedAt(patched))
     const applied = Number(patched?.data?.applied ?? patched?.applied ?? 1)
+    if (applied > 0) mirrorFailureReasons.delete(targetStorageKey)
+    else mirrorFailureReasons.set(targetStorageKey, `the ${targetDept} row was not found`)
     return applied > 0
   } catch (error: any) {
     // The target sheet was saved by someone else (or its own autosave) between our
@@ -22929,6 +23304,9 @@ const runMirrorExwFclWorkflowCell = async (
       return runMirrorExwFclWorkflowCell(targetDept, label, value, sourceRowIndex, source, attempt + 1)
     }
     if (requestStatus(error) !== 404) console.warn(`Could not mirror ${label} to ${targetDept}`, error)
+    mirrorFailureReasons.set(targetStorageKey, requestStatus(error) === 404
+      ? `the ${targetDept} sheet does not exist yet`
+      : String(error?.data?.message || error?.message || 'request failed'))
     return false
   }
 }
@@ -24030,6 +24408,10 @@ const setDropdownValue = (row: number, column: number, event: Event) => {
     return
   }
   const selected = (event.target as HTMLSelectElement).value
+  if (blockDoLinkWithoutHbl(row, column, selected)) {
+    ;(event.target as HTMLSelectElement).value = String(rows.value[row]?.[column] ?? '')
+    return
+  }
   const stored = isForwardingOptionColumn(column) && !normalizeDropdownOption(selected) ? '\u2014' : selected
   rows.value[row][column] = stored
   syncForcedAgentFromServiceOption(row, column, stored)
@@ -24086,6 +24468,10 @@ const syncForcedAgentFromServiceOption = (row: number, column: number, option: s
 }
 const selectDropdownOption = (option: string) => {
   if (dropdownPopup.mode === 'edit') return
+  if (blockDoLinkWithoutHbl(dropdownPopup.row, dropdownPopup.column, option)) {
+    closeDropdownPopup()
+    return
+  }
   const label = normalizedHeaderLabel(dropdownPopup.column)
   const isServiceOption = ['EFA+', 'EXW+', 'FCA+', 'FCF+', 'DO+', 'DAP+', 'DDU+', 'DDP+', 'DUP+'].includes(label)
   const storedOption = isServiceOption && !normalizeDropdownOption(option) ? '\u2014' : option
@@ -24232,6 +24618,10 @@ const openDatePopup = (row: number, column: number, target: HTMLElement) => {
     showToast('Update it on the export shipment')
     return
   }
+  if (isLinkedExportImportCell(row, column)) {
+    showToast('Update it on the import shipment')
+    return
+  }
   nativePickerInput = null
   nativePickerType = ''
   if (isLockedOpsCell(row, column)) {
@@ -24361,11 +24751,8 @@ const openLineDatePopup = (event: MouseEvent, obj: any, key: string, after?: () 
 }
 const isDatePopupDayDisabled = (date: Date) => {
   const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
-  // Payment DN / Invoice dates: no day in the past.
-  if (datePopup.row === -2 && datePopupLineTarget) {
-    const now = new Date()
-    return day < new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  }
+  // Payment DN / Invoice dates: any day can be chosen.
+  if (datePopup.row === -2 && datePopupLineTarget) return false
   // Native date fields shown through this calendar keep their own min / max
   // (e.g. Pickup date cannot be before today).
   if (nativePickerInput && datePopup.row === -1 && !datePopup.cutoffField) {
@@ -24765,7 +25152,7 @@ const displayCell = (value: any, row: number, column: number) => {
   return formatAdminDateDisplay(value)
 }
 const opsGridCellText = (value: any, row: number, column: number) => {
-  if (!String(value ?? '').trim() && isLinkedImportShipmentCell(row, column)) return '—'
+  if (!String(value ?? '').trim() && (isLinkedImportShipmentCell(row, column) || isLinkedExportImportCell(row, column))) return '—'
   const label = upperText(rows.value[0]?.[column]).replace(/\s+/g, '')
   if (row > 0 && ['EXW+', 'EFA+', 'FCA+', 'FCF+'].includes(label)) {
     return normalizeDropdownOption(value) || 'N/A'
@@ -25080,6 +25467,8 @@ onBeforeUnmount(() => {
 .ops-edit-input{box-sizing:border-box;display:block;width:100%;height:26px;border:1px solid var(--g-line);border-radius:4px;background:#fff;padding:2px 7px 1px;font:inherit;font-size:12px;font-weight:550;line-height:normal;color:var(--ink);text-align:center;text-transform:uppercase;outline:none;appearance:none}.ops-edit-input:focus{border-color:var(--g-600);box-shadow:inset 0 0 0 1px var(--g-600)}.ops-edit-input.time{text-transform:none;padding:1px 6px}.ops-edit-input.date.has-date-value{position:relative;border-color:transparent;border-radius:0;background:transparent;padding-left:0;padding-right:0;font-weight:400;cursor:pointer}.ops-edit-input.date.has-date-value:hover{text-decoration:underline;text-underline-offset:3px}.ops-edit-input.date.has-date-value:focus{border-color:transparent;background:transparent;box-shadow:none;text-decoration:underline;text-underline-offset:3px}.ops-edit-input.date.has-date-value::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:auto;height:auto;margin:0;opacity:0;cursor:pointer}
 .ops-time-input{box-sizing:border-box;display:block;width:100%;height:26px;border:0;border-radius:4px;background:transparent;padding:1px 6px;font:inherit;font-size:12px;font-weight:550;line-height:normal;color:var(--ink);text-align:center;outline:none}.ops-time-input:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--g-600)}
 .ops-pill{display:inline-flex;align-items:center;justify-content:center;min-width:48px;height:20px;padding:0 9px;border:0;border-radius:5px;background:#008f4c;color:#fff;font-size:10px;font-weight:800;letter-spacing:.03em;cursor:pointer}.ops-pill:hover{background:#00773f}.ops-pill.view{background:#a96a13}.ops-pill.view:hover{background:#8f580f}.ops-pill.has{background:#00773f}
+.ops-pill:disabled,.ops-pill:disabled:hover{background:#c9d3cd!important;color:#fff!important;cursor:not-allowed;box-shadow:none!important}
+.ops-pill:disabled .detail-alert-icon,.ops-pill:disabled .do-release-warn-icon{display:none}
 .ops-pill.volume-summary-btn{height:auto;min-height:20px;white-space:pre-line;line-height:1.35;text-align:center}
 .ops-pill.linked-value,.gsd-btn.linked-value{gap:5px;background:transparent;color:#008f4c;font-size:12px;padding:0}.ops-pill.linked-value:hover,.gsd-btn.linked-value:hover{background:transparent;color:#00773f;text-decoration:underline}.ops-pill.linked-value .client-pen,.gsd-btn.linked-value .client-pen{color:#6f7b74}
 .ops-client{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:0;background:transparent;color:#008f4c;font:inherit;font-size:12px;font-weight:400;cursor:pointer}.ops-client span{color:#008f4c;font-weight:400}.ops-client:hover span{text-decoration:underline}.client-pen{display:block;width:10px;height:10px;flex:0 0 10px;color:#6f7b74}
@@ -25677,6 +26066,7 @@ onBeforeUnmount(() => {
 .release-target-icon{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:#e3f4ea;color:#0a6b3b;font-size:10px;font-weight:900}
 .release-sent-lines:not(#_x){display:flex;flex-direction:column;align-items:flex-start;gap:1px;flex:1 1 auto;min-width:0;margin-right:auto;font-size:10.5px;line-height:1.35;text-align:left;white-space:nowrap}.release-sent-lines:not(#_x)>span{display:flex;align-items:center;gap:4px}.release-sent-lines:not(#_x) .bd-check{transform:scale(.8)}
 .gsd-release-actions:has(.release-sent-lines):not(#_x){flex-wrap:nowrap}
+.bds-required{color:#d63a3a}
 .bds-deadline-inputs{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:8px}.bds-deadline-inputs input{box-sizing:border-box;width:100%;height:36px;border:1px solid #cfd8d3;border-radius:8px;padding:0 10px;font:inherit;font-size:13px}
 /* Popup tables that scroll vertically: the select-all checkbox header stays frozen
    (top) like the other headers, and stays pinned left for horizontal scrolling. */

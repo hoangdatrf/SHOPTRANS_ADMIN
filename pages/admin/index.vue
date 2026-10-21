@@ -7995,9 +7995,19 @@ const loadRecords = async () => {
   if (currentPage.value.kind === 'traders-suppliers' && activeTraderTab.value.id === 'traders' && !haulageStaffOptions.value.length) await loadHaulageLookups()
   try {
     if (currentPage.value.kind === 'analysis-statistics' && state.analysisTop === 'ApprovalList' && activeAnalysisTable.value?.id === 'profitshare') {
-      const data = await apiFetch(`/records?country=GLOBAL&page=analysis_margin&limit=1000`)
+      // Shipments write their own ProfitShare rows when Payment Approval is sent
+      // (added / removed with the approved lines); sample margin rows follow.
+      const [shared, data] = await Promise.all([
+        apiFetch(`/records?country=GLOBAL&page=analysis_profitshare&limit=1000`),
+        apiFetch(`/records?country=GLOBAL&page=analysis_margin&limit=1000`),
+      ])
       if (token !== recordsLoadToken) return
-      records.value = (Array.isArray(data.items) ? data.items : []).map((record: AdminRecord, index: number) => analysisProfitShareRecord(record, index))
+      const sharedRows = (Array.isArray(shared.items) ? shared.items : []) as AdminRecord[]
+      sharedRows.sort((left, right) => String(dataOf(right).approveddate || '').localeCompare(String(dataOf(left).approveddate || '')))
+      records.value = [
+        ...sharedRows,
+        ...(Array.isArray(data.items) ? data.items : []).map((record: AdminRecord, index: number) => analysisProfitShareRecord(record, sharedRows.length + index)),
+      ]
       state.selected.clear()
       return
     }
