@@ -183,7 +183,7 @@
                 </td>
               </tr>
               <template v-else>
-              <tr v-for="rowIndex in opsBodyRows" :key="rowIndex" :class="{ selected: opsSelectedRows.has(rowIndex), editing: isOpsEditingRow(rowIndex) }">
+              <tr v-for="rowIndex in opsBodyRows" :key="rowIndex" :data-ops-row="rowIndex" :class="{ selected: opsSelectedRows.has(rowIndex), editing: isOpsEditingRow(rowIndex) }">
                 <td class="ops-sel">
                   <input type="checkbox" :disabled="isOpsEditingRow(rowIndex)" :checked="opsSelectedRows.has(rowIndex)" @change="toggleOpsRow(rowIndex)" />
                 </td>
@@ -193,6 +193,7 @@
                   :class="opsCellClass(rowIndex, columnIndex)"
                   @dblclick="handleOpsCellDblClick(rowIndex, columnIndex, $event)"
                 >
+                  <span v-if="isOpsNewRowCell(rowIndex, columnIndex)" class="ops-new-badge" title="New row - clears after the first saved change">NEW</span>
                   <span v-if="isLinkedImportShipmentCell(rowIndex, columnIndex) && !String(rows[rowIndex]?.[columnIndex] ?? '').trim()" class="ops-textcell" title="Update it on the export shipment">—</span>
                   <span v-else-if="isLinkedExportImportCell(rowIndex, columnIndex) && !String(rows[rowIndex]?.[columnIndex] ?? '').trim()" class="ops-textcell" title="Update it on the import shipment">—</span>
                   <span v-else-if="isPreAlertSendingNaCell(rowIndex, columnIndex)" class="ops-textcell ops-na-cell">N/A</span>
@@ -5137,12 +5138,21 @@ const liveTraderCompany = (client: any) => {
 }
 const loadLiveTraderDirectory = (force = false) => {
   const country = countryViewId()
-  if (!force && liveTraderCountry === country && Date.now() - liveTraderLoadedAt < 30000) return Promise.resolve()
+  if (!force && liveTraderCountry === country && Date.now() - liveTraderLoadedAt < 5 * 60_000) return Promise.resolve()
   if (liveTraderLoading) return liveTraderLoading
   const pages = ['traders_traders', 'traders_ocean_carriers', 'traders_ocean_agent', 'traders_airlines', 'traders_air_agent', 'traders_dest_agent', 'traders_customs_broker', 'traders_hauliers']
-  liveTraderLoading = Promise.all(pages.map((page) => props.request(
+  const loadPerPage = () => Promise.all(pages.map((page) => props.request(
     `/records?country=${encodeURIComponent(country)}&page=${encodeURIComponent(page)}&search=&limit=1000&skip=0`,
-  ).catch(() => null))).then((responses) => {
+  ).catch(() => null)))
+  // One request for all trader pages; a backend without `pages` support does not
+  // echo it back, so fall back to one request per page.
+  const loadBatched = () => props.request(
+    `/records?country=${encodeURIComponent(country)}&pages=${encodeURIComponent(pages.join(','))}&limit=1000`,
+  ).then((response: any) => {
+    const echoed = response?.pages || response?.data?.pages
+    return Array.isArray(echoed) && echoed.length ? [response] : loadPerPage()
+  }, () => loadPerPage())
+  liveTraderLoading = loadBatched().then((responses: any[]) => {
     const next: Record<string, string> = {}
     responses.forEach((response: any) => {
       const items = Array.isArray(response?.items) ? response.items : Array.isArray(response?.data?.items) ? response.data.items : []
@@ -5356,7 +5366,7 @@ const onComboKeyDown = (event: KeyboardEvent) => {
   }
   void nextTick(() => document.querySelector('.st-combo-list .st-combo-item.active')?.scrollIntoView({ block: 'nearest' }))
 }
-const onWindowFocusRefreshTraders = () => { if (isOpsPage.value) void loadLiveTraderDirectory().catch(() => undefined) }
+const onWindowFocusRefreshTraders = () => { if (isOpsPage.value && Date.now() - liveTraderLoadedAt > 30_000) void loadLiveTraderDirectory(true).catch(() => undefined) }
 const loadPaymentPartyOptions = async () => {
   if (paymentPartiesLoading.value) return
   paymentPartiesLoading.value = true
@@ -6306,11 +6316,79 @@ const selectableVisibleRows = computed(() => visibleRowIndexes.value.filter((ind
 // header shows the total; clicking it lifts rows that have a counter to the top
 // (keeping the normal order inside each group). Clicking again restores the order.
 const opsBadgeSortColumn = ref<number | null>(null)
+// ---- NEW rows -------------------------------------------------------------------
+// A row generated in this department by another one (SENT ECD/ICD, BC SENT,
+// MANIFEST, an export<->import link, a NOTICE delivery) is flagged NEW by its
+// shipment link: settings.opsNewLinks[link] = stamp. It stops being NEW once a
+// user changes that row and the change is saved: settings.opsNewSeen[link] = stamp.
+// Keyed by link (not row index) so deleting/sorting rows never moves the flag.
+const markOpsRowNew = (targetSettings: Record<string, any>, link: string) => {
+  if (!link) return
+  targetSettings.opsNewLinks = { ...(targetSettings.opsNewLinks || {}), [link]: new Date().toISOString() }
+}
+const opsRowNewStamp = (row: number) => {
+  if (row <= 0) return ''
+  const link = String(settings.value?.opsRowLinks?.[String(row)] || '')
+  const stamp = link ? String(settings.value?.opsNewLinks?.[link] || '') : ''
+  return stamp && String(settings.value?.opsNewSeen?.[link] || '') !== stamp ? stamp : ''
+}
+const opsRowIsNew = (row: number) => isOpsPage.value && !!opsRowNewStamp(row)
+const isOpsNewRowCell = (row: number, column: number) => normalizedHeaderLabel(column) === 'TIME' && opsRowIsNew(row)
+// Row snapshot of each NEW row; a saved difference on a row the user worked on clears NEW.
+const opsNewRowBaselines = new Map<string, string>()
+const opsUserTouchedRows = new Set<number>()
+const resetOpsNewRowBaselines = () => {
+  opsNewRowBaselines.clear()
+  opsUserTouchedRows.clear()
+  for (let row = 1; row < rows.value.length; row += 1) {
+    if (opsRowNewStamp(row)) opsNewRowBaselines.set(String(settings.value.opsRowLinks[String(row)]), JSON.stringify(rows.value[row] || []))
+  }
+}
+// Called before a save of this sheet. Returns true when a NEW flag was cleared
+// (the caller must make sure the settings are saved too).
+const consumeOpsNewRowEdits = () => {
+  if (!isOpsPage.value || !opsNewRowBaselines.size) return false
+  let cleared = false
+  for (let row = 1; row < rows.value.length; row += 1) {
+    const stamp = opsRowNewStamp(row)
+    if (!stamp) continue
+    const link = String(settings.value.opsRowLinks[String(row)])
+    const current = JSON.stringify(rows.value[row] || [])
+    const baseline = opsNewRowBaselines.get(link)
+    if (baseline === undefined || baseline === current) continue
+    if (opsUserTouchedRows.has(row)) {
+      settings.value = { ...settings.value, opsNewSeen: { ...(settings.value.opsNewSeen || {}), [link]: stamp } }
+      opsNewRowBaselines.delete(link)
+      cleared = true
+    } else {
+      // Background syncs (linked fields, mirrors) are not a user change.
+      opsNewRowBaselines.set(link, current)
+    }
+  }
+  return cleared
+}
+// Which row a real user gesture is working on: the grid row, or the row of the open
+// modal / popup.
+const noteOpsUserRow = (event: Event) => {
+  if (!event.isTrusted || !isOpsPage.value || !opsNewRowBaselines.size) return
+  const target = event.target as HTMLElement | null
+  const rowEl = target?.closest?.('tr[data-ops-row]') as HTMLElement | null
+  const row = rowEl ? Number(rowEl.dataset.opsRow)
+    : gsdModal.open ? gsdModal.row
+    : dropdownPopup.open ? dropdownPopup.row
+    : datePopup.open ? datePopup.row
+    : shipmentNotesModal.open ? shipmentNotesModal.row
+    : -1
+  if (Number.isInteger(row) && row > 0) opsUserTouchedRows.add(row)
+}
+// Per-row counter used by the header badges and the "flagged first" sort.
+const opsColumnRowCount = (row: number, column: number) =>
+  normalizedHeaderLabel(column) === 'TIME' ? (opsRowIsNew(row) ? 1 : 0) : noticeBadgeCount(row, column)
 const opsColumnBadgeTotal = (column: number) => {
   if (!isOpsPage.value) return 0
   const label = normalizedHeaderLabel(column)
-  if (!['PAYMENT REQUEST', 'EXPENSE/COLLECT LIST', 'EXPENSE/COLLECTION LIST', 'REMINDER', 'NOTICE'].includes(label)) return 0
-  return filteredRowIndexes.value.reduce((sum, index) => sum + (index > 0 ? noticeBadgeCount(index, column) : 0), 0)
+  if (!['PAYMENT REQUEST', 'EXPENSE/COLLECT LIST', 'EXPENSE/COLLECTION LIST', 'REMINDER', 'NOTICE', 'TIME'].includes(label)) return 0
+  return filteredRowIndexes.value.reduce((sum, index) => sum + (index > 0 ? opsColumnRowCount(index, column) : 0), 0)
 }
 const toggleOpsBadgeSort = (column: number) => {
   if (opsBadgeSortColumn.value === column) opsBadgeSortColumn.value = null
@@ -6320,8 +6398,8 @@ const opsBodyRows = computed(() => {
   let body = filteredRowIndexes.value.filter((index) => index > 0)
   const badgeColumn = opsBadgeSortColumn.value
   if (badgeColumn !== null) {
-    const flagged = body.filter((index) => noticeBadgeCount(index, badgeColumn) > 0)
-    if (flagged.length) body = [...flagged, ...body.filter((index) => noticeBadgeCount(index, badgeColumn) <= 0)]
+    const flagged = body.filter((index) => opsColumnRowCount(index, badgeColumn) > 0)
+    if (flagged.length) body = [...flagged, ...body.filter((index) => opsColumnRowCount(index, badgeColumn) <= 0)]
   }
   const editing = opsEditingRow.value
   if (!editing?.isNew || editing.row <= 0 || editing.row >= rows.value.length) return body
@@ -6683,9 +6761,6 @@ const loadSheet = async () => {
   visibleRowsLimit.value = 250
   editingCell.value = null
 
-  // Staff options are only needed when an assignment editor is opened. Load them
-  // beside the worksheet request so a small sheet is never held up by lookups.
-  if (isOpsPage.value) void loadOpsStaff()
   
   try {
     // Wait for source-tab mirrors before hydrating the destination tab, but never
@@ -6803,10 +6878,14 @@ const loadSheet = async () => {
         settings.value = settingsLoaded
         loading.value = false
         await nextTick()
-        if (isOpsPage.value) void loadLiveTraderDirectory(true).catch(() => undefined)
+        // Staff options are only needed when an assignment editor is opened: load
+        // them once the sheet is on screen so they do not compete with it.
+        if (isOpsPage.value) void loadOpsStaff()
+        if (isOpsPage.value) void loadLiveTraderDirectory().catch(() => undefined)
         if (isOpsPage.value) void syncLinkedOriginParties(requestedKey, requestedCountry).catch((error) => console.warn('Could not sync linked parties', error))
         if (isOpsPage.value) prefetchModalReferenceData()
-        if (isOpsPage.value) void syncLinkedImportFields(requestedKey, requestedCountry).catch((error) => console.warn('Could not sync linked import fields', error))
+        if (isOpsPage.value) resetLinkedImportOwnedBaseline()
+        if (isOpsPage.value) resetOpsNewRowBaselines()
         if (isOpsPage.value) void syncLinkedOriginWorkflowCells(requestedKey, requestedCountry).catch((error) => console.warn('Could not sync linked pre-alert / cont-seal', error))
       }
       // DCD was consolidated into ECD. Import the DCD-owned workflow values
@@ -7135,6 +7214,7 @@ const saveSheetImpl = async (
   // Do not serialize the visible rows under a key belonging to an earlier tab.
   // Delayed autosaves previously overwrote linked ECD data after tab switches.
   if (!payloadOverride && !isVisibleSheet(requestedKey, requestedCountry)) return false
+  if (!payloadOverride) consumeOpsNewRowEdits()
   const payloadSnapshot = payloadOverride || sheetPayload(requestedKey, false, requestedCountry)
   if (loading.value && !payloadOverride) {
     armSaveTimer(requestedKey, requestedCountry, 350)
@@ -7247,6 +7327,7 @@ const queuePaymentSheetSave = (
 }
 
 const scheduleSave = () => {
+  consumeOpsNewRowEdits()
   saveState.value = 'Saving...'
   const requestedKey = activeKey.value
   const requestedCountry = loadedCountryId.value
@@ -9964,75 +10045,6 @@ const linkedExportService = (row: number) => {
 const isLinkedExportRow = (row: number) => !!linkedExportService(row)
 const isLinkedExportImportCell = (row: number, column: number) =>
   row > 0 && LINKED_IMPORT_GROUPS.some((group) => group.includes(normalizedHeaderLabel(column))) && isLinkedExportRow(row)
-// Reads one cell of the import ICD row this export row continues into.
-const loadLinkedImportCell = async (row: number, labels: string[]) => {
-  const current = opsParts.value
-  const service = linkedExportService(row)
-  if (!current || !service) return ''
-  const header = (rows.value[0] || []).map((item: any) => String(item ?? '').trim())
-  const link = opsShipmentLink(header, rows.value[row] || [], row, settings.value)
-  const jobColumn = header.findIndex((label) => upperText(label) === 'JOB NO#')
-  const job = jobColumn >= 0 ? String(rows.value[row]?.[jobColumn] || '').trim() : ''
-  const base = opsBaseForType(service as any)
-  const icdHeader = opsHeaderFor(base, current.mode, 'ICD', service as any)
-  const sheet = await props.request(`/workbook/sheets/${encodeURIComponent(sheetStorageKey(opsLeafKey(base, current.mode, service as any, 'ICD')))}`).catch(() => null)
-  if (!sheet) return ''
-  const extracted = extractWorkbookRows(Array.isArray(sheet?.rows) ? sheet.rows.map((item: any[]) => [...item]) : [], sheet)
-  const icdRows = alignRowsToHeader(extracted.rows, icdHeader).rows
-  const icdSettings = extracted.settings || sheet?.settings || {}
-  let index = link ? icdRows.findIndex((item, i) => i > 0 && opsShipmentLink(icdHeader, item, i, icdSettings) === link) : -1
-  const icdJob = icdHeader.indexOf('JOB NO#')
-  if (index < 1 && job && icdJob >= 0) index = icdRows.findIndex((item, i) => i > 0 && String(item[icdJob] || '').trim() === job)
-  if (index < 1) return ''
-  const column = icdHeader.findIndex((label) => labels.includes(upperText(label)))
-  return column >= 0 ? icdRows[index][column] ?? '' : ''
-}
-// On load: copy ATA / pickup status of every linked export row from its import ICD row.
-const syncLinkedImportFields = async (requestedKey: string, requestedCountry: string) => {
-  const current = opsParts.value
-  if (!current || !['EXW', 'FCA', 'FCF'].includes(upperText(current.type))) return
-  const header = (rows.value[0] || []).map((item: any) => String(item ?? '').trim())
-  const linked = rows.value.map((_row, index) => index).filter((index) => isLinkedExportRow(index))
-  if (!linked.length) return
-  const services = [...new Set(linked.map((index) => linkedExportService(index)))]
-  const sheets = new Map<string, { header: string[]; rows: any[][]; settings: Record<string, any> }>()
-  await Promise.all(services.map(async (service) => {
-    const base = opsBaseForType(service as any)
-    const icdHeader = opsHeaderFor(base, current.mode, 'ICD', service as any)
-    try {
-      const sheet = await props.request(`/workbook/sheets/${encodeURIComponent(sheetStorageKey(opsLeafKey(base, current.mode, service as any, 'ICD'), requestedCountry))}`)
-      const extracted = extractWorkbookRows(Array.isArray(sheet?.rows) ? sheet.rows.map((item: any[]) => [...item]) : [], sheet)
-      sheets.set(service, { header: icdHeader, rows: alignRowsToHeader(extracted.rows, icdHeader).rows, settings: extracted.settings || sheet?.settings || {} })
-    } catch (error: any) {
-      if (requestStatus(error) !== 404) console.warn(`Could not load ${service} ICD for linked export rows`, error)
-    }
-  }))
-  if (activeKey.value !== requestedKey || countryViewId() !== requestedCountry) return
-  let changed = false
-  for (const index of linked) {
-    const row = rows.value[index]
-    const target = sheets.get(linkedExportService(index))
-    if (!row || !target) continue
-    const link = opsShipmentLink(header, row, index, settings.value)
-    const jobColumn = header.findIndex((label) => upperText(label) === 'JOB NO#')
-    const job = jobColumn >= 0 ? String(row[jobColumn] || '').trim() : ''
-    let match = link ? target.rows.findIndex((item, i) => i > 0 && opsShipmentLink(target.header, item, i, target.settings) === link) : -1
-    const icdJob = target.header.indexOf('JOB NO#')
-    if (match < 1 && job && icdJob >= 0) match = target.rows.findIndex((item, i) => i > 0 && String(item[icdJob] || '').trim() === job)
-    if (match < 1) continue
-    for (const group of LINKED_IMPORT_GROUPS) {
-      const localColumn = header.findIndex((label) => group.includes(upperText(label)))
-      const sourceColumn = target.header.findIndex((label) => group.includes(upperText(label)))
-      if (localColumn < 0 || sourceColumn < 0) continue
-      const value = target.rows[match][sourceColumn] ?? ''
-      if (String(row[localColumn] ?? '') !== String(value)) {
-        row[localColumn] = value
-        changed = true
-      }
-    }
-  }
-  if (changed) scheduleSave()
-}
 // Shipment fields also owned by the export side for linked import rows.
 const LINKED_SHIPMENT_GROUPS = [['HBL NO#', 'HAWB NO#'], ['MBL NO#', 'MAWB NO#'], ['VOLUME'], ['ROUTE'], ['VESSEL/VOYAGE', 'FLIGHT NO#'], ['ATD'], ['ETA']]
 const isLinkedImportShipmentCell = (row: number, column: number) =>
@@ -11003,6 +11015,7 @@ const mirrorPaymentToPeers = (peers: FclStructureDept[], requiredReceiver: strin
 // latest server version: no 409 against concurrent linked writes). Falls back to
 // the queued whole-sheet save.
 const savePaymentCell = async (row: number, column: number, key: string, country: string, payload: ReturnType<typeof sheetPayload>) => {
+  if (consumeOpsNewRowEdits()) scheduleSave()
   const storageKey = sheetStorageKey(key, country)
   const header = (rows.value[0] || []).map((value: any) => String(value ?? '').trim())
   const currentRow = rows.value[row] || []
@@ -12510,18 +12523,11 @@ const openGsdModal = async (row: number, column: number) => {
         const isNewPickupReturn = label === 'PICKUP/RETURN STATUS' && !String(rawText || '').trim()
         if (isNewPickupReturn) gsdModal.form.locked = false
         gsdModal.editing = isNewPickupReturn || !gsdModal.form.locked
-        // Export row linked to an import shipment: view-only, showing the import status.
+        // Export row linked to an import shipment: view-only. The import side writes
+        // its status into this cell whenever it changes.
         if (isLinkedExportRow(row)) {
           gsdModal.editing = false
           gsdModal.form.locked = true
-          const importStatus = await loadLinkedImportCell(row, ['PICKUP/RETURN STATUS', 'PICKUP STATUS']).catch(() => '')
-          if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
-          if (String(importStatus || '').trim() && importStatus !== rawText) {
-            gsdModal.form = { ...pickupReturnFormFromCell(importStatus, linkedTruckValue), locked: true }
-            gsdModal.editing = false
-            rows.value[row][column] = importStatus
-            scheduleSave()
-          }
         }
       } else if (label === 'CLEARANCE DOCS APPROVAL') {
         gsdModal.formFields = []
@@ -13053,6 +13059,7 @@ const syncReminderNoteToDept = async (note: ReminderNote, operation: 'upsert' | 
     const targetColumn = targetHeader.findIndex((label) => ['NOTICE', 'REMINDER'].includes(String(label || '').trim().toUpperCase()))
     if (targetColumn < 0) throw new Error(`${targetDept} does not have a NOTICE column`)
     if (targetRowIndex < 1 && operation === 'remove') return true
+    const createdNoticeRow = targetRowIndex < 1
     if (targetRowIndex < 1) {
       targetRows.push(targetHeader.map((targetLabel) => {
         // NOTICE belongs to each department independently. Only the selected
@@ -13073,6 +13080,7 @@ const syncReminderNoteToDept = async (note: ReminderNote, operation: 'upsert' | 
     }
     targetLinks[String(targetRowIndex)] = sourceLink
     targetSettings.opsRowLinks = targetLinks
+    if (createdNoticeRow) markOpsRowNew(targetSettings, sourceLink)
 
     const current = parseJsonCell(targetRows[targetRowIndex]?.[targetColumn], null as any)
     const targetNotes = current && typeof current === 'object' && Array.isArray((current as any).notes)
@@ -13730,6 +13738,67 @@ const linkedOriginBcSent = async (row: number) => {
   const column = origin.header.findIndex((label) => upperText(label) === 'BC SENT')
   return column >= 0 && isChecked(origin.rows[origin.rowIndex]?.[column])
 }
+// Import side owns ATA and the pickup/return status of a linked shipment: when they
+// change here, only those cells are written to the export ECD row (cell endpoint,
+// no whole-sheet write), so the export side never has to read the import sheets.
+const pushLinkedOriginCells = async (row: number, changes: Array<{ labels: string[]; value: any }>) => {
+  const origin = await locateLinkedOriginRow(row, 'ECD')
+  if (!origin) return false
+  const sourceRow = origin.rows[origin.rowIndex] || []
+  const link = opsShipmentLink(origin.header, sourceRow, origin.rowIndex, origin.extracted.settings || origin.sheet?.settings || {})
+  const identity = Object.fromEntries(['JOB NO#', 'REF#', 'TIME']
+    .map((key) => [key, origin.header.indexOf(key)] as const)
+    .filter(([, index]) => index >= 0 && String(sourceRow[index] ?? '').trim())
+    .map(([key, index]) => [key, String(sourceRow[index] ?? '')]))
+  const cells = changes.flatMap(({ labels, value }) => {
+    const column = origin.header.findIndex((item) => labels.includes(upperText(item)))
+    if (column < 0 || String(sourceRow[column] ?? '') === String(value ?? '')) return []
+    return [{ link: link || '', rowIndex: origin.rowIndex, identity, label: origin.header[column], value: value ?? '' }]
+  })
+  if (!cells.length) return true
+  await props.request(`/workbook/sheets/${encodeURIComponent(origin.storageKey)}/cells`, { method: 'PATCH', body: { cells } })
+  return true
+}
+const LINKED_IMPORT_OWNED = [['ATA'], ['PICKUP/RETURN STATUS', 'PICKUP STATUS']]
+const linkedImportOwnedSnapshot = () => {
+  const current = opsParts.value
+  if (!current || !['DO', 'DAP', 'DDU', 'DDP'].includes(upperText(current.type))) return ''
+  const header = (rows.value[0] || []).map((item: any) => upperText(String(item ?? '').trim()))
+  const columns = LINKED_IMPORT_OWNED.map((group) => header.findIndex((label) => group.includes(label)))
+  if (columns.every((column) => column < 0)) return ''
+  const entries: string[] = []
+  for (let row = 1; row < rows.value.length; row += 1) {
+    if (!isLinkedOriginImportRow(row)) continue
+    entries.push(`${row}\u0001${columns.map((column) => column >= 0 ? String(rows.value[row]?.[column] ?? '') : '').join('\u0001')}`)
+  }
+  return `${activeKey.value}\u0002${entries.join('\u0002')}`
+}
+let linkedImportOwnedBaseline = ''
+// Called after a sheet paints: the loaded values are the baseline, not a change.
+const resetLinkedImportOwnedBaseline = () => { linkedImportOwnedBaseline = linkedImportOwnedSnapshot() }
+watch(linkedImportOwnedSnapshot, (next) => {
+  const previous = linkedImportOwnedBaseline
+  linkedImportOwnedBaseline = next
+  if (!next || loading.value) return
+  const [prevKey, ...prevRest] = previous.split('\u0002')
+  const [nextKey, ...nextRest] = next.split('\u0002')
+  if (prevKey !== nextKey) return
+  const before = new Map(prevRest.filter(Boolean).map((entry) => [entry.split('\u0001')[0], entry]))
+  for (const entry of nextRest.filter(Boolean)) {
+    const [rowText, ...values] = entry.split('\u0001')
+    const old = before.get(rowText)
+    if (!old || old === entry) continue
+    const oldValues = old.split('\u0001').slice(1)
+    const changes = LINKED_IMPORT_OWNED
+      .map((labels, index) => ({ labels, value: values[index], changed: values[index] !== oldValues[index] }))
+      .filter((item) => item.changed)
+      .map(({ labels, value }) => ({ labels: labels.includes('ATA') ? ['ATA'] : ['PICKUP STATUS', 'PICKUP/RETURN STATUS'], value }))
+    if (changes.length) {
+      void pushLinkedOriginCells(Number(rowText), changes)
+        .catch((error) => console.warn('Could not update the linked export shipment', error))
+    }
+  }
+})
 // Two-way link: an import-side change is written back to the export ECD row.
 const writeLinkedOriginCell = async (row: number, label: string, value: any) => {
   const origin = await locateLinkedOriginRow(row, 'ECD')
@@ -19138,12 +19207,31 @@ const billBlReady = () => {
 // Send B/L to Shipper: no MBL APPROVED requirement; locked once HBL APPROVED is ticked.
 // After sending, a changed Export B/L / FCR (or client B/L) re-enables it.
 // Only SI RECEIVED (its tick time) and the B/L documents decide whether a new send is due.
+// Stored "what was sent" signatures are kept as a short hash instead of a full copy
+// of the documents (those copies made each BILL DETAIL / RELEASE cell ~10-20 kB).
+// Older cells still hold the full JSON; signatureMatches accepts both forms.
+const compactSignature = (raw: string) => {
+  let h1 = 0xdeadbeef
+  let h2 = 0x41c6ce57
+  for (let index = 0; index < raw.length; index += 1) {
+    const code = raw.charCodeAt(index)
+    h1 = Math.imul(h1 ^ code, 2654435761)
+    h2 = Math.imul(h2 ^ code, 1597334677)
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909)
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909)
+  return `h:${(h2 >>> 0).toString(36)}${(h1 >>> 0).toString(36)}:${raw.length}`
+}
+const signatureMatches = (stored: any, raw: string) => {
+  const value = String(stored || '')
+  return value.startsWith('h:') ? value === compactSignature(raw) : value === raw
+}
 const billSentDocumentSignature = () => JSON.stringify([gsdModal.form.exportBl || '', gsdModal.form.exportFcr || '', gsdModal.form.clientBlFile?.url || '', billSourceMode(), gsdModal.form.siReceivedAt || ''])
 // HBL APPROVED can only be ticked once the B/L is saved and has been sent to the
 // Shipper at least once (unticking stays possible).
 const billHblApprovable = () => isAwbDetailModal() || (billBlReady() && !!String(gsdModal.form.sentAt || '').trim())
 const billDetailCanSend = () => !gsdModal.form.hbl && !!gsdModal.form.siReceived && billBlReady()
-  && (!gsdModal.form.sentAt || (!!gsdModal.form.sentDocumentSignature && gsdModal.form.sentDocumentSignature !== billSentDocumentSignature()))
+  && (!gsdModal.form.sentAt || (!!gsdModal.form.sentDocumentSignature && !signatureMatches(gsdModal.form.sentDocumentSignature, billSentDocumentSignature())))
 const handleBillDetailFile = async (event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
@@ -19373,7 +19461,7 @@ const billReleaseTargetVisible = (target: 'shipper' | 'destination') => {
 }
 const billReleaseTargetSent = (target: 'shipper' | 'destination') => {
   const sentSignature = String(target === 'shipper' ? gsdModal.form.releasedShipperSignature || '' : gsdModal.form.releasedDestSignature || '')
-  return !!sentSignature && sentSignature === billReleaseTargetSignature(target)
+  return !!sentSignature && signatureMatches(sentSignature, billReleaseTargetSignature(target))
 }
 // Enabled whenever there are no unsaved changes (also while Edit is open but nothing changed).
 const billReleaseMenuEnabled = () => !billReleaseDirty() && billReleasePaymentReady()
@@ -19494,10 +19582,10 @@ const confirmBillReleaseToShipper = async () => {
     if (releaseTarget === 'destination') {
       gsdModal.form.releasedDestAt = releasedAt
       gsdModal.form.releasedDestDocs = releasedDocs
-      gsdModal.form.releasedDestSignature = billReleaseTargetSignature('destination')
+      gsdModal.form.releasedDestSignature = compactSignature(billReleaseTargetSignature('destination'))
     } else {
       gsdModal.form.releasedShipperAt = releasedAt
-      gsdModal.form.releasedShipperSignature = billReleaseTargetSignature('shipper')
+      gsdModal.form.releasedShipperSignature = compactSignature(billReleaseTargetSignature('shipper'))
     }
     billReleaseSendModal.open = false
     await saveBillApproval()
@@ -19548,7 +19636,7 @@ const openBillSendModal = () => {
     showToast(awbText('SI RECEIVED is required'))
     return
   }
-  if (gsdModal.form.sentAt && gsdModal.form.sentDocumentSignature === billSentDocumentSignature()) {
+  if (gsdModal.form.sentAt && signatureMatches(gsdModal.form.sentDocumentSignature, billSentDocumentSignature())) {
     showToast('B/L already sent - update the Export B/L to send again')
     return
   }
@@ -19684,7 +19772,7 @@ const confirmBillSend = async () => {
     gsdModal.form.confirmDeadlineTime = billSendModal.deadlineTime
     gsdModal.form.sent = true
     gsdModal.form.sentAt = billTimestamp()
-    gsdModal.form.sentDocumentSignature = billSentDocumentSignature()
+    gsdModal.form.sentDocumentSignature = compactSignature(billSentDocumentSignature())
     gsdModal.form.sentEmails = to.join(', ')
     gsdModal.form.sentCc = cc.join(', ')
     billSendModal.open = false
@@ -21245,6 +21333,8 @@ const preAlertValidate = () => {
 // Much lighter than re-sending the whole worksheet; falls back to a full save when
 // other edits are still waiting to be saved.
 const saveOwnCellFast = async (row: number, column: number): Promise<boolean> => {
+  // Clearing a NEW flag changes the sheet settings: use the full save for it.
+  if (consumeOpsNewRowEdits()) return saveSheet()
   if (saveTimer || inFlightSaves.value > 0 || !isOpsPage.value || row <= 0) return saveSheet()
   const key = activeKey.value
   const country = loadedCountryId.value
@@ -23016,6 +23106,7 @@ const syncCrossServiceGsdRow = async (row: number, column: number, createdAt = f
           && (reciprocal < 0 || ['', String(parsed.type || '').toUpperCase()].includes(upperText(item[reciprocal] || '')))
       })
     }
+    let createdLinkedRow = false
     if (targetRowIndex < 1) {
       const time = createdAt
       const targetRow = targetHeader.map((label) => {
@@ -23030,6 +23121,7 @@ const syncCrossServiceGsdRow = async (row: number, column: number, createdAt = f
       })
       targetRows.push(targetRow)
       targetRowIndex = targetRows.length - 1
+      createdLinkedRow = true
     } else {
       const targetRow = targetRows[targetRowIndex]
       // JOB NO# also re-syncs, repairing linked rows that were given their own number earlier.
@@ -23052,6 +23144,7 @@ const syncCrossServiceGsdRow = async (row: number, column: number, createdAt = f
       ...(targetSettings.opsRowLinks || {}),
       [String(targetRowIndex)]: existingTargetLink || sourceShipmentLink,
     }
+    if (createdLinkedRow) markOpsRowNew(targetSettings, existingTargetLink || sourceShipmentLink)
     await patchLoadedWorkbookSheet(targetStorageKey, targetSheet, { rows: [...targetRows, [workbookMetaMarker, JSON.stringify({
         version: 1,
         columnWidths: extracted.columnWidths || targetSheet.columnWidths || targetHeader.map(() => 100),
@@ -24336,6 +24429,7 @@ const transferRowToNextDept = async (rowIndex: number, targetDept?: string, tran
     const finalRowIndex = targetIdentityIndex > 0 ? targetIdentityIndex : finalRows.length - 1
     if (sourceLink) targetLinks[String(finalRowIndex)] = sourceLink
     targetSettings.opsRowLinks = targetLinks
+    if (targetIdentityIndex <= 0 && sourceLink) markOpsRowNew(targetSettings, sourceLink)
     if (crossServiceInbound) {
       targetSettings.crossServiceInboundRows = { ...(targetSettings.crossServiceInboundRows || {}), [String(finalRowIndex)]: true }
     }
@@ -25000,6 +25094,7 @@ const opsCellClass = (row: number, column: number) => ({
   staffcell: isOpsStaffColumn(column),
   'date-cell': isScheduleDateCell(row, column) || isDatePopupCell(row, column),
   'time-cell': isOpsTimeColumn(column),
+  'ops-new-row-cell': isOpsNewRowCell(row, column),
   'linked-date-changed': linkedDateChanged(row, column),
   'inline-editing': isEditingCell(row, column),
 })
@@ -25345,6 +25440,8 @@ watch([selectedRect, selectionKind, visibleRowIndexes], () => {
 }, { flush: 'post' })
 
 onMounted(() => {
+  document.addEventListener('pointerdown', noteOpsUserRow, true)
+  document.addEventListener('keydown', noteOpsUserRow, true)
   document.addEventListener('pointerdown', markComboUserIntent, true)
   document.addEventListener('keydown', markComboUserIntent, true)
   document.addEventListener('focusin', onComboFocusIn, true)
@@ -25367,6 +25464,8 @@ onMounted(() => {
 })
 onUpdated(syncRenderedRowHeights)
 onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', noteOpsUserRow, true)
+  document.removeEventListener('keydown', noteOpsUserRow, true)
   document.removeEventListener('pointerdown', markComboUserIntent, true)
   document.removeEventListener('keydown', markComboUserIntent, true)
   document.removeEventListener('focusin', onComboFocusIn, true)
@@ -26090,6 +26189,8 @@ input:is([list],[data-combo-list]):not(:disabled):not([readonly]):is(:hover,:foc
 .pay-date-btn:hover:not(:disabled){border-color:#008f4c;color:#0a6b3b}
 .pay-date-btn:disabled{cursor:default;opacity:.6}
 .pay-date-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ops-new-row-cell:not(#_x){position:relative}
+.ops-new-badge{position:absolute;top:2px;right:3px;z-index:1;display:inline-flex;align-items:center;height:12px;padding:0 4px;border-radius:999px;background:linear-gradient(135deg,#ff8a3d,#ff3d6e);color:#fff;font-size:7.5px;font-weight:800;line-height:1;letter-spacing:.06em;box-shadow:0 1px 3px rgba(255,61,110,.35);pointer-events:none;user-select:none}
 .gsd-pre-sent-info{display:flex;flex-direction:column;gap:2px;margin:10px 0 0;color:#4d5b54;font-size:12px}.gsd-pre-sent-info b{color:#0a6b3b}.gsd-pre-sent-info .pending{color:#b45f04;font-weight:700}
 .ops-nbadge{display:inline-grid;place-items:center;min-width:14px;height:14px;margin-left:5px;padding:0 3px;border-radius:999px;background:#d63a3a;color:#fff;font-size:9px;font-weight:800;line-height:1}
 /* AIR/LCL — vessel delay panel + history on EXW ECD (mockup #ovs) */
