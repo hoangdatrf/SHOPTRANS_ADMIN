@@ -165,7 +165,7 @@
                   @click="toggleOpsBadgeSort(column)"
                   @contextmenu.prevent="openOpsHeaderMenu(column, $event)"
                 >
-                  {{ headerLabel(column).toUpperCase() }}<span v-if="opsColumnBadgeTotal(column) > 0" class="ops-head-badge">{{ opsColumnBadgeTotal(column) }}</span>
+                  {{ headerLabel(column).toUpperCase() }}<span v-if="opsColumnBadgeTotal(column) > 0" class="ops-head-badge" :class="{ 'linked-update-head': opsColumnBadgeIsLinkedUpdate(column) }">{{ opsColumnBadgeTotal(column) }}</span>
                   <span
                     class="ops-rsz"
                     title="Resize column"
@@ -222,9 +222,10 @@
                     class="ops-pill"
                     type="button"
                     :class="{ has: hasInfoRecords(rowIndex, columnIndex), 'detail-alert': infoDetailNeedsAttention(rowIndex, columnIndex) }"
+                    :title="hasLinkedCellUpdate(rowIndex, columnIndex) ? 'Updated by another department - open to review' : undefined"
                     @click="openInfoModal(rowIndex, columnIndex)"
                   >
-                    <span v-if="infoDetailNeedsAttention(rowIndex, columnIndex)" class="detail-alert-icon">!</span>{{ infoActionIsDetail(rowIndex, columnIndex) ? 'DETAIL' : 'ADD+' }}
+                    <span v-if="infoDetailNeedsAttention(rowIndex, columnIndex) || hasLinkedCellUpdate(rowIndex, columnIndex)" class="detail-alert-icon" :class="{ 'linked-update-icon': hasLinkedCellUpdate(rowIndex, columnIndex) }">!</span>{{ infoActionIsDetail(rowIndex, columnIndex) ? 'DETAIL' : 'ADD+' }}
                   </button>
                   <button
                     v-else-if="isTruckInfoCell(rowIndex, columnIndex)"
@@ -232,9 +233,10 @@
                     class="ops-pill"
                     type="button"
                     :class="{ has: hasTruckRecords(rowIndex, columnIndex), 'detail-alert': truckDetailNeedsAttention(rowIndex, columnIndex) }"
+                    :title="hasLinkedCellUpdate(rowIndex, columnIndex) ? 'Updated by another department - open to review' : undefined"
                     @click="openTruckModal(rowIndex, columnIndex)"
                   >
-                    <span v-if="truckDetailNeedsAttention(rowIndex, columnIndex)" class="detail-alert-icon">!</span>{{ truckActionIsDetail(rowIndex, columnIndex) ? 'DETAIL' : 'ADD+' }}
+                    <span v-if="truckDetailNeedsAttention(rowIndex, columnIndex) || hasLinkedCellUpdate(rowIndex, columnIndex)" class="detail-alert-icon" :class="{ 'linked-update-icon': hasLinkedCellUpdate(rowIndex, columnIndex) }">!</span>{{ truckActionIsDetail(rowIndex, columnIndex) ? 'DETAIL' : 'ADD+' }}
                   </button>
                   <span v-else-if="isAgentNaCell(rowIndex, columnIndex)" class="ops-textcell ops-na-cell">N/A</span>
                   <span v-else-if="isLinkedImportPartyCell(rowIndex, columnIndex) && !clientCellText(rows[rowIndex]?.[columnIndex])" class="ops-textcell">—</span>
@@ -270,11 +272,11 @@
                     class="ops-pill"
                     type="button"
                     :disabled="isDoHblPendingCell(rowIndex, columnIndex)"
-                    :title="isDoHblPendingCell(rowIndex, columnIndex) ? 'Enter HBL NO# first' : undefined"
                     :class="{ view: normalizedHeaderLabel(columnIndex) === 'REMINDER', has: !!String(rows[rowIndex]?.[columnIndex] || '').trim() && !['REMINDER', 'NOTICE'].includes(normalizedHeaderLabel(columnIndex)), 'linked-value': showActionEditIcon(rowIndex, columnIndex), 'document-value': isPlainDocumentValue(rowIndex, columnIndex), 'do-release-warn': isDoReleaseWarnCell(rowIndex, columnIndex), 'detail-alert': detailActionNeedsAttention(rowIndex, columnIndex) || billDetailMnfMissing(rowIndex, columnIndex), 'volume-summary-btn': normalizedHeaderLabel(columnIndex) === 'VOLUME' && !!volumeSummaryText(rows[rowIndex]?.[columnIndex]) }"
+                    :title="hasLinkedCellUpdate(rowIndex, columnIndex) ? 'Updated by another department - open to review' : (isDoHblPendingCell(rowIndex, columnIndex) ? 'Enter HBL NO# first' : undefined)"
                     @click="handleGsdActionButton(rowIndex, columnIndex)"
                   >
-                    <span v-if="isDoReleaseWarnCell(rowIndex, columnIndex)" class="do-release-warn-icon">!</span><span v-else-if="detailActionNeedsAttention(rowIndex, columnIndex) || billDetailMnfMissing(rowIndex, columnIndex)" class="detail-alert-icon">!</span>{{ gsdActionButtonText(rowIndex, columnIndex) }}
+                    <span v-if="isDoReleaseWarnCell(rowIndex, columnIndex)" class="do-release-warn-icon" :class="{ 'linked-update-icon': hasLinkedCellUpdate(rowIndex, columnIndex) }">!</span><span v-else-if="detailActionNeedsAttention(rowIndex, columnIndex) || billDetailMnfMissing(rowIndex, columnIndex) || hasLinkedCellUpdate(rowIndex, columnIndex)" class="detail-alert-icon" :class="{ 'linked-update-icon': hasLinkedCellUpdate(rowIndex, columnIndex) }">!</span>{{ gsdActionButtonText(rowIndex, columnIndex) }}
                     <span v-if="noticeBadgeCount(rowIndex, columnIndex)" class="ops-nbadge">{{ noticeBadgeCount(rowIndex, columnIndex) }}</span>
                   </button>
                   <select
@@ -6382,13 +6384,36 @@ const noteOpsUserRow = (event: Event) => {
   if (Number.isInteger(row) && row > 0) opsUserTouchedRows.add(row)
 }
 // Per-row counter used by the header badges and the "flagged first" sort.
-const opsColumnRowCount = (row: number, column: number) =>
-  normalizedHeaderLabel(column) === 'TIME' ? (opsRowIsNew(row) ? 1 : 0) : noticeBadgeCount(row, column)
-const opsColumnBadgeTotal = (column: number) => {
-  if (!isOpsPage.value) return 0
+// Counter columns count their unread items; TIME counts NEW rows; every column also
+// counts the rows whose cell was updated by another department (blinking "!").
+const OPS_COUNTER_LABELS = new Set(['PAYMENT REQUEST', 'EXPENSE/COLLECT LIST', 'EXPENSE/COLLECTION LIST', 'REMINDER', 'NOTICE'])
+const opsColumnRowCount = (row: number, column: number) => {
   const label = normalizedHeaderLabel(column)
-  if (!['PAYMENT REQUEST', 'EXPENSE/COLLECT LIST', 'EXPENSE/COLLECTION LIST', 'REMINDER', 'NOTICE', 'TIME'].includes(label)) return 0
-  return filteredRowIndexes.value.reduce((sum, index) => sum + (index > 0 ? opsColumnRowCount(index, column) : 0), 0)
+  if (label === 'TIME') return opsRowIsNew(row) ? 1 : 0
+  const linked = hasLinkedCellUpdate(row, column) ? 1 : 0
+  return OPS_COUNTER_LABELS.has(label) ? noticeBadgeCount(row, column) + linked : linked
+}
+// One pass per render for all visible columns (the header reads it several times).
+const opsColumnBadgeTotals = computed(() => {
+  const totals = new Map<number, { total: number; linked: number }>()
+  if (!isOpsPage.value) return totals
+  const body = filteredRowIndexes.value.filter((index) => index > 0)
+  for (const column of visibleColumns.value) {
+    let total = 0
+    let linked = 0
+    for (const index of body) {
+      total += opsColumnRowCount(index, column)
+      if (hasLinkedCellUpdate(index, column)) linked += 1
+    }
+    if (total) totals.set(column, { total, linked })
+  }
+  return totals
+})
+const opsColumnBadgeTotal = (column: number) => opsColumnBadgeTotals.value.get(column)?.total || 0
+// Header badge of a column whose count comes only from cross-department updates.
+const opsColumnBadgeIsLinkedUpdate = (column: number) => {
+  const entry = opsColumnBadgeTotals.value.get(column)
+  return !!entry && entry.linked > 0 && entry.linked === entry.total
 }
 const toggleOpsBadgeSort = (column: number) => {
   if (opsBadgeSortColumn.value === column) opsBadgeSortColumn.value = null
@@ -10094,6 +10119,7 @@ const doInfoValue = (value: any) => {
   return { mblEnabled: false, hblEnabled: false, mblNo: '', hblNo: '', mblDate: '', hblDate: '', validity: date, remarks: '', mblFile: emptyDoInfoFile(), hblFile: emptyDoInfoFile() }
 }
 const openDoInfoModal = (row: number, column: number) => {
+  acknowledgeLinkedCellUpdate(row, column)
   const data = doInfoValue(rows.value[row]?.[column])
   Object.assign(doInfoModal, {
     open: true,
@@ -11986,6 +12012,7 @@ const openGsdModal = async (row: number, column: number) => {
   }
   const loadId = ++gsdModalLoadId
   const label = normalizedHeaderLabel(column)
+  acknowledgeLinkedCellUpdate(row, column)
   if (label === 'BC NO#') { openBookingDetail(row, column); return }
   if (label === 'BC DETAIL' || label === 'BC SENT') { openBcModal(row, column); return }
   let rawValue = rows.value[row]?.[column]
@@ -12596,6 +12623,7 @@ const markGsdUserEdit = (event: Event) => {
   if (target?.type === 'checkbox' && target.closest('th, td.clr-allcell, td.truck-select-cell, .pay-check, .sel-col')) return
   gsdUserEdited = true
 }
+watch(() => gsdModal.open || infoModal.open || truckModal.open || doInfoModal.open, (open) => { if (!open) clearLinkedFieldHighlights() })
 watch(() => [gsdModal.open, gsdModal.editing, gsdModal.loading, gsdModal.row, gsdModal.column] as const, ([open, editing, loading], previous) => {
   if (!open) { gsdEditSnapshot = ''; gsdUserEdited = false; return }
   const [wasOpen, wasEditing, wasLoading, prevRow, prevColumn] = previous || []
@@ -13756,7 +13784,7 @@ const pushLinkedOriginCells = async (row: number, changes: Array<{ labels: strin
     return [{ link: link || '', rowIndex: origin.rowIndex, identity, label: origin.header[column], value: value ?? '' }]
   })
   if (!cells.length) return true
-  await props.request(`/workbook/sheets/${encodeURIComponent(origin.storageKey)}/cells`, { method: 'PATCH', body: { cells } })
+  await props.request(`/workbook/sheets/${encodeURIComponent(origin.storageKey)}/cells`, { method: 'PATCH', body: { cells, trackChanges: true, sourceDept: upperText(opsParts.value?.dept || '') } })
   return true
 }
 const LINKED_IMPORT_OWNED = [['ATA'], ['PICKUP/RETURN STATUS', 'PICKUP STATUS']]
@@ -21559,6 +21587,19 @@ const sendPreAlert = async () => {
         },
       })
       if (!linked) throw new Error(`Could not create the linked ${targetService} ICD record`)
+      // The other import departments get their row right away as well (as SENT E/ICD
+      // does for an import shipment), instead of waiting for MANIFEST SUBMIT on ICD.
+      const downstreamDepts = (orderedOpsDepts(targetBase, targetService, source.mode) as string[]).filter((dept) => !['GSD', 'ICD'].includes(dept))
+      for (const dept of downstreamDepts) {
+        const created = await transferRowToNextDept(gsdModal.row, dept, sentAt, false, {
+          key: opsLeafKey(targetBase, source.mode, targetService as any, 'GSD'),
+          country: loadedCountryId.value,
+          header: collectedSource.header,
+          row: collectedSource.row,
+          settings: { ...settings.value, crossServiceOriginType: upperText(source.type) },
+        })
+        if (!created) console.warn(`Could not create the linked ${targetService} ${dept} record`)
+      }
       if (['GSD', 'ECD'].includes(upperText(source.dept))) {
         const markedSent = await syncCrossServiceGsdRow(gsdModal.row, serviceColumn, sentAt, true)
         if (!markedSent) throw new Error(`Could not mark the linked ${targetService} GSD record as sent`)
@@ -22612,6 +22653,10 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
     const confirmationTarget = sentColumnLabel === 'SENT E/ICD' ? 'E/ICD' : targetDept
     const confirmed = await askConfirm(`Confirmed to send to ${confirmationTarget}`, '', { okText: 'YES', cancelText: 'NO', tone: 'question' })
     if (!confirmed || !sourceStillVisible()) return
+    // Linked service changed since the last send: move its rows first (asks again).
+    if (!(await relinkCrossServiceBeforeSend(row, rows.value[row]?.[column])) || !sourceStillVisible()) return
+    // The move may have repointed this row's link: send the current settings.
+    sourceState.settings = normalizeWorkbookCell(settings.value)
     const mode = String(sourceParts?.mode || '').toUpperCase()
     const useAtomicIcdDispatch = targetDept === 'ICD' && ['FCL', 'LCL', 'AIR'].includes(mode)
     const useAtomicEcdDispatch = targetDept === 'ECD' && ['FCL', 'LCL', 'AIR'].includes(mode)
@@ -23229,6 +23274,81 @@ const markLinkedDateChange = (targetSettings: Record<string, any>, row: number, 
 const linkedDateChanged = (row: number, column: number) =>
   row > 0 && linkedDateLabels.has(normalizedHeaderLabel(column)) &&
   Boolean(settings.value.linkedDateChanges?.[String(row)]?.[normalizedHeaderLabel(column)])
+// ---- Updates received from another department -------------------------------------
+// The server records, per shipment link and column, which fields of a modal cell
+// another department changed (settings.linkedCellChanges). Until this department
+// opens that cell (settings.linkedCellSeen), its DETAIL button shows "!" (or blinks
+// when it already had one) and the changed fields are highlighted in the modal.
+const LINKED_UPDATE_UNTRACKED = new Set(['PAYMENT REQUEST', 'EXPENSE/COLLECT LIST', 'EXPENSE/COLLECTION LIST', 'NOTICE', 'REMINDER'])
+const linkedCellUpdate = (row: number, column: number) => {
+  if (row <= 0) return null
+  const link = String(settings.value?.opsRowLinks?.[String(row)] || '')
+  if (!link) return null
+  const label = normalizedHeaderLabel(column)
+  if (LINKED_UPDATE_UNTRACKED.has(label)) return null
+  const entry = settings.value?.linkedCellChanges?.[link]?.[label]
+  if (!entry?.at) return null
+  return String(settings.value?.linkedCellSeen?.[link]?.[label] || '') >= String(entry.at) ? null : entry
+}
+const hasLinkedCellUpdate = (row: number, column: number) => isOpsPage.value && !!linkedCellUpdate(row, column)
+// Values of the fields to highlight in the modal that is being opened.
+let linkedHighlightValues: string[] = []
+let linkedHighlightTimers: number[] = []
+const linkedValueVariants = (raw: string) => {
+  const value = String(raw || '').trim()
+  if (value.length < 2 || ['TRUE', 'FALSE', 'NULL'].includes(value.toUpperCase()) || value.startsWith('{') || value.startsWith('[')) return []
+  const variants = new Set([value.toUpperCase()])
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}:\d{2}))?/)
+  if (iso) {
+    variants.add(`${iso[1]}-${iso[2]}-${iso[3]}`)
+    variants.add(`${iso[3]}/${iso[2]}/${iso[1]}`)
+    if (iso[4]) variants.add(iso[4])
+  }
+  return [...variants]
+}
+const clearLinkedFieldHighlights = () => {
+  linkedHighlightTimers.forEach((timer) => window.clearTimeout(timer))
+  linkedHighlightTimers = []
+  linkedHighlightValues = []
+  document.querySelectorAll('.linked-field-changed').forEach((element) => element.classList.remove('linked-field-changed'))
+}
+// Marks every field of the open modal whose value is one of the changed values.
+const applyLinkedFieldHighlights = () => {
+  if (!linkedHighlightValues.length) return
+  const modals = [...document.querySelectorAll<HTMLElement>('.wb-modal')].filter((element) => element.offsetParent !== null)
+  const modal = modals[modals.length - 1]
+  if (!modal) return
+  const wanted = new Set(linkedHighlightValues)
+  const matches = (text: string) => wanted.has(String(text || '').trim().toUpperCase())
+  // A table field fills its whole cell; a form field fills the input itself.
+  const mark = (element: HTMLElement) => (element.closest('td') || element).classList.add('linked-field-changed')
+  modal.querySelectorAll<HTMLElement>('input, select, textarea').forEach((element) => {
+    const field = element as HTMLInputElement
+    if (['checkbox', 'radio', 'button', 'file', 'hidden'].includes(field.type)) return
+    const selectText = element instanceof HTMLSelectElement ? element.selectedOptions[0]?.textContent || '' : ''
+    if (matches(field.value) || (selectText && matches(selectText))) mark(element)
+  })
+  modal.querySelectorAll<HTMLElement>('td, span, strong, b, p, div, a').forEach((element) => {
+    if (element.children.length || element.closest('button')) return
+    if (matches(element.textContent || '')) mark(element)
+  })
+}
+// Called when a cell's modal opens: the update counts as seen, and its changed
+// fields are highlighted once the modal has rendered (some modals load async).
+const acknowledgeLinkedCellUpdate = (row: number, column: number) => {
+  clearLinkedFieldHighlights()
+  const entry = linkedCellUpdate(row, column)
+  if (!entry) return
+  const link = String(settings.value.opsRowLinks[String(row)])
+  const label = normalizedHeaderLabel(column)
+  const seen = settings.value.linkedCellSeen && typeof settings.value.linkedCellSeen === 'object' ? settings.value.linkedCellSeen : {}
+  settings.value = { ...settings.value, linkedCellSeen: { ...seen, [link]: { ...(seen[link] || {}), [label]: String(entry.at) } } }
+  scheduleSave()
+  linkedHighlightValues = [...new Set((Array.isArray(entry.fields) ? entry.fields : []).flatMap((field: any) => linkedValueVariants(field?.to)))]
+  if (!linkedHighlightValues.length) return
+  void nextTick(applyLinkedFieldHighlights)
+  linkedHighlightTimers = [250, 700, 1500].map((delay) => window.setTimeout(applyLinkedFieldHighlights, delay))
+}
 // Last failure reason per target sheet, so a failed send can say what went wrong.
 const mirrorFailureReasons = new Map<string, string>()
 const runMirrorExwFclWorkflowCell = async (
@@ -23381,6 +23501,10 @@ const runMirrorExwFclWorkflowCell = async (
       body: {
         cells: cells.length ? cells : [{ link: sourceLink, rowIndex: matchingRow, label: targetHeader[targetColumn], value: targetRows[matchingRow][targetColumn] ?? '' }],
         settingsPatch: { linkedDateChanges: targetSettings.linkedDateChanges || {} },
+        // The receiving department gets DETAIL ! for the changed modal cell
+        // (columns with their own counters keep using those counters).
+        trackChanges: !LINKED_UPDATE_UNTRACKED.has(upperText(effectiveLabel)),
+        sourceDept,
       },
     })
     rememberSheetUpdatedAt(targetStorageKey, responseUpdatedAt(patched))
@@ -24560,20 +24684,325 @@ const syncForcedAgentFromServiceOption = (row: number, column: number, option: s
   else return
   mirrorFclLinkedCell(row, agentColumn)
 }
+// ---- Changing the linked service of a shipment (EXW+ DO -> DDU, DO+ EXW -> FCA ...) ----
+// The rows already generated on the other side (GSD, ICD/ECD, FCD ...) move with their
+// data to the newly chosen service; departments the new service does not have lose
+// their row. Choosing "—" removes those rows. Always asked for confirmation first.
+const EXPORT_LINK_TYPES = ['EXW', 'FCA', 'FCF']
+const IMPORT_LINK_TYPES = ['DO', 'DAP', 'DDU', 'DDP']
+// Labels of the `+` column that holds the linked service of a sheet of this type.
+const servicePlusLabels = (type: string) => {
+  const upper = upperText(type)
+  if (upper === 'EXW') return ['EXW+', 'EFA+']
+  if (upper === 'FCF') return ['FCF+', 'EFA+']
+  return [`${upper}+`]
+}
+type SheetEditState = { header: string[]; rows: any[][]; settings: Record<string, any>; extracted: any; sheet: any }
+// Read-modify-write of another sheet; retried on a version conflict. `mutate`
+// returns false when nothing has to be written.
+const editOpsSheet = async (leafKey: string, mutate: (state: SheetEditState) => boolean, createIfMissing = false) => {
+  const parsed = parseOpsKey(leafKey)
+  if (!parsed) return false
+  const header = opsHeaderFor(parsed.base, parsed.mode, parsed.dept, parsed.type)
+  const storageKey = sheetStorageKey(leafKey)
+  for (let attempt = 1; ; attempt += 1) {
+    let sheet: any
+    try {
+      sheet = await props.request(`/workbook/sheets/${encodeURIComponent(storageKey)}`)
+    } catch (error: any) {
+      if (requestStatus(error) !== 404 || !createIfMissing) {
+        if (requestStatus(error) === 404) return false
+        throw error
+      }
+      const created = await props.request('/workbook/sheets', {
+        method: 'POST',
+        body: { key: storageKey, label: leafKey, group: 'Operations', rows: [header.slice(), [workbookMetaMarker, JSON.stringify({ version: 1, columnWidths: header.map(() => 100), rowHeights: {}, formatting: {}, merges: [], settings: {} })]] },
+      })
+      sheet = { rows: [header.slice()], columnWidths: header.map(() => 100), rowHeights: {}, formatting: {}, merges: [], settings: {}, updatedAt: responseUpdatedAt(created) }
+    }
+    const extracted = extractWorkbookRows(Array.isArray(sheet?.rows) ? sheet.rows.map((item: any[]) => [...item]) : [], sheet)
+    const state: SheetEditState = {
+      header,
+      rows: alignRowsToHeader(extracted.rows, header).rows,
+      settings: { ...(extracted.settings || sheet?.settings || {}) },
+      extracted,
+      sheet,
+    }
+    if (!mutate(state)) return false
+    try {
+      await patchLoadedWorkbookSheet(storageKey, sheet, { rows: [...state.rows, [workbookMetaMarker, JSON.stringify({
+          version: 1,
+          columnWidths: extracted.columnWidths || sheet.columnWidths || header.map(() => 100),
+          rowHeights: extracted.rowHeights || sheet.rowHeights || {},
+          formatting: extracted.formatting || sheet.formatting || {},
+          merges: extracted.merges || sheet.merges || [],
+          settings: state.settings,
+        })]] })
+      return true
+    } catch (error: any) {
+      if (requestStatus(error) === 409 && attempt < 5) {
+        await new Promise((resolve) => setTimeout(resolve, 200 * attempt))
+        continue
+      }
+      throw error
+    }
+  }
+}
+// Row of a shipment in a sheet: by shipment link, else by JOB NO# on a row that
+// is linked back to `linkedType` through its `+` column.
+const findShipmentRow = (state: SheetEditState, link: string, job: string, plusLabels: string[], linkedType: string) => {
+  let index = link ? state.rows.findIndex((row, i) => i > 0 && (
+    String(state.settings?.opsRowLinks?.[String(i)] || '') === link || opsShipmentLink(state.header, row, i, state.settings) === link)) : -1
+  if (index < 1 && job) {
+    const jobColumn = state.header.indexOf('JOB NO#')
+    const plusColumn = state.header.findIndex((label) => plusLabels.includes(upperText(label)))
+    index = jobColumn < 0 ? -1 : state.rows.findIndex((row, i) => i > 0 && String(row[jobColumn] || '').trim() === job
+      && (plusColumn < 0 || upperText(normalizeDropdownOption(row[plusColumn]) || '') === linkedType))
+  }
+  return index
+}
+const ROW_INDEXED_SETTINGS = ['opsRowLinks', 'opsRowCreators', 'crossServiceLinks', 'crossServiceInboundRows', 'crossServiceCarryByRow', 'linkedDateChanges']
+const LINK_KEYED_SETTINGS = ['opsNewLinks', 'opsNewSeen', 'linkedCellChanges', 'linkedCellSeen']
+// Removes one row and shifts every row-indexed setting after it.
+const removeSheetRow = (state: SheetEditState, index: number) => {
+  const oldLength = state.rows.length
+  state.rows.splice(index, 1)
+  for (const key of ROW_INDEXED_SETTINGS) {
+    const map = state.settings[key]
+    if (!map || typeof map !== 'object') continue
+    const next: Record<string, any> = {}
+    for (const [rowKey, value] of Object.entries(map)) {
+      const rowIndex = Number(rowKey)
+      if (!Number.isInteger(rowIndex) || rowIndex === index) continue
+      next[String(rowIndex > index ? rowIndex - 1 : rowIndex)] = value
+    }
+    state.settings[key] = next
+  }
+  // The server merges stored row links with the saved ones: clear the slot that no
+  // longer exists, or a later row there would inherit a stale shipment link.
+  state.settings.opsRowLinks = { ...(state.settings.opsRowLinks || {}), [String(oldLength - 1)]: state.settings.opsRowLinks?.[String(oldLength - 1)] || '' }
+  if (Array.isArray(state.settings.manualOpsRows)) {
+    state.settings.manualOpsRows = state.settings.manualOpsRows.map(Number)
+      .filter((rowIndex: number) => rowIndex !== index)
+      .map((rowIndex: number) => rowIndex > index ? rowIndex - 1 : rowIndex)
+  }
+}
+// Departments of `counterpartType` that hold a row of this shipment.
+const locateCounterpartDepts = async (row: number, counterpartType: string) => {
+  const parsed = opsParts.value
+  if (!parsed) return []
+  const header = (rows.value[0] || []).map((item: any) => String(item ?? '').trim())
+  const link = opsShipmentLink(header, rows.value[row] || [], row, settings.value)
+  const jobColumn = header.findIndex((label) => upperText(label) === 'JOB NO#')
+  const job = jobColumn >= 0 ? String(rows.value[row]?.[jobColumn] || '').trim() : ''
+  const base = opsBaseForType(counterpartType as any)
+  const depts = orderedOpsDepts(base, counterpartType, parsed.mode) as string[]
+  const found = await Promise.all(depts.map(async (dept) => {
+    const leafKey = opsLeafKey(base, parsed.mode, counterpartType as any, dept as any)
+    let hit = false
+    await editOpsSheet(leafKey, (state) => {
+      hit = findShipmentRow(state, link, job, servicePlusLabels(counterpartType), upperText(parsed.type || '')) > 0
+      return false
+    }).catch(() => false)
+    return hit ? dept : ''
+  }))
+  return found.filter(Boolean)
+}
+const moveCounterpartRows = async (row: number, depts: string[], fromType: string, toType: string) => {
+  const parsed = opsParts.value
+  if (!parsed) return
+  const sourceType = upperText(parsed.type || '')
+  const header = (rows.value[0] || []).map((item: any) => String(item ?? '').trim())
+  const link = opsShipmentLink(header, rows.value[row] || [], row, settings.value)
+  const jobColumn = header.findIndex((label) => upperText(label) === 'JOB NO#')
+  const job = jobColumn >= 0 ? String(rows.value[row]?.[jobColumn] || '').trim() : ''
+  const fromBase = opsBaseForType(fromType as any)
+  const toBase = toType ? opsBaseForType(toType as any) : null
+  const toDepts = toBase ? orderedOpsDepts(toBase, toType, parsed.mode) as string[] : []
+  for (const dept of depts) {
+    const fromKey = opsLeafKey(fromBase, parsed.mode, fromType as any, dept as any)
+    // 1) copy into the new service first, so nothing is lost if a later step fails
+    if (toBase && toDepts.includes(dept)) {
+      let moved: { row: any[]; header: string[]; rowSettings: Record<string, any>; linkSettings: Record<string, any>; link: string } | null = null
+      await editOpsSheet(fromKey, (state) => {
+        const index = findShipmentRow(state, link, job, servicePlusLabels(fromType), sourceType)
+        if (index < 1) return false
+        const rowLink = String(state.settings?.opsRowLinks?.[String(index)] || '') || link
+        moved = {
+          row: [...state.rows[index]],
+          header: state.header,
+          rowSettings: Object.fromEntries(ROW_INDEXED_SETTINGS.map((key) => [key, state.settings?.[key]?.[String(index)]]).filter(([, value]) => value !== undefined)),
+          linkSettings: Object.fromEntries(LINK_KEYED_SETTINGS.map((key) => [key, state.settings?.[key]?.[rowLink]]).filter(([, value]) => value !== undefined)),
+          link: rowLink,
+        }
+        return false
+      })
+      if (moved) {
+        const source = moved as NonNullable<typeof moved>
+        const toKey = opsLeafKey(toBase, parsed.mode, toType as any, dept as any)
+        const toPlus = servicePlusLabels(toType)
+        const fromPlus = servicePlusLabels(fromType)
+        await editOpsSheet(toKey, (state) => {
+          const nextRow = state.header.map((label) => {
+            const upper = upperText(label)
+            if (toPlus.includes(upper)) return sourceType
+            if (fromPlus.includes(upper)) return ''
+            const column = source.header.indexOf(label)
+            return column >= 0 ? source.row[column] ?? '' : ''
+          })
+          let index = findShipmentRow(state, source.link, job, toPlus, sourceType)
+          if (index > 0) {
+            // A row created by a re-send already exists: keep it, fill its blanks.
+            state.rows[index] = state.rows[index].map((value, column) => String(value ?? '').trim() ? value : nextRow[column])
+          } else {
+            state.rows.push(nextRow)
+            index = state.rows.length - 1
+          }
+          for (const [key, value] of Object.entries(source.rowSettings)) {
+            if (key === 'opsRowLinks') continue
+            state.settings[key] = { ...(state.settings[key] || {}), [String(index)]: value }
+          }
+          state.settings.opsRowLinks = { ...(state.settings.opsRowLinks || {}), [String(index)]: source.link }
+          for (const [key, value] of Object.entries(source.linkSettings)) {
+            state.settings[key] = { ...(state.settings[key] || {}), [source.link]: value }
+          }
+          return true
+        }, true)
+      }
+    }
+    // 2) remove it from the previous service
+    await editOpsSheet(fromKey, (state) => {
+      const index = findShipmentRow(state, link, job, servicePlusLabels(fromType), sourceType)
+      if (index < 1) return false
+      removeSheetRow(state, index)
+      return true
+    })
+  }
+}
+// The shipment's own rows point at the GSD row of the linked service: repoint them.
+const repointCrossServiceLinks = async (row: number, toType: string) => {
+  const parsed = opsParts.value
+  if (!parsed) return
+  const toGsdKey = toType ? opsLeafKey(opsBaseForType(toType as any), parsed.mode, toType as any, 'GSD') : ''
+  const update = (links: Record<string, any>, index: number) => {
+    const entry = links?.[String(index)]
+    if (!entry) return null
+    const next = { ...links }
+    if (toType) next[String(index)] = { ...entry, counterpartKey: toGsdKey, counterpartType: toType }
+    else delete next[String(index)]
+    return next
+  }
+  const own = update(crossServiceLinks(), row)
+  if (own) {
+    settings.value = { ...settings.value, crossServiceLinks: own }
+    scheduleSave()
+  }
+  const header = (rows.value[0] || []).map((item: any) => String(item ?? '').trim())
+  const link = opsShipmentLink(header, rows.value[row] || [], row, settings.value)
+  const jobColumn = header.findIndex((label) => upperText(label) === 'JOB NO#')
+  const job = jobColumn >= 0 ? String(rows.value[row]?.[jobColumn] || '').trim() : ''
+  const peers = (orderedOpsDepts(parsed.base, parsed.type, parsed.mode) as string[]).filter((dept) => dept !== parsed.dept)
+  await Promise.all(peers.map((dept) => editOpsSheet(opsLeafKey(parsed.base, parsed.mode, parsed.type, dept as any), (state) => {
+    const index = findShipmentRow(state, link, job, [], '')
+    if (index < 1) return false
+    const next = update(state.settings.crossServiceLinks, index)
+    if (!next) return false
+    state.settings.crossServiceLinks = next
+    return true
+  }).catch((error) => console.warn(`Could not repoint the linked service on ${dept}`, error))))
+}
+// Re-ticking SENT ECD / SENT E/ICD on GSD after the linked service was changed
+// (e.g. EXW+ DO -> DDU): the rows already generated in the previous service move
+// to the new one first. Returns false when the user cancels (nothing is sent).
+const relinkCrossServiceBeforeSend = async (row: number, previousSent: any) => {
+  const parsed = opsParts.value
+  if (!parsed || opsDeptUpper() !== 'GSD') return true
+  const type = upperText(parsed.type || '')
+  const counterpartTypes = EXPORT_LINK_TYPES.includes(type) ? IMPORT_LINK_TYPES : IMPORT_LINK_TYPES.includes(type) ? EXPORT_LINK_TYPES : []
+  if (!counterpartTypes.length) return true
+  const plusColumn = (rows.value[0] || []).findIndex((_: any, column: number) =>
+    servicePlusLabels(type).includes(upperText(headerLabel(column))) || servicePlusLabels(type).includes(normalizedHeaderLabel(column)))
+  if (plusColumn < 0) return true
+  const toType = upperText(normalizeDropdownOption(rows.value[row]?.[plusColumn]) || '')
+  if (toType && !counterpartTypes.includes(toType)) return true
+  // Where the shipment currently lives on the other side: the recorded link, or -
+  // for a re-send only - a look at the GSD of the other services.
+  const recorded = upperText(crossServiceLinks()[String(row)]?.counterpartType || '')
+  let fromType = recorded && recorded !== toType && counterpartTypes.includes(recorded) ? recorded : ''
+  if (!fromType && !recorded && String(previousSent ?? '').trim()) {
+    dispatchLoading.value = 'Checking linked records...'
+    try {
+      const candidates = counterpartTypes.filter((candidate) => candidate !== toType)
+      const hits = await Promise.all(candidates.map(async (candidate) => {
+        const header = (rows.value[0] || []).map((item: any) => String(item ?? '').trim())
+        const link = opsShipmentLink(header, rows.value[row] || [], row, settings.value)
+        const jobColumn = header.findIndex((label) => upperText(label) === 'JOB NO#')
+        const job = jobColumn >= 0 ? String(rows.value[row]?.[jobColumn] || '').trim() : ''
+        let hit = false
+        await editOpsSheet(opsLeafKey(opsBaseForType(candidate as any), parsed.mode, candidate as any, 'GSD'), (state) => {
+          hit = findShipmentRow(state, link, job, servicePlusLabels(candidate), type) > 0
+          return false
+        }).catch(() => false)
+        return hit ? candidate : ''
+      }))
+      fromType = hits.find(Boolean) || ''
+    } finally {
+      dispatchLoading.value = ''
+    }
+  }
+  if (!fromType) return true
+  dispatchLoading.value = `Checking ${fromType} records...`
+  let depts: string[] = []
+  try {
+    depts = await locateCounterpartDepts(row, fromType)
+  } finally {
+    dispatchLoading.value = ''
+  }
+  if (!depts.length) return true
+  const toDepts = toType ? orderedOpsDepts(opsBaseForType(toType as any), toType, parsed.mode) as string[] : []
+  const dropped = depts.filter((dept) => !toDepts.includes(dept))
+  const message = toType
+    ? `This shipment already has ${fromType} records (${depts.join(', ')}). They will be moved to ${toType} with their data.${dropped.length ? ` ${dropped.join(', ')} ${dropped.length > 1 ? 'are' : 'is'} not used by ${toType} and will be removed.` : ''}`
+    : `This shipment has ${fromType} records (${depts.join(', ')}). Removing the link deletes them.`
+  const confirmed = await askConfirm(message, toType ? `Move shipment to ${toType}?` : `Remove ${fromType} link?`, {
+    okText: toType ? 'MOVE' : 'REMOVE',
+    cancelText: 'Cancel',
+    tone: toType ? 'question' : 'remove',
+  })
+  if (!confirmed) return false
+  dispatchLoading.value = toType ? `Moving shipment from ${fromType} to ${toType}...` : `Removing ${fromType} records...`
+  try {
+    await moveCounterpartRows(row, depts, fromType, toType)
+    await repointCrossServiceLinks(row, toType)
+    showToast(toType ? `Shipment moved from ${fromType} to ${toType}` : `${fromType} records removed`)
+    return true
+  } catch (error: any) {
+    console.error('Could not change the linked service', error)
+    showToast(`Could not move the shipment: ${error?.data?.message || error?.message || 'request failed'}`)
+    return false
+  } finally {
+    dispatchLoading.value = ''
+  }
+}
 const selectDropdownOption = (option: string) => {
   if (dropdownPopup.mode === 'edit') return
   if (blockDoLinkWithoutHbl(dropdownPopup.row, dropdownPopup.column, option)) {
     closeDropdownPopup()
     return
   }
-  const label = normalizedHeaderLabel(dropdownPopup.column)
+  const row = dropdownPopup.row
+  const column = dropdownPopup.column
+  const label = normalizedHeaderLabel(column)
   const isServiceOption = ['EFA+', 'EXW+', 'FCA+', 'FCF+', 'DO+', 'DAP+', 'DDU+', 'DDP+', 'DUP+'].includes(label)
   const storedOption = isServiceOption && !normalizeDropdownOption(option) ? '\u2014' : option
-  rows.value[dropdownPopup.row][dropdownPopup.column] = storedOption
-  syncForcedAgentFromServiceOption(dropdownPopup.row, dropdownPopup.column, storedOption)
-  mirrorFclLinkedCell(dropdownPopup.row, dropdownPopup.column)
-  scheduleSave()
+  const apply = () => {
+    rows.value[row][column] = storedOption
+    syncForcedAgentFromServiceOption(row, column, storedOption)
+    mirrorFclLinkedCell(row, column)
+    scheduleSave()
+  }
   closeDropdownPopup()
+  apply()
 }
 const chooseFirstDropdownOption = () => {
   const [first] = filteredDropdownPopupOptions.value
@@ -24976,6 +25405,7 @@ const openInfoModal = (row: number, column: number) => {
     showToast('Column locked')
     return
   }
+  acknowledgeLinkedCellUpdate(row, column)
   infoModal.row = row
   infoModal.column = column
   infoModal.kind = normalizedHeaderLabel(column).includes('DELIVERY') ? 'delivery' : 'pickup'
@@ -25025,6 +25455,7 @@ const openTruckModal = (row: number, column: number) => {
     showToast('Column locked')
     return
   }
+  acknowledgeLinkedCellUpdate(row, column)
   truckModal.row = row
   truckModal.column = column
   truckModal.records = parseRecordList<TruckRecord>(rows.value[row]?.[column])
@@ -26190,7 +26621,19 @@ input:is([list],[data-combo-list]):not(:disabled):not([readonly]):is(:hover,:foc
 .pay-date-btn:disabled{cursor:default;opacity:.6}
 .pay-date-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .ops-new-row-cell:not(#_x){position:relative}
+/* Sticky header stays above in-cell badges ("!", counters, NEW) while scrolling. */
+.ops-ms-table thead th:not(#_x){z-index:8}
+.ops-ms-table thead th.ops-sel:not(#_x){z-index:9}
 .ops-new-badge{position:absolute;top:2px;right:3px;z-index:1;display:inline-flex;align-items:center;height:12px;padding:0 4px;border-radius:999px;background:linear-gradient(135deg,#ff8a3d,#ff3d6e);color:#fff;font-size:7.5px;font-weight:800;line-height:1;letter-spacing:.06em;box-shadow:0 1px 3px rgba(255,61,110,.35);pointer-events:none;user-select:none}
+/* "!" of a cell updated by another department: orange, blinking until the cell is opened */
+@keyframes linkedUpdateBlink{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 0 0 rgba(243,156,18,.55)}50%{opacity:.35;transform:scale(.85);box-shadow:0 0 0 4px rgba(243,156,18,0)}}
+.ops-ms-table :is(.ops-pill,.gsd-btn,.ad-btn):not(#_x)>:is(.detail-alert-icon,.do-release-warn-icon).linked-update-icon{background:#f39c12;color:#fff;animation:linkedUpdateBlink 1s ease-in-out infinite}
+.ops-head-badge.linked-update-head:not(#_x){background:#f39c12;animation:linkedUpdateBlink 1s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){.ops-ms-table :is(.ops-pill,.gsd-btn,.ad-btn):not(#_x)>.linked-update-icon,.ops-head-badge.linked-update-head:not(#_x){animation:none}}
+/* Changed fields in the opened modal: the whole cell turns orange */
+.wb-modal .linked-field-changed:not(#_x){background:#ffd59e!important;color:#8a3b00!important}
+.wb-modal td.linked-field-changed:not(#_x) :is(input,select,textarea,span,a,div){background:transparent!important;color:inherit!important;border-color:transparent!important;box-shadow:none!important}
+.wb-modal :is(input,select,textarea).linked-field-changed:not(#_x){border-color:#f39c12!important}
 .gsd-pre-sent-info{display:flex;flex-direction:column;gap:2px;margin:10px 0 0;color:#4d5b54;font-size:12px}.gsd-pre-sent-info b{color:#0a6b3b}.gsd-pre-sent-info .pending{color:#b45f04;font-weight:700}
 .ops-nbadge{display:inline-grid;place-items:center;min-width:14px;height:14px;margin-left:5px;padding:0 3px;border-radius:999px;background:#d63a3a;color:#fff;font-size:9px;font-weight:800;line-height:1}
 /* AIR/LCL — vessel delay panel + history on EXW ECD (mockup #ovs) */
