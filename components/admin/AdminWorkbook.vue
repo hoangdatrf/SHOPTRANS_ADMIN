@@ -1856,9 +1856,9 @@
           <template v-else-if="isTruckContModal()">
             <div class="gsd-truck-title">{{ isImportOpsType() && !isLclTruckingDetailModal() ? 'PICKUP STATUS' : isLclTruckingInfoModal() ? 'TRUCKING INFO' : isLclTruckingDetailModal() ? 'TRUCKING DETAIL' : 'TRUCKS & CONT/SEAL DETAILS' }}</div>
             <div v-if="!isReadonlyTruckContModal()" class="gsd-truck-toolbar">
-              <button v-if="!isTcdTruckContModal()" class="wb-modal-btn primary" type="button" @click="addTruckContRecord">Add+</button>
+              <button v-if="!truckClearMode()" class="wb-modal-btn primary" type="button" @click="addTruckContRecord">Add+</button>
               <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || !selectedTruckContIndexes().length" @click="enableTruckContEdit">Edit</button>
-              <button v-if="isTcdTruckContModal()" class="wb-modal-btn clear" type="button" :disabled="!truckContRecords().some(truckContRecordHasData)" @click="removeSelectedTruckContRecords">Clear</button>
+              <button v-if="truckClearMode()" class="wb-modal-btn clear" type="button" :disabled="!truckContRecords().some(truckContRecordHasData)" @click="removeSelectedTruckContRecords">Clear</button>
               <button v-else class="wb-modal-btn remove" type="button" :disabled="!selectedTruckContIndexes().length" @click="removeSelectedTruckContRecords">Remove -</button>
               <button v-if="showsTruckEpodExport()" class="wb-modal-btn primary epod" type="button" :disabled="!truckContRecords().length" @click="exportTruckEpod">Export ePOD</button>
             </div>
@@ -2029,7 +2029,7 @@
             <div v-if="!isReadonlyTruckContModal()" class="gsd-truck-foot">
               <button class="wb-modal-btn slate" type="button" :disabled="!gsdModal.editing || truckDetailsSaving" @click="cancelTruckContEdit">Cancel</button>
               <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing || !truckContIsDirty() || truckDetailsSaving" @click="saveTruckContDetails">{{ truckDetailsSaving ? 'Saving...' : 'Save' }}</button>
-              <button v-if="isTcdTruckContModal()" class="wb-modal-btn primary send" type="button" :disabled="!truckDetailsCanSend()" @click="sendTruckDetailsToShipper">{{ truckDetailsSending ? 'Sending...' : isImportOpsType() ? 'Send Pickup Status' : 'Send Truck Details' }}</button>
+              <button v-if="truckClearMode()" class="wb-modal-btn primary send" type="button" :disabled="!truckDetailsCanSend()" @click="sendTruckDetailsToShipper">{{ truckDetailsSending ? 'Sending...' : isImportOpsType() ? 'Send Pickup Status' : truckIsTruckingInfo() ? 'Send Trucking Info' : 'Send Truck Details' }}</button>
             </div>
           </template>
           <template v-else-if="isPickupReturnStatusModal()">
@@ -2248,7 +2248,10 @@
               <button v-if="!isFclExwDcdSiModal() && !isLclSheet()" class="wb-modal-btn si-add-container" type="button" :disabled="!gsdModal.editing" @click="addSiSubmitContainer">+ Add Container</button>
               <div v-if="isLclSheet()" class="si-section-title">Cargo Description</div>
               <label v-if="isLclSheet()" class="si-f si-description si-lcl-description"><span>Description</span><textarea v-model="gsdModal.form.description" rows="2" :disabled="!gsdModal.editing"></textarea></label>
-              <div v-if="isLclSheet()" class="si-table-wrap gsd-five-row-scroll si-lcl-cargo-table"><table class="si-table"><colgroup><col style="width:40px" /><col /><col /><col style="width:6px" /><col /><col /><col /><col /><col v-if="isAirMode()" /></colgroup><thead><tr><th>#</th><th>Shipping Marks</th><th>Cargo Description</th><th class="si-gap" aria-hidden="true"></th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th><th v-if="isAirMode()">C.W (KG)</th></tr></thead><tbody><tr v-for="(container, index) in siSubmitContainers()" :key="container.id"><td class="si-order">{{ index + 1 }}</td><td><input v-model="container.marks" :disabled="!gsdModal.editing" /></td><td><input v-model="container.cargoDescription" :disabled="!gsdModal.editing" /></td><td class="si-gap" aria-hidden="true"></td><td><input v-model="container.qty" type="number" min="0" step="1" :disabled="!gsdModal.editing" /></td><td><input v-model="container.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="container.gw" type="number" min="0" step="0.01" :disabled="!gsdModal.editing" /></td><td><input v-model="container.mea" type="number" min="0" step="0.001" :disabled="!gsdModal.editing" /></td><td v-if="isAirMode()"><input :value="siGoodsChargeable(container)" readonly /></td></tr></tbody></table></div>
+              <div v-if="isLclSheet()" class="si-lcl-split">
+                <div class="si-lcl-box si-lcl-marks"><div class="si-lcl-head">Shipping Marks</div><textarea :value="siLclShippingMarks()" class="si-lcl-marks-input" :disabled="!gsdModal.editing" @input="setSiLclShippingMarks(($event.target as HTMLTextAreaElement).value)"></textarea></div>
+                <div class="si-lcl-box si-lcl-goods gsd-five-row-scroll"><table class="si-table si-lcl-goods-table"><colgroup><col style="width:56px" /><col /><col /><col /><col /><col v-if="isAirMode()" /></colgroup><thead><tr><th>Order</th><th>QTY</th><th>UNIT</th><th>GW (KG)</th><th>MEA. (CBM)</th><th v-if="isAirMode()">C.W (KG)</th></tr></thead><tbody><tr v-for="(container, index) in siSubmitContainers()" :key="container.id"><td class="si-order">{{ index + 1 }}</td><td><input v-model="container.qty" type="number" min="0" step="1" :disabled="!gsdModal.editing" /></td><td><input v-model="container.unit" :disabled="!gsdModal.editing" /></td><td><input v-model="container.gw" type="number" min="0" step="0.01" :disabled="!gsdModal.editing" /></td><td><input v-model="container.mea" type="number" min="0" step="0.001" :disabled="!gsdModal.editing" /></td><td v-if="isAirMode()"><input :value="siGoodsChargeable(container)" readonly /></td></tr></tbody></table></div>
+              </div>
               <div v-if="!isLclSheet()" class="si-section-title">Cargo Description</div>
               <label v-if="!isLclSheet()" class="si-f si-description"><span>Description</span><textarea v-model="gsdModal.form.description" rows="2" :disabled="!gsdModal.editing" :class="{ 'si-invalid': siInvalidFields.has('description') }"></textarea></label>
               <div v-if="!isLclSheet()" class="si-g3"><label class="si-f"><span>Marks &amp; Numbers</span><textarea v-model="gsdModal.form.marks" class="si-marks" rows="1" :disabled="!gsdModal.editing"></textarea><span class="si-attachment"><button class="si-attach-button" type="button" :disabled="!gsdModal.editing" @click="siMarksFileInput?.click()"><svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5 5 0 0 1-7-7l9-9a3.3 3.3 0 0 1 4.7 4.7l-9 9a1.7 1.7 0 0 1-2.4-2.4l8.1-8.1"/></svg>AttFile</button><span v-if="gsdModal.form.marksFile" class="si-file-name">{{ gsdModal.form.marksFile.name }}</span><button v-if="gsdModal.form.marksFile" class="si-file-icon" type="button" title="View" @click="viewSiMarksFile"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button><button v-if="gsdModal.form.marksFile" class="si-file-remove" type="button" title="Remove" :disabled="!gsdModal.editing" @click="removeSiMarksFile">&times;</button><em v-if="!gsdModal.editing && !gsdModal.form.marksFile">No file attached</em></span></label><label class="si-f"><span>QTY</span><input :value="siSubmitTotal('qty')" type="text" readonly /></label><label class="si-f"><span>Unit</span><input v-model="gsdModal.form.unit" type="text" :disabled="!gsdModal.editing" /></label></div>
@@ -4567,6 +4570,8 @@ type PaymentLine = {
   sender: string
   reqDate: string
   sentAt: string
+  // Last time this line was sent either way (request or feedback): newest first.
+  activityAt?: string
   approvedAt: string
   status: string
   reason: string
@@ -6305,6 +6310,16 @@ const sortedIndexes = (indexes: number[]) => {
   })
   return [...header, ...body]
 }
+// Search looks at what the cell shows: a modal cell (JSON) is matched on its visible
+// text (client name, HBL no., ...), not on data hidden inside it - e.g. a Payment
+// Request's RefLastBiz used to make unrelated shipments match a JOB NO# search.
+const searchableCellText = (row: number, column: number) => {
+  const value = rows.value[row]?.[column]
+  const raw = String(value ?? '')
+  const trimmed = raw.trim()
+  if (!isOpsPage.value || (!trimmed.startsWith('{') && !trimmed.startsWith('['))) return raw.toLowerCase()
+  return String(opsGridCellText(value, row, column) ?? '').toLowerCase()
+}
 const filteredRowIndexes = computed(() => {
   const needle = query.value.trim().toLowerCase()
   const indexes = rows.value.map((_, index) => index).filter(rowMatchesStatus)
@@ -6320,10 +6335,10 @@ const filteredRowIndexes = computed(() => {
         }
         if (isOpsPage.value && opsFilterField.value !== 'all') {
           const column = Number(opsFilterField.value)
-          return String(rows.value[index]?.[column] ?? '').toLowerCase().includes(needle)
+          return searchableCellText(index, column).includes(needle)
         }
         const searchColumns = isOpsPage.value ? visibleColumns.value : rows.value[index].map((_, column) => column)
-        return searchColumns.some((column) => String(rows.value[index]?.[column] ?? '').toLowerCase().includes(needle))
+        return searchColumns.some((column) => searchableCellText(index, column).includes(needle))
       })
     : indexes
   const advanced = opsAppliedFilters.value.length
@@ -10825,6 +10840,7 @@ const normalizePaymentLine = (line: any): PaymentLine => ({
   sender: String(line?.sender || ''),
   reqDate: String(line?.reqDate || line?.requestedAt || ''),
   sentAt: String(line?.sentAt || line?.reqDate || ''),
+  activityAt: String(line?.activityAt || ''),
   approvedAt: String(line?.approvedAt || ''),
   status: String(line?.status || ''),
   reason: String(line?.reason || ''),
@@ -10976,6 +10992,12 @@ const recoverLinkedPaymentRequestForFcd = async (row: number, currentValue: any)
     lines: Array.from(mergedLines.values()).map((line) => ({ ...line, selected: false })),
   } })
 }
+// Lines just sent (a request one way, a feedback the other way) come first; lines
+// never sent keep their order after them.
+const sortPaymentLinesByActivity = <T extends Record<string, any>>(lines: T[]): T[] => lines
+  .map((line, index) => ({ line, index }))
+  .sort((left, right) => String(right.line.activityAt || '').localeCompare(String(left.line.activityAt || '')) || left.index - right.index)
+  .map((item) => item.line)
 const paymentPayload = () => ({
   jobNo: gsdModal.payment.jobNo,
   refNo: gsdModal.payment.refNo,
@@ -11685,6 +11707,7 @@ const sendPaymentRequest = async () => {
         ...line,
         lastFeedback: [line.status, line.reason].filter((value) => String(value || '').trim()).join(' - ') || line.lastFeedback,
         sentAt: stamp,
+        activityAt: new Date().toISOString(),
         sender: opsDeptUpper(),
         reqDate: stamp,
         approvedAt: '',
@@ -11697,6 +11720,7 @@ const sendPaymentRequest = async () => {
         selected: false,
       }
     : line)
+  gsdModal.payment.lines = sortPaymentLinesByActivity(gsdModal.payment.lines)
   await nextTick()
   void runPaymentSend(() => persistPaymentRequest(true, true), 'Sending Payment Request...').then(() => {
     showToast(`${target.length} payment request line(s) sent`)
@@ -12247,6 +12271,7 @@ const openGsdModal = async (row: number, column: number) => {
           await loadPaymentReferenceOptions()
           if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column) return
           gsdModal.payment = paymentRequestFromCell(rawText)
+          gsdModal.payment.lines = sortPaymentLinesByActivity(gsdModal.payment.lines)
           if (opsDeptUpper() !== 'FCD' && gsdModal.payment.lines.some((line) => line.feedbackUnread)) {
             gsdModal.payment.lines.forEach((line) => { line.feedbackUnread = false })
             persistPaymentRequest()
@@ -12380,7 +12405,7 @@ const openGsdModal = async (row: number, column: number) => {
           ['ECD', 'TCD', 'CCD', 'DCD', 'FCD'].includes(opsDeptUpper())
         if (originTruckVolumeView || (opsParts.value?.mode === 'FCL' && opsDeptUpper() === 'TCD')) {
           gsdModal.form = seedTruckContFromVolume(gsdModal.form)
-        } else if (isLclSheet() && opsDeptUpper() === 'TCD' && label === 'TRUCKING INFO') {
+        } else if ((isLclSheet() || isAirSheet()) && opsDeptUpper() === 'TCD' && label === 'TRUCKING INFO') {
           gsdModal.form = seedTruckRowsFromVolumeLines(gsdModal.form)
         }
         gsdModal.form.initialRecords = truckContSnapshot(gsdModal.form.records)
@@ -12580,6 +12605,7 @@ const openGsdModal = async (row: number, column: number) => {
             scheduleSave()
           }
           gsdModal.form = expenseCollectFromCell(linkedPaymentValue)
+          if (Array.isArray(gsdModal.form.lines)) gsdModal.form.lines = sortPaymentLinesByActivity(gsdModal.form.lines)
           if (expenseCollectLines().some((line: any) => line.requestUnread)) {
             expenseCollectLines().forEach((line: any) => { line.requestUnread = false })
             persistExpenseCollect()
@@ -12609,17 +12635,32 @@ const openGsdModal = async (row: number, column: number) => {
         gsdModal.editing = !gsdModal.form.locked
       } else if (label === 'CLEARANCE DETAIL' || label === 'CLEARANCE DETAILS' || label === 'CUSTOMS CLEARANCE DETAILS') {
         gsdModal.formFields = []
-        const linkedClearanceValue = isDupTcdClearanceDetailsModal() || isLclImportTcdClearanceModal() ? await linkedTcdClearanceValue(row, rawText) : rawText
-        if (linkedClearanceValue !== rawText && String(linkedClearanceValue || '').trim()) rows.value[row][column] = linkedClearanceValue
-        // Open the popup in its compact overview state. Declaration details
-        // are shown only after the user explicitly clicks a declaration row.
-        // Reset before any await so a previously opened panel never flashes.
-        gsdModal.form = { ...clearanceDetailsFormFromCell(linkedClearanceValue), openId: '', selected: {} }
-        if (isDupCcdClearanceDetailsModal()) {
-          gsdModal.form.linkedContSealValue = await linkedCcdContSealValue(row, rowValueByHeader('CONT/SEAL INFO'))
-        }
+        // Show the stored data at once (this row's CONT/SEAL INFO is already mirrored
+        // here), then check the linked sheet in the background and update only when it
+        // differs. Waiting for it first made the popup open late and then jump.
+        const linkedTcdView = isDupTcdClearanceDetailsModal() || isLclImportTcdClearanceModal()
+        const localContSeal = rowValueByHeader('CONT/SEAL INFO')
+        const stillThisClearance = () => loadId === gsdModalLoadId && gsdModal.open && gsdModal.row === row && gsdModal.column === column
+        // Compact overview state: declaration details open only on an explicit click.
+        gsdModal.form = { ...clearanceDetailsFormFromCell(rawText), openId: '', selected: {} }
+        if (isDupCcdClearanceDetailsModal()) gsdModal.form.linkedContSealValue = localContSeal
         syncClearanceRowsFromSource()
-        gsdModal.editing = !isDupTcdClearanceDetailsModal() && !isLclImportTcdClearanceModal()
+        gsdModal.editing = !linkedTcdView
+        void (async () => {
+          if (linkedTcdView) {
+            const linkedClearanceValue = await linkedTcdClearanceValue(row, rawText)
+            if (linkedClearanceValue === rawText || !String(linkedClearanceValue || '').trim()) return
+            if (rows.value[row]) rows.value[row][column] = linkedClearanceValue
+            if (!stillThisClearance()) return
+            gsdModal.form = { ...clearanceDetailsFormFromCell(linkedClearanceValue), openId: gsdModal.form.openId || '', selected: {} }
+            syncClearanceRowsFromSource()
+          } else if (isDupCcdClearanceDetailsModal()) {
+            const linkedContSeal = await linkedCcdContSealValue(row, localContSeal)
+            if (!stillThisClearance() || String(linkedContSeal ?? '') === String(localContSeal ?? '')) return
+            gsdModal.form.linkedContSealValue = linkedContSeal
+            syncClearanceRowsFromSource()
+          }
+        })().catch((error) => console.warn('Could not refresh linked CLEARANCE DETAIL', error))
       } else {
         const fields = gsdFormFieldsFor(label)
         gsdModal.formFields = fields
@@ -14420,7 +14461,7 @@ const arrivalNoticeDetail = () => {
     pod: String(siRouteDisplay(rowValueByHeader('ROUTE'), 'pod') || routeData.podCode || routeData.pod || form?.pod || '').toUpperCase(),
     conts,
     description: String(form?.description || siSubmit.description || 'AS PER B/L'),
-    marks: String(form?.marks || siSubmit.marks || 'AS PER B/L'),
+    marks: String(form?.marks || siFormMarks(siSubmit) || 'AS PER B/L'),
     unit: String(form?.unit || referenceUnitDescription(conts[0]?.unit) || 'PACKAGES'),
     anNo: String(form?.anNo || ''),
     anDate: isoDateValue(form?.anDate || todayIso()),
@@ -14756,6 +14797,7 @@ const normalizeExpenseLine = (line: any, index = 0) => ({
   noteFrom: String(line?.noteFrom || line?.noteToFcd || ''),
   sentAt: String(line?.sentAt || line?.reqDate || ''),
   reqDate: String(line?.reqDate || line?.sentAt || ''),
+  activityAt: String(line?.activityAt || ''),
   approvedAt: String(line?.approvedAt || ''),
   status: String(line?.status || ''),
   reason: String(line?.reason || ''),
@@ -14932,6 +14974,7 @@ const sendExpenseCollectFeedback = async () => {
   const sentAt = expenseStamp()
   selected.forEach((line: any) => {
     line.statusDetails = `${line.status} ${sentAt}`
+    line.activityAt = new Date().toISOString()
     line.approvedAt = upperText(line.status) === 'APPROVED' ? sentAt : ''
     line.feedbackUnread = true
     line.requestUnread = false
@@ -14939,6 +14982,7 @@ const sendExpenseCollectFeedback = async () => {
     line.selected = false
   })
   expenseFeedbackInvalidReasonIds.value = new Set()
+  if (Array.isArray(gsdModal.form.lines)) gsdModal.form.lines = sortPaymentLinesByActivity(gsdModal.form.lines)
   const targetIds = new Set(selected.map((line: any) => String(line.id)))
   void runPaymentSend(() => persistExpenseCollect(true, true), 'Sending Payment Approval feedback...').then(() => {
     showToast('Feedback sent')
@@ -17618,11 +17662,14 @@ const truckContIsDirty = () => truckContSnapshot(truckContRecords()) !== truckCo
 const truckDetailsCanSend = () => {
   if (gsdModal.editing || truckDetailsSending.value || truckDetailsSaving.value || String(gsdModal.form.sentAt || '').trim()) return false
   const records = truckContRecords()
+  // LCL/AIR TRUCKING INFO has no Container / ContType / Seal columns.
+  const containerFields = !truckIsTruckingInfo()
   return records.length > 0 && records.every((record) =>
-    [record.truck, record.container, record.contType, record.seal, record.driver, record.eta1, record.eta2]
+    [record.truck, ...(containerFields ? [record.container, record.contType, record.seal] : []), record.driver, record.eta1, record.eta2]
       .every((value) => String(value || '').trim()),
   )
 }
+const truckIsTruckingInfo = () => normalizedHeaderLabel(gsdModal.column) === 'TRUCKING INFO' && (isLclSheet() || isAirSheet())
 const uppercaseTruckRecordField = (record: TruckContRecord, field: keyof TruckContRecord) => {
   ;(record as any)[field] = upperText((record as any)[field])
 }
@@ -17851,14 +17898,18 @@ const truckContTypeDisplay = (record: TruckContRecord, index: number) => {
 }
 const truckContRecordHasData = (record: TruckContRecord) =>
   ['truck', 'container', 'seal', 'driver', 'eta1', 'eta2', 'gdate', 'gtime'].some((key) => String((record as any)[key] || '').trim())
+// TCD truck tables keep one row per container / volume line: rows are cleared, not
+// added or removed (FCL TRUCK & CONT/SEAL INFO and LCL/AIR TRUCKING INFO alike).
+const truckClearMode = () => isTcdTruckContModal()
+  || (isTruckContModal() && opsDeptUpper() === 'TCD' && normalizedHeaderLabel(gsdModal.column) === 'TRUCKING INFO')
 const removeSelectedTruckContRecords = async () => {
   // TCD "Clear": clears the entered data of the selected rows (all rows when none is
   // selected); the rows themselves come from VOLUME and stay.
   const selected = selectedTruckContIndexes()
-  const indexes = new Set(isTcdTruckContModal() && !selected.length ? truckContRecords().map((_, index) => index) : selected)
+  const indexes = new Set(truckClearMode() && !selected.length ? truckContRecords().map((_, index) => index) : selected)
   if (!indexes.size) return
-  const ok = isTcdTruckContModal()
-    ? await askConfirm(selected.length ? 'Clear the entered data of the selected row(s)?' : 'Clear all entered truck & cont/seal data?', '', { okText: 'YES', cancelText: 'NO', tone: 'remove' })
+  const ok = truckClearMode()
+    ? await askConfirm(selected.length ? 'Clear the entered data of the selected row(s)?' : `Clear all entered ${normalizedHeaderLabel(gsdModal.column) === 'TRUCKING INFO' ? 'trucking' : 'truck & cont/seal'} data?`, '', { okText: 'YES', cancelText: 'NO', tone: 'remove' })
     : await askConfirm('Are you sure to remove?', '', { okText: 'OK', cancelText: 'Cancel', tone: 'remove' })
   if (!ok) return
   if (!gsdModal.editing) {
@@ -17866,7 +17917,7 @@ const removeSelectedTruckContRecords = async () => {
     gsdModal.form.editLockedSnapshot = !!gsdModal.form.locked
     gsdModal.form.editSentAtSnapshot = String(gsdModal.form.sentAt || '')
   }
-  if (isTcdTruckContModal()) {
+  if (truckClearMode()) {
     gsdModal.form.records = truckContRecords().map((record, index) => indexes.has(index)
       ? { ...emptyTruckContRecord(), contType: record.contType }
       : record)
@@ -17880,7 +17931,7 @@ const removeSelectedTruckContRecords = async () => {
 }
 const clearTruckContRecords = () => {
   if (gsdModal.form.locked) return
-  gsdModal.form.records = isTcdTruckContModal()
+  gsdModal.form.records = truckClearMode()
     ? truckContRecords().map((record) => ({ ...emptyTruckContRecord(), contType: record.contType }))
     : [emptyTruckContRecord()]
   gsdModal.editing = true
@@ -18041,7 +18092,7 @@ const saveTruckContDetails = async () => {
 }
 const sendTruckDetailsToShipper = async () => {
   if (!truckDetailsCanSend()) return
-  const docLabel = isImportOpsType() ? 'Pickup status' : 'Truck & Cont/Seal details'
+  const docLabel = isImportOpsType() ? 'Pickup status' : truckIsTruckingInfo() ? 'Trucking info' : 'Truck & Cont/Seal details'
   const roles = await askRecipients(docLabel, gsdModal.row)
   if (!roles) return
   truckDetailsSending.value = true
@@ -18076,6 +18127,7 @@ const sendTruckDetailsToShipper = async () => {
         bookingNo: rowValueByHeader('BC NO#'),
         consignee: rowValueByHeader('CNEE') || rowValueByHeader('CONSIGNEE'),
         shipmentType: `${opsParts.value?.mode || ''} ${opsParts.value?.type || ''}`.trim(),
+        returnLabel: truckIsTruckingInfo() ? 'Warehouse GateIn' : 'Return',
         records: mailRecords,
       },
     })
@@ -18851,22 +18903,26 @@ const enableSiSubmitEdit = () => {
 const validateSiSubmit = () => {
   if (gsdModal.form.notSubmittedByShoptrans) {
     siInvalidFields.value = new Set()
-    nextTick(() => document.querySelectorAll('.gsd-si-modal .si-table-wrap').forEach((element) => element.classList.remove('si-invalid-group')))
+    nextTick(() => document.querySelectorAll('.gsd-si-modal .si-table-wrap, .gsd-si-modal .si-lcl-box').forEach((element) => element.classList.remove('si-invalid-group')))
     return true
   }
   const required = ['shipper', 'consignee', 'notify', 'bookingNo', 'vessel', 'depDate', 'pol', 'pod']
-  if (isLclSheet()) required.push('siNo', 'siIssueDate')
+  // DESCRIPTION is required on every mode (FCL also needs its Marks & Numbers / Unit
+  // fields; LCL/AIR have the Shipping Marks box and per-line units, checked below).
+  if (isLclSheet()) required.push('siNo', 'siIssueDate', 'description')
   else required.push('description', 'marks', 'unit')
   const invalid = new Set(required.filter((key) => !String(gsdModal.form[key] || '').trim()))
   if (!String(gsdModal.form.freight || '').trim()) invalid.add('freight')
   const cargoRows = siSubmitContainers().filter((item: any) => Object.entries(item || {}).some(([key, value]) => key !== 'id' && String(value || '').trim()))
   // ContNo, ContType and SealNo are linked read-only values. Only the fields
   // users can actually complete in this modal participate in validation.
-  const requiredCargoKeys = isLclSheet() ? ['marks', 'qty', 'unit', 'gw', 'mea'] : ['qty', 'unit', 'gw', 'mea']
+  // LCL/AIR: one shared Shipping Marks box (stored on the first line) + the goods lines.
+  const requiredCargoKeys = ['qty', 'unit', 'gw', 'mea']
   if (!cargoRows.length || cargoRows.some((item: any) => requiredCargoKeys.some((key) => !String(item?.[key] || '').trim()))) invalid.add('containers')
+  if (isLclSheet() && !siLclShippingMarks().trim()) invalid.add('containers')
   siInvalidFields.value = invalid
   nextTick(() => {
-    document.querySelectorAll('.gsd-si-modal .si-table-wrap').forEach((element) => element.classList.toggle('si-invalid-group', invalid.has('containers')))
+    document.querySelectorAll('.gsd-si-modal .si-table-wrap, .gsd-si-modal .si-lcl-box').forEach((element) => element.classList.toggle('si-invalid-group', invalid.has('containers')))
     const fieldKeys: Record<string, string> = { 'DESCRIPTION': 'description', 'MARKS & NUMBERS': 'marks', 'UNIT': 'unit', 'SPECIAL INSTRUCTIONS': 'specialInst' }
     document.querySelectorAll<HTMLElement>('.gsd-si-modal .si-f').forEach((field) => {
       const key = fieldKeys[upperText(field.querySelector('span')?.textContent || '')]
@@ -18878,19 +18934,19 @@ const validateSiSubmit = () => {
   nextTick(() => document.querySelector<HTMLElement>('.gsd-si-modal .si-invalid')?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
   return false
 }
-const syncMasterSiToBillDetail = (pdfFile: any = gsdModal.form.pdfFile || null) => {
+const syncMasterSiToBillDetail = (pdfFile: any = gsdModal.form.pdfFile || null, row = gsdModal.row, siForm: any = gsdModal.form) => {
   const billColumn = (rows.value[0] || []).findIndex((_: any, index: number) => ['BILL DETAIL', 'BILL APPROVAL', 'AWB DETAIL'].includes(normalizedHeaderLabel(index)))
-  if (billColumn < 0) return
-  const raw = parseJsonCell(rows.value[gsdModal.row]?.[billColumn], {} as any)
+  if (billColumn < 0 || !rows.value[row]) return
+  const raw = parseJsonCell(rows.value[row]?.[billColumn], {} as any)
   const container = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}
   const form = container && typeof container.form === 'object' ? container.form : {}
-  const external = !!gsdModal.form.notSubmittedByShoptrans
-  rows.value[gsdModal.row][billColumn] = JSON.stringify({
+  const external = !!siForm.notSubmittedByShoptrans
+  rows.value[row][billColumn] = JSON.stringify({
     ...container,
     form: {
       ...form,
       siSubmitted: true,
-      siSubmittedAt: gsdModal.form.submittedAt,
+      siSubmittedAt: siForm.submittedAt,
       siSubmittedSource: external ? 'external' : 'master-si',
       siSubmittedFile: external ? (form.siSubmittedFile || null) : pdfFile,
     },
@@ -18907,14 +18963,38 @@ const saveSiSubmit = async () => {
   gsdModal.editing = false
   scheduleSave()
   await saveSheet()
-  if (!gsdModal.form.notSubmittedByShoptrans) await exportSiSubmitPdf(false)
+  // The PDF attached to Bill Detail is built in the background: the user keeps
+  // working and the Export PDF button does not switch to "Exporting...".
+  if (!gsdModal.form.notSubmittedByShoptrans) void exportSiSubmitPdf(false)
+}
+// "Exporting..." is shown only for an export the user asked for.
+// LCL/AIR SI: one Shipping Marks box for the whole cargo. Stored on the first cargo
+// line (where the PDF / B/L copy already read it); older per-line marks are shown joined.
+const siLclShippingMarks = () => siSubmitContainers().map((container: any) => String(container?.marks || '').trim()).filter(Boolean).join('\n')
+const setSiLclShippingMarks = (value: string) => {
+  const containers = siSubmitContainers() as any[]
+  if (!containers.length) return
+  containers.forEach((container, index) => { container.marks = index === 0 ? value : '' })
 }
 const siExportingPdf = ref(false)
+let siPdfJob: Promise<void> | null = null
 const exportSiSubmitPdf = async (download: boolean | Event = true) => {
+  const userExport = download !== false
+  // A user export waits for a background one still rendering, then renders afresh.
+  if (siPdfJob) {
+    if (!userExport) return
+    await siPdfJob.catch(() => undefined)
+  }
   if (!gsdModal.form.locked || siExportingPdf.value) return
   const sheet = document.querySelector<HTMLElement>('.gsd-si-modal .si-sheet')
   if (!sheet) return
-  siExportingPdf.value = true
+  // The SI being exported (the modal may be closed or switched before it finishes).
+  const targetRow = gsdModal.row
+  const targetColumn = gsdModal.column
+  const targetForm = gsdModal.form
+  if (userExport) siExportingPdf.value = true
+  let finishJob: () => void = () => undefined
+  siPdfJob = new Promise<void>((resolve) => { finishJob = resolve })
   try {
     await nextTick()
     const pdfBottomReserve = 180
@@ -19180,20 +19260,27 @@ const exportSiSubmitPdf = async (download: boolean | Event = true) => {
       sourceY += sliceHeight
       pageIndex += 1
     }
-    const reference = String(gsdModal.form.bookingNo || rowValueByHeader('JOB NO#') || 'DOCUMENT').trim().replace(/[^a-zA-Z0-9_-]+/g, '_')
+    const jobColumn = (rows.value[0] || []).findIndex((_: any, index: number) => normalizedHeaderLabel(index) === 'JOB NO#')
+    const reference = String(targetForm.bookingNo || (jobColumn >= 0 ? rows.value[targetRow]?.[jobColumn] : '') || 'DOCUMENT').trim().replace(/[^a-zA-Z0-9_-]+/g, '_')
     const filename = `SI_${reference}.pdf`
     const blob = pdf.output('blob')
+    if (userExport) pdf.save(filename)
     const uploaded = await uploadAdminAttachment(new File([blob], filename, { type: 'application/pdf' }))
-    gsdModal.form.pdfFile = uploaded
-    rows.value[gsdModal.row][gsdModal.column] = JSON.stringify({ form: { ...gsdModal.form }, _saved: true })
-    syncMasterSiToBillDetail(uploaded)
-    await saveSheet()
-    if (download !== false) pdf.save(filename)
+    targetForm.pdfFile = uploaded
+    if (rows.value[targetRow]) {
+      const stored = parseJsonCell(rows.value[targetRow][targetColumn], null as any)
+      const storedForm = stored && typeof stored === 'object' && stored.form && typeof stored.form === 'object' ? stored.form : { ...targetForm }
+      rows.value[targetRow][targetColumn] = JSON.stringify({ form: { ...storedForm, pdfFile: uploaded }, _saved: true })
+      syncMasterSiToBillDetail(uploaded, targetRow, { ...storedForm, pdfFile: uploaded })
+      await saveSheet()
+    }
   } catch (error) {
     console.error('Unable to export SI PDF', error)
-    showToast('Unable to export SI PDF. Please try again.')
+    if (userExport) showToast('Unable to export SI PDF. Please try again.')
   } finally {
-    siExportingPdf.value = false
+    if (userExport) siExportingPdf.value = false
+    siPdfJob = null
+    finishJob()
   }
 }
 
@@ -20287,11 +20374,16 @@ const setBillContainerField = (container: any, key: 'qty' | 'unit' | 'gw' | 'mea
   if (key === 'gw') billDocModal.grossWeight = billContainerTotal(billDocModal.containers, 'gw')
   if (key === 'mea') billDocModal.measurement = billContainerTotal(billDocModal.containers, 'mea')
 }
+// Marks / unit of an SI form: FCL keeps them in MARKS & NUMBERS / UNIT, LCL/AIR in the
+// Shipping Marks box and the cargo lines (marks on the first line, one unit per line).
+const siFormMarks = (si: any) => String(si?.marks || '').trim()
+  || (Array.isArray(si?.containers) ? si.containers.map((item: any) => String(item?.marks || '').trim()).filter(Boolean).join('\n') : '')
+const siFormUnit = (si: any) => upperText(si?.unit || (Array.isArray(si?.containers) ? si.containers.map((item: any) => item?.unit).find((unit: any) => String(unit || '').trim()) : '') || '')
 // Defaults from MASTER SI SUBMIT: Marks & Numbers, and No. of Pkgs = total QTY + unit.
 const billSiDefaults = () => {
   const source = rawSiSourceValue('MASTER SI SUBMIT') || rawSiSourceValue('SI SUBMIT')
   const si: any = source ? siSubmitFormFromCell(source) : {}
-  return { marks: String(si?.marks || ''), unit: upperText(si?.unit || '') }
+  return { marks: siFormMarks(si), unit: siFormUnit(si) }
 }
 const billPackagesDefault = (containers: any[], siUnit = '') => {
   const total = (containers || []).reduce((sum: number, item: any) => sum + (Number.parseFloat(String(item?.qty || '').replace(/,/g, '')) || 0), 0)
@@ -26900,6 +26992,31 @@ input:is([list],[data-combo-list]):not(:disabled):not([readonly]):is(:hover,:foc
 .pay-date-btn:disabled{cursor:default;opacity:.6}
 .pay-date-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .ops-new-row-cell:not(#_x){position:relative}
+/* LCL/AIR SI cargo: Shipping Marks box (30%) beside the goods table; outer border only. */
+.si-lcl-split{display:flex;align-items:stretch;gap:10px;margin-top:6px}
+.si-lcl-box{box-sizing:border-box;border:1px solid #c9d3cf;border-radius:6px;background:#fff;overflow:hidden}
+.si-lcl-marks{flex:0 0 30%;display:flex;flex-direction:column;min-width:0}
+.si-lcl-goods{flex:1 1 auto;min-width:0;overflow:auto}
+.si-lcl-head{display:flex;align-items:center;justify-content:center;box-sizing:border-box;height:36px;padding:0 10px;border-bottom:1px solid #d5ddd9;background:#f1f5f3;font-size:12px;font-weight:700;color:#33413b}
+.si-lcl-marks-input:not(#_x){flex:1 1 auto;width:100%;min-height:64px;box-sizing:border-box;margin:0;padding:0 10px;border:0;border-radius:0;background:transparent;font:inherit;font-size:12.5px;line-height:32px;resize:none;outline:none}
+/* Fixed layout: a narrow Order column, the other columns share the width equally. */
+.si-lcl-goods-table:not(#_x){width:100%!important;min-width:0!important;border:0;border-collapse:collapse;table-layout:fixed!important}
+.si-lcl-goods-table:not(#_x) col:first-child{width:56px!important}
+/* The FCL container-table percentages (.si-table th:nth-child) must not apply here. */
+.gsd-si-modal .si-lcl-goods-table:not(#_x) th{width:auto!important}
+.gsd-si-modal .si-lcl-goods-table:not(#_x) th:first-child{width:56px!important}
+/* No reserved scrollbar strip / extra offset: the table reaches the box edge. */
+.gsd-si-modal .si-lcl-goods.gsd-five-row-scroll:not(#_x){scrollbar-gutter:auto;margin-top:0;padding-top:0}
+.si-lcl-goods-table:not(#_x) td{box-sizing:border-box;height:32px;padding:0 6px!important;vertical-align:middle}
+.si-lcl-goods-table:not(#_x) td input{box-sizing:border-box;width:100%;height:30px;text-align:center}
+/* Right table: inner grid lines only (the box draws the outer border). */
+.si-lcl-goods-table:not(#_x) :is(th,td){border:0!important;border-right:1px solid #d5ddd9!important;border-bottom:1px solid #d5ddd9!important}
+.si-lcl-goods-table:not(#_x) :is(th,td):last-child{border-right:0!important}
+.si-lcl-goods-table:not(#_x) tbody tr:last-child td{border-bottom:0!important}
+.si-lcl-goods-table:not(#_x) th{box-sizing:border-box;height:36px;padding-top:0;padding-bottom:0;background:#f1f5f3;vertical-align:middle}
+/* View-only clearance tables (TCD): one declaration per line. The 2-column grid is for
+   the editable table (number + its 22px tick/remove button). */
+.gsd-clr-modal:not(#_x) .clr-declwrap.viewonly{grid-template-columns:minmax(0,1fr)!important}
 /* Sticky header stays above in-cell badges ("!", counters, NEW) while scrolling. */
 .ops-ms-table thead th:not(#_x){z-index:8}
 .ops-ms-table thead th.ops-sel:not(#_x){z-index:9}
