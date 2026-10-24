@@ -165,7 +165,7 @@
                   @click="toggleOpsBadgeSort(column)"
                   @contextmenu.prevent="openOpsHeaderMenu(column, $event)"
                 >
-                  {{ headerLabel(column).toUpperCase() }}<span v-if="opsColumnBadgeTotal(column) > 0" class="ops-head-badge" :class="{ 'linked-update-head': opsColumnBadgeIsLinkedUpdate(column) }">{{ opsColumnBadgeTotal(column) }}</span>
+                  {{ opsHeaderDisplay(column) }}<span v-if="opsColumnBadgeTotal(column) > 0" class="ops-head-badge" :class="{ 'linked-update-head': opsColumnBadgeIsLinkedUpdate(column) }">{{ opsColumnBadgeTotal(column) }}</span>
                   <span
                     class="ops-rsz"
                     title="Resize column"
@@ -1789,7 +1789,7 @@
               <button class="wb-modal-btn slate" type="button" :disabled="!pickupHasStoredData()" @click="clearPickupModal">Clear</button>
               <button class="wb-modal-btn edit" type="button" :disabled="pickupCanEdit()" @click="enablePickupEdit">Edit</button>
               <button class="wb-modal-btn primary" type="button" :disabled="!pickupCanEdit() || !pickupHasInput()" @click="savePickupDetails">Save</button>
-              <button v-if="!isFclDduTcdDeliveryDetailModal()" class="wb-modal-btn send" type="button" :disabled="pickupCanEdit() || !pickupSaved() || gsdModal.form.sent" @click="sendPickupToTarget">{{ isDeliveryDetailsModal() ? 'Send to CNEE' : 'Send to Shipper' }}</button>
+              <button class="wb-modal-btn send" type="button" :disabled="pickupCanEdit() || !pickupSaved() || gsdModal.form.sent" @click="sendPickupToTarget">{{ isDeliveryDetailsModal() ? 'Send Delivery Detail' : 'Send Pickup Detail' }}</button>
             </div>
             <input ref="pickupBookingFileInput" type="file" hidden @change="handlePickupBookingFile" />
           </template>
@@ -1854,7 +1854,7 @@
             </template>
           </template>
           <template v-else-if="isTruckContModal()">
-            <div class="gsd-truck-title">{{ isLclTruckingInfoModal() ? 'TRUCKING INFO' : isLclTruckingDetailModal() ? 'TRUCKING DETAIL' : 'TRUCKS & CONT/SEAL DETAILS' }}</div>
+            <div class="gsd-truck-title">{{ isImportOpsType() && !isLclTruckingDetailModal() ? 'PICKUP STATUS' : isLclTruckingInfoModal() ? 'TRUCKING INFO' : isLclTruckingDetailModal() ? 'TRUCKING DETAIL' : 'TRUCKS & CONT/SEAL DETAILS' }}</div>
             <div v-if="!isReadonlyTruckContModal()" class="gsd-truck-toolbar">
               <button v-if="!isTcdTruckContModal()" class="wb-modal-btn primary" type="button" @click="addTruckContRecord">Add+</button>
               <button class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing || !selectedTruckContIndexes().length" @click="enableTruckContEdit">Edit</button>
@@ -1990,9 +1990,9 @@
                       <button v-else-if="record.truck" class="gsd-pu-link" type="button" @click="showTruckCompanyDetail(record.truck)">{{ record.truck }}</button>
                       <span v-else>—</span>
                     </td>
-                    <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()" class="truck-input-cell"><span class="truck-sizer" aria-hidden="true">{{ record.container || '' }}</span><input v-model.trim="record.container" :class="{ 'truck-invalid': truckContDuplicate('container', record) || truckContainerFormatInvalid(record.container) }" class="truck-center-input" maxlength="11" placeholder="ABCD1234567" :title="truckContainerFormatInvalid(record.container) ? 'Container No# = 4 letters + 7 digits (e.g. ABCD1234567)' : ''" @input="record.container = normalizeTruckContainerNo(record.container)" :disabled="!truckContRowCanEdit(record)" /></td>
+                    <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()" class="truck-input-cell"><span class="truck-sizer" aria-hidden="true">{{ record.container || '' }}</span><input v-model.trim="record.container" :class="{ 'truck-invalid': truckContDuplicate('container', record) || truckContainerFormatInvalid(record.container) }" class="truck-center-input" maxlength="11" placeholder="ABCD1234567" :title="truckContainerFormatInvalid(record.container) ? 'Container No# = 4 letters + 7 digits (e.g. ABCD1234567)' : ''" @input="record.container = normalizeTruckContainerNo(record.container)" :disabled="!truckContRowCanEdit(record) || truckContSealLinked()" /></td>
                     <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()"><span class="truck-conttype-view">{{ truckContTypeDisplay(record, index) }}</span></td>
-                    <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()" class="truck-input-cell"><span class="truck-sizer" aria-hidden="true">{{ record.seal || '' }}</span><input v-model.trim="record.seal" :class="{ 'truck-invalid': truckContDuplicate('seal', record) }" class="truck-center-input" :disabled="!truckContRowCanEdit(record)" /></td>
+                    <td v-if="!isAirDcdTruckingModal() && !isLclTruckingDetailModal()" class="truck-input-cell"><span class="truck-sizer" aria-hidden="true">{{ record.seal || '' }}</span><input v-model.trim="record.seal" :class="{ 'truck-invalid': truckContDuplicate('seal', record) }" class="truck-center-input" :disabled="!truckContRowCanEdit(record) || truckContSealLinked()" :title="truckContSealLinked() ? 'Linked from the export shipment' : undefined" /></td>
                     <td>
                       <span v-if="isAirDcdTruckingModal() && isReadonlyTruckContModal() && !record.driver">—</span>
                       <button
@@ -2029,7 +2029,7 @@
             <div v-if="!isReadonlyTruckContModal()" class="gsd-truck-foot">
               <button class="wb-modal-btn slate" type="button" :disabled="!gsdModal.editing || truckDetailsSaving" @click="cancelTruckContEdit">Cancel</button>
               <button class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing || !truckContIsDirty() || truckDetailsSaving" @click="saveTruckContDetails">{{ truckDetailsSaving ? 'Saving...' : 'Save' }}</button>
-              <button v-if="isTcdTruckContModal()" class="wb-modal-btn primary send" type="button" :disabled="!truckDetailsCanSend()" @click="sendTruckDetailsToShipper">{{ truckDetailsSending ? 'Sending...' : 'Send to Shipper' }}</button>
+              <button v-if="isTcdTruckContModal()" class="wb-modal-btn primary send" type="button" :disabled="!truckDetailsCanSend()" @click="sendTruckDetailsToShipper">{{ truckDetailsSending ? 'Sending...' : isImportOpsType() ? 'Send Pickup Status' : 'Send Truck Details' }}</button>
             </div>
           </template>
           <template v-else-if="isPickupReturnStatusModal()">
@@ -2366,7 +2366,7 @@
               <span v-if="gsdModal.form.sentAt" class="bd-sent"><span class="bd-check">✓</span> B/L sent · {{ gsdModal.form.sentAt }}</span>
               <button v-if="!isReadonlyExwFclEcdBillDetail()" class="wb-modal-btn edit" type="button" :disabled="gsdModal.editing" @click="enableBillApprovalEdit">Edit</button>
               <button v-if="!isReadonlyExwFclEcdBillDetail()" class="wb-modal-btn primary" type="button" :disabled="!gsdModal.editing || !billDetailDirty()" @click="saveBillApproval">Save</button>
-              <button v-if="isBillApprovalModal() && !isBillMblOnlyDetailModal() && ['ECD', 'DCD'].includes(opsDeptUpper())" class="wb-modal-btn bill-send" type="button" :disabled="!billDetailCanSend()" @click="openBillSendModal">Send B/L to Shipper</button>
+              <button v-if="isBillApprovalModal() && !isBillMblOnlyDetailModal() && ['ECD', 'DCD'].includes(opsDeptUpper())" class="wb-modal-btn bill-send" type="button" :disabled="!billDetailCanSend()" @click="openBillSendModal">Send B/L</button>
               <button v-if="!isBillApprovalModal()" class="wb-modal-btn slate" type="button" @click="requestCloseGsdModal">Close</button>
             </div>
           </template>
@@ -2600,7 +2600,7 @@
                 </tbody>
               </table>
             </div>
-            <div v-else-if="isDupTcdClearanceDetailsModal() && !isLclImportTcdClearanceModal()" class="gsd-clr-scroll gsd-clr-readonly-scroll">
+            <div v-else-if="isDupTcdClearanceDetailsModal() && !isLclImportTcdClearanceModal() && !isReadonlyFullClearanceDetailModal()" class="gsd-clr-scroll gsd-clr-readonly-scroll">
               <table class="gsd-clr-table gsd-clr-readonly-table">
                 <thead>
                   <tr>
@@ -3607,12 +3607,32 @@
         <div class="payment-history-actions"><button class="cancel" type="button" @click="closePaymentHistoryPicker">Cancel</button><button class="select" type="button" :disabled="!paymentHistoryPicker.lines.some((line:any) => line.selected)" @click="selectPaymentHistoryLines">Use selected data</button></div>
       </div>
     </div>
+    <div v-if="recipientPicker.open" class="wb-modal-overlay wb-confirm-overlay" style="z-index:660" @mousedown.self="resolveRecipients(false)">
+      <div class="wb-confirm-modal tone-question recipient-picker" role="dialog" aria-modal="true">
+        <div class="question-confirm-title">{{ recipientPicker.title }} is available to send to:</div>
+        <div class="recipient-options">
+          <label v-for="option in recipientPicker.options" :key="option.role" class="recipient-option" :class="{ off: !option.available }" :title="option.available ? undefined : `No ${option.label} on this shipment`">
+            <input v-model="option.checked" type="checkbox" :disabled="!option.available" @change="recipientPicker.hint = ''" /><span>{{ option.label }}</span>
+          </label>
+        </div>
+        <div class="recipient-hint">{{ recipientPicker.hint }}</div>
+        <div class="question-confirm-actions">
+          <button type="button" class="question-confirm-btn no" @click="resolveRecipients(false)">NO</button>
+          <button type="button" class="question-confirm-btn yes" @click="resolveRecipients(true)">YES</button>
+        </div>
+      </div>
+    </div>
     <div v-if="billSendModal.open" class="wb-modal-overlay" style="z-index:620" @mousedown.self="billSendModal.open = false">
       <div class="wb-modal bds-box" role="dialog" aria-modal="true">
         <button class="uX" type="button" @click="billSendModal.open = false">✕</button>
-        <div class="bds-title">Send B/L to Shipper</div>
-        <label class="bds-field"><span>To Shipper</span><input v-model="billSendModal.to" type="email" readonly /></label>
-        <label class="bds-field"><span>CC emails</span><textarea v-model="billSendModal.cc" class="bds-emails" placeholder="Enter CC emails, separated by commas" @input="billSendModal.hint = ''"></textarea></label>
+        <div class="bds-title">Send B/L</div>
+        <div class="bds-field"><span>Bill of lading (B/L) is available to send to:</span>
+          <div class="recipient-options">
+            <label v-for="option in billSendModal.options" :key="option.role" class="recipient-option" :class="{ off: !option.available }" :title="option.available ? undefined : `No ${option.label} on this shipment`">
+              <input v-model="option.checked" type="checkbox" :disabled="!option.available" @change="billSendModal.hint = ''" /><span>{{ option.label }}</span>
+            </label>
+          </div>
+        </div>
         <div class="bds-field bds-deadline"><span>Deadline to confirm B/L <b class="bds-required">*</b></span><div class="bds-deadline-inputs"><input v-model="billSendModal.deadlineDate" type="date" lang="en-ZA" :min="todayIso()" @input="billSendModal.hint = ''" /><input v-model="billSendModal.deadlineTime" type="time" @input="billSendModal.hint = ''" /></div></div>
         <div class="bds-hint">{{ billSendModal.hint }}</div>
         <div class="bds-foot">
@@ -9261,6 +9281,13 @@ const normalizedHeaderLabelCache = computed(() => headerLabelCache.value.map((la
 }))
 const headerLabel = (column: number) => headerLabelCache.value[column] ?? ''
 const normalizedHeaderLabel = (column: number) => normalizedHeaderLabelCache.value[column] ?? ''
+// Import services (DO/DAP/DDU/DDP) follow the pickup/return of the containers in the
+// truck column, so it is shown as PICKUP STATUS there (the stored header is unchanged).
+const isImportOpsType = () => ['DO', 'DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type))
+const opsHeaderDisplay = (column: number) =>
+  isImportOpsType() && ['TRUCK & CONT/SEAL INFO', 'TRUCKING INFO'].includes(normalizedHeaderLabel(column))
+    ? 'PICKUP STATUS'
+    : headerLabel(column).toUpperCase()
 const opsColumnOptionKey = (column: number) => `${activeKey.value}:${column}`
 const isFclExwOrFcaEcdSheet = () => ['EXW', 'FCA', 'FCF'].includes(String(opsParts.value?.type || '').toUpperCase()) && ['FCL', 'LCL', 'AIR'].includes(String(opsParts.value?.mode || '').toUpperCase()) && opsParts.value?.dept === 'ECD'
 const fclExwOrFcaDownstreamDepts = (): Array<'TCD' | 'CCD' | 'DCD' | 'FCD'> =>
@@ -9772,7 +9799,7 @@ const blockDoLinkWithoutHbl = (row: number, column: number, option: any) => {
   return true
 }
 const isDoHblPendingCell = (row: number, column: number) =>
-  row > 0 && isDoSheet() &&
+  row > 0 && ['DO', 'DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type)) &&
   ['MANIFEST SUBMIT', 'ARRIVAL NOTICE SENDING', 'ARRIVAL NOTICE DETAIL'].includes(normalizedHeaderLabel(column)) &&
   !doRowHblEntered(row)
 const isStampedOpsCheckboxDisabled = (row: number, column: number) => {
@@ -10094,7 +10121,15 @@ const isDoDirectHblColumn = (column: number) =>
   upperText(opsParts.value?.type) === 'DO' && normalizedHeaderLabel(column) === 'HBL NO#'
 const isDoInfoCell = (row: number, column: number) =>
   row > 0 && ['ICD', 'TCD', 'CCD', 'ECD', 'FCD'].includes(opsDeptUpper()) && normalizedHeaderLabel(column) === 'DO INFO'
-const canManageDoInfo = () => opsDeptUpper() === 'ICD'
+// DAP/DDU/DDP: TCD enters the DO information and ICD/CCD/FCD view it. DO has no TCD,
+// so ICD keeps entering it there.
+const doInfoOwnerDept = () => ['DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type)) ? 'TCD' : 'ICD'
+const canManageDoInfo = () => opsDeptUpper() === doInfoOwnerDept()
+const doInfoRecipients = (): FclStructureDept[] => {
+  const type = upperText(opsParts.value?.type)
+  if (opsDeptUpper() === 'TCD' && ['DAP', 'DDU', 'DDP'].includes(type)) return (['DDU', 'DDP'].includes(type) ? ['ICD', 'CCD', 'FCD'] : ['ICD', 'FCD']) as FclStructureDept[]
+  return fclLinkedRecipients()
+}
 const doInfoHasValue = (value: any) => !!String(value ?? '').trim()
 const doInfoValue = (value: any) => {
   const raw = String(value ?? '').trim()
@@ -10170,7 +10205,7 @@ const clearDoInfoModal = async () => {
   if (!(await askConfirm(awbText('Clear all MBL DO and HBL DO information?'), 'Clear DO information'))) return
   rows.value[doInfoModal.row][doInfoModal.column] = ''
   mirrorFclLinkedCell(doInfoModal.row, doInfoModal.column)
-  for (const dept of fclLinkedRecipients()) void mirrorExwFclWorkflowCell(dept, 'DO INFO', '', doInfoModal.row)
+  for (const dept of doInfoRecipients()) void mirrorExwFclWorkflowCell(dept, 'DO INFO', '', doInfoModal.row)
   Object.assign(doInfoModal, {
     editing: true,
     mblEnabled: false,
@@ -10243,8 +10278,8 @@ const saveDoInfoModal = () => {
   })
   rows.value[doInfoModal.row][doInfoModal.column] = value
   mirrorFclLinkedCell(doInfoModal.row, doInfoModal.column)
-  // TCD/CCD only view this form, so they receive the whole DO INFO payload.
-  for (const dept of fclLinkedRecipients()) void mirrorExwFclWorkflowCell(dept, 'DO INFO', value, doInfoModal.row)
+  // The viewing departments receive the whole DO INFO payload.
+  for (const dept of doInfoRecipients()) void mirrorExwFclWorkflowCell(dept, 'DO INFO', value, doInfoModal.row)
   scheduleSave()
   doInfoModal.editing = false
 }
@@ -10400,7 +10435,7 @@ const gsdActionButtonText = (row: number, column: number) => {
   const label = normalizedHeaderLabel(column)
   // PICKUP STATUS is synchronized from Truck & Cont/Seal and is view-only.
   if (label === 'PICKUP STATUS') return 'DETAIL'
-  if (label === 'DO INFO' && ['DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type)) && opsDeptUpper() !== 'ICD') return 'DETAIL'
+  if (label === 'DO INFO' && ['DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type)) && opsDeptUpper() !== 'TCD') return 'DETAIL'
   if (label === 'NOTES') return String(rows.value[row]?.[column] || '').trim() ? 'DETAIL' : 'ADD+'
   if (label === 'REMINDER' || label === 'NOTICE') return 'VIEW'
   if (label === 'PRE-ALERT SENDING') return 'DETAIL'
@@ -10559,8 +10594,19 @@ const detailActionNeedsAttention = (row: number, column: number) => {
   // PRE-ALERT CONFIRMATION keeps the alert until every confirmation is ticked.
   if (label === 'PRE-ALERT CONFIRMATION' && row > 0) {
     const form = preAlertConfirmationFormFromCell(rows.value[row]?.[column])
-    if (isDoSheet()) return !(form.mblConfirmed && form.hblConfirmed && form.mblReleased && form.hblReleased)
-    return !String(rows.value[row]?.[column] ?? '').trim() || !(form.mblConfirmed && form.hblConfirmed)
+    // Every item shown in the modal must be ticked: MBL/HBL CONFIRMED and RELEASED
+    // (HBL items only when the shipment has an HBL) and, for DDU/DDP, the four
+    // clearance documents.
+    // HBL items are skipped only when HBL NO# was set to N/A (no house bill).
+    const hblRequired = !(doRowHblEntered(row) && !rowHblNumber(row))
+    const billsDone = form.mblConfirmed && form.mblReleased && (!hblRequired || (form.hblConfirmed && form.hblReleased))
+    const rowService = upperText(['DUP+', 'EFA+', 'DDU+', 'DDP+'].map((header) => {
+      const index = (rows.value[0] || []).findIndex((_: any, c: number) => normalizedHeaderLabel(c) === header)
+      return index >= 0 ? normalizeDropdownOption(rows.value[row]?.[index]) : ''
+    }).find(Boolean) || '')
+    const docsRequired = ['DDU', 'DDP'].includes(upperText(opsParts.value?.type)) || ['DDU', 'DDP'].includes(rowService)
+    const docsDone = !docsRequired || form.clearanceDocs.every((doc: any) => doc.checked)
+    return !(billsDone && docsDone)
   }
   return isDetailActionButton(row, column) && !String(rows.value[row]?.[column] ?? '').trim() && !truckContHasLinkedVolume(row, column)
 }
@@ -12340,6 +12386,7 @@ const openGsdModal = async (row: number, column: number) => {
         gsdModal.form.initialRecords = truckContSnapshot(gsdModal.form.records)
         gsdModal.editing = false
         void loadTruckCompanyOptions()
+        if (isImportOpsType() && opsDeptUpper() === 'TCD' && opsParts.value?.mode === 'FCL') void refreshTruckContainersFromIcd(row, column, loadId)
       } else if (['SI SUBMIT', 'MASTER SI SUBMIT'].includes(label)) {
         gsdModal.formFields = []
         siInvalidFields.value = new Set()
@@ -12588,7 +12635,7 @@ const openGsdModal = async (row: number, column: number) => {
       // columns. Keep every corresponding modal in read-only mode even when
       // the stored payload has not been marked as locked yet.
       if ((!isBillApprovalModal() && !isBillReleaseModal() && isLockedOpsCell(row, column)) || isGsdModalWorkflowLocked()) gsdModal.editing = false
-      if (label === 'DO INFO' && ['DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type)) && ['TCD', 'CCD'].includes(opsDeptUpper())) gsdModal.editing = false
+      if (label === 'DO INFO' && ['DAP', 'DDU', 'DDP'].includes(upperText(opsParts.value?.type)) && opsDeptUpper() !== 'TCD') gsdModal.editing = false
     } else {
       gsdModal.text = rawText
     }
@@ -13951,25 +13998,32 @@ const syncLinkedOriginWorkflowCells = async (requestedKey: string, requestedCoun
     })))
     if (activeKey.value !== requestedKey || countryViewId() !== requestedCountry) return
     let changed = false
+    const nextSettings: Record<string, any> = { ...settings.value }
+    let recorded = false
     for (const { index, preAlert, contSeal } of results) {
       const row = rows.value[index]
       if (!row) continue
+      const link = String(settings.value?.opsRowLinks?.[String(index)] || '')
       if (preAlert) {
         const form = preAlertConfirmationFormFromCell(row[preAlertColumn])
         if (applyLinkedPreAlertConfirmation(form, ...preAlert)) {
-          row[preAlertColumn] = JSON.stringify({ form: { ...form } })
+          const value = JSON.stringify({ form: { ...form } })
+          recorded = recordLinkedCellChange(nextSettings, link, normalizedHeaderLabel(preAlertColumn), row[preAlertColumn], value, 'ECD') || recorded
+          row[preAlertColumn] = value
           changed = true
         }
       }
       if (contSeal.length) {
         const value = JSON.stringify({ form: { linkedOrigin: true, records: contSeal } })
         if (row[contSealColumn] !== value) {
+          recorded = recordLinkedCellChange(nextSettings, link, normalizedHeaderLabel(contSealColumn), row[contSealColumn], value, 'ECD') || recorded
           row[contSealColumn] = value
           mirrorFclLinkedCell(index, contSealColumn)
           changed = true
         }
       }
     }
+    if (recorded) settings.value = { ...settings.value, linkedCellChanges: nextSettings.linkedCellChanges }
     if (changed) scheduleSave()
   } finally {
     linkedOriginSheetCache = null
@@ -16199,12 +16253,13 @@ const pickupFormFromCell = (value: any) => {
 }
 const pickupCanEdit = () => isPickupModal() && gsdModal.editing && !gsdModal.form.sent
 const pickupStatusText = () => {
-  if (isDduTcdDeliveryDetailsModal()) return gsdModal.form.sent ? 'SENT TO SHIPPER' : gsdModal.form.saved ? 'SAVED - NOT YET SENT TO SHIPPER' : 'NOT YET SENT TO SHIPPER'
-  if (isDeliveryDetailsModal()) return gsdModal.form.sent ? 'SENT TO CNEE' : gsdModal.form.saved ? 'SAVED - NOT YET SENT TO CNEE' : 'NOT YET SENT TO CNEE'
+  if (isDeliveryDetailsModal()) return gsdModal.form.sent ? 'SENT TO CONSIGNEE' : gsdModal.form.saved ? 'SAVED - NOT YET SENT TO CONSIGNEE' : 'NOT YET SENT TO CONSIGNEE'
   return gsdModal.form.sent ? 'SENT TO SHIPPER' : gsdModal.form.saved ? 'SAVED - NOT YET SENT TO SHIPPER' : 'NOT YET SENT TO SHIPPER'
 }
-const pickupCopySourceLabel = () => isDduTcdDeliveryDetailsModal() ? 'SHIPPER' : isDeliveryDetailsModal() ? 'CNEE' : 'SHIPPER'
-const pickupShowsCopy = () => isDduTcdDeliveryDetailsModal() ? false : isDeliveryDetailsModal() ? (isDapLikeTcdSheet() || (isLclSheet() && (isDapIcdSheet() || isDupIcdSheet()))) : !['ECD', 'CCD', 'DCD', 'FCD'].includes(upperText(activeDept.value || ''))
+const pickupCopySourceLabel = () => isDeliveryDetailsModal() ? 'CONSIGNEE' : 'SHIPPER'
+const pickupShowsCopy = () => isDeliveryDetailsModal()
+  ? (isDduTcdDeliveryDetailsModal() || isDapLikeTcdSheet() || (isLclSheet() && (isDapIcdSheet() || isDupIcdSheet())))
+  : !['ECD', 'CCD', 'DCD', 'FCD'].includes(upperText(activeDept.value || ''))
 const pickupShowsBookingUpload = () => !isDeliveryDetailsModal() && !['ECD', 'CCD', 'DCD', 'FCD'].includes(upperText(activeDept.value || ''))
 const deliveryOrderFile = () => {
   const ownName = String(gsdModal.form.deliveryOrderName || '')
@@ -16366,10 +16421,10 @@ const clientRecordFromCell = (value: any): GsdClientRecord | null => {
   return text ? normalizeClientRecord({ companyName: text, namecode: text }) : null
 }
 const pickupCopySourceRecord = () => {
-  const target = upperText(pickupCopySourceLabel())
+  const targets = isDeliveryDetailsModal() ? ['CNEE', 'CONSIGNEE'] : ['SHIPPER']
   let column = -1
   for (let index = 0; index < columnCount.value; index += 1) {
-    if (normalizedHeaderLabel(index) === target) {
+    if (targets.includes(normalizedHeaderLabel(index))) {
       column = index
       break
     }
@@ -16609,9 +16664,9 @@ const sendPickupToTarget = async () => {
     return
   }
   const target = isDeliveryDetailsModal() ? 'CNEE' : 'SHIPPER'
-  const ok = await askConfirm(`Are you sure to send to ${target}?`, '', { okText: 'YES', cancelText: 'NO', tone: 'remove' })
-  if (!ok) return
-  dispatchLoading.value = `Sending ${isDeliveryDetailsModal() ? 'delivery' : 'pickup'} details to ${target}...`
+  const roles = await askRecipients(isDeliveryDetailsModal() ? 'Delivery detail' : 'Pickup detail', gsdModal.row)
+  if (!roles) return
+  dispatchLoading.value = `Sending ${isDeliveryDetailsModal() ? 'delivery' : 'pickup'} details...`
   try {
     const sourceStorageKey = sheetStorageKey(activeKey.value, loadedCountryId.value)
     const sendResult = await props.request('/workbook/send-pickup-email', {
@@ -16621,7 +16676,7 @@ const sendPickupToTarget = async () => {
         rowIndex: gsdModal.row,
         columnIndex: gsdModal.column,
         shipmentLink: settings.value?.opsRowLinks?.[String(gsdModal.row)] || '',
-        to: gsdModal.form.picEmail,
+        parties: recipientParties(gsdModal.row, roles),
         shipper: rowValueByHeader('SHIPPER'),
         shipperName: clientCellTitle(rowValueByHeader('SHIPPER')) || emailCellDisplayValue('SHIPPER', rowValueByHeader('SHIPPER')),
         consigneeName: clientCellTitle(rowValueByHeader('CNEE')) || emailCellDisplayValue('CNEE', rowValueByHeader('CNEE')),
@@ -16661,7 +16716,7 @@ const sendPickupToTarget = async () => {
       await Promise.all(fclTcdMirrorDepts().map((dept) => mirrorExwFclWorkflowCell(dept, targetLabel, rows.value[gsdModal.row][gsdModal.column])))
     }
     await saveSheet()
-    showToast(`${isDeliveryDetailsModal() ? 'Delivery details' : 'Pickup details'} sent to ${target}`)
+    showToast(`${isDeliveryDetailsModal() ? 'Delivery details' : 'Pickup details'} sent to ${recipientLabels(roles)}`)
   } catch (error: any) {
     showToast(error?.data?.message || error?.message || `Could not send to ${target}`)
   } finally {
@@ -17441,7 +17496,70 @@ const truckContFormFromCell = (value: any) => {
   const records = source.map(normalizeTruckContRecord).filter((item) =>
     item.truck || item.container || item.contType || item.seal || item.driver || item.eta1 || item.eta2 || item.gdate || item.gtime || item.epodSign,
   )
-  return { records: records.length ? records : [emptyTruckContRecord()], locked, sentAt, sentRecords }
+  const contSealLinked = !!(parsed && typeof parsed === 'object' && 'form' in parsed && (parsed as any).form?.contSealLinked)
+  return { records: records.length ? records : [emptyTruckContRecord()], locked, sentAt, sentRecords, contSealLinked }
+}
+// A CONT/SEAL INFO payload (container list only, no truck/driver/schedule fields).
+// Import truck rows of a shipment linked to an export service: Cont No / Type / Seal
+// come from the export side and are view-only here.
+const truckContSealLinked = () => isImportOpsType() && !!gsdModal.form?.contSealLinked
+const isContSealPayload = (value: any) => {
+  const parsed = parseJsonCell(value, null as any)
+  const form = parsed && typeof parsed === 'object' && 'form' in parsed ? (parsed as any).form || {} : parsed || {}
+  const records = Array.isArray(form?.records) ? form.records : null
+  if (!records) return false
+  return records.every((item: any) => !['truck', 'driver', 'eta1', 'eta2', 'gdate', 'gtime', 'epodSign', 'drvId'].some((key) => String(item?.[key] ?? '').trim()))
+}
+// Cont No / Cont Type / Seal No from a CONT/SEAL INFO payload written into a truck
+// cell row by row - the trucks, drivers and pickup/return schedule are kept.
+const mergeContSealIntoTruckValue = (truckValue: any, contSealValue: any) => {
+  const truckParsed = parseJsonCell(truckValue, null as any)
+  const truckForm = truckParsed && typeof truckParsed === 'object' && 'form' in truckParsed
+    ? { ...((truckParsed as any).form || {}) }
+    : { records: Array.isArray(truckParsed) ? truckParsed : Array.isArray((truckParsed as any)?.records) ? (truckParsed as any).records : [] }
+  const records: any[] = (Array.isArray(truckForm.records) ? truckForm.records : []).map((item: any) => ({ ...item }))
+  const sealParsed = parseJsonCell(contSealValue, null as any)
+  const sealForm = sealParsed && typeof sealParsed === 'object' && 'form' in sealParsed ? (sealParsed as any).form || {} : sealParsed || {}
+  const incoming: any[] = Array.isArray(sealForm.records) ? sealForm.records : []
+  incoming.forEach((item: any, index: number) => {
+    const current = records[index] || {}
+    records[index] = {
+      ...current,
+      container: upperText(item?.container || item?.containerNo || item?.contNo || ''),
+      contType: upperText(item?.type || item?.contType || current.contType || ''),
+      seal: upperText(item?.seal || item?.sealNo || ''),
+    }
+  })
+  return JSON.stringify({ form: { ...truckForm, records, contSealLinked: !!sealForm.linkedOrigin } })
+}
+// Import TCD: the containers of a linked shipment live in ICD CONT/SEAL INFO (copied
+// from the export side); bring them into the open truck modal.
+const refreshTruckContainersFromIcd = async (row: number, column: number, loadId: number) => {
+  const parsed = opsParts.value
+  if (!parsed) return
+  const header = (rows.value[0] || []).map((item: any) => String(item ?? '').trim())
+  const link = opsShipmentLink(header, rows.value[row] || [], row, settings.value)
+  const jobColumn = header.findIndex((label) => upperText(label) === 'JOB NO#')
+  const job = jobColumn >= 0 ? String(rows.value[row]?.[jobColumn] || '').trim() : ''
+  let contSeal: any = ''
+  await editOpsSheet(opsLeafKey(parsed.base, parsed.mode, parsed.type, 'ICD'), (state) => {
+    const index = findShipmentRow(state, link, job, [], '')
+    const sealColumn = state.header.findIndex((label) => upperText(label) === 'CONT/SEAL INFO')
+    if (index > 0 && sealColumn >= 0) contSeal = state.rows[index][sealColumn]
+    return false
+  }).catch(() => false)
+  if (!isContSealPayload(contSeal)) return
+  const sealForm = parseJsonCell(contSeal, null as any)?.form || {}
+  if (!sealForm.linkedOrigin) return
+  if (loadId !== gsdModalLoadId || !gsdModal.open || gsdModal.row !== row || gsdModal.column !== column || gsdModal.editing) return
+  const current = rows.value[row]?.[column]
+  const merged = mergeContSealIntoTruckValue(current, contSeal)
+  if (merged === current) return
+  rows.value[row][column] = merged
+  const form = truckContFormFromCell(merged)
+  gsdModal.form = { ...gsdModal.form, records: seedTruckContFromVolume(form).records, contSealLinked: true }
+  gsdModal.form.initialRecords = truckContSnapshot(gsdModal.form.records)
+  scheduleSave()
 }
 const seedTruckContFromVolume = (form: any) => {
   const expected: string[] = expandedVolumeContainers().map((item) => item.contType)
@@ -17807,6 +17925,7 @@ const persistTruckContCell = (immediate = false) => {
     sentAt: String(gsdModal.form.sentAt || ''),
     // What the Shipper last received; a later re-send highlights what changed.
     sentRecords: Array.isArray(gsdModal.form.sentRecords) ? gsdModal.form.sentRecords : [],
+    contSealLinked: !!gsdModal.form.contSealLinked,
   } })
   scheduleSave()
   if (immediate) void saveSheet()
@@ -17922,10 +18041,11 @@ const saveTruckContDetails = async () => {
 }
 const sendTruckDetailsToShipper = async () => {
   if (!truckDetailsCanSend()) return
-  const ok = await askConfirm('Send Truck & Cont/Seal details to Shipper?', '', { okText: 'YES', cancelText: 'NO', tone: 'question' })
-  if (!ok) return
+  const docLabel = isImportOpsType() ? 'Pickup status' : 'Truck & Cont/Seal details'
+  const roles = await askRecipients(docLabel, gsdModal.row)
+  if (!roles) return
   truckDetailsSending.value = true
-  dispatchLoading.value = 'Sending Truck & Cont/Seal details to Shipper...'
+  dispatchLoading.value = `Sending ${docLabel}...`
   try {
     const shipper = rowValueByHeader('SHIPPER')
     const mailRecords = truckContRecords().map((record, index) => ({
@@ -17947,7 +18067,7 @@ const sendTruckDetailsToShipper = async () => {
     const result = await props.request('/workbook/send-truck-details-email', {
       method: 'POST',
       body: {
-        to: linkedEntityEmail(shipper),
+        parties: recipientParties(gsdModal.row, roles),
         shipper,
         shipperName: clientCellTitle(shipper),
         previousRecords: Array.isArray(gsdModal.form.sentRecords) ? gsdModal.form.sentRecords : [],
@@ -17963,10 +18083,10 @@ const sendTruckDetailsToShipper = async () => {
     gsdModal.form.sentRecords = mailRecords
     persistTruckContCell(false)
     await saveSheet()
-    showToast('Truck & Cont/Seal details sent to Shipper')
+    showToast(`${docLabel} sent to ${recipientLabels(roles)}`)
   } catch (error: any) {
-    console.error('Could not send Truck & Cont/Seal details to Shipper', error)
-    showToast(error?.data?.message || error?.message || 'Could not send email to Shipper')
+    console.error('Could not send Truck & Cont/Seal details', error)
+    showToast(error?.data?.message || error?.message || 'Could not send Truck & Cont/Seal details')
   } finally {
     truckDetailsSending.value = false
     dispatchLoading.value = ''
@@ -19232,7 +19352,7 @@ const billBlReady = () => {
   const picks = billExportPicks()
   return (picks.bl || picks.fcr) && (!picks.bl || !!gsdModal.form.exportBl) && (!picks.fcr || !!gsdModal.form.exportFcr)
 }
-// Send B/L to Shipper: no MBL APPROVED requirement; locked once HBL APPROVED is ticked.
+// Send B/L: no MBL APPROVED requirement; locked once HBL APPROVED is ticked.
 // After sending, a changed Export B/L / FCR (or client B/L) re-enables it.
 // Only SI RECEIVED (its tick time) and the B/L documents decide whether a new send is due.
 // Stored "what was sent" signatures are kept as a short hash instead of a full copy
@@ -19654,7 +19774,46 @@ const enableBillApprovalEdit = () => {
   if (isBillReleaseModal() || isDoReleaseModal()) billReleaseInitialSnapshot.value = billReleaseSnapshot()
   if (isBillApprovalModal()) billDetailInitialSnapshot.value = billDetailSnapshot()
 }
-const billSendModal = reactive<{ open: boolean; to: string; cc: string; hint: string; sending: boolean; deadlineDate: string; deadlineTime: string }>({ open: false, to: '', cc: '', hint: '', sending: false, deadlineDate: '', deadlineTime: '' })
+// ---- "Send to" recipients (Shipper / Client / Consignee) -----------------------------
+// Every document mail lets the user pick who receives it; each picked party gets its
+// own mail ("Dear <Company Name>") with the same content (see backend sendToParties).
+type RecipientOption = { role: string; label: string; checked: boolean; available: boolean }
+const RECIPIENT_PARTIES = [
+  { role: 'SHIPPER', label: 'Shipper', headers: ['SHIPPER'] },
+  { role: 'CLIENT', label: 'Client', headers: ['CLIENT'] },
+  { role: 'CNEE', label: 'Consignee', headers: ['CNEE', 'CONSIGNEE'] },
+]
+const partyCellForRow = (row: number, role: string) => {
+  const party = RECIPIENT_PARTIES.find((item) => item.role === role)
+  const column = (rows.value[0] || []).findIndex((_: any, index: number) => !!party?.headers.includes(normalizedHeaderLabel(index)))
+  return column >= 0 ? rows.value[row]?.[column] ?? '' : ''
+}
+const recipientOptionsForRow = (row: number): RecipientOption[] => RECIPIENT_PARTIES.map((party) => {
+  const cell = partyCellForRow(row, party.role)
+  const available = !!clientCellText(cell) && upperText(clientCellText(cell)) !== 'N/A'
+  return { role: party.role, label: party.label, checked: false, available }
+})
+const recipientParties = (row: number, roles: string[]) => roles.map((role) => ({ role, cell: partyCellForRow(row, role) }))
+const recipientPicker = reactive<{ open: boolean; title: string; options: RecipientOption[]; allowNone: boolean; hint: string; resolve: ((roles: string[] | null) => void) | null }>({
+  open: false, title: '', options: [], allowNone: false, hint: '', resolve: null,
+})
+// Resolves with the ticked roles, or null when cancelled.
+const askRecipients = (title: string, row: number, options: { allowNone?: boolean } = {}) => new Promise<string[] | null>((resolve) => {
+  Object.assign(recipientPicker, { open: true, title, options: recipientOptionsForRow(row), allowNone: !!options.allowNone, hint: '', resolve })
+})
+const resolveRecipients = (confirmed: boolean) => {
+  const roles = recipientPicker.options.filter((option) => option.checked && option.available).map((option) => option.role)
+  if (confirmed && !roles.length && !recipientPicker.allowNone) {
+    recipientPicker.hint = 'Tick at least one recipient'
+    return
+  }
+  const resolve = recipientPicker.resolve
+  recipientPicker.open = false
+  recipientPicker.resolve = null
+  resolve?.(confirmed ? roles : null)
+}
+const recipientLabels = (roles: string[]) => roles.map((role) => RECIPIENT_PARTIES.find((party) => party.role === role)?.label || role).join(', ')
+const billSendModal = reactive<{ open: boolean; options: RecipientOption[]; hint: string; sending: boolean; deadlineDate: string; deadlineTime: string }>({ open: false, options: [], hint: '', sending: false, deadlineDate: '', deadlineTime: '' })
 const openBillSendModal = () => {
   if (gsdModal.form.hbl) {
     showToast(awbText('HBL APPROVED is already ticked'))
@@ -19672,13 +19831,7 @@ const openBillSendModal = () => {
     showToast(billSourceMode() === 'client' ? "Upload Client's B/L before sending" : 'Save Export B/L before sending')
     return
   }
-  const shipperEmail = linkedEntityEmail(rawSiSourceValue('SHIPPER'))
-  if (!shipperEmail) {
-    showToast('Shipper does not have a valid email')
-    return
-  }
-  billSendModal.to = String(shipperEmail)
-  billSendModal.cc = String(gsdModal.form.sentCc || '')
+  billSendModal.options = recipientOptionsForRow(gsdModal.row)
   billSendModal.deadlineDate = String(gsdModal.form.confirmDeadlineDate || '')
   billSendModal.deadlineTime = String(gsdModal.form.confirmDeadlineTime || '')
   billSendModal.hint = ''
@@ -19743,15 +19896,9 @@ const viewSelectedBillFile = () => {
   void viewExportedBillPdf()
 }
 const confirmBillSend = async () => {
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  const to = billSendModal.to.split(/[;,]/).map((item) => item.trim()).filter(Boolean)
-  const cc = billSendModal.cc.split(/[;,]/).map((item) => item.trim()).filter(Boolean)
-  if (!to.length || to.some((item) => !emailPattern.test(item))) {
-    billSendModal.hint = 'Shipper does not have a valid email'
-    return
-  }
-  if (cc.some((item) => !emailPattern.test(item))) {
-    billSendModal.hint = 'Enter valid CC emails separated by commas'
+  const roles = billSendModal.options.filter((option) => option.checked && option.available).map((option) => option.role)
+  if (!roles.length) {
+    billSendModal.hint = 'Tick at least one recipient'
     return
   }
   // The confirmation deadline (date and time) is required and cannot be in the past.
@@ -19784,7 +19931,7 @@ const confirmBillSend = async () => {
     await props.request('/workbook/send-bill-email', {
       method: 'POST',
       body: {
-        to: to.join(', '), cc: cc.join(', '), jobNo,
+        parties: recipientParties(gsdModal.row, roles), jobNo,
         refNo: rowValueByHeader('REF#'), hblNo: rowValueByHeader('HBL NO#'),
         shipper: emailCellDisplayValue('SHIPPER', rawSiSourceValue('SHIPPER') || rowValueByHeader('SHIPPER')),
         vessel: emailCellDisplayValue('VESSEL/VOYAGE', rawSiSourceValue('VESSEL/VOYAGE') || rowValueByHeader('VESSEL/VOYAGE')),
@@ -19801,11 +19948,11 @@ const confirmBillSend = async () => {
     gsdModal.form.sent = true
     gsdModal.form.sentAt = billTimestamp()
     gsdModal.form.sentDocumentSignature = compactSignature(billSentDocumentSignature())
-    gsdModal.form.sentEmails = to.join(', ')
-    gsdModal.form.sentCc = cc.join(', ')
+    gsdModal.form.sentEmails = recipientLabels(roles)
+    gsdModal.form.sentCc = ''
     billSendModal.open = false
     await saveBillApproval()
-    showToast(billSourceMode() === 'client' ? 'B/L sent to Shipper' : [billExportPicks().bl && gsdModal.form.exportBl ? 'B/L' : '', billExportPicks().fcr && gsdModal.form.exportFcr ? 'FCR' : ''].filter(Boolean).join(' and ') + ' sent to Shipper')
+    showToast(`${billSourceMode() === 'client' ? 'B/L' : [billExportPicks().bl && gsdModal.form.exportBl ? 'B/L' : '', billExportPicks().fcr && gsdModal.form.exportFcr ? 'FCR' : ''].filter(Boolean).join(' and ')} sent to ${recipientLabels(roles)}`)
   } catch (error: any) {
     billSendModal.hint = error?.data?.message || error?.message || 'Could not send B/L email'
   } finally {
@@ -22812,6 +22959,9 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
     }
     input.checked = false
     savedImmediately = true
+    // Who receives the booking confirmation mail (none ticked = BC SENT without mail).
+    const mailTo = await askRecipients('Booking confirmation (BC)', row, { allowNone: true })
+    if (!mailTo) return
     const sourceKey = activeKey.value
     const sourceCountry = loadedCountryId.value
     const sourceRowsIdentity = rows.value
@@ -22837,6 +22987,7 @@ const toggleCheckbox = async (row: number, column: number, event: Event) => {
         shipmentLink,
         countryCode: generatedJobCountryCode(),
         sales: String(sourceState.settings?.opsRowCreators?.[String(row)] || sourceRow[sourceHeader.indexOf('SALES')] || '').trim(),
+        mailTo,
       }
       let dispatched: any
       try {
@@ -23230,6 +23381,10 @@ const mirrorCrossServiceGsdCell = async (row: number, label: string, value: any)
     const targetRow = targetRows.findIndex((_item, index) => index > 0 && targetLinks[String(index)]?.id === link.id)
     const targetColumn = targetHeader.indexOf(label)
     if (targetRow < 1 || targetColumn < 0) return
+    const targetSettings = { ...(extracted.settings || targetSheet.settings || {}) }
+    if (!LINKED_UPDATE_UNTRACKED.has(upperText(label))) {
+      recordLinkedCellChange(targetSettings, String(targetSettings.opsRowLinks?.[String(targetRow)] || ''), label, targetRows[targetRow][targetColumn], value, 'GSD')
+    }
     targetRows[targetRow][targetColumn] = value
     await patchLoadedWorkbookSheet(targetStorageKey, targetSheet, { rows: [...targetRows, [workbookMetaMarker, JSON.stringify({
         version: 1,
@@ -23237,7 +23392,7 @@ const mirrorCrossServiceGsdCell = async (row: number, label: string, value: any)
         rowHeights: extracted.rowHeights || targetSheet.rowHeights || {},
         formatting: extracted.formatting || targetSheet.formatting || {},
         merges: extracted.merges || targetSheet.merges || [],
-        settings: extracted.settings || targetSheet.settings || {},
+        settings: targetSettings,
       })]] })
   } catch (error: any) {
     if (requestStatus(error) !== 404) console.warn(`Could not sync cross-service ${label}`, error)
@@ -23279,7 +23434,13 @@ const linkedDateChanged = (row: number, column: number) =>
 // another department changed (settings.linkedCellChanges). Until this department
 // opens that cell (settings.linkedCellSeen), its DETAIL button shows "!" (or blinks
 // when it already had one) and the changed fields are highlighted in the modal.
-const LINKED_UPDATE_UNTRACKED = new Set(['PAYMENT REQUEST', 'EXPENSE/COLLECT LIST', 'EXPENSE/COLLECTION LIST', 'NOTICE', 'REMINDER'])
+const LINKED_UPDATE_UNTRACKED = new Set([
+  // own counters
+  'PAYMENT REQUEST', 'EXPENSE/COLLECT LIST', 'EXPENSE/COLLECTION LIST', 'NOTICE', 'REMINDER',
+  // value cells, not DETAIL buttons
+  'CLIENT', 'SHIPPER', 'CNEE', 'CONSIGNEE', 'ORIGIN AGENT', 'ORIGINAL AGENT', 'DESTINATION AGENT', 'DEST. AGENT', 'AGENT',
+  'LINER', 'AIRLINE', 'HBL NO#', 'HAWB NO#', 'MBL NO#', 'MAWB NO#', 'BC NO#', 'VOLUME', 'ROUTE', 'VESSEL/VOYAGE', 'VESSEL NAME', 'FLIGHT NO#',
+])
 const linkedCellUpdate = (row: number, column: number) => {
   if (row <= 0) return null
   const link = String(settings.value?.opsRowLinks?.[String(row)] || '')
@@ -23290,7 +23451,66 @@ const linkedCellUpdate = (row: number, column: number) => {
   if (!entry?.at) return null
   return String(settings.value?.linkedCellSeen?.[link]?.[label] || '') >= String(entry.at) ? null : entry
 }
-const hasLinkedCellUpdate = (row: number, column: number) => isOpsPage.value && !!linkedCellUpdate(row, column)
+const cellShowsDetailButton = (row: number, column: number) =>
+  (isActionInfoCell(row, column) && infoActionIsDetail(row, column))
+  || (isTruckInfoCell(row, column) && truckActionIsDetail(row, column))
+  || (isGsdActionButtonCell(row, column) && isDetailActionButton(row, column))
+const hasLinkedCellUpdate = (row: number, column: number) => isOpsPage.value && !!linkedCellUpdate(row, column) && cellShowsDetailButton(row, column)
+// Client-side twin of the server's linked-change recording, for writes that do not
+// go through the cell endpoint (load-time pulls, re-sends, cross-service syncs).
+const LINKED_CHANGE_IGNORED_KEYS = new Set([
+  'savedAt', 'updatedAt', 'initialRecords', 'initialSnapshot', 'originalRecordsSignature', 'hint', 'selected', 'editing',
+  'loading', 'openId', 'editRecordsSnapshot', 'editLockedSnapshot', 'editSentAtSnapshot', 'showClearanceDocs',
+  'selectedHistoryId', 'editingHistoryId', 'locked', 'linkedFromOrigin', 'linkedOrigin', 'saved',
+])
+const linkedCellDiff = (previous: any, next: any) => {
+  const parse = (value: any) => {
+    if (value && typeof value === 'object') return value
+    const text = String(value ?? '').trim()
+    if (!text.startsWith('{') && !text.startsWith('[')) return null
+    try { return JSON.parse(text) } catch { return null }
+  }
+  const before = parse(previous)
+  const after = parse(next)
+  if (!before || !after) return []
+  // Missing, empty and false are the same "nothing": a different payload shape is no change.
+  const leaf = (value: any) => value === undefined || value === null || value === false ? '' : String(value)
+  // A form that had no data yet (a newly created row) is being filled, not changed.
+  const hasData = (value: any, key = ''): boolean => {
+    if (LINKED_CHANGE_IGNORED_KEYS.has(key)) return false
+    if (value && typeof value === 'object') return Object.entries(value).some(([childKey, child]) => hasData(child, childKey))
+    return leaf(value) !== ''
+  }
+  if (!hasData(before)) return []
+  const changes: Array<{ path: string; to: string }> = []
+  const walk = (left: any, right: any, path: string) => {
+    if (changes.length >= 40) return
+    if ((right && typeof right === 'object') || (left && typeof left === 'object')) {
+      const keys = new Set([...Object.keys(right && typeof right === 'object' ? right : {}), ...Object.keys(left && typeof left === 'object' ? left : {})])
+      for (const key of keys) {
+        if (LINKED_CHANGE_IGNORED_KEYS.has(key)) continue
+        walk(left && typeof left === 'object' ? left[key] : undefined, right && typeof right === 'object' ? right[key] : undefined, path ? `${path}.${key}` : key)
+      }
+      return
+    }
+    const to = leaf(right)
+    if (leaf(left) !== to) changes.push({ path, to: to.slice(0, 200) })
+  }
+  walk(before, after, '')
+  return changes
+}
+// Records on `target` (a settings object) that another department changed this cell.
+const recordLinkedCellChange = (target: Record<string, any>, link: string, label: string, previous: any, next: any, by = '') => {
+  if (!link || !String(previous ?? '').trim() || LINKED_UPDATE_UNTRACKED.has(upperText(label))) return false
+  const fields = linkedCellDiff(previous, next)
+  if (!fields.length) return false
+  const all = target.linkedCellChanges && typeof target.linkedCellChanges === 'object' ? target.linkedCellChanges : {}
+  target.linkedCellChanges = {
+    ...all,
+    [link]: { ...(all[link] || {}), [upperText(label)]: { at: new Date().toISOString(), by: upperText(by), fields } },
+  }
+  return true
+}
 // Values of the fields to highlight in the modal that is being opened.
 let linkedHighlightValues: string[] = []
 let linkedHighlightTimers: number[] = []
@@ -23476,6 +23696,10 @@ const runMirrorExwFclWorkflowCell = async (
       } else {
         targetRows[matchingRow][targetColumn] = value
       }
+    } else if (['TRUCK & CONT/SEAL INFO', 'TRUCKING INFO'].includes(upperText(targetHeader[targetColumn])) && sourceDept !== 'TCD' && isContSealPayload(value)) {
+      // ICD CONT/SEAL INFO -> TCD truck cell: only Cont No / Type / Seal change. Writing
+      // the whole value used to wipe the trucks, drivers and schedule TCD had entered.
+      targetRows[matchingRow][targetColumn] = mergeContSealIntoTruckValue(targetRows[matchingRow][targetColumn], value)
     } else {
       targetRows[matchingRow][targetColumn] = value
     }
@@ -24281,14 +24505,19 @@ const mirrorFclLinkedCell = (row: number, column: number) => {
   }
   const isConfirmedDapIcdLink = parsed.mode === 'FCL' && parsed.type === 'DAP' && parsed.dept === 'ICD'
   if (isConfirmedDapIcdLink) {
+    const icdToTcd = [
+      'SHIPPER', 'CNEE', 'DESTINATION AGENT', 'DEST. AGENT', 'LINER', 'REF#', 'HBL NO#', 'MBL NO#',
+      'VOLUME', 'ROUTE', 'VESSEL/VOYAGE', 'ATD', 'ATA', 'DO VALIDITY',
+    ]
     const icdToFcd = [
       'SHIPPER', 'CNEE', 'ORIGIN AGENT', 'ORIGINAL AGENT', 'DESTINATION AGENT', 'DEST. AGENT',
       'LINER', 'REF#', 'HBL NO#', 'MBL NO#', 'ATD', 'ATA', 'VOLUME', 'ROUTE', 'VESSEL/VOYAGE',
     ]
-    const recipients = label === 'EXTRA SERVICE'
-      ? ['GSD']
-      : label === 'PAYMENT REQUEST' ? ['TCD']
-        : icdToFcd.includes(label) ? ['FCD'] : []
+    // Every department whose list holds the field receives it (not only the first one).
+    const recipients = new Set<string>()
+    if (label === 'EXTRA SERVICE') recipients.add('GSD')
+    if (label === 'PAYMENT REQUEST' || icdToTcd.includes(label)) recipients.add('TCD')
+    if (icdToFcd.includes(label)) recipients.add('FCD')
     for (const dept of recipients) void mirrorExwFclWorkflowCell(dept as FclStructureDept, label, rows.value[row]?.[column], row)
     return
   }
@@ -24322,14 +24551,15 @@ const mirrorFclLinkedCell = (row: number, column: number) => {
       'SHIPPER', 'CNEE', 'ORIGIN AGENT', 'ORIGINAL AGENT', 'DESTINATION AGENT', 'DEST. AGENT',
       'LINER', 'REF#', 'HBL NO#', 'MBL NO#', 'ATD', 'ATA', 'VOLUME', 'ROUTE', 'VESSEL/VOYAGE',
     ]
-    const recipients = label === 'EXTRA SERVICE'
-      ? ['GSD']
-      : label === 'PAYMENT REQUEST' ? ['CCD', 'TCD']
-        : label === 'PRE-ALERT CONFIRMATION' ? ['CCD']
-          : label === 'CONT/SEAL INFO' ? ['CCD', 'TCD']
-            : icdToCcd.includes(label) ? ['CCD']
-              : icdToTcd.includes(label) ? ['TCD']
-                : icdToFcd.includes(label) ? ['FCD'] : []
+    // Every department whose list holds the field receives it: ATA, ATD, parties...
+    // used to stop at CCD, leaving TCD and FCD without the value.
+    const recipients = new Set<string>()
+    if (label === 'EXTRA SERVICE') recipients.add('GSD')
+    if (label === 'PAYMENT REQUEST' || label === 'CONT/SEAL INFO') for (const dept of ['CCD', 'TCD']) recipients.add(dept)
+    if (label === 'PRE-ALERT CONFIRMATION') recipients.add('CCD')
+    if (icdToCcd.includes(label)) recipients.add('CCD')
+    if (icdToTcd.includes(label)) recipients.add('TCD')
+    if (icdToFcd.includes(label)) recipients.add('FCD')
     for (const dept of recipients) {
       const targetLabel = label === 'CONT/SEAL INFO' && dept === 'TCD' ? 'TRUCK & CONT/SEAL INFO' : label
       void mirrorExwFclWorkflowCell(dept as FclStructureDept, targetLabel, rows.value[row]?.[column], row)
@@ -24350,7 +24580,11 @@ const mirrorFclLinkedCell = (row: number, column: number) => {
     const recipients = label === 'PAYMENT REQUEST'
       ? ['ICD', 'CCD']
       : label === 'TRUCK & CONT/SEAL INFO' ? ['ICD', 'FCD'] : []
+    // Containers of a shipment linked to an export service belong to the export side:
+    // the TCD truck cell must not overwrite ICD CONT/SEAL INFO then.
+    const containersLinked = label === 'TRUCK & CONT/SEAL INFO' && !!parseJsonCell(rows.value[row]?.[column], null as any)?.form?.contSealLinked
     for (const dept of recipients) {
+      if (containersLinked && dept === 'ICD') continue
       const targetLabel = label === 'TRUCK & CONT/SEAL INFO' && dept === 'ICD' ? 'CONT/SEAL INFO' : label
       void mirrorExwFclWorkflowCell(dept as FclStructureDept, targetLabel, rows.value[row]?.[column], row)
     }
@@ -24514,6 +24748,7 @@ const transferRowToNextDept = async (rowIndex: number, targetDept?: string, tran
       ? finalRows.findIndex((row, index) => index > 0 && rowIdentity(targetHeader, row) === identity)
       : -1
     if (targetIdentityIndex > 0) {
+      const previousTargetRow = [...finalRows[targetIdentityIndex]]
       const previousLinkedDates = Object.fromEntries(['ATD', 'ATA'].map((label) => {
         const column = targetHeader.indexOf(label)
         return [label, column >= 0 ? finalRows[targetIdentityIndex][column] : '']
@@ -24544,6 +24779,12 @@ const transferRowToNextDept = async (rowIndex: number, targetDept?: string, tran
       if (targetOpsColumn >= 0 && !String(finalRows[targetIdentityIndex][targetOpsColumn] || '').trim()) {
         finalRows[targetIdentityIndex][targetOpsColumn] = nextRow[targetOpsColumn]
       }
+      // Detail cells this re-send changed show "!" in the receiving department.
+      const changeLink = String(targetLinks[String(targetIdentityIndex)] || sourceLink || '')
+      targetHeader.forEach((label, column) => {
+        if (LINKED_UPDATE_UNTRACKED.has(upperText(label))) return
+        recordLinkedCellChange(targetSettings, changeLink, label, previousTargetRow[column], finalRows[targetIdentityIndex][column], source?.dept || '')
+      })
       for (const label of linkedDateLabels) {
         const column = targetHeader.indexOf(label)
         if (column >= 0) markLinkedDateChange(targetSettings, targetIdentityIndex, label, previousLinkedDates[label], finalRows[targetIdentityIndex][column])
@@ -24697,10 +24938,14 @@ const servicePlusLabels = (type: string) => {
   if (upper === 'FCF') return ['FCF+', 'EFA+']
   return [`${upper}+`]
 }
+// Sheets read while locating a shipment, reused by the move that follows.
+const relinkLoadedSheets = new Map<string, any>()
 type SheetEditState = { header: string[]; rows: any[][]; settings: Record<string, any>; extracted: any; sheet: any }
 // Read-modify-write of another sheet; retried on a version conflict. `mutate`
 // returns false when nothing has to be written.
-const editOpsSheet = async (leafKey: string, mutate: (state: SheetEditState) => boolean, createIfMissing = false) => {
+// `preloaded`: a sheet already fetched in this operation, used for the first attempt
+// (a version conflict re-reads it).
+const editOpsSheet = async (leafKey: string, mutate: (state: SheetEditState) => boolean, createIfMissing = false, preloaded?: any) => {
   const parsed = parseOpsKey(leafKey)
   if (!parsed) return false
   const header = opsHeaderFor(parsed.base, parsed.mode, parsed.dept, parsed.type)
@@ -24708,7 +24953,7 @@ const editOpsSheet = async (leafKey: string, mutate: (state: SheetEditState) => 
   for (let attempt = 1; ; attempt += 1) {
     let sheet: any
     try {
-      sheet = await props.request(`/workbook/sheets/${encodeURIComponent(storageKey)}`)
+      sheet = attempt === 1 && preloaded ? preloaded : await props.request(`/workbook/sheets/${encodeURIComponent(storageKey)}`)
     } catch (error: any) {
       if (requestStatus(error) !== 404 || !createIfMissing) {
         if (requestStatus(error) === 404) return false
@@ -24802,6 +25047,7 @@ const locateCounterpartDepts = async (row: number, counterpartType: string) => {
     let hit = false
     await editOpsSheet(leafKey, (state) => {
       hit = findShipmentRow(state, link, job, servicePlusLabels(counterpartType), upperText(parsed.type || '')) > 0
+      if (hit) relinkLoadedSheets.set(leafKey, state.sheet)
       return false
     }).catch(() => false)
     return hit ? dept : ''
@@ -24819,8 +25065,11 @@ const moveCounterpartRows = async (row: number, depts: string[], fromType: strin
   const fromBase = opsBaseForType(fromType as any)
   const toBase = toType ? opsBaseForType(toType as any) : null
   const toDepts = toBase ? orderedOpsDepts(toBase, toType, parsed.mode) as string[] : []
-  for (const dept of depts) {
+  const movedRows = new Map<string, { row: any[]; header: string[]; link: string }>()
+  // Each department is its own sheet: move them all at once (copy, then remove).
+  await Promise.all(depts.map(async (dept) => {
     const fromKey = opsLeafKey(fromBase, parsed.mode, fromType as any, dept as any)
+    const fromSheet = relinkLoadedSheets.get(fromKey)
     // 1) copy into the new service first, so nothing is lost if a later step fails
     if (toBase && toDepts.includes(dept)) {
       let moved: { row: any[]; header: string[]; rowSettings: Record<string, any>; linkSettings: Record<string, any>; link: string } | null = null
@@ -24836,9 +25085,10 @@ const moveCounterpartRows = async (row: number, depts: string[], fromType: strin
           link: rowLink,
         }
         return false
-      })
+      }, false, fromSheet)
       if (moved) {
         const source = moved as NonNullable<typeof moved>
+        movedRows.set(dept, { row: source.row, header: source.header, link: source.link })
         const toKey = opsLeafKey(toBase, parsed.mode, toType as any, dept as any)
         const toPlus = servicePlusLabels(toType)
         const fromPlus = servicePlusLabels(fromType)
@@ -24870,14 +25120,38 @@ const moveCounterpartRows = async (row: number, depts: string[], fromType: strin
         }, true)
       }
     }
-    // 2) remove it from the previous service
+    // 2) remove it from the previous service (same version as read above)
     await editOpsSheet(fromKey, (state) => {
       const index = findShipmentRow(state, link, job, servicePlusLabels(fromType), sourceType)
       if (index < 1) return false
       removeSheetRow(state, index)
       return true
-    })
-  }
+    }, false, fromSheet)
+    relinkLoadedSheets.delete(fromKey)
+  }))
+  // 3) departments only the new service has (DO -> DDU adds CCD, TCD): create their
+  // row from the moved operations row (ICD/ECD, else GSD).
+  if (!toBase) return
+  const template = [...movedRows.entries()].find(([dept]) => dept !== 'GSD')?.[1] || movedRows.get('GSD')
+  if (!template) return
+  const toPlus = servicePlusLabels(toType)
+  await Promise.all(toDepts.filter((item) => item !== 'GSD' && !depts.includes(item)).map((dept) =>
+    editOpsSheet(opsLeafKey(toBase, parsed.mode, toType as any, dept as any), (state) => {
+      if (findShipmentRow(state, template.link, job, toPlus, sourceType) > 0) return false
+      state.rows.push(state.header.map((label) => {
+        const upper = upperText(label)
+        if (toPlus.includes(upper)) return sourceType
+        if (upper === 'MODE') return 'AUTO'
+        if (['NOTICE', 'REMINDER'].includes(upper)) return ''
+        if (upper === 'ACTION') return 'ACTIVE'
+        const column = template.header.indexOf(label)
+        return column >= 0 ? template.row[column] ?? '' : ''
+      }))
+      const index = state.rows.length - 1
+      state.settings.opsRowLinks = { ...(state.settings.opsRowLinks || {}), [String(index)]: template.link }
+      markOpsRowNew(state.settings, template.link)
+      return true
+    }, true).catch((error) => console.warn(`Could not create the ${toType} ${dept} record`, error))))
 }
 // The shipment's own rows point at the GSD row of the linked service: repoint them.
 const repointCrossServiceLinks = async (row: number, toType: string) => {
@@ -24959,21 +25233,18 @@ const relinkCrossServiceBeforeSend = async (row: number, previousSent: any) => {
     dispatchLoading.value = ''
   }
   if (!depts.length) return true
-  const toDepts = toType ? orderedOpsDepts(opsBaseForType(toType as any), toType, parsed.mode) as string[] : []
-  const dropped = depts.filter((dept) => !toDepts.includes(dept))
   const message = toType
-    ? `This shipment already has ${fromType} records (${depts.join(', ')}). They will be moved to ${toType} with their data.${dropped.length ? ` ${dropped.join(', ')} ${dropped.length > 1 ? 'are' : 'is'} not used by ${toType} and will be removed.` : ''}`
-    : `This shipment has ${fromType} records (${depts.join(', ')}). Removing the link deletes them.`
+    ? `Move this shipment's data from ${fromType} to ${toType}?`
+    : `Delete this shipment's ${fromType} records?`
   const confirmed = await askConfirm(message, toType ? `Move shipment to ${toType}?` : `Remove ${fromType} link?`, {
-    okText: toType ? 'MOVE' : 'REMOVE',
+    okText: toType ? 'Move' : 'Remove',
     cancelText: 'Cancel',
     tone: toType ? 'question' : 'remove',
   })
   if (!confirmed) return false
   dispatchLoading.value = toType ? `Moving shipment from ${fromType} to ${toType}...` : `Removing ${fromType} records...`
   try {
-    await moveCounterpartRows(row, depts, fromType, toType)
-    await repointCrossServiceLinks(row, toType)
+    await Promise.all([moveCounterpartRows(row, depts, fromType, toType), repointCrossServiceLinks(row, toType)])
     showToast(toType ? `Shipment moved from ${fromType} to ${toType}` : `${fromType} records removed`)
     return true
   } catch (error: any) {
@@ -26122,7 +26393,15 @@ onBeforeUnmount(() => {
 .wb-modal-body{padding:18px}.wb-confirm-modal{width:min(340px,100%)}.wb-confirm-body{color:#4a564d;font-size:13px;line-height:1.45}.wb-field{display:grid;gap:7px}.wb-field span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#7a847d}.wb-field textarea{width:100%;resize:vertical;min-height:118px;border:1px solid #d3dacf;border-radius:10px;background:#fff;padding:10px 12px;outline:none;font:inherit;font-size:13px;line-height:1.45;color:#0e1512}.wb-field textarea:focus{border-color:#00c566;box-shadow:0 0 0 3px #e8f8ef}
 .wb-modal-help{margin-top:8px;font-size:12px;color:#7a847d}.wb-modal-actions{display:flex;justify-content:flex-end;gap:10px;padding:14px 18px;border-top:1px solid #e4e9e2;background:#f5f7f4}.wb-modal-btn{display:inline-flex;align-items:center;justify-content:center;min-height:30px;border:1px solid #d3dacf;border-radius:8px;background:#fff;padding:6px 12px;color:#3a463f;font-size:12px;font-weight:700}.wb-modal-btn:hover{background:#eef2ec}.wb-modal-btn.primary{border-color:#00c566;background:#00c566;color:#fff}.wb-modal-btn.primary:hover{border-color:#00a854;background:#00a854}
 .wb-confirm-modal.tone-question{width:380px;max-width:94vw;border-radius:12px;padding:16px 18px;background:#fff;box-shadow:0 18px 50px rgba(0,0,0,.3);overflow:visible}
-.question-confirm-title{margin:0 0 22px;font-size:15px;font-weight:750;color:#0e1512;line-height:1.35}
+.question-confirm-title{margin:0 0 18px;font-size:13.5px;font-weight:700;color:#33413b;line-height:1.45}
+.recipient-picker .question-confirm-title{margin-bottom:12px;font-weight:600}
+.recipient-options{display:grid;gap:10px;margin:4px 0 6px 8px}
+.recipient-option{display:inline-flex;align-items:center;gap:10px;width:max-content;font-size:13px;font-weight:500;color:#25352d;cursor:pointer}
+.recipient-option input{width:17px;height:17px;margin:0;accent-color:#008f4c;cursor:pointer}
+.recipient-option.off{color:#a3aea8;cursor:not-allowed}
+.recipient-option.off input{cursor:not-allowed}
+.recipient-hint{min-height:16px;margin:2px 0 8px;font-size:11.5px;color:#c0392b}
+.bds-box .recipient-options{margin:8px 0 2px 4px}
 .question-confirm-actions{display:flex;justify-content:flex-end;gap:8px}
 .question-confirm-btn{min-width:52px;height:32px;border:0;border-radius:8px;padding:0 16px;color:#fff;font-size:12px;font-weight:800;line-height:1;cursor:pointer}
 .question-confirm-btn.no{background:#c0392b}
